@@ -1,6 +1,341 @@
 @page "/checkout"
+@rendermode InteractiveServer
+@inject IJSRuntime JsRuntime
+@inject IShoppingCartService CartService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@using Microsoft.AspNetCore.Identity
+@using ThisCafeteria.Infrastructure.Identity
+@using ThisCafeteria.Web.Services.Cart
 
-<PageTitle>Checkout</PageTitle>
+<PageTitle>@(_paymentComplete ? "Order Confirmed" : "Checkout") | Artisanal Brew</PageTitle>
 
-<h1>Checkout</h1>
-<p>Checkout is scaffolded for order creation, receipt generation, and queue publishing.</p>
+<section class="checkout-page @(_paymentComplete ? "checkout-page--success" : null)">
+    @if (_paymentComplete)
+    {
+        <div class="checkout-fireworks" aria-hidden="true">
+            @for (var i = 0; i < 14; i++)
+            {
+                <span class="checkout-fireworks__particle" style="--particle-index: @i"></span>
+            }
+        </div>
+    }
+
+    <div class="checkout-page__layout">
+        @if (!_paymentComplete && _lines.Count == 0)
+        {
+            <div class="checkout-main checkout-main--empty" data-animate="fade-up">
+                <p class="lede">Your cart is empty. Add items before completing checkout.</p>
+                <a class="button button--dark" href="products">Browse shop</a>
+            </div>
+
+            <aside class="checkout-summary checkout-summary--empty" data-animate="fade-up">
+                <h2 class="checkout-summary__title">Order Summary</h2>
+                <p class="muted">No items yet.</p>
+            </aside>
+        }
+        else if (_paymentComplete)
+        {
+            <div class="checkout-main checkout-success" data-animate="fade-up">
+                <p class="eyebrow">Payment confirmed</p>
+                <h1 class="checkout-success__title">Thank you.</h1>
+                <p class="checkout-success__lede">
+                    Your BNB payment was accepted. We are preparing your order for roast and dispatch.
+                </p>
+
+                <dl class="checkout-success__receipt">
+                    <div class="checkout-success__receipt-row">
+                        <dt>Order</dt>
+                        <dd>@_orderReference</dd>
+                    </div>
+                    <div class="checkout-success__receipt-row">
+                        <dt>Paid</dt>
+                        <dd>
+                            @FormatBnb(_paidBnbAmount)
+                            <span class="checkout-success__receipt-muted">(@FormatUsd(_paidUsdAmount) USD)</span>
+                        </dd>
+                    </div>
+                    <div class="checkout-success__receipt-row">
+                        <dt>Transaction</dt>
+                        <dd class="checkout-success__tx">@_transactionHash</dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_walletAddress))
+                    {
+                        <div class="checkout-success__receipt-row">
+                            <dt>Wallet</dt>
+                            <dd>@ShortAddress(_walletAddress)</dd>
+                        </div>
+                    }
+                    <div class="checkout-success__receipt-row">
+                        <dt>Confirmed</dt>
+                        <dd>@_paidAt.ToString("MMMM d, yyyy · h:mm tt")</dd>
+                    </div>
+                </dl>
+
+                <div class="checkout-success__actions">
+                    <a class="button button--dark" href="orders">View orders</a>
+                    <a class="button button--ghost" href="products">Continue shopping</a>
+                </div>
+
+                <p class="checkout-success__dev-note muted">Development mode: payments are simulated and always succeed.</p>
+            </div>
+
+            <aside class="checkout-summary checkout-summary--paid" data-animate="fade-up">
+                <p class="checkout-summary__badge">Paid</p>
+                <p class="checkout-summary__paid-total">@FormatUsd(_orderTotalUsd) USD</p>
+
+                <details class="checkout-order-disclosure">
+                    <summary class="checkout-order-disclosure__summary">
+                        <span class="checkout-order-disclosure__label">Order details</span>
+                        <span class="checkout-order-disclosure__meta">
+                            @_paidLines.Count @(_paidLines.Count == 1 ? "item" : "items")
+                        </span>
+                    </summary>
+
+                    <div class="checkout-order-disclosure__body">
+                        <ul class="checkout-order-disclosure__items">
+                            @foreach (var line in _paidLines)
+                            {
+                                <li class="checkout-order-disclosure__item">
+                                    <span class="checkout-order-disclosure__name">@line.Name</span>
+                                    <span class="checkout-order-disclosure__qty-price">
+                                        @if (line.Quantity > 1)
+                                        {
+                                            <span>@line.Quantity × </span>
+                                        }
+                                        @FormatUsd(line.LineTotal)
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+
+                        <dl class="checkout-summary__totals checkout-summary__totals--compact">
+                            <div class="checkout-summary__line">
+                                <dt>Subtotal</dt>
+                                <dd>@FormatUsd(_subtotalUsd)</dd>
+                            </div>
+                            <div class="checkout-summary__line">
+                                <dt>Shipping</dt>
+                                <dd>@FormatUsd(_shippingUsd)</dd>
+                            </div>
+                            <div class="checkout-summary__line checkout-summary__line--total">
+                                <dt>Total</dt>
+                                <dd>@FormatUsd(_orderTotalUsd) USD</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </details>
+            </aside>
+        }
+        else
+        {
+            <div class="checkout-main">
+                <ol class="checkout-stepper" aria-label="Checkout progress" data-animate="fade-up">
+                    <li class="checkout-stepper__step checkout-stepper__step--complete">
+                        <span class="checkout-stepper__icon" aria-hidden="true">1</span>
+                        <span class="checkout-stepper__label">Shipping</span>
+                    </li>
+                    <li class="checkout-stepper__divider" aria-hidden="true"></li>
+                    <li class="checkout-stepper__step checkout-stepper__step--active" aria-current="step">
+                        <span class="checkout-stepper__icon" aria-hidden="true">2</span>
+                        <span class="checkout-stepper__label">Payment</span>
+                    </li>
+                </ol>
+
+                @if (!string.IsNullOrWhiteSpace(_walletAddress))
+                {
+                    <p class="checkout-wallet-connected" data-animate="fade-up">
+                        Paying from <span>@ShortAddress(_walletAddress)</span>
+                    </p>
+                }
+
+                <article class="checkout-payment-method" data-animate="fade-up">
+                    <div class="checkout-payment-method__mark">
+                        <img src="/images/bnb_logo.webp" alt="" width="48" height="48" />
+                    </div>
+                    <div class="checkout-payment-method__copy">
+                        <h2>Pay with BNB (Binance Coin)</h2>
+                        <p>Secure decentralized transaction</p>
+                    </div>
+                </article>
+
+                <section class="checkout-breakdown" data-animate="fade-up">
+                    <dl class="checkout-breakdown__rows">
+                        <div class="checkout-breakdown__row">
+                            <dt>Order Total</dt>
+                            <dd>@FormatUsd(_orderTotalUsd)</dd>
+                        </div>
+                        <div class="checkout-breakdown__row checkout-breakdown__row--rate">
+                            <dt>Current Rate</dt>
+                            <dd><em>1 BNB = @FormatUsd(BnbUsdRate) USD</em></dd>
+                        </div>
+                        <div class="checkout-breakdown__row checkout-breakdown__row--amount">
+                            <dt>Amount to Pay</dt>
+                            <dd>@FormatBnb(_bnbAmount)</dd>
+                        </div>
+                    </dl>
+
+                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                    {
+                        <p class="checkout-breakdown__error" role="alert">@_errorMessage</p>
+                    }
+
+                    <button type="button"
+                            class="button button--dark checkout-breakdown__cta"
+                            disabled="@_isPaying"
+                            @onclick="PayAsync">
+                        @(_isPaying ? "Processing…" : "Pay with BNB")
+                    </button>
+                </section>
+            </div>
+
+            <aside class="checkout-summary" data-animate="fade-up">
+                <h2 class="checkout-summary__title">Order Summary</h2>
+                <CheckoutOrderSummary Lines="_lines"
+                                      CarouselIndex="_carouselIndex"
+                                      SubtotalUsd="_subtotalUsd"
+                                      ShippingUsd="_shippingUsd"
+                                      OrderTotalUsd="_orderTotalUsd"
+                                      OnPrevious="ShowPreviousProduct"
+                                      OnNext="ShowNextProduct"
+                                      OnGoTo="GoToProduct" />
+            </aside>
+        }
+    </div>
+</section>
+
+@code {
+    private const decimal BnbUsdRate = 605.20m;
+    private const decimal ShippingUsd = 4.00m;
+
+    private IReadOnlyList<MarketplaceCartLine> _lines = [];
+    private IReadOnlyList<MarketplaceCartLine> _paidLines = [];
+    private decimal _orderTotalUsd;
+    private decimal _subtotalUsd;
+    private decimal _shippingUsd = ShippingUsd;
+    private decimal _bnbAmount;
+    private decimal _paidBnbAmount;
+    private decimal _paidUsdAmount;
+    private int _carouselIndex;
+    private bool _isPaying;
+    private bool _paymentComplete;
+    private string? _errorMessage;
+    private string? _walletAddress;
+    private string _orderReference = string.Empty;
+    private string _transactionHash = string.Empty;
+    private DateTimeOffset _paidAt;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCartAsync();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            var user = await UserManager.GetUserAsync(authState.User);
+            _walletAddress = user?.WalletAddress;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JsRuntime.InvokeVoidAsync("queueAnimations");
+        }
+
+        if (_paymentComplete)
+        {
+            await JsRuntime.InvokeVoidAsync("queueAnimations");
+        }
+    }
+
+    private async Task LoadCartAsync()
+    {
+        _lines = await CartService.GetLinesAsync();
+        if (_lines.Count == 0)
+        {
+            await CartService.RefreshFromStorageAsync();
+            _lines = await CartService.GetLinesAsync();
+        }
+
+        _subtotalUsd = _lines.Sum(line => line.LineTotal);
+        _orderTotalUsd = _subtotalUsd + ShippingUsd;
+        _bnbAmount = _orderTotalUsd / BnbUsdRate;
+    }
+
+    private void ShowPreviousProduct()
+    {
+        if (_carouselIndex > 0)
+        {
+            _carouselIndex--;
+        }
+    }
+
+    private void ShowNextProduct()
+    {
+        var lineCount = _paymentComplete ? _paidLines.Count : _lines.Count;
+        if (_carouselIndex < lineCount - 1)
+        {
+            _carouselIndex++;
+        }
+    }
+
+    private void GoToProduct(int index)
+    {
+        var lineCount = _paymentComplete ? _paidLines.Count : _lines.Count;
+        if (index >= 0 && index < lineCount)
+        {
+            _carouselIndex = index;
+        }
+    }
+
+    private async Task PayAsync()
+    {
+        if (_isPaying || _lines.Count == 0)
+        {
+            return;
+        }
+
+        _isPaying = true;
+        _errorMessage = null;
+
+        try
+        {
+            await Task.Delay(800);
+
+            _paidUsdAmount = _orderTotalUsd;
+            _paidBnbAmount = _bnbAmount;
+            _paidAt = DateTimeOffset.Now;
+            _orderReference = $"AB-{DateTimeOffset.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
+            _transactionHash = $"0x{Guid.NewGuid():N}";
+            _paidLines = _lines.ToList();
+
+            await CartService.ClearAsync();
+
+            _paymentComplete = true;
+        }
+        catch (Exception exception)
+        {
+            _errorMessage = exception.Message;
+        }
+        finally
+        {
+            _isPaying = false;
+        }
+    }
+
+    private static string FormatUsd(decimal amount) => amount.ToString("$#,0.00");
+
+    private static string FormatBnb(decimal amount) => $"{amount:0.####} BNB";
+
+    private static string ShortAddress(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address) || address.Length < 12)
+        {
+            return address ?? "Wallet";
+        }
+
+        return $"{address[..6]}…{address[^4..]}";
+    }
+}

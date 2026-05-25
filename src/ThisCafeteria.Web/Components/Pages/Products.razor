@@ -1,6 +1,11 @@
 @page "/products"
 @rendermode InteractiveServer
 @inject IJSRuntime JS
+@inject IShoppingCartService CartService
+@inject ICartMutationClient CartMutationClient
+@inject ILogger<Products> Logger
+@using ThisCafeteria.Web.Catalog
+@using ThisCafeteria.Web.Services.Cart
 
 <PageTitle>Shop | Artisanal Brew</PageTitle>
 
@@ -15,72 +20,52 @@
 </ul>
 
 @{
-    var visibleProducts = activeSection == AllSection
-        ? Catalog
-        : Catalog.Where(product => product.Section == activeSection);
+    var visibleProducts = activeSection == MarketplaceCatalog.AllSection
+        ? MarketplaceCatalog.Summaries
+        : MarketplaceCatalog.Summaries.Where(product => product.Section == activeSection);
 }
 
 <div class="product-grid stagger-container" data-stagger>
     @foreach (var product in visibleProducts)
     {
+        var quantity = GetQuantity(product.Slug);
+        var isAdding = _addingSlug == product.Slug;
+
         <article class="marketplace-card" data-animate="fade-up">
-            <div class="image-frame @product.ImageClass"></div>
-            <p class="eyebrow">@SectionLabel(product.Section)</p>
-            <h3>@product.Name</h3>
+            <a class="marketplace-card__link" href="@($"products/{product.Slug}")">
+                <div class="image-frame @product.ImageClass"></div>
+                <p class="eyebrow">@SectionLabel(product.Section)</p>
+                <h3>@product.Name</h3>
+                <p class="price">@FormatListPrice(product.Slug)</p>
+            </a>
+
+            <div class="marketplace-card__actions">
+                <ProductQuantityPicker Quantity="quantity"
+                                       QuantityChanged="@(value => SetQuantity(product.Slug, value))" />
+                <button type="button"
+                        class="button button--dark marketplace-card__add"
+                        disabled="@isAdding"
+                        @onclick="() => AddToCartAsync(product, quantity)">
+                    @(isAdding ? "Adding…" : "Add to cart")
+                </button>
+            </div>
         </article>
     }
 </div>
 
 @code {
-    private const string AllSection = "All";
-    private const string BeansSection = "Beans";
-    private const string EquipmentSection = "Equipment";
-    private const string CeramicsSection = "Ceramics";
-
     private static readonly IReadOnlyList<ProductSection> Sections =
     [
-        new(AllSection, "All Items"),
-        new(BeansSection, "Single Origin Beans"),
-        new(EquipmentSection, "Brewing Equipment"),
-        new(CeramicsSection, "Ceramics & Goods")
+        new(MarketplaceCatalog.AllSection, "All Items"),
+        new(MarketplaceCatalog.BeansSection, "Single Origin Beans"),
+        new(MarketplaceCatalog.EquipmentSection, "Brewing Equipment"),
+        new(MarketplaceCatalog.CeramicsSection, "Ceramics & Goods")
     ];
 
-    private static readonly IReadOnlyList<MarketplaceProduct> Catalog =
-    [
-        new("Ethiopia Yirgacheffe", BeansSection, "image-frame--espresso"),
-        new("Colombia Huila", BeansSection, "image-frame--latte"),
-        new("Guatemala Antigua", BeansSection, "image-frame--coldbrew"),
-        new("Kenya Nyeri AA", BeansSection, "image-frame--espresso"),
-        new("Costa Rica Tarrazu", BeansSection, "image-frame--latte"),
-        new("Brazil Cerrado", BeansSection, "image-frame--coldbrew"),
-        new("Rwanda Huye Mountain", BeansSection, "image-frame--espresso"),
-        new("Peru Cajamarca", BeansSection, "image-frame--latte"),
-        new("Mexico Chiapas", BeansSection, "image-frame--coldbrew"),
-        new("Panama Boquete", BeansSection, "image-frame--espresso"),
-        new("Ceramic Pour-Over Dripper", EquipmentSection, "image-frame--equipment"),
-        new("Gooseneck Kettle", EquipmentSection, "image-frame--equipment-alt"),
-        new("Burr Hand Grinder", EquipmentSection, "image-frame--equipment"),
-        new("Digital Coffee Scale", EquipmentSection, "image-frame--equipment-alt"),
-        new("Cold Brew Tower", EquipmentSection, "image-frame--coldbrew"),
-        new("French Press", EquipmentSection, "image-frame--equipment"),
-        new("AeroPress Kit", EquipmentSection, "image-frame--equipment-alt"),
-        new("Reusable Metal Filter", EquipmentSection, "image-frame--equipment"),
-        new("Espresso Tamper", EquipmentSection, "image-frame--equipment-alt"),
-        new("Milk Frothing Pitcher", EquipmentSection, "image-frame--latte"),
-        new("Stoneware Latte Cup", CeramicsSection, "image-frame--ceramics"),
-        new("Handmade Espresso Cup", CeramicsSection, "image-frame--ceramics-alt"),
-        new("Stacking Mug Set", CeramicsSection, "image-frame--ceramics"),
-        new("Minimal Travel Tumbler", CeramicsSection, "image-frame--ceramics-alt"),
-        new("Linen Cafe Tote", CeramicsSection, "image-frame--ceramics"),
-        new("Walnut Serving Tray", CeramicsSection, "image-frame--ceramics-alt"),
-        new("Porcelain Cupping Bowl", CeramicsSection, "image-frame--ceramics"),
-        new("Speckled Sugar Jar", CeramicsSection, "image-frame--ceramics-alt"),
-        new("Cotton Barista Apron", CeramicsSection, "image-frame--ceramics"),
-        new("Brass Coffee Scoop", CeramicsSection, "image-frame--ceramics-alt")
-    ];
-
-    private string activeSection = AllSection;
+    private string activeSection = MarketplaceCatalog.AllSection;
     private bool shouldRefreshAnimations = true;
+    private readonly Dictionary<string, int> _quantities = new(StringComparer.Ordinal);
+    private string? _addingSlug;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -97,10 +82,66 @@
         shouldRefreshAnimations = true;
     }
 
+    private int GetQuantity(string slug) =>
+        _quantities.TryGetValue(slug, out var quantity) ? quantity : 1;
+
+    private void SetQuantity(string slug, int quantity) =>
+        _quantities[slug] = Math.Clamp(quantity, 1, 99);
+
+    private async Task AddToCartAsync(MarketplaceProductSummary product, int quantity)
+    {
+        if (_addingSlug is not null)
+        {
+            return;
+        }
+
+        _addingSlug = product.Slug;
+
+        try
+        {
+            await CartMutationClient.AddAsync(product.Slug, quantity);
+            var detail = MarketplaceCatalog.TryGetBySlug(product.Slug);
+            var name = detail?.Name ?? product.Name;
+            var label = quantity == 1
+                ? $"{name} added to cart."
+                : $"{quantity} × {name} added to cart.";
+            await ShowCartToastAsync(label);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Add to cart failed on shop page. Slug={Slug}, Quantity={Quantity}, ProductName={ProductName}",
+                product.Slug,
+                quantity,
+                product.Name);
+            await ShowCartToastAsync("This product could not be added.", "error");
+        }
+        finally
+        {
+            _addingSlug = null;
+        }
+    }
+
+    private async Task ShowCartToastAsync(string message, string variant = "success")
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("cartToast.show", message, variant);
+        }
+        catch (JSException)
+        {
+        }
+    }
+
     private static string SectionLabel(string section) =>
         Sections.First(item => item.Key == section).Label;
 
-    private sealed record ProductSection(string Key, string Label);
+    private static string FormatListPrice(string slug)
+    {
+        var detail = MarketplaceCatalog.TryGetBySlug(slug);
+        return detail is null ? string.Empty : detail.Price.ToString("$#,0.00");
+    }
 
-    private sealed record MarketplaceProduct(string Name, string Section, string ImageClass);
+    private sealed record ProductSection(string Key, string Label);
 }

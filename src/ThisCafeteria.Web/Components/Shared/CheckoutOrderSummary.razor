@@ -1,0 +1,137 @@
+@using ThisCafeteria.Web.Services.Cart
+
+@if (Lines.Count > 1)
+{
+    <div class="checkout-summary-carousel"
+         aria-roledescription="carousel"
+         aria-label="Cart items">
+        <div class="checkout-summary-carousel__track">
+            <button type="button"
+                    class="checkout-summary-carousel__nav checkout-summary-carousel__nav--prev"
+                    aria-label="Previous item"
+                    disabled="@(CarouselIndex == 0 || DisableNavigation)"
+                    @onclick="OnPrevious">
+                ‹
+            </button>
+
+            <div class="checkout-summary-carousel__viewport">
+                @for (var index = 0; index < Lines.Count; index++)
+                {
+                    var line = Lines[index];
+                    var isActive = index == CarouselIndex;
+                    <div class="checkout-summary__product checkout-summary-carousel__slide @(isActive ? "checkout-summary-carousel__slide--active" : null)"
+                         role="group"
+                         aria-roledescription="slide"
+                         aria-label="@($"{index + 1} of {Lines.Count}")"
+                         aria-hidden="@(!isActive)"
+                         hidden="@(!isActive)">
+                        <div class="image-frame checkout-summary__thumb @line.ImageClass"
+                             role="img"
+                             aria-label="@($"{line.Name} product photography")"></div>
+                        <div class="checkout-summary__product-copy">
+                            <p class="checkout-summary__product-name">@line.Name</p>
+                            <p class="checkout-summary__product-price">@FormatUsd(line.UnitPrice)</p>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <button type="button"
+                    class="checkout-summary-carousel__nav checkout-summary-carousel__nav--next"
+                    aria-label="Next item"
+                    disabled="@(CarouselIndex >= Lines.Count - 1 || DisableNavigation)"
+                    @onclick="OnNext">
+                ›
+            </button>
+        </div>
+
+        @if (!DisableNavigation)
+        {
+            <div class="checkout-summary-carousel__dots" role="tablist" aria-label="Select item">
+                @for (var index = 0; index < Lines.Count; index++)
+                {
+                    var slideIndex = index;
+                    <button type="button"
+                            class="checkout-summary-carousel__dot @(slideIndex == CarouselIndex ? "checkout-summary-carousel__dot--active" : null)"
+                            role="tab"
+                            aria-selected="@(slideIndex == CarouselIndex)"
+                            aria-label="@($"View {Lines[slideIndex].Name}")"
+                            @onclick="() => OnGoTo.InvokeAsync(slideIndex)">
+                    </button>
+                }
+            </div>
+        }
+    </div>
+}
+else if (Lines.Count == 1)
+{
+    var line = Lines[0];
+    <div class="checkout-summary__product">
+        <div class="image-frame checkout-summary__thumb @line.ImageClass"
+             role="img"
+             aria-label="@($"{line.Name} product photography")"></div>
+        <div class="checkout-summary__product-copy">
+            <p class="checkout-summary__product-name">@line.Name</p>
+            <p class="checkout-summary__product-price">
+                @FormatUsd(line.UnitPrice)
+                @if (line.Quantity > 1)
+                {
+                    <span class="checkout-summary__product-qty">× @line.Quantity</span>
+                }
+            </p>
+        </div>
+    </div>
+}
+
+<dl class="checkout-summary__totals">
+    <div class="checkout-summary__line">
+        <dt>Subtotal</dt>
+        <dd>@FormatUsd(SubtotalUsd)</dd>
+    </div>
+    <div class="checkout-summary__line">
+        <dt>Shipping</dt>
+        <dd>@FormatUsd(ShippingUsd)</dd>
+    </div>
+    <div class="checkout-summary__line checkout-summary__line--total">
+        <dt>Total</dt>
+        <dd>@FormatUsd(OrderTotalUsd) USD</dd>
+    </div>
+</dl>
+
+<blockquote class="checkout-summary__note">
+    The ritual of the pour, the patience of the bloom. Every cup is a testament to the slow craft of the harvest.
+</blockquote>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<MarketplaceCartLine> Lines { get; set; } = [];
+
+    [Parameter]
+    public int CarouselIndex { get; set; }
+
+    [Parameter]
+    public EventCallback<int> CarouselIndexChanged { get; set; }
+
+    [Parameter]
+    public decimal SubtotalUsd { get; set; }
+
+    [Parameter]
+    public decimal ShippingUsd { get; set; }
+
+    [Parameter]
+    public decimal OrderTotalUsd { get; set; }
+
+    [Parameter]
+    public bool DisableNavigation { get; set; }
+
+    [Parameter]
+    public EventCallback OnPrevious { get; set; }
+
+    [Parameter]
+    public EventCallback OnNext { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnGoTo { get; set; }
+
+    private static string FormatUsd(decimal amount) => amount.ToString("$#,0.00");
+}

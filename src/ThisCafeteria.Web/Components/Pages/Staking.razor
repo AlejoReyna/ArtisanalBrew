@@ -1,0 +1,252 @@
+@page "/staking"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using ThisCafeteria.Application.Services.Blockchain
+@using ThisCafeteria.Infrastructure.Identity
+@using ThisCafeteria.Web.Configuration
+@inject ICoffeeWeb3Service Web3Service
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IOptions<BnbTestnetOptions> ChainOptions
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Liquid Staking &amp; CoffeeCoin | Artisanal Brew</PageTitle>
+
+<section class="page-intro page-intro--split stagger-container" data-animate="fade-up">
+    <div>
+        <p class="eyebrow">Liquid Staking</p>
+        <h1>Earn with ankrBNB. Spend yields. Collect COFFEE.</h1>
+    </div>
+    <p class="lede">
+        Balances and APR are read on the server (no private keys). Staking payments and ERC-20 transfers are signed in MetaMask on your device.
+    </p>
+</section>
+
+@if (_isLoading)
+{
+    <p class="muted">Loading on-chain dashboard...</p>
+}
+else if (!_isConnected)
+{
+    <section class="staking-connect" data-animate="fade-up">
+        <p class="eyebrow">Wallet required</p>
+        <h2>Connect MetaMask to view balances and buy with yield.</h2>
+        <p class="lede">Sign in with your wallet from the nav bar, or connect here for a staking-only session.</p>
+        @if (!string.IsNullOrWhiteSpace(_connectError))
+        {
+            <p class="text-danger">@_connectError</p>
+        }
+        <button type="button" class="button button--dark" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+            @(_isConnecting ? "Connecting..." : "Connect MetaMask")
+        </button>
+    </section>
+}
+else
+{
+    <section class="staking-rewards-banner" data-animate="fade-up">
+        <div>
+            <h2>House Rewards Program</h2>
+            <p class="lede" style="margin:0;">Every coffee paid with staking yield earns loyalty tokens.</p>
+        </div>
+        <div style="text-align:right;">
+            <span class="eyebrow">Your balance</span>
+            <p class="coffee-balance">@FormatAmount(_dashboard.CoffeeCoinBalance) COFFEE</p>
+        </div>
+    </section>
+
+    <section class="staking-dashboard stagger-container" data-stagger>
+        <article class="stat-card" data-animate="fade-up">
+            <span>tBNB</span>
+            <strong>@FormatAmount(_dashboard.BnbBalance)</strong>
+        </article>
+        <article class="stat-card" data-animate="fade-up">
+            <span>ankrBNB (LST)</span>
+            <strong>@FormatAmount(_dashboard.AnkrBnbBalance)</strong>
+        </article>
+        <article class="stat-card" data-animate="fade-up">
+            <span>APR (testnet)</span>
+            <strong>@_dashboard.CurrentApr.ToString("0.##")%</strong>
+        </article>
+        <article class="stat-card" data-animate="fade-up">
+            <span>Est. daily yield</span>
+            <strong>@FormatAmount(_dashboard.EstimatedDailyReward)</strong>
+        </article>
+    </section>
+
+    <p class="muted" style="margin-bottom:1.5rem;">
+        Wallet: @ShortAddress(_dashboard.WalletAddress) · Pool: @ShortAddress(_chain.StakingPoolContract)
+    </p>
+
+    <section class="staking-panel" data-animate="fade-up">
+        <h2 class="staking-section-title">Buy coffee with staking yield</h2>
+        <div class="staking-panel-body">
+            @if (!_paymentsConfigured)
+            {
+                <p class="text-warning">
+                    Set <code>Blockchain:BNBTestnet:MarketplaceWallet</code> and <code>Blockchain:BNBTestnet:CoffeeCoinContract</code> in configuration before enabling on-chain checkout.
+                </p>
+            }
+            <div class="staking-product-grid">
+                <article class="staking-product-card">
+                    <h3>Espresso Italiano</h3>
+                    <p class="muted" style="font-size:0.85rem;">Pay with ankrBNB earned from liquid staking.</p>
+                    <p><strong class="text-success">0.01 ankrBNB</strong></p>
+                    <span class="badge bg-info text-dark">+5 COFFEE</span>
+                    <button type="button"
+                            class="button button--dark btn-buy-ankr"
+                            style="margin-top:auto;"
+                            data-price="0.01"
+                            data-reward="5"
+                            disabled="@(!_paymentsConfigured)">
+                        Buy with yield
+                    </button>
+                </article>
+                <article class="staking-product-card">
+                    <h3>Cortado Reserve</h3>
+                    <p class="muted" style="font-size:0.85rem;">Richer roast, same LST checkout rail.</p>
+                    <p><strong class="text-success">0.02 ankrBNB</strong></p>
+                    <span class="badge bg-info text-dark">+12 COFFEE</span>
+                    <button type="button"
+                            class="button button--dark btn-buy-ankr"
+                            style="margin-top:auto;"
+                            data-price="0.02"
+                            data-reward="12"
+                            disabled="@(!_paymentsConfigured)">
+                        Buy with yield
+                    </button>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <form method="post" action="/staking/clear-wallet-session" style="margin-bottom:2rem;">
+        <button type="submit" class="button" style="background:transparent;border:1px solid rgba(45,36,33,.2);">
+            Disconnect staking session
+        </button>
+    </form>
+}
+
+@code {
+    private CoffeeDashboardModel _dashboard = new();
+    private BnbTestnetOptions _chain = new();
+    private bool _isLoading = true;
+    private bool _isConnected;
+    private bool _isConnecting;
+    private bool _paymentsConfigured;
+    private string? _connectError;
+    private bool _jsInitialized;
+    private IJSObjectReference? _stakingModule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _chain = ChainOptions.Value;
+        _paymentsConfigured = IsConfiguredAddress(_chain.MarketplaceWallet) &&
+            IsConfiguredAddress(_chain.CoffeeCoinContract);
+
+        var wallet = await ResolveWalletAddressAsync();
+        _isConnected = !string.IsNullOrWhiteSpace(wallet);
+
+        if (_isConnected)
+        {
+            _dashboard = await Web3Service.GetDashboardDataAsync(wallet!);
+        }
+
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_isConnected || !_paymentsConfigured || _jsInitialized)
+        {
+            return;
+        }
+
+        _stakingModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "/js/coffeeStaking.js");
+
+        await _stakingModule.InvokeVoidAsync(
+            "initCoffeePurchases",
+            new
+            {
+                marketplaceWallet = _chain.MarketplaceWallet,
+                ankrBnbContract = _chain.AnkrBNBContract,
+                chainId = _chain.ChainId,
+                chainIdHex = _chain.ChainIdHex,
+                rpcUrl = _chain.RpcUrl
+            });
+
+        _jsInitialized = true;
+    }
+
+    private async Task<string?> ResolveWalletAddressAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (!string.IsNullOrWhiteSpace(user?.WalletAddress))
+            {
+                return user.WalletAddress;
+            }
+        }
+
+        return HttpContextAccessor.HttpContext?.Session.GetString("WalletAddress");
+    }
+
+    private async Task ConnectWalletAsync()
+    {
+        _isConnecting = true;
+        _connectError = null;
+
+        try
+        {
+            _stakingModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import",
+                "/js/coffeeStaking.js");
+
+            var wallet = await _stakingModule.InvokeAsync<string>("connectWalletForStaking");
+            _isConnected = !string.IsNullOrWhiteSpace(wallet);
+            if (_isConnected)
+            {
+                _dashboard = await Web3Service.GetDashboardDataAsync(wallet);
+                _jsInitialized = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _connectError = ex.Message;
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+    }
+
+    private static bool IsConfiguredAddress(string? address) =>
+        !string.IsNullOrWhiteSpace(address) &&
+        address.Length == 42 &&
+        address.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
+        address[2..].All(Uri.IsHexDigit) &&
+        !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
+
+    private static string ShortAddress(string address) =>
+        string.IsNullOrWhiteSpace(address) || address.Length < 10
+            ? address
+            : $"{address[..6]}...{address[^4..]}";
+
+    private static string FormatAmount(decimal value) => value.ToString("0.####");
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_stakingModule is not null)
+        {
+            await _stakingModule.DisposeAsync();
+        }
+    }
+}

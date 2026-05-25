@@ -1,0 +1,276 @@
+.product-detail__back {
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+.product-detail__back a {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.product-detail__back a:hover {
+    color: var(--ink);
+}
+
+.product-detail-hero {
+    display: grid;
+    gap: clamp(2.5rem, 5vw, 5rem);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    align-items: center;
+    margin-bottom: clamp(5rem, 10vw, 6rem);
+}
+
+.product-detail-hero__media {
+    background: #efe9df;
+    border: 1px solid var(--line);
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.product-detail-hero__image {
+    aspect-ratio: 4 / 5;
+    box-shadow: 0 28px 60px rgba(45, 36, 33, 0.12);
+    margin-bottom: 0;
+}
+
+.product-detail-hero__image::after {
+    background: linear-gradient(180deg, rgba(45, 36, 33, 0.02), rgba(45, 36, 33, 0.18));
+}
+
+.product-detail-hero__copy h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.75rem, 5vw, 4.25rem);
+    line-height: 0.95;
+    margin: 0 0 1.25rem;
+}
+
+.product-detail-hero__price {
+    color: var(--accent);
+    font-family: 'Inter', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin: 0 0 1.75rem;
+}
+
+.product-detail-hero__narrative {
+    color: var(--ink);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+    font-style: italic;
+    line-height: 1.7;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+}
+
+.product-detail-hero__notes-label {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    margin: 0 0 0.85rem;
+    text-transform: uppercase;
+}
+
+.product-detail-hero__notes ul {
+    list-style: none;
+    margin: 0 0 2.25rem;
+    padding: 0;
+}
+
+.product-detail-hero__notes li {
+    color: var(--ink);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    padding-left: 1.1rem;
+    position: relative;
+}
+
+.product-detail-hero__notes li::before {
+    color: var(--accent);
+    content: "•";
+    left: 0;
+    position: absolute;
+}
+
+.product-detail-hero__notes li + li {
+    margin-top: 0.45rem;
+}
+
+.product-detail-hero__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.product-detail-hero__cta {
+    min-width: 12rem;
+}
+
+.product-detail-region {
+    border: 1px solid transparent;
+    display: grid;
+    gap: 0;
+    margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+    overflow: hidden;
+}
+
+.product-detail-region--africa {
+    background: #e4ebe0;
+    border-color: #b8c9ad;
+}
+
+.product-detail-region--americas {
+    background: #ebe3d4;
+    border-color: #d4c4a8;
+}
+
+.product-detail-region--neutral {
+    background: #efe9df;
+    border-color: var(--line);
+}
+
+.product-detail-region__media {
+    border-bottom: 1px solid rgba(45, 36, 33, 0.08);
+}
+
+.product-detail-region__image {
+    aspect-ratio: 16 / 9;
+    display: block;
+    object-fit: cover;
+    width: 100%;
+}
+
+.product-detail-region__image--placeholder {
+    background:
+        linear-gradient(180deg, rgba(45, 36, 33, 0.04), rgba(45, 36, 33, 0.16)),
+        radial-gradient(circle at 22% 38%, rgba(141, 111, 85, 0.22), transparent 52%),
+        radial-gradient(circle at 78% 62%, rgba(107, 125, 90, 0.18), transparent 48%),
+        #d8d0c4;
+}
+
+.product-detail-region--africa .product-detail-region__image--placeholder {
+    background:
+        linear-gradient(180deg, rgba(45, 36, 33, 0.05), rgba(45, 36, 33, 0.14)),
+        radial-gradient(circle at 30% 40%, rgba(107, 125, 90, 0.35), transparent 55%),
+        #c5d4b8;
+}
+
+.product-detail-region--americas .product-detail-region__image--placeholder {
+    background:
+        linear-gradient(180deg, rgba(45, 36, 33, 0.05), rgba(45, 36, 33, 0.14)),
+        radial-gradient(circle at 70% 45%, rgba(166, 124, 82, 0.32), transparent 52%),
+        #d9cbb5;
+}
+
+.product-detail-region__copy {
+    padding: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+.product-detail-region__label {
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+}
+
+.product-detail-region__value {
+    color: var(--ink);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.15rem, 2vw, 1.45rem);
+    line-height: 1.25;
+    margin: 0;
+}
+
+.product-detail-region--africa .product-detail-region__value {
+    color: #3d4f34;
+}
+
+.product-detail-region--americas .product-detail-region__value {
+    color: #5c4630;
+}
+
+.product-detail-specs {
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: clamp(2rem, 4vw, 3rem);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-top: clamp(3rem, 6vw, 5rem);
+}
+
+.product-detail-specs__heading {
+    color: var(--ink);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    margin: 0 0 1.5rem;
+    text-transform: uppercase;
+}
+
+.product-detail-specs__list,
+.product-detail-specs__ritual {
+    margin: 0;
+}
+
+.product-detail-specs__row {
+    border-bottom: 1px dotted var(--line);
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: minmax(6rem, 0.9fr) minmax(0, 1.1fr);
+    padding: 0.9rem 0;
+}
+
+.product-detail-specs__row:first-child {
+    padding-top: 0;
+}
+
+.product-detail-specs__row dt {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.product-detail-specs__row dd {
+    color: var(--ink);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.product-detail-specs__guide {
+    color: var(--accent);
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-top: 1.25rem;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.product-detail-specs__guide:hover {
+    color: var(--ink);
+}
+
+.product-detail--empty h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 960px) {
+    .product-detail-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .product-detail-specs {
+        grid-template-columns: 1fr;
+    }
+}

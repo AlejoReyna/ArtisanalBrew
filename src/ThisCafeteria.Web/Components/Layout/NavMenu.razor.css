@@ -108,6 +108,26 @@
 .nav-cart {
     color: #2d2421;
     cursor: pointer;
+    display: inline-flex;
+    position: relative;
+    text-decoration: none;
+}
+
+.nav-cart__badge {
+    align-items: center;
+    background: #2d2421;
+    border-radius: 999px;
+    color: #fbf9f4;
+    display: inline-flex;
+    font-size: 0.62rem;
+    font-weight: 700;
+    height: 1.1rem;
+    justify-content: center;
+    min-width: 1.1rem;
+    padding: 0 0.25rem;
+    position: absolute;
+    right: -0.35rem;
+    top: -0.35rem;
 }
 
 .bnb-mark {

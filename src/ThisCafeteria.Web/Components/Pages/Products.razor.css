@@ -1,0 +1,27 @@
+.marketplace-card__link {
+    color: inherit;
+    display: block;
+    text-decoration: none;
+}
+
+.marketplace-card__link:hover .image-frame {
+    opacity: 0.94;
+}
+
+.marketplace-card__link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+.marketplace-card__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.marketplace-card__add {
+    flex: 1 1 8rem;
+    min-width: 0;
+}

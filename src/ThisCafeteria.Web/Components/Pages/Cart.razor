@@ -1,7 +1,155 @@
 @page "/cart"
+@rendermode InteractiveServer
+@inject IShoppingCartService CartService
+@inject ICartMutationClient CartMutationClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using ThisCafeteria.Web.Services.Cart
 
-<PageTitle>Cart</PageTitle>
+<PageTitle>Cart | Artisanal Brew</PageTitle>
 
-<h1>Cart</h1>
-<p>The cart screen is ready for the next iteration of client-side cart behavior.</p>
-<a class="btn btn-primary" href="checkout">Checkout</a>
+<section class="cart-page">
+    <div class="cart-page__intro" data-animate="fade-up">
+        <p class="eyebrow">Your selection</p>
+        <h1>Cart</h1>
+        @if (!string.IsNullOrWhiteSpace(_statusMessage))
+        {
+            <p class="cart-page__status">@_statusMessage</p>
+        }
+    </div>
+
+    @if (_lines.Count == 0)
+    {
+        <div class="cart-page__empty" data-animate="fade-up">
+            <p class="lede">Your cart is empty. Explore the shop and add something worth lingering over.</p>
+            <a class="button button--dark" href="products">Browse shop</a>
+        </div>
+    }
+    else
+    {
+        <div class="cart-page__layout">
+            <ul class="cart-lines" data-animate="fade-up">
+                @foreach (var line in _lines)
+                {
+                    <li class="cart-line">
+                        <a class="cart-line__media" href="@($"products/{line.Slug}")">
+                            <div class="image-frame cart-line__image @line.ImageClass" role="img" aria-label="@line.Name"></div>
+                        </a>
+
+                        <div class="cart-line__details">
+                            <a class="cart-line__name" href="@($"products/{line.Slug}")">@line.Name</a>
+                            <p class="cart-line__price">@FormatPrice(line.UnitPrice)</p>
+
+                            <div class="cart-line__quantity">
+                                <button type="button"
+                                        class="cart-line__qty-btn"
+                                        aria-label="Decrease quantity"
+                                        disabled="@(line.Quantity <= 1)"
+                                        @onclick="() => UpdateQuantityAsync(line.Slug, line.Quantity - 1)">
+                                    −
+                                </button>
+                                <span class="cart-line__qty-value" aria-live="polite">@line.Quantity</span>
+                                <button type="button"
+                                        class="cart-line__qty-btn"
+                                        aria-label="Increase quantity"
+                                        @onclick="() => UpdateQuantityAsync(line.Slug, line.Quantity + 1)">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="cart-line__summary">
+                            <p class="cart-line__total">@FormatPrice(line.LineTotal)</p>
+                            <button type="button" class="cart-line__remove" @onclick="() => RemoveAsync(line.Slug)">
+                                Remove
+                            </button>
+                        </div>
+                    </li>
+                }
+            </ul>
+
+            <aside class="cart-summary" data-animate="fade-up">
+                <p class="cart-summary__label">Subtotal</p>
+                <p class="cart-summary__amount">@FormatPrice(_subtotal)</p>
+                <p class="cart-summary__note muted">Tax calculated at checkout.</p>
+                <a class="button button--dark cart-summary__checkout" href="checkout">Proceed to checkout</a>
+                <button type="button" class="cart-summary__clear" @onclick="ClearAsync">Clear cart</button>
+            </aside>
+        </div>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "product")]
+    public string? ProductSlug { get; set; }
+
+    private IReadOnlyList<MarketplaceCartLine> _lines = [];
+    private decimal _subtotal;
+    private string? _statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(ProductSlug))
+        {
+            try
+            {
+                await CartMutationClient.AddAsync(ProductSlug);
+                _statusMessage = "Item added to your cart.";
+            }
+            catch (Exception)
+            {
+                _statusMessage = "That product could not be added.";
+            }
+
+            Navigation.NavigateTo("/cart", replace: true);
+            return;
+        }
+
+        await ReloadCartAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("queueAnimations");
+        }
+    }
+
+    private async Task ReloadCartAsync()
+    {
+        _lines = await CartService.GetLinesAsync();
+        if (_lines.Count == 0)
+        {
+            await CartService.RefreshFromStorageAsync();
+        }
+
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        _lines = await CartService.GetLinesAsync();
+        _subtotal = await CartService.GetSubtotalAsync();
+    }
+
+    private async Task UpdateQuantityAsync(string slug, int quantity)
+    {
+        await CartService.SetQuantityAsync(slug, quantity);
+        await RefreshAsync();
+    }
+
+    private async Task RemoveAsync(string slug)
+    {
+        await CartService.RemoveAsync(slug);
+        await RefreshAsync();
+    }
+
+    private async Task ClearAsync()
+    {
+        await CartService.ClearAsync();
+        await RefreshAsync();
+    }
+
+    private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+}

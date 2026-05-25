@@ -4,8 +4,17 @@ using ThisCafeteria.Application;
 using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Persistence;
+using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Web.Components;
 using ThisCafeteria.Web.Configuration;
+using ThisCafeteria.Web.Catalog;
+using ThisCafeteria.Application.Services.Rewards;
+using ThisCafeteria.Web.Services.Blockchain;
+using ThisCafeteria.Web.Services.Rewards;
+using ThisCafeteria.Web.Services.Cart;
+using ThisCafeteria.Infrastructure.Configuration;
+
+LocalDotEnvLoader.LoadIfPresent();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,8 +33,22 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddMemoryCache();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(8);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<BnbTestnetOptions>(
     builder.Configuration.GetSection(BnbTestnetOptions.SectionName));
+builder.Services.Configure<CoffeeCoinOwnerOptions>(
+    builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
+builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
+builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
+builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
+builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -67,6 +90,7 @@ else
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
@@ -78,7 +102,47 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 await AdminIdentitySeeder.SeedAsync(app.Services, app.Configuration);
+ValidateMarketplaceCatalog(app.Services);
 
 app.Run();
+
+static void ValidateMarketplaceCatalog(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        var slugs = MarketplaceCatalog.Summaries.Select(summary => summary.Slug).ToList();
+        var duplicateSlugs = slugs
+            .GroupBy(slug => slug, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToList();
+
+        if (duplicateSlugs.Count > 0)
+        {
+            logger.LogError("Marketplace catalog has duplicate slugs: {DuplicateSlugs}", string.Join(", ", duplicateSlugs));
+        }
+
+        foreach (var summary in MarketplaceCatalog.Summaries)
+        {
+            var detail = MarketplaceCatalog.TryGetBySlug(summary.Slug);
+            if (detail is null)
+            {
+                logger.LogError(
+                    "Marketplace catalog missing detail for {Name} (slug {Slug})",
+                    summary.Name,
+                    summary.Slug);
+            }
+        }
+
+        logger.LogInformation("Marketplace catalog validated {ProductCount} products", slugs.Count);
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Marketplace catalog validation failed at startup");
+    }
+}
 
 public partial class Program;

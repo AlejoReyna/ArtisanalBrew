@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -20,7 +20,10 @@
 <body>
     <Routes />
     <ReconnectModal />
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="js/cartToast.js"></script>
+    <script src="js/publicHeader.js"></script>
     <script>
         window.animationObserver = null;
 
@@ -59,8 +62,20 @@
             });
         };
 
+        window.queuePublicHeader = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (typeof window.initPublicHeader === 'function') {
+                        window.initPublicHeader();
+                    }
+                });
+            });
+        };
+
         document.addEventListener('DOMContentLoaded', window.queueAnimations);
         document.addEventListener('blazor:enhancedload', window.queueAnimations);
+        document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
+        document.addEventListener('blazor:enhancedload', window.queuePublicHeader);
     </script>
 </body>
 

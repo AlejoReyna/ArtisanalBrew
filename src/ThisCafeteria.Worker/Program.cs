@@ -1,5 +1,6 @@
 using Serilog;
 using ThisCafeteria.Infrastructure;
+using ThisCafeteria.Infrastructure.Configuration;
 using ThisCafeteria.Worker;
 
 Log.Logger = new LoggerConfiguration()
@@ -9,6 +10,8 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    LocalDotEnvLoader.LoadIfPresent();
+
     var builder = Host.CreateApplicationBuilder(args);
     builder.Services.AddSerilog();
     builder.Services.AddInfrastructure(builder.Configuration);

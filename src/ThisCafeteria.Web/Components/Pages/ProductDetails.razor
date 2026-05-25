@@ -1,36 +1,236 @@
-@page "/products/{Id:guid}"
-@inject IProductService ProductService
+@page "/products/{Slug}"
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject IShoppingCartService CartService
+@inject ICartMutationClient CartMutationClient
+@inject ILogger<ProductDetails> Logger
+@using ThisCafeteria.Web.Catalog
+@using ThisCafeteria.Web.Services.Cart
 
-<PageTitle>Product details</PageTitle>
+<PageTitle>@(product?.Name ?? "Product") | Artisanal Brew</PageTitle>
 
 @if (product is null)
 {
-    <h1>Product not found</h1>
-    <p>The requested product does not exist or is no longer available.</p>
+    <section class="product-detail product-detail--empty" data-animate="fade-up">
+        <h1>Product not found</h1>
+        <p class="lede">This item is no longer on the menu or the link may be outdated.</p>
+        <a class="button button--ghost" href="products">Back to shop</a>
+    </section>
 }
 else
 {
-    <h1>@product.Name</h1>
-    <p>@product.Description</p>
-    <dl>
-        <dt>Price</dt>
-        <dd>@product.Price.ToString("C")</dd>
-        <dt>Stock</dt>
-        <dd>@product.StockQuantity</dd>
-        <dt>Category</dt>
-        <dd>@product.Category</dd>
-    </dl>
-    <a class="btn btn-primary" href="cart">Add to cart placeholder</a>
+    <nav class="product-detail__back" aria-label="Breadcrumb" data-animate="fade-up">
+        <a href="products">← Shop</a>
+    </nav>
+
+    <section class="product-detail-hero" data-animate="fade-up">
+        <div class="product-detail-hero__media">
+            <div class="image-frame product-detail-hero__image @product.ImageClass" role="img" aria-label="@product.Name product photography"></div>
+        </div>
+
+        <div class="product-detail-hero__copy">
+            <p class="eyebrow">@product.Eyebrow</p>
+            <h1>@product.Name</h1>
+            <p class="product-detail-hero__price">@FormatPrice(product.Price)</p>
+            <p class="product-detail-hero__narrative">@product.Description</p>
+
+            <div class="product-detail-hero__notes">
+                <p class="product-detail-hero__notes-label">@(product.Section == MarketplaceCatalog.BeansSection ? "Flavor Notes" : "Highlights")</p>
+                <ul>
+                    @foreach (var note in product.FlavorNotes)
+                    {
+                        <li>@note</li>
+                    }
+                </ul>
+            </div>
+
+            <div class="product-detail-hero__actions">
+                <ProductQuantityPicker @bind-Quantity="_quantity" />
+                <button type="button"
+                        class="button button--dark product-detail-hero__cta"
+                        disabled="@_isAdding"
+                        @onclick="AddToCartAsync">
+                    @(_isAdding ? "Adding…" : "Add to cart")
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="product-detail-specs" data-animate="fade-up">
+        <div class="product-detail-specs__column">
+            @if (TryGetRegion(product, out var regionLabel, out var regionValue))
+            {
+                <article class="product-detail-region @GetRegionToneClass(product)">
+                    <div class="product-detail-region__media">
+                        @if (!string.IsNullOrWhiteSpace(product.RegionImageSrc))
+                        {
+                            <img class="product-detail-region__image"
+                                 src="@product.RegionImageSrc"
+                                 alt="@regionValue landscape"
+                                 loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="product-detail-region__image product-detail-region__image--placeholder"
+                                 role="img"
+                                 aria-label="@regionValue landscape photography placeholder"></div>
+                        }
+                    </div>
+                    <div class="product-detail-region__copy">
+                        <p class="product-detail-region__label">@regionLabel</p>
+                        <p class="product-detail-region__value">@regionValue</p>
+                    </div>
+                </article>
+            }
+
+            <dl class="product-detail-specs__list">
+                @foreach (var row in GetPrimarySpecsWithoutRegion(product))
+                {
+                    <div class="product-detail-specs__row">
+                        <dt>@row.Label</dt>
+                        <dd>@row.Value</dd>
+                    </div>
+                }
+            </dl>
+        </div>
+
+        <div class="product-detail-specs__column">
+            <p class="product-detail-specs__heading">@product.RitualTitle</p>
+            <dl class="product-detail-specs__ritual">
+                <div class="product-detail-specs__row">
+                    <dt>@product.RitualMethodLabel</dt>
+                    <dd>@product.RitualMethod</dd>
+                </div>
+                <div class="product-detail-specs__row">
+                    <dt>@product.RitualRatioLabel</dt>
+                    <dd>@product.RitualRatio</dd>
+                </div>
+                <div class="product-detail-specs__row">
+                    <dt>@product.RitualTemperatureLabel</dt>
+                    <dd>@product.RitualTemperature</dd>
+                </div>
+            </dl>
+            <a class="product-detail-specs__guide" href="@product.BrewGuideHref">@product.BrewGuideLabel</a>
+        </div>
+
+        <div class="product-detail-specs__column">
+            <dl class="product-detail-specs__list product-detail-specs__list--sensory">
+                @foreach (var row in product.SensorySpecs)
+                {
+                    <div class="product-detail-specs__row">
+                        <dt>@row.Label</dt>
+                        <dd>@row.Value</dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </section>
 }
 
 @code {
     [Parameter]
-    public Guid Id { get; set; }
+    public string Slug { get; set; } = string.Empty;
 
-    private ProductDto? product;
+    private MarketplaceProductDetail? product;
+    private bool _isAdding;
+    private int _quantity = 1;
 
-    protected override async Task OnParametersSetAsync()
+    protected override void OnParametersSet()
     {
-        product = await ProductService.GetProductByIdAsync(Id);
+        product = MarketplaceCatalog.TryGetBySlug(Slug);
+        _quantity = 1;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("queueAnimations");
+        }
+    }
+
+    private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+
+    private static bool TryGetRegion(
+        MarketplaceProductDetail product,
+        out string label,
+        out string value)
+    {
+        var row = product.PrimarySpecs.FirstOrDefault(spec =>
+            string.Equals(spec.Label, "Region", StringComparison.OrdinalIgnoreCase));
+
+        if (row is null)
+        {
+            label = string.Empty;
+            value = string.Empty;
+            return false;
+        }
+
+        label = row.Label;
+        value = row.Value;
+        return true;
+    }
+
+    private static IEnumerable<MarketplaceSpecRow> GetPrimarySpecsWithoutRegion(MarketplaceProductDetail product) =>
+        product.PrimarySpecs.Where(spec =>
+            !string.Equals(spec.Label, "Region", StringComparison.OrdinalIgnoreCase));
+
+    private static string GetRegionToneClass(MarketplaceProductDetail product)
+    {
+        if (product.Eyebrow.Contains("AFRICA", StringComparison.OrdinalIgnoreCase))
+        {
+            return "product-detail-region--africa";
+        }
+
+        if (product.Eyebrow.Contains("AMERICAS", StringComparison.OrdinalIgnoreCase))
+        {
+            return "product-detail-region--americas";
+        }
+
+        return "product-detail-region--neutral";
+    }
+
+    private async Task AddToCartAsync()
+    {
+        if (product is null || _isAdding)
+        {
+            return;
+        }
+
+        _isAdding = true;
+
+        try
+        {
+            await CartMutationClient.AddAsync(product.Slug, _quantity);
+            var toastMessage = _quantity == 1
+                ? $"{product.Name} added to cart."
+                : $"{_quantity} × {product.Name} added to cart.";
+            await ShowCartToastAsync(toastMessage);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(
+                exception,
+                "Add to cart failed on product page. Slug={Slug}, Quantity={Quantity}",
+                product?.Slug,
+                _quantity);
+            await ShowCartToastAsync("This product could not be added.", "error");
+        }
+        finally
+        {
+            _isAdding = false;
+        }
+    }
+
+    private async Task ShowCartToastAsync(string message, string variant = "success")
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("cartToast.show", message, variant);
+        }
+        catch (JSException)
+        {
+            // Toast is best-effort; cart state is already updated.
+        }
     }
 }

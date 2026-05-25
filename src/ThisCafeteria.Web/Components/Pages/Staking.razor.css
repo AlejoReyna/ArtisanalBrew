@@ -1,0 +1,103 @@
+.staking-dashboard {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: 2rem;
+}
+
+.staking-dashboard .stat-card {
+    background: #fff;
+    border: 1px solid rgba(45, 36, 33, 0.12);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.staking-dashboard .stat-card span {
+    color: rgba(45, 36, 33, 0.6);
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.staking-dashboard .stat-card strong {
+    color: #2d2421;
+    display: block;
+    font-size: 1.35rem;
+    margin-top: 0.35rem;
+}
+
+.staking-rewards-banner {
+    align-items: center;
+    background: #fff;
+    border: 1px solid rgba(212, 160, 55, 0.45);
+    border-radius: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+}
+
+.staking-rewards-banner h2 {
+    color: #2d2421;
+    font-size: 1.25rem;
+    margin: 0 0 0.35rem;
+}
+
+.staking-rewards-banner .coffee-balance {
+    color: #b8860b;
+    font-size: 1.75rem;
+    margin: 0;
+}
+
+.staking-connect {
+    background: rgba(45, 36, 33, 0.04);
+    border-radius: 14px;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.staking-product-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.staking-product-card {
+    background: #fff;
+    border: 1px solid rgba(45, 36, 33, 0.1);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.staking-product-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.staking-section-title {
+    background: #2d2421;
+    border-radius: 12px 12px 0 0;
+    color: #fbf9f4;
+    margin: 0;
+    padding: 0.85rem 1.25rem;
+}
+
+.staking-panel {
+    background: #fff;
+    border: 1px solid rgba(45, 36, 33, 0.1);
+    border-radius: 12px;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+}
+
+.staking-panel-body {
+    padding: 1.25rem;
+}

@@ -417,6 +417,48 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.ToTable("Receipts");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.RewardClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(36, 18)
+                        .HasColumnType("numeric(36,18)");
+
+                    b.Property<string>("ClaimType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("ClaimedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TransactionHash")
+                        .HasMaxLength(66)
+                        .HasColumnType("character varying(66)");
+
+                    b.Property<string>("PaymentTransactionHash")
+                        .HasMaxLength(66)
+                        .HasColumnType("character varying(66)");
+
+                    b.Property<string>("WalletAddress")
+                        .IsRequired()
+                        .HasMaxLength(42)
+                        .HasColumnType("character varying(42)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionHash");
+
+                    b.HasIndex("PaymentTransactionHash");
+
+                    b.HasIndex("WalletAddress", "ClaimedAtUtc");
+
+                    b.ToTable("RewardClaims");
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.TransparencyRecord", b =>
                 {
                     b.Property<Guid>("Id")

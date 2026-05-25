@@ -15,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<TransparencyRecord> TransparencyRecords => Set<TransparencyRecord>();
+    public DbSet<RewardClaim> RewardClaims => Set<RewardClaim>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

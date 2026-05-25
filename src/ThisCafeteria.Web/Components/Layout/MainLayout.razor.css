@@ -15,31 +15,45 @@ main {
     position: fixed;
     right: 0;
     top: 0;
+    transition:
+        background-color 220ms ease,
+        backdrop-filter 220ms ease,
+        border-color 220ms ease;
     z-index: 50;
 }
 
-.public-page:has(.editorial-hero) .public-header {
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) {
     background-color: transparent;
     backdrop-filter: none;
     border-bottom: none;
 }
 
-.public-page:has(.editorial-hero) ::deep .navbar-brand {
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .navbar-brand {
     color: #fbf9f4;
 }
 
-.public-page:has(.editorial-hero) ::deep .nav-link {
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .nav-link {
     color: rgba(251, 249, 244, 0.78);
 }
 
-.public-page:has(.editorial-hero) ::deep .nav-link:hover,
-.public-page:has(.editorial-hero) ::deep .nav-link.active {
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .nav-link:hover,
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .nav-link.active {
     border-bottom-color: #fbf9f4;
     color: #fbf9f4;
 }
 
-.public-page:has(.editorial-hero) ::deep .nav-cart {
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .nav-cart {
     color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .nav-wallet {
+    border-color: rgba(251, 249, 244, 0.45);
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .nav-wallet.active {
+    background: #fbf9f4;
+    color: #2d2421;
 }
 
 .public-main {
