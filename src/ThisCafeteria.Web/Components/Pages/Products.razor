@@ -1,0 +1,125 @@
+@page "/products"
+@inject IProductService ProductService
+
+<PageTitle>The Journal Menu</PageTitle>
+
+<section class="page-intro page-intro--split">
+    <div>
+        <p class="eyebrow">The Journal</p>
+        <h1>Coffee and pastry, written in small rituals.</h1>
+    </div>
+    <p class="lede">
+        A clean menu of coffee, pastry, and seasonal preparations. Prices are aligned for clarity; textures are left to the cup.
+    </p>
+</section>
+
+@if (products is null)
+{
+    <p class="muted">Loading the menu...</p>
+}
+else if (products.Count == 0)
+{
+    <p class="muted">No offerings are available yet.</p>
+}
+else
+{
+    var coffeeItems = products.Where(product => !product.Category.ToString().Contains("Pastry", StringComparison.OrdinalIgnoreCase)).ToList();
+    var pastryItems = products.Where(product => product.Category.ToString().Contains("Pastry", StringComparison.OrdinalIgnoreCase)).ToList();
+    var featuredProduct = products.FirstOrDefault();
+
+    <section class="menu-feature">
+        <div class="image-frame image-frame--latte menu-feature__image"></div>
+        <div>
+            <p class="eyebrow">Top-down study</p>
+            <h2>@(featuredProduct?.Name ?? "Latte Art")</h2>
+            <p>
+                Soft natural light, warm ceramic, and a menu designed to be read as calmly as it is brewed.
+            </p>
+        </div>
+    </section>
+
+    <section class="menu-columns">
+        <div>
+            <p class="eyebrow">Coffee</p>
+            <h2>Bar Offerings</h2>
+            <div class="menu-list">
+                @foreach (var product in coffeeItems)
+                {
+                    <article class="menu-item">
+                        <div>
+                            <h3>@product.Name</h3>
+                            <p>@product.Description</p>
+                        </div>
+                        <a href="@($"products/{product.Id}")">@product.Price.ToString("C")</a>
+                    </article>
+                }
+            </div>
+        </div>
+        <div>
+            <p class="eyebrow">Pastry</p>
+            <h2>From the Case</h2>
+            <div class="menu-list">
+                @if (pastryItems.Count == 0)
+                {
+                    <article class="menu-item">
+                        <div>
+                            <h3>Butter Croissant</h3>
+                            <p>Flaked pastry with cultured butter and a crisp edge.</p>
+                        </div>
+                        <span>$4.25</span>
+                    </article>
+                    <article class="menu-item">
+                        <div>
+                            <h3>Cardamom Morning Bun</h3>
+                            <p>Warm spice, caramelized sugar, and laminated dough.</p>
+                        </div>
+                        <span>$5.00</span>
+                    </article>
+                }
+                else
+                {
+                    @foreach (var product in pastryItems)
+                    {
+                        <article class="menu-item">
+                            <div>
+                                <h3>@product.Name</h3>
+                                <p>@product.Description</p>
+                            </div>
+                            <a href="@($"products/{product.Id}")">@product.Price.ToString("C")</a>
+                        </article>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-heading">
+            <p class="eyebrow">All Offerings</p>
+            <h2>Curated menu highlights.</h2>
+        </div>
+        <div class="product-grid">
+        @foreach (var product in products)
+            {
+                <article class="product-card">
+                    <p class="eyebrow">@product.Category</p>
+                    <h3>@product.Name</h3>
+                    <p>@product.Description</p>
+                    <div class="product-card__footer">
+                        <strong>@product.Price.ToString("C")</strong>
+                        <a href="@($"products/{product.Id}")">Details</a>
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    private IReadOnlyCollection<ProductDto>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductService.GetProductsAsync();
+    }
+}

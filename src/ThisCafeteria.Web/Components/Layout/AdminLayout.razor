@@ -1,0 +1,18 @@
+@inherits LayoutComponentBase
+
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <a class="admin-brand" href="admin">Artisanal Brew Admin</a>
+
+        <nav class="admin-nav" aria-label="Admin navigation">
+            <NavLink href="admin" Match="NavLinkMatch.All">Dashboard</NavLink>
+            <NavLink href="admin/products">Products</NavLink>
+            <NavLink href="admin/orders">Orders</NavLink>
+            <NavLink href="">Back to public site</NavLink>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        @Body
+    </main>
+</div>

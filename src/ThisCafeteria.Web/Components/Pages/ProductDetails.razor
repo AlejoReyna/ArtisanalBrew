@@ -1,0 +1,36 @@
+@page "/products/{Id:guid}"
+@inject IProductService ProductService
+
+<PageTitle>Product details</PageTitle>
+
+@if (product is null)
+{
+    <h1>Product not found</h1>
+    <p>The requested product does not exist or is no longer available.</p>
+}
+else
+{
+    <h1>@product.Name</h1>
+    <p>@product.Description</p>
+    <dl>
+        <dt>Price</dt>
+        <dd>@product.Price.ToString("C")</dd>
+        <dt>Stock</dt>
+        <dd>@product.StockQuantity</dd>
+        <dt>Category</dt>
+        <dd>@product.Category</dd>
+    </dl>
+    <a class="btn btn-primary" href="cart">Add to cart placeholder</a>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ProductDto? product;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        product = await ProductService.GetProductByIdAsync(Id);
+    }
+}

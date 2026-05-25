@@ -1,0 +1,45 @@
+<nav class="site-nav" aria-label="Primary navigation">
+    <a class="navbar-brand" href="">Artisanal Brew</a>
+
+    <button class="navbar-toggler"
+            type="button"
+            aria-label="Toggle navigation menu"
+            aria-expanded="@_isNavOpen"
+            @onclick="ToggleNav">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="@NavMenuCssClass">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseNav">
+            Home
+        </NavLink>
+
+        <NavLink class="nav-link" href="products" @onclick="CloseNav">
+            Menu
+        </NavLink>
+
+        <NavLink class="nav-link" href="story" @onclick="CloseNav">
+            Story
+        </NavLink>
+
+        <NavLink class="nav-link" href="visit" @onclick="CloseNav">
+            Visit
+        </NavLink>
+
+        <NavLink class="nav-link nav-link--cta" href="cart" @onclick="CloseNav">
+            Order Now
+        </NavLink>
+    </div>
+</nav>
+
+@code {
+    private bool _isNavOpen;
+
+    private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
+
+    private void ToggleNav() => _isNavOpen = !_isNavOpen;
+
+    private void CloseNav() => _isNavOpen = false;
+}

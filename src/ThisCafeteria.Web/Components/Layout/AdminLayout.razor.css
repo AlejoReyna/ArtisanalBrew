@@ -1,0 +1,55 @@
+.admin-layout {
+    background: #f4f1eb;
+    color: #1f1a18;
+    display: grid;
+    min-height: 100vh;
+}
+
+.admin-sidebar {
+    background: #1f1a18;
+    color: #fbf9f4;
+    padding: 1.5rem;
+}
+
+.admin-brand {
+    color: #fbf9f4;
+    display: inline-block;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    text-decoration: none;
+}
+
+.admin-nav {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.admin-nav ::deep a {
+    border: 1px solid rgba(251, 249, 244, 0.14);
+    color: rgba(251, 249, 244, 0.72);
+    padding: 0.85rem 1rem;
+    text-decoration: none;
+}
+
+.admin-nav ::deep a.active,
+.admin-nav ::deep a:hover {
+    background: rgba(251, 249, 244, 0.1);
+    color: #fbf9f4;
+}
+
+.admin-main {
+    padding: clamp(1.5rem, 4vw, 4rem);
+}
+
+@media (min-width: 800px) {
+    .admin-layout {
+        grid-template-columns: 280px 1fr;
+    }
+
+    .admin-sidebar {
+        min-height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+}

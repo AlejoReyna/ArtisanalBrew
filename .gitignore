@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+.dotnet_home/
+TestResults/
+*.user
+*.suo
+*.nupkg
+appsettings.Local.json
+.env

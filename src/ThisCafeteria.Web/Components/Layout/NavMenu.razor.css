@@ -1,0 +1,121 @@
+.site-nav {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin: 0 auto;
+    max-width: 1440px;
+    min-height: 4.75rem;
+    padding: 0 clamp(1.25rem, 3vw, 3rem);
+}
+
+.navbar-brand {
+    color: #2d2421;
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+    letter-spacing: -0.04em;
+    text-decoration: none;
+}
+
+.navbar-toggler {
+    align-items: center;
+    background: rgba(251, 249, 244, 0.72);
+    border: 1px solid #d8d0c4;
+    border-radius: 999px;
+    cursor: pointer;
+    display: none;
+    flex-direction: column;
+    gap: 0.28rem;
+    height: 2.8rem;
+    justify-content: center;
+    padding: 0;
+    width: 2.8rem;
+}
+
+.navbar-toggler span {
+    background: #2d2421;
+    display: block;
+    height: 1px;
+    width: 1.2rem;
+}
+
+.nav-links {
+    align-items: center;
+    display: flex;
+    gap: clamp(1rem, 2.4vw, 2rem);
+}
+
+::deep .nav-link {
+    color: #746a63;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+::deep .nav-link.active {
+    border-bottom: 1px solid #2d2421;
+    color: #2d2421;
+}
+
+::deep .nav-link:hover {
+    color: #8d6f55;
+}
+
+::deep .nav-link--cta {
+    border: 1px solid #2d2421;
+    border-radius: 999px;
+    color: #2d2421;
+    padding: 0.7rem 1rem;
+}
+
+::deep .nav-link--cta.active,
+::deep .nav-link--cta:hover {
+    background: #2d2421;
+    color: #fbf9f4;
+}
+
+@media (max-width: 760px) {
+    .site-nav {
+        min-height: 4.35rem;
+    }
+
+    .navbar-toggler {
+        display: flex;
+    }
+
+    .nav-links {
+        align-items: stretch;
+        background: rgba(251, 249, 244, 0.98);
+        border-bottom: 1px solid #d8d0c4;
+        border-top: 1px solid #d8d0c4;
+        box-shadow: 0 1rem 2rem rgba(45, 36, 33, 0.08);
+        display: none;
+        flex-direction: column;
+        gap: 0;
+        left: 0;
+        padding: 0.75rem clamp(1.25rem, 3vw, 3rem) 1.25rem;
+        position: absolute;
+        right: 0;
+        top: 100%;
+    }
+
+    .nav-links--open {
+        display: flex;
+    }
+
+    ::deep .nav-link {
+        border-bottom: 1px solid rgba(216, 208, 196, 0.7);
+        padding: 1rem 0;
+    }
+
+    ::deep .nav-link.active {
+        border-bottom-color: #2d2421;
+    }
+
+    ::deep .nav-link--cta {
+        align-self: flex-start;
+        margin-top: 1rem;
+        padding: 0.75rem 1.1rem;
+    }
+}
