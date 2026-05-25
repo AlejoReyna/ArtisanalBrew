@@ -538,3 +538,43 @@ p {
         min-height: 26rem;
     }
 }
+
+/* --- Viewport Animations --- */
+[data-animate] {
+    opacity: 0;
+    transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
+}
+[data-animate].is-visible {
+    opacity: 1;
+}
+
+[data-animate="fade-up"] {
+    transform: translateY(40px);
+}
+[data-animate="fade-up"].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+[data-animate="blur"] {
+    filter: blur(12px);
+    transform: scale(0.98);
+}
+[data-animate="blur"].is-visible {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+}
+
+.stagger-container [data-animate] {
+    opacity: 0;
+    transform: translateY(30px);
+}
+.stagger-container.is-visible [data-animate] {
+    opacity: 1;
+    transform: translateY(0);
+}
+.stagger-container.is-visible [data-animate]:nth-child(1) { transition-delay: 0.1s; }
+.stagger-container.is-visible [data-animate]:nth-child(2) { transition-delay: 0.3s; }
+.stagger-container.is-visible [data-animate]:nth-child(3) { transition-delay: 0.5s; }
+.stagger-container.is-visible [data-animate]:nth-child(4) { transition-delay: 0.7s; }

@@ -5,6 +5,7 @@ using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Persistence;
 using ThisCafeteria.Web.Components;
+using ThisCafeteria.Web.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,10 +18,14 @@ builder.Host.UseSerilog((context, loggerConfiguration) =>
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddMemoryCache();
+builder.Services.Configure<BnbTestnetOptions>(
+    builder.Configuration.GetSection(BnbTestnetOptions.SectionName));
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -37,7 +42,7 @@ builder.Services
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/login";
+    options.LoginPath = "/";
     options.AccessDeniedPath = "/access-denied";
 });
 

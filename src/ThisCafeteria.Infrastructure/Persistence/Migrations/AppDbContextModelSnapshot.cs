@@ -504,6 +504,16 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("UserProfileId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("WalletAddress")
+                        .HasMaxLength(42)
+                        .HasColumnType("character varying(42)");
+
+                    b.Property<int?>("WalletChainId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("WalletVerifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
@@ -512,6 +522,11 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("WalletAddress")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AspNetUsers_WalletAddress")
+                        .HasFilter("\"WalletAddress\" IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });

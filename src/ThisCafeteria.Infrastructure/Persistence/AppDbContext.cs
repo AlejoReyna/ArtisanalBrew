@@ -18,6 +18,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(user => user.WalletAddress).HasMaxLength(42);
+            entity.HasIndex(user => user.WalletAddress)
+                .IsUnique()
+                .HasFilter("\"WalletAddress\" IS NOT NULL");
+        });
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         SeedData.Configure(builder);
     }

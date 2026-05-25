@@ -1,3 +1,8 @@
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+
 <nav class="site-nav" aria-label="Primary navigation">
     <a class="navbar-brand" href="">Artisanal Brew</a>
 
@@ -28,18 +33,188 @@
             Visit
         </NavLink>
 
-        <NavLink class="nav-link nav-link--cta" href="cart" @onclick="CloseNav">
-            Order Now
-        </NavLink>
+        <AuthorizeView>
+            <Authorized>
+                <span class="nav-wallet">@ShortAddress(context.User.Identity?.Name)</span>
+                <form method="post" action="/api/wallet-auth/logout" class="nav-logout">
+                    <button type="submit" class="nav-link nav-link--button">Log out</button>
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <button class="nav-login"
+                        type="button"
+                        aria-haspopup="dialog"
+                        @onclick="OpenWalletModal">
+                    <img class="bnb-mark"
+                         src="/images/bnb_logo.webp"
+                         alt=""
+                         width="27"
+                         height="27" />
+                    Login
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
 </nav>
 
+@if (_isWalletModalOpen)
+{
+    <div class="wallet-modal" role="presentation" @onclick="CloseWalletModal">
+        <section class="wallet-modal__panel"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="wallet-modal-title"
+                 @onclick:stopPropagation="true">
+            <div class="wallet-modal__header">
+                <h2 id="wallet-modal-title">Connect a wallet</h2>
+                <button class="wallet-modal__close"
+                        type="button"
+                        aria-label="Close wallet selection"
+                        @onclick="CloseWalletModal">
+                    x
+                </button>
+            </div>
+
+            <div class="wallet-options">
+                <button class="wallet-option"
+                        type="button"
+                        disabled="@_isConnecting"
+                        @onclick='() => ConnectWalletAsync("MetaMask")'>
+                    <span class="wallet-option__icon wallet-option__icon--metamask">M</span>
+                    <span>MetaMask</span>
+                    <span class="wallet-option__arrow">›</span>
+                </button>
+
+                <button class="wallet-option"
+                        type="button"
+                        disabled="@_isConnecting"
+                        @onclick='() => ConnectWalletAsync("Coinbase Wallet")'>
+                    <span class="wallet-option__icon wallet-option__icon--coinbase">C</span>
+                    <span>Coinbase Wallet</span>
+                    <span class="wallet-option__arrow">›</span>
+                </button>
+
+                <button class="wallet-option"
+                        type="button"
+                        disabled="@_isConnecting"
+                        @onclick='() => ConnectWalletAsync("WalletConnect")'>
+                    <span class="wallet-option__icon wallet-option__icon--walletconnect">W</span>
+                    <span>WalletConnect</span>
+                    <span class="wallet-option__arrow">›</span>
+                </button>
+
+                <button class="wallet-option"
+                        type="button"
+                        disabled="@_isConnecting"
+                        @onclick='() => ConnectWalletAsync("Keplr")'>
+                    <span class="wallet-option__icon wallet-option__icon--keplr">K</span>
+                    <span>Keplr</span>
+                    <span class="wallet-option__arrow">›</span>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_statusMessage))
+            {
+                <p class="wallet-modal__status">@_statusMessage</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <p class="wallet-modal__error">@_errorMessage</p>
+            }
+        </section>
+    </div>
+}
+
 @code {
     private bool _isNavOpen;
+    private IJSObjectReference? _walletModule;
+    private bool _isWalletModalOpen;
+    private bool _isConnecting;
+    private string? _statusMessage;
+    private string? _errorMessage;
 
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
 
     private void ToggleNav() => _isNavOpen = !_isNavOpen;
 
     private void CloseNav() => _isNavOpen = false;
+
+    private void OpenWalletModal()
+    {
+        _isNavOpen = false;
+        _isWalletModalOpen = true;
+        _statusMessage = null;
+        _errorMessage = null;
+    }
+
+    private void CloseWalletModal()
+    {
+        if (_isConnecting)
+        {
+            return;
+        }
+
+        _isWalletModalOpen = false;
+        _statusMessage = null;
+        _errorMessage = null;
+    }
+
+    private async Task ConnectWalletAsync(string walletName)
+    {
+        _isConnecting = true;
+        _errorMessage = null;
+        _statusMessage = $"Opening {walletName}...";
+
+        try
+        {
+            _walletModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/walletAuth.js");
+            var result = await _walletModule.InvokeAsync<WalletLoginResult>("loginWithWallet", walletName);
+
+            if (!result.Success)
+            {
+                _errorMessage = result.Error ?? "Wallet login could not be completed.";
+                _statusMessage = null;
+                return;
+            }
+
+            _statusMessage = $"Signed in as {ShortAddress(result.Address)}.";
+            Navigation.NavigateTo(result.RedirectUrl ?? "/", forceLoad: true);
+        }
+        catch (JSException exception)
+        {
+            _errorMessage = exception.Message;
+            _statusMessage = null;
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+    }
+
+    private static string ShortAddress(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address) || address.Length < 12)
+        {
+            return address ?? "Wallet";
+        }
+
+        return $"{address[..6]}...{address[^4..]}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_walletModule is not null)
+        {
+            await _walletModule.DisposeAsync();
+        }
+    }
+
+    private sealed class WalletLoginResult
+    {
+        public bool Success { get; set; }
+        public string? Address { get; set; }
+        public string? RedirectUrl { get; set; }
+        public string? Error { get; set; }
+    }
 }

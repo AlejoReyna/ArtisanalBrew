@@ -36,11 +36,16 @@
                     }
                 });
             }, observerOptions);
-            const animatedElements = document.querySelectorAll('[data-animate]:not(.is-visible)');
+            const animatedElements = document.querySelectorAll('[data-animate]:not(.is-visible), [data-stagger]:not(.is-visible)');
             animatedElements.forEach(el => observer.observe(el));
         };
-        document.addEventListener('DOMContentLoaded', window.initAnimations);
-        document.addEventListener('blazor:enhancedload', window.initAnimations);
+        const runAnimations = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(window.initAnimations);
+            });
+        };
+        document.addEventListener('DOMContentLoaded', runAnimations);
+        document.addEventListener('blazor:enhancedload', runAnimations);
     </script>
 </body>
 
