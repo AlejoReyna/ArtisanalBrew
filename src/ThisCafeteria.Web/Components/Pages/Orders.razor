@@ -1,6 +1,17 @@
 @page "/orders"
+@inject NavigationManager Navigation
 
 <PageTitle>Orders</PageTitle>
 
-<h1>Orders</h1>
-<p>Authenticated customer order history will appear here.</p>
+<section class="page-intro" data-animate="fade-up">
+    <p class="eyebrow">Order History</p>
+    <h1>Redirecting to your profile.</h1>
+    <p class="lede">Your orders now live inside My Profile.</p>
+</section>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo("/profile#orders", replace: true);
+    }
+}

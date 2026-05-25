@@ -14,6 +14,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
+    public DbSet<TransparencyRecord> TransparencyRecords => Set<TransparencyRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

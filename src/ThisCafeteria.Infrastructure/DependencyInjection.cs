@@ -25,6 +25,8 @@ public static class DependencyInjection
 
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<ITransparencyRecordRepository, TransparencyRecordRepository>();
+        services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IS3StorageService, S3StorageService>();
         services.AddScoped<ISqsMessagePublisher, SqsMessagePublisher>();
         services.AddScoped<IEmailSender, SesEmailSender>();

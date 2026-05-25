@@ -22,12 +22,19 @@
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script>
+        window.animationObserver = null;
+
         window.initAnimations = () => {
+            if (window.animationObserver) {
+                window.animationObserver.disconnect();
+            }
+
             const observerOptions = {
                 root: null,
                 rootMargin: '0px 0px -10% 0px',
                 threshold: 0.1
             };
+
             const observer = new IntersectionObserver((entries, observer) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -36,16 +43,24 @@
                     }
                 });
             }, observerOptions);
-            const animatedElements = document.querySelectorAll('[data-animate]:not(.is-visible), [data-stagger]:not(.is-visible)');
+
+            window.animationObserver = observer;
+
+            const animatedElements = document.querySelectorAll(
+                '[data-animate]:not(.is-visible), [data-stagger]:not(.is-visible)'
+            );
+
             animatedElements.forEach(el => observer.observe(el));
         };
-        const runAnimations = () => {
+
+        window.queueAnimations = () => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(window.initAnimations);
             });
         };
-        document.addEventListener('DOMContentLoaded', runAnimations);
-        document.addEventListener('blazor:enhancedload', runAnimations);
+
+        document.addEventListener('DOMContentLoaded', window.queueAnimations);
+        document.addEventListener('blazor:enhancedload', window.queueAnimations);
     </script>
 </body>
 

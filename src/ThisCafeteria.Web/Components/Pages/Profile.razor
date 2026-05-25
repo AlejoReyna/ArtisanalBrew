@@ -1,0 +1,275 @@
+@page "/profile"
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using FluentValidation
+@using Microsoft.AspNetCore.Identity
+@using ThisCafeteria.Infrastructure.Identity
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IProfileService ProfileService
+@inject IOrderService OrderService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>My Profile | Artisanal Brew</PageTitle>
+
+@if (_isLoading)
+{
+    <section class="page-intro stagger-container" data-animate="fade-up">
+        <p class="eyebrow">Customer Profile</p>
+        <h1>Loading your profile.</h1>
+    </section>
+}
+else if (!string.IsNullOrWhiteSpace(_loadError))
+{
+    <section class="page-intro stagger-container" data-animate="fade-up">
+        <p class="eyebrow">Customer Profile</p>
+        <h1>We could not load your profile.</h1>
+        <p class="lede">@_loadError</p>
+    </section>
+}
+else if (_dashboard is not null)
+{
+    <section class="page-intro page-intro--split stagger-container profile-intro" data-animate="fade-up">
+        <div>
+            <p class="eyebrow">My Profile</p>
+            <h1>@_dashboard.DisplayName</h1>
+            <p class="lede">Manage your storefront identity, review your orders, and follow the transparency trail tied to your wallet.</p>
+        </div>
+        <div class="profile-stat-card">
+            <span>Total orders</span>
+            <strong>@_dashboard.TotalOrders</strong>
+        </div>
+    </section>
+
+    <section class="profile-grid stagger-container" data-stagger>
+        <article class="profile-card" data-animate="fade-up">
+            <p class="eyebrow">Identity Summary</p>
+            <dl class="profile-facts">
+                <div>
+                    <dt>Wallet</dt>
+                    <dd>@ShortAddress(_dashboard.WalletAddress)</dd>
+                </div>
+                <div>
+                    <dt>Network</dt>
+                    <dd>@FormatChain(_dashboard.WalletChainId)</dd>
+                </div>
+                <div>
+                    <dt>Role</dt>
+                    <dd>@_dashboard.Role</dd>
+                </div>
+                <div>
+                    <dt>Member since</dt>
+                    <dd>@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="profile-card" data-animate="fade-up">
+            <p class="eyebrow">Display Name</p>
+            <EditForm Model="_editModel" OnSubmit="SaveDisplayNameAsync" class="profile-form">
+                <label for="display-name">Name shown on your profile</label>
+                <InputText id="display-name"
+                           class="profile-input"
+                           @bind-Value="_editModel.DisplayName"
+                           maxlength="160" />
+                <small>Use 2 to 160 characters. HTML tags are not allowed.</small>
+
+                @if (_validationErrors.Count > 0)
+                {
+                    <ul class="profile-errors">
+                        @foreach (var error in _validationErrors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_saveMessage))
+                {
+                    <p class="profile-save-message">@_saveMessage</p>
+                }
+
+                <button class="button button--dark" type="submit" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : "Save display name")
+                </button>
+            </EditForm>
+        </article>
+    </section>
+
+    <section id="orders" class="profile-section" data-animate="fade-up">
+        <div class="section-heading">
+            <p class="eyebrow">Order History</p>
+            <h2>Recent orders</h2>
+        </div>
+
+        @if (_orders.Count == 0)
+        {
+            <article class="profile-card">
+                <p>No orders are linked to your profile yet.</p>
+            </article>
+        }
+        else
+        {
+            <div class="orders-list">
+                @foreach (var order in _orders)
+                {
+                    <article class="order-row">
+                        <div>
+                            <span class="order-number">@order.OrderNumber</span>
+                            <p>@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</p>
+                        </div>
+                        <span class="status-badge">@order.Status</span>
+                        <strong>@order.Total.ToString("C")</strong>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="profile-section" data-animate="fade-up">
+        <div class="section-heading">
+            <p class="eyebrow">Transparency</p>
+            <h2>On-chain receipts</h2>
+        </div>
+
+        @if (TransparencyRecords.Count == 0)
+        {
+            <article class="profile-card">
+                <p>Transparency receipts will appear here after your first order is recorded.</p>
+            </article>
+        }
+        else
+        {
+            <div class="receipt-list">
+                @foreach (var record in TransparencyRecords)
+                {
+                    <article class="receipt-row">
+                        <div>
+                            <span>@record.ProductName</span>
+                            <p>@record.OrderNumber · @record.Status</p>
+                        </div>
+                        <code>@ShortHash(record.OrderHash)</code>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private readonly ProfileEditModel _editModel = new();
+    private ProfileDashboardDto? _dashboard;
+    private IReadOnlyCollection<OrderDto> _orders = [];
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _loadError;
+    private string? _saveMessage;
+    private List<string> _validationErrors = [];
+    private bool _shouldRefreshAnimations = true;
+
+    private IReadOnlyCollection<TransparencyRecordDto> TransparencyRecords =>
+        _orders.SelectMany(order => order.TransparencyRecords)
+            .OrderByDescending(record => record.CreatedAt)
+            .ToArray();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authenticationState.User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        var applicationUserId = UserManager.GetUserId(user);
+        if (string.IsNullOrWhiteSpace(applicationUserId))
+        {
+            _loadError = "Your authenticated session does not contain a user id.";
+            _isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
+            _dashboard = await ProfileService.GetProfileDashboardAsync(userProfileId);
+            _orders = await OrderService.GetOrdersForUserAsync(userProfileId);
+            _editModel.DisplayName = _dashboard.DisplayName;
+        }
+        catch (Exception exception)
+        {
+            _loadError = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || _shouldRefreshAnimations)
+        {
+            _shouldRefreshAnimations = false;
+            await JS.InvokeVoidAsync("queueAnimations");
+        }
+    }
+
+    private async Task SaveDisplayNameAsync()
+    {
+        if (_dashboard is null)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _saveMessage = null;
+        _validationErrors = [];
+
+        try
+        {
+            var updated = await ProfileService.UpdateDisplayNameAsync(
+                _dashboard.UserProfileId,
+                new UpdateUserProfileRequest(_editModel.DisplayName));
+
+            _dashboard = _dashboard with { DisplayName = updated.DisplayName };
+            _editModel.DisplayName = updated.DisplayName;
+            _saveMessage = "Display name updated.";
+        }
+        catch (ValidationException exception)
+        {
+            _validationErrors = exception.Errors.Select(error => error.ErrorMessage).ToList();
+        }
+        catch (Exception exception)
+        {
+            _validationErrors = [exception.Message];
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private static string ShortAddress(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return "Not linked";
+        }
+
+        return address.Length >= 12 ? $"{address[..6]}...{address[^4..]}" : address;
+    }
+
+    private static string FormatChain(int? chainId) =>
+        chainId is null ? "Not linked" : chainId == 97 ? "BSC Testnet (97)" : $"Chain {chainId}";
+
+    private static string ShortHash(string hash) =>
+        hash.Length >= 14 ? $"{hash[..10]}...{hash[^4..]}" : hash;
+
+    private sealed class ProfileEditModel
+    {
+        public string DisplayName { get; set; } = string.Empty;
+    }
+}

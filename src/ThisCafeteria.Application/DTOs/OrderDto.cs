@@ -11,4 +11,5 @@ public sealed record OrderDto(
     decimal Tax,
     decimal Total,
     DateTime CreatedAt,
-    IReadOnlyCollection<CartItemDto> Items);
+    IReadOnlyCollection<CartItemDto> Items,
+    IReadOnlyCollection<TransparencyRecordDto> TransparencyRecords);

@@ -1,0 +1,157 @@
+.profile-intro {
+    align-items: stretch;
+}
+
+.profile-stat-card,
+.profile-card,
+.order-row,
+.receipt-row {
+    background: rgba(255, 253, 249, 0.72);
+    border: 1px solid var(--line);
+}
+
+.profile-stat-card {
+    align-content: center;
+    display: grid;
+    padding: clamp(1.25rem, 2vw, 2rem);
+}
+
+.profile-stat-card span,
+.profile-facts dt,
+.order-number,
+.receipt-row span {
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.profile-stat-card strong {
+    color: var(--ink);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(3rem, 6vw, 5rem);
+    line-height: 1;
+}
+
+.profile-grid {
+    display: grid;
+    gap: clamp(1rem, 2vw, 2rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: clamp(4rem, 8vw, 8rem);
+}
+
+.profile-card {
+    padding: clamp(1.25rem, 2.4vw, 2.25rem);
+}
+
+.profile-facts {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+}
+
+.profile-facts div {
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 0.35rem;
+    padding-bottom: 1rem;
+}
+
+.profile-facts div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.profile-facts dd {
+    color: var(--ink);
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.profile-form {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.profile-form label {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.profile-form small {
+    color: var(--muted);
+}
+
+.profile-input {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+}
+
+.profile-errors,
+.profile-save-message {
+    margin: 0;
+}
+
+.profile-errors {
+    color: #b32121;
+    padding-left: 1.25rem;
+}
+
+.profile-save-message {
+    color: #326b3a;
+}
+
+.profile-section {
+    margin-bottom: clamp(4rem, 8vw, 8rem);
+}
+
+.orders-list,
+.receipt-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.order-row,
+.receipt-row {
+    align-items: center;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    padding: 1rem clamp(1rem, 2vw, 1.5rem);
+}
+
+.order-row p,
+.receipt-row p {
+    margin: 0.25rem 0 0;
+}
+
+.status-badge {
+    background: var(--ink);
+    border-radius: 999px;
+    color: var(--surface);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.35rem 0.7rem;
+    text-transform: uppercase;
+}
+
+.receipt-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.receipt-row code {
+    color: var(--ink);
+}
+
+@media (max-width: 760px) {
+    .profile-grid,
+    .order-row,
+    .receipt-row {
+        grid-template-columns: 1fr;
+    }
+}

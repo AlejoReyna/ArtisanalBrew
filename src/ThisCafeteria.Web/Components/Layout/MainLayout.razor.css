@@ -18,8 +18,36 @@ main {
     z-index: 50;
 }
 
+.public-page:has(.editorial-hero) .public-header {
+    background-color: transparent;
+    backdrop-filter: none;
+    border-bottom: none;
+}
+
+.public-page:has(.editorial-hero) ::deep .navbar-brand {
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero) ::deep .nav-link {
+    color: rgba(251, 249, 244, 0.78);
+}
+
+.public-page:has(.editorial-hero) ::deep .nav-link:hover,
+.public-page:has(.editorial-hero) ::deep .nav-link.active {
+    border-bottom-color: #fbf9f4;
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero) ::deep .nav-cart {
+    color: #fbf9f4;
+}
+
 .public-main {
     padding-top: 4.75rem;
+}
+
+.public-page:has(.editorial-hero) .public-main {
+    padding-top: 0;
 }
 
 #blazor-error-ui {

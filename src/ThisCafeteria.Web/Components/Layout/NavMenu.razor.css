@@ -63,12 +63,20 @@
 }
 
 .nav-wallet {
+    align-items: center;
     border: 1px solid #d8d0c4;
     border-radius: 999px;
     color: #2d2421;
+    display: inline-flex;
     font-size: 0.78rem;
     font-weight: 600;
-    padding: 0.55rem 0.8rem;
+    padding: 0.55rem;
+    text-decoration: none;
+}
+
+::deep .nav-wallet.active {
+    background: #2d2421;
+    color: #fbf9f4;
 }
 
 .nav-logout {
@@ -95,6 +103,11 @@
 .nav-login:hover {
     background: #1c1c1c;
     transform: translateY(-1px);
+}
+
+.nav-cart {
+    color: #2d2421;
+    cursor: pointer;
 }
 
 .bnb-mark {

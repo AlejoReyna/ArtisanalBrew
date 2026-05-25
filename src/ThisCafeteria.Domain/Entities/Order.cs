@@ -14,6 +14,7 @@ public sealed class Order
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public List<OrderItem> Items { get; set; } = [];
+    public List<TransparencyRecord> TransparencyRecords { get; set; } = [];
 
     public UserProfile? UserProfile { get; set; }
     public Receipt? Receipt { get; set; }

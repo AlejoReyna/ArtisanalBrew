@@ -1,125 +1,106 @@
 @page "/products"
-@inject IProductService ProductService
+@rendermode InteractiveServer
+@inject IJSRuntime JS
 
-<PageTitle>The Journal Menu</PageTitle>
+<PageTitle>Shop | Artisanal Brew</PageTitle>
 
-<section class="page-intro page-intro--split">
-    <div>
-        <p class="eyebrow">The Journal</p>
-        <h1>Coffee and pastry, written in small rituals.</h1>
-    </div>
-    <p class="lede">
-        A clean menu of coffee, pastry, and seasonal preparations. Prices are aligned for clarity; textures are left to the cup.
-    </p>
-</section>
+<ul class="category-filter" data-animate="fade-up">
+    @foreach (var section in Sections)
+    {
+        <li class="@(activeSection == section.Key ? "active" : "")"
+            @onclick="() => SetSection(section.Key)">
+            @section.Label
+        </li>
+    }
+</ul>
 
-@if (products is null)
-{
-    <p class="muted">Loading the menu...</p>
+@{
+    var visibleProducts = activeSection == AllSection
+        ? Catalog
+        : Catalog.Where(product => product.Section == activeSection);
 }
-else if (products.Count == 0)
-{
-    <p class="muted">No offerings are available yet.</p>
-}
-else
-{
-    var coffeeItems = products.Where(product => !product.Category.ToString().Contains("Pastry", StringComparison.OrdinalIgnoreCase)).ToList();
-    var pastryItems = products.Where(product => product.Category.ToString().Contains("Pastry", StringComparison.OrdinalIgnoreCase)).ToList();
-    var featuredProduct = products.FirstOrDefault();
 
-    <section class="menu-feature">
-        <div class="image-frame image-frame--latte menu-feature__image"></div>
-        <div>
-            <p class="eyebrow">Top-down study</p>
-            <h2>@(featuredProduct?.Name ?? "Latte Art")</h2>
-            <p>
-                Soft natural light, warm ceramic, and a menu designed to be read as calmly as it is brewed.
-            </p>
-        </div>
-    </section>
-
-    <section class="menu-columns">
-        <div>
-            <p class="eyebrow">Coffee</p>
-            <h2>Bar Offerings</h2>
-            <div class="menu-list">
-                @foreach (var product in coffeeItems)
-                {
-                    <article class="menu-item">
-                        <div>
-                            <h3>@product.Name</h3>
-                            <p>@product.Description</p>
-                        </div>
-                        <a href="@($"products/{product.Id}")">@product.Price.ToString("C")</a>
-                    </article>
-                }
-            </div>
-        </div>
-        <div>
-            <p class="eyebrow">Pastry</p>
-            <h2>From the Case</h2>
-            <div class="menu-list">
-                @if (pastryItems.Count == 0)
-                {
-                    <article class="menu-item">
-                        <div>
-                            <h3>Butter Croissant</h3>
-                            <p>Flaked pastry with cultured butter and a crisp edge.</p>
-                        </div>
-                        <span>$4.25</span>
-                    </article>
-                    <article class="menu-item">
-                        <div>
-                            <h3>Cardamom Morning Bun</h3>
-                            <p>Warm spice, caramelized sugar, and laminated dough.</p>
-                        </div>
-                        <span>$5.00</span>
-                    </article>
-                }
-                else
-                {
-                    @foreach (var product in pastryItems)
-                    {
-                        <article class="menu-item">
-                            <div>
-                                <h3>@product.Name</h3>
-                                <p>@product.Description</p>
-                            </div>
-                            <a href="@($"products/{product.Id}")">@product.Price.ToString("C")</a>
-                        </article>
-                    }
-                }
-            </div>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="section-heading">
-            <p class="eyebrow">All Offerings</p>
-            <h2>Curated menu highlights.</h2>
-        </div>
-        <div class="product-grid">
-        @foreach (var product in products)
-            {
-                <article class="product-card">
-                    <p class="eyebrow">@product.Category</p>
-                    <h3>@product.Name</h3>
-                    <p>@product.Description</p>
-                    <div class="product-card__footer">
-                        <strong>@product.Price.ToString("C")</strong>
-                        <a href="@($"products/{product.Id}")">Details</a>
-                    </div>
-                </article>
-            }
-        </div>
-    </section>
-}
+<div class="product-grid stagger-container" data-stagger>
+    @foreach (var product in visibleProducts)
+    {
+        <article class="marketplace-card" data-animate="fade-up">
+            <div class="image-frame @product.ImageClass"></div>
+            <p class="eyebrow">@SectionLabel(product.Section)</p>
+            <h3>@product.Name</h3>
+        </article>
+    }
+</div>
 
 @code {
-    private IReadOnlyCollection<ProductDto>? products;
+    private const string AllSection = "All";
+    private const string BeansSection = "Beans";
+    private const string EquipmentSection = "Equipment";
+    private const string CeramicsSection = "Ceramics";
 
-    protected override async Task OnInitializedAsync()
+    private static readonly IReadOnlyList<ProductSection> Sections =
+    [
+        new(AllSection, "All Items"),
+        new(BeansSection, "Single Origin Beans"),
+        new(EquipmentSection, "Brewing Equipment"),
+        new(CeramicsSection, "Ceramics & Goods")
+    ];
+
+    private static readonly IReadOnlyList<MarketplaceProduct> Catalog =
+    [
+        new("Ethiopia Yirgacheffe", BeansSection, "image-frame--espresso"),
+        new("Colombia Huila", BeansSection, "image-frame--latte"),
+        new("Guatemala Antigua", BeansSection, "image-frame--coldbrew"),
+        new("Kenya Nyeri AA", BeansSection, "image-frame--espresso"),
+        new("Costa Rica Tarrazu", BeansSection, "image-frame--latte"),
+        new("Brazil Cerrado", BeansSection, "image-frame--coldbrew"),
+        new("Rwanda Huye Mountain", BeansSection, "image-frame--espresso"),
+        new("Peru Cajamarca", BeansSection, "image-frame--latte"),
+        new("Mexico Chiapas", BeansSection, "image-frame--coldbrew"),
+        new("Panama Boquete", BeansSection, "image-frame--espresso"),
+        new("Ceramic Pour-Over Dripper", EquipmentSection, "image-frame--equipment"),
+        new("Gooseneck Kettle", EquipmentSection, "image-frame--equipment-alt"),
+        new("Burr Hand Grinder", EquipmentSection, "image-frame--equipment"),
+        new("Digital Coffee Scale", EquipmentSection, "image-frame--equipment-alt"),
+        new("Cold Brew Tower", EquipmentSection, "image-frame--coldbrew"),
+        new("French Press", EquipmentSection, "image-frame--equipment"),
+        new("AeroPress Kit", EquipmentSection, "image-frame--equipment-alt"),
+        new("Reusable Metal Filter", EquipmentSection, "image-frame--equipment"),
+        new("Espresso Tamper", EquipmentSection, "image-frame--equipment-alt"),
+        new("Milk Frothing Pitcher", EquipmentSection, "image-frame--latte"),
+        new("Stoneware Latte Cup", CeramicsSection, "image-frame--ceramics"),
+        new("Handmade Espresso Cup", CeramicsSection, "image-frame--ceramics-alt"),
+        new("Stacking Mug Set", CeramicsSection, "image-frame--ceramics"),
+        new("Minimal Travel Tumbler", CeramicsSection, "image-frame--ceramics-alt"),
+        new("Linen Cafe Tote", CeramicsSection, "image-frame--ceramics"),
+        new("Walnut Serving Tray", CeramicsSection, "image-frame--ceramics-alt"),
+        new("Porcelain Cupping Bowl", CeramicsSection, "image-frame--ceramics"),
+        new("Speckled Sugar Jar", CeramicsSection, "image-frame--ceramics-alt"),
+        new("Cotton Barista Apron", CeramicsSection, "image-frame--ceramics"),
+        new("Brass Coffee Scoop", CeramicsSection, "image-frame--ceramics-alt")
+    ];
+
+    private string activeSection = AllSection;
+    private bool shouldRefreshAnimations = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        products = await ProductService.GetProductsAsync();
+        if (firstRender || shouldRefreshAnimations)
+        {
+            shouldRefreshAnimations = false;
+            await JS.InvokeVoidAsync("queueAnimations");
+        }
     }
+
+    private void SetSection(string section)
+    {
+        activeSection = section;
+        shouldRefreshAnimations = true;
+    }
+
+    private static string SectionLabel(string section) =>
+        Sections.First(item => item.Key == section).Label;
+
+    private sealed record ProductSection(string Key, string Label);
+
+    private sealed record MarketplaceProduct(string Name, string Section, string ImageClass);
 }

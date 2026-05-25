@@ -8,6 +8,7 @@ namespace ThisCafeteria.Application.Services;
 
 public sealed class OrderService(
     IOrderRepository orderRepository,
+    ITransparencyService transparencyService,
     IValidator<CreateOrderRequest> validator) : IOrderService
 {
     private const decimal TaxRate = 0.16m;
@@ -38,6 +39,7 @@ public sealed class OrderService(
         };
 
         await orderRepository.AddAsync(order, cancellationToken);
+        await transparencyService.CreatePendingRecordsForOrderAsync(order, cancellationToken);
         return Map(order);
     }
 
@@ -60,5 +62,21 @@ public sealed class OrderService(
             item.ProductId,
             item.ProductName,
             item.Quantity,
-            item.UnitPrice)).ToArray());
+            item.UnitPrice)).ToArray(),
+        order.TransparencyRecords.Select(record => new TransparencyRecordDto(
+            record.Id,
+            record.OrderId,
+            record.OrderNumber,
+            record.ProductName,
+            record.Quantity,
+            record.Total,
+            record.OrderHash,
+            record.ChainId,
+            record.NetworkName,
+            record.ContractAddress,
+            record.TransactionHash,
+            record.ExplorerUrl,
+            record.Status,
+            record.CreatedAt,
+            record.RecordedOnChainAt)).ToArray());
 }

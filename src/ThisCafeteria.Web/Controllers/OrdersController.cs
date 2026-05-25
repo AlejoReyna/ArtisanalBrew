@@ -1,15 +1,18 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Services;
-using ThisCafeteria.Infrastructure.Persistence;
+using ThisCafeteria.Infrastructure.Identity;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [ApiController]
 [Route("api/orders")]
-public sealed class OrdersController(IOrderService orderService, AppDbContext dbContext) : ControllerBase
+public sealed class OrdersController(
+    IOrderService orderService,
+    IProfileService profileService,
+    UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [Authorize]
     [HttpPost]
@@ -23,22 +26,13 @@ public sealed class OrdersController(IOrderService orderService, AppDbContext db
     [HttpGet("me")]
     public async Task<ActionResult<IReadOnlyCollection<OrderDto>>> GetMyOrders(CancellationToken cancellationToken)
     {
-        var email = User.Identity?.Name;
-        if (string.IsNullOrWhiteSpace(email))
+        var applicationUserId = userManager.GetUserId(User);
+        if (string.IsNullOrWhiteSpace(applicationUserId))
         {
             return Unauthorized();
         }
 
-        var userProfileId = await dbContext.UserProfiles
-            .Where(profile => profile.Email == email)
-            .Select(profile => profile.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (userProfileId == Guid.Empty)
-        {
-            return Ok(Array.Empty<OrderDto>());
-        }
-
+        var userProfileId = await profileService.EnsureProfileLinkedAsync(applicationUserId, cancellationToken);
         var orders = await orderService.GetOrdersForUserAsync(userProfileId, cancellationToken);
         return Ok(orders);
     }

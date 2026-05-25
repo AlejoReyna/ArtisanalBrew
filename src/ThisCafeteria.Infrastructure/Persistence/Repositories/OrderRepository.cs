@@ -17,6 +17,7 @@ public sealed class OrderRepository(AppDbContext dbContext) : IOrderRepository
         return await dbContext.Orders
             .AsNoTracking()
             .Include(order => order.Items)
+            .Include(order => order.TransparencyRecords)
             .Where(order => order.UserProfileId == userProfileId)
             .OrderByDescending(order => order.CreatedAt)
             .ToArrayAsync(cancellationToken);

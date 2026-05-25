@@ -132,9 +132,18 @@ public sealed class WalletAuthController(
             return user;
         }
 
+        var syntheticEmail = CreateSyntheticWalletEmail(checksumAddress);
+        user = await userManager.FindByEmailAsync(syntheticEmail);
+        if (user is not null)
+        {
+            return user;
+        }
+
         user = new ApplicationUser
         {
             UserName = checksumAddress,
+            Email = syntheticEmail,
+            EmailConfirmed = true,
             WalletAddress = checksumAddress,
             WalletChainId = _chain.ChainId,
             WalletVerifiedAt = DateTimeOffset.UtcNow
@@ -143,11 +152,14 @@ public sealed class WalletAuthController(
         var createResult = await userManager.CreateAsync(user);
         if (!createResult.Succeeded)
         {
-            throw new InvalidOperationException("Could not create a wallet user.");
+            throw new InvalidOperationException(string.Join("; ", createResult.Errors.Select(error => error.Description)));
         }
 
         return user;
     }
+
+    private static string CreateSyntheticWalletEmail(string address) =>
+        $"{address.ToLowerInvariant()}@wallet.thiscafeteria.local";
 
     private static bool TryNormalizeAddress(string? address, out string normalizedAddress)
     {
