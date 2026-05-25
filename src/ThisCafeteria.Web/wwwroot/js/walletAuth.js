@@ -6,7 +6,7 @@ const bnbTestnet = {
         symbol: "tBNB",
         decimals: 18
     },
-    rpcUrls: ["https://rpc.ankr.com/bsc_testnet_chapel"],
+    rpcUrls: ["https://rpc.ankr.com/bsc_testnet_chapel/56e119a6270f4441ea452c1756c15ec402eb41bcb0965b5cb4b0fec0a6b4cb51"],
     blockExplorerUrls: ["https://testnet.bscscan.com/"]
 };
 

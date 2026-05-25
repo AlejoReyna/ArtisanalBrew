@@ -7,7 +7,7 @@
 @implements IDisposable
 
 <nav class="site-nav" aria-label="Primary navigation">
-    <a class="navbar-brand" href="">Artisanal Brew</a>
+    <a class="navbar-brand" href="">Alexis Reyna</a>
 
     <button class="navbar-toggler"
             type="button"
@@ -28,10 +28,6 @@
             Journal
         </NavLink>
 
-        <NavLink class="nav-link" href="transparency" @onclick="CloseNav">
-            Transparency
-        </NavLink>
-
         <NavLink class="nav-link" href="staking" @onclick="CloseNav">
             Yield
         </NavLink>
@@ -40,16 +36,17 @@
             About
         </NavLink>
 
-        <div style="display: flex; gap: 1.5rem; align-items: center; margin-left: auto;">
+        <div class="nav-utilities">
             <AuthorizeView>
                 <Authorized>
-                    <NavLink href="profile" class="nav-wallet profile-link" ActiveClass="active" @onclick="CloseNav">
-                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"></path></svg>
-                        <span class="visually-hidden">My Profile</span>
-                    </NavLink>
-                    <form method="post" action="/api/wallet-auth/logout" class="nav-logout">
-                        <button type="submit" class="nav-link nav-link--button" style="font-size: 0.65rem;">Log out</button>
-                    </form>
+                    <button class="@UserToggleCssClass"
+                            type="button"
+                            aria-haspopup="dialog"
+                            aria-expanded="@_isUserMenuOpen"
+                            aria-label="Open account menu"
+                            @onclick="ToggleUserMenu">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"></path></svg>
+                    </button>
                 </Authorized>
                 <NotAuthorized>
                     <button class="nav-login"
@@ -75,6 +72,34 @@
         </div>
     </div>
 </nav>
+
+<AuthorizeView>
+    <Authorized>
+        @if (_isUserMenuOpen)
+        {
+            <div class="user-menu-backdrop" role="presentation" @onclick="CloseUserMenu"></div>
+            <aside class="user-menu" role="dialog" aria-modal="true" aria-labelledby="user-menu-title">
+                <div class="user-menu__header">
+                    <h2 id="user-menu-title">Account</h2>
+                    <button type="button" aria-label="Close account menu" @onclick="CloseUserMenu">x</button>
+                </div>
+
+                <nav class="user-menu__links" aria-label="Account links">
+                    <NavLink href="profile" class="user-menu__item" ActiveClass="active" @onclick="CloseUserMenu">
+                        My Profile
+                    </NavLink>
+                    <NavLink href="orders" class="user-menu__item" ActiveClass="active" @onclick="CloseUserMenu">
+                        Orders
+                    </NavLink>
+                </nav>
+
+                <form method="post" action="/api/wallet-auth/logout" class="user-menu__logout">
+                    <button type="submit">Log out</button>
+                </form>
+            </aside>
+        }
+    </Authorized>
+</AuthorizeView>
 
 @if (_isWalletModalOpen)
 {
@@ -150,11 +175,14 @@
     private int _cartItemCount;
     private IJSObjectReference? _walletModule;
     private bool _isWalletModalOpen;
+    private bool _isUserMenuOpen;
     private bool _isConnecting;
     private string? _statusMessage;
     private string? _errorMessage;
 
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
+
+    private string UserToggleCssClass => _isUserMenuOpen ? "nav-wallet nav-user-toggle active" : "nav-wallet nav-user-toggle";
 
     private string CartAriaLabel =>
         _cartItemCount > 0 ? $"Cart, {_cartItemCount} items" : "Cart";
@@ -178,9 +206,18 @@
 
     private void CloseNav() => _isNavOpen = false;
 
+    private void ToggleUserMenu()
+    {
+        _isNavOpen = false;
+        _isUserMenuOpen = !_isUserMenuOpen;
+    }
+
+    private void CloseUserMenu() => _isUserMenuOpen = false;
+
     private void OpenWalletModal()
     {
         _isNavOpen = false;
+        _isUserMenuOpen = false;
         _isWalletModalOpen = true;
         _statusMessage = null;
         _errorMessage = null;

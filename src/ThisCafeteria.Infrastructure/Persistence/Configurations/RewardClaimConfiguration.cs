@@ -17,6 +17,8 @@ public sealed class RewardClaimConfiguration : IEntityTypeConfiguration<RewardCl
 
         builder.HasIndex(claim => new { claim.WalletAddress, claim.ClaimedAtUtc });
         builder.HasIndex(claim => claim.TransactionHash);
-        builder.HasIndex(claim => claim.PaymentTransactionHash);
+        builder.HasIndex(claim => claim.PaymentTransactionHash)
+            .IsUnique()
+            .HasFilter("\"PaymentTransactionHash\" IS NOT NULL");
     }
 }

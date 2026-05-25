@@ -4,8 +4,7 @@
 
 .profile-stat-card,
 .profile-card,
-.order-row,
-.receipt-row {
+.order-row {
     background: rgba(255, 253, 249, 0.72);
     border: 1px solid var(--line);
 }
@@ -18,8 +17,7 @@
 
 .profile-stat-card span,
 .profile-facts dt,
-.order-number,
-.receipt-row span {
+.order-number {
     color: var(--accent);
     font-size: 0.75rem;
     font-weight: 700;
@@ -109,14 +107,12 @@
     margin-bottom: clamp(4rem, 8vw, 8rem);
 }
 
-.orders-list,
-.receipt-list {
+.orders-list {
     display: grid;
     gap: 0.8rem;
 }
 
-.order-row,
-.receipt-row {
+.order-row {
     align-items: center;
     display: grid;
     gap: 1rem;
@@ -124,8 +120,7 @@
     padding: 1rem clamp(1rem, 2vw, 1.5rem);
 }
 
-.order-row p,
-.receipt-row p {
+.order-row p {
     margin: 0.25rem 0 0;
 }
 
@@ -140,18 +135,9 @@
     text-transform: uppercase;
 }
 
-.receipt-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.receipt-row code {
-    color: var(--ink);
-}
-
 @media (max-width: 760px) {
     .profile-grid,
-    .order-row,
-    .receipt-row {
+    .order-row {
         grid-template-columns: 1fr;
     }
 }

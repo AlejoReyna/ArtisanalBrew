@@ -17,21 +17,7 @@
 
 <PageTitle>Liquid Staking &amp; CoffeeCoin | Artisanal Brew</PageTitle>
 
-<section class="page-intro page-intro--split stagger-container" data-animate="fade-up">
-    <div>
-        <p class="eyebrow">Liquid Staking</p>
-        <h1>Earn with ankrBNB. Spend yields. Collect COFFEE.</h1>
-    </div>
-    <p class="lede">
-        Balances and APR are read on the server (no private keys). Staking payments and ERC-20 transfers are signed in MetaMask on your device.
-    </p>
-</section>
-
-@if (_isLoading)
-{
-    <p class="muted">Loading on-chain dashboard...</p>
-}
-else if (!_isConnected)
+@if (!_isConnected)
 {
     <section class="staking-connect" data-animate="fade-up">
         <p class="eyebrow">Wallet required</p>
@@ -48,87 +34,193 @@ else if (!_isConnected)
 }
 else
 {
-    <section class="staking-rewards-banner" data-animate="fade-up">
-        <div>
-            <h2>House Rewards Program</h2>
-            <p class="lede" style="margin:0;">Every coffee paid with staking yield earns loyalty tokens.</p>
-        </div>
-        <div style="text-align:right;">
-            <span class="eyebrow">Your balance</span>
-            <p class="coffee-balance">@FormatAmount(_dashboard.CoffeeCoinBalance) COFFEE</p>
-        </div>
-    </section>
+    <div class="yield-dashboard" data-animate="fade-up">
+        <aside class="yield-sidebar" aria-label="Yield account overview">
+            <section class="yield-account-card">
+                <p class="yield-kicker">Account Overview</p>
+                <dl class="yield-account-stats">
+                    <div>
+                        <dt>Wallet Balance</dt>
+                        <dd>@EstimatedWalletUsd()</dd>
+                    </div>
+                    <div>
+                        <dt>Pool Allocation</dt>
+                        <dd>@FormatDashboardAmount(_dashboard.AnkrBnbBalance, " ETH")</dd>
+                    </div>
+                    <div>
+                        <dt>COFFEE Balance</dt>
+                        <dd>@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
+                    </div>
+                </dl>
+                <button type="button"
+                        class="yield-redeem-button"
+                        disabled="@(!_paymentsConfigured)">
+                    REDEEM REWARDS
+                </button>
+            </section>
 
-    <section class="staking-dashboard stagger-container" data-stagger>
-        <article class="stat-card" data-animate="fade-up">
-            <span>tBNB</span>
-            <strong>@FormatAmount(_dashboard.BnbBalance)</strong>
-        </article>
-        <article class="stat-card" data-animate="fade-up">
-            <span>ankrBNB (LST)</span>
-            <strong>@FormatAmount(_dashboard.AnkrBnbBalance)</strong>
-        </article>
-        <article class="stat-card" data-animate="fade-up">
-            <span>APR (testnet)</span>
-            <strong>@_dashboard.CurrentApr.ToString("0.##")%</strong>
-        </article>
-        <article class="stat-card" data-animate="fade-up">
-            <span>Est. daily yield</span>
-            <strong>@FormatAmount(_dashboard.EstimatedDailyReward)</strong>
-        </article>
-    </section>
+            <nav class="yield-side-nav" aria-label="Yield sections">
+                <a class="yield-side-nav__link active" href="staking" aria-current="page">
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 18.5h16M6 15l4-4 3 3 5-7M5 6h3m8 12v-4m-6 4v-7m-6 7v-3" /></svg>
+                    Yield Dashboard
+                </a>
+                <a class="yield-side-nav__link" href="profile">
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h3" /></svg>
+                    Transaction Logs
+                </a>
+                <a class="yield-side-nav__link" href="profile">
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM19 12h2M3 12h2m12.07-7.07 1.42-1.42M5.51 18.49l1.42-1.42m0-10.14L5.51 5.51m12.98 12.98-1.42-1.42" /></svg>
+                    Preferences
+                </a>
+            </nav>
 
-    <p class="muted" style="margin-bottom:1.5rem;">
-        Wallet: @ShortAddress(_dashboard.WalletAddress) · Pool: @ShortAddress(_chain.StakingPoolContract)
-    </p>
+            <form method="post" action="/staking/clear-wallet-session" class="yield-disconnect">
+                <button type="submit">Disconnect staking session</button>
+            </form>
+        </aside>
 
-    <section class="staking-panel" data-animate="fade-up">
-        <h2 class="staking-section-title">Buy coffee with staking yield</h2>
-        <div class="staking-panel-body">
+        <div class="yield-main">
+            <section class="yield-hero">
+                <div>
+                    <p class="yield-kicker">Bean Allocation Ledger</p>
+                    <h1>Yield Harvest</h1>
+                    <p>
+                        Bean allocations accrue daily appreciation from pooled harvest positions, converting yield activity into redeemable COFFEE rewards.
+                    </p>
+                </div>
+                <div class="yield-global-stat" aria-label="Current harvest">
+                    <span>Current Harvest</span>
+                    <strong>@FormatApr()</strong>
+                </div>
+            </section>
+
+            @if (_isLoading)
+            {
+                <p class="yield-sync-note">Syncing wallet balances, pool allocation, and COFFEE reward data from the chain.</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(_dashboardError))
+            {
+                <div class="yield-error-note">
+                    <p>@_dashboardError</p>
+                    <button type="button" @onclick="LoadDashboardAsync">Retry</button>
+                </div>
+            }
+
             @if (!_paymentsConfigured)
             {
-                <p class="text-warning">
-                    Set <code>Blockchain:BNBTestnet:MarketplaceWallet</code> and <code>Blockchain:BNBTestnet:CoffeeCoinContract</code> in configuration before enabling on-chain checkout.
+                <p class="yield-config-note">
+                    Configure the marketplace wallet and COFFEE contract before enabling on-chain reward redemption.
                 </p>
             }
-            <div class="staking-product-grid">
-                <article class="staking-product-card">
-                    <h3>Espresso Italiano</h3>
-                    <p class="muted" style="font-size:0.85rem;">Pay with ankrBNB earned from liquid staking.</p>
-                    <p><strong class="text-success">0.01 ankrBNB</strong></p>
-                    <span class="badge bg-info text-dark">+5 COFFEE</span>
-                    <button type="button"
-                            class="button button--dark btn-buy-ankr"
-                            style="margin-top:auto;"
-                            data-price="0.01"
-                            data-reward="5"
-                            disabled="@(!_paymentsConfigured)">
-                        Buy with yield
-                    </button>
-                </article>
-                <article class="staking-product-card">
-                    <h3>Cortado Reserve</h3>
-                    <p class="muted" style="font-size:0.85rem;">Richer roast, same LST checkout rail.</p>
-                    <p><strong class="text-success">0.02 ankrBNB</strong></p>
-                    <span class="badge bg-info text-dark">+12 COFFEE</span>
-                    <button type="button"
-                            class="button button--dark btn-buy-ankr"
-                            style="margin-top:auto;"
-                            data-price="0.02"
-                            data-reward="12"
-                            disabled="@(!_paymentsConfigured)">
-                        Buy with yield
-                    </button>
-                </article>
-            </div>
-        </div>
-    </section>
 
-    <form method="post" action="/staking/clear-wallet-session" style="margin-bottom:2rem;">
-        <button type="submit" class="button" style="background:transparent;border:1px solid rgba(45,36,33,.2);">
-            Disconnect staking session
-        </button>
-    </form>
+            <section class="yield-allocation-grid" aria-label="Asset allocations">
+                <article class="yield-asset-card">
+                    <div class="yield-asset-image yield-asset-image--espresso">
+                        <span>+5 COFFEE</span>
+                    </div>
+                    <div class="yield-asset-body">
+                        <p>Washed Colombia / Citrus, panela</p>
+                        <h2>Espresso Italiano</h2>
+                        <div>
+                            <strong>0.024 ETH</strong>
+                            <button type="button"
+                                    class="yield-allocate-link btn-buy-ankr"
+                                    data-price="0.01"
+                                    data-reward="5"
+                                    disabled="@(!_paymentsConfigured)">
+                                ALLOCATE
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="yield-asset-card">
+                    <div class="yield-asset-image yield-asset-image--reserve">
+                        <span>+12 COFFEE</span>
+                    </div>
+                    <div class="yield-asset-body">
+                        <p>Natural Ethiopia / Berry, cacao</p>
+                        <h2>Cortado Reserve</h2>
+                        <div>
+                            <strong>0.038 ETH</strong>
+                            <button type="button"
+                                    class="yield-allocate-link btn-buy-ankr"
+                                    data-price="0.02"
+                                    data-reward="12"
+                                    disabled="@(!_paymentsConfigured)">
+                                ALLOCATE
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="yield-asset-card">
+                    <div class="yield-asset-image yield-asset-image--seasonal">
+                        <span>+8 COFFEE</span>
+                    </div>
+                    <div class="yield-asset-body">
+                        <p>Honey Guatemala / Almond, fig</p>
+                        <h2>Seasonal Micro-Lot</h2>
+                        <div>
+                            <strong>0.031 ETH</strong>
+                            <button type="button"
+                                    class="yield-allocate-link btn-buy-ankr"
+                                    data-price="0.015"
+                                    data-reward="8"
+                                    disabled="@(!_paymentsConfigured)">
+                                ALLOCATE
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="yield-ledger" aria-labelledby="yield-ledger-title">
+                <h2 id="yield-ledger-title">YIELD PERFORMANCE LEDGER</h2>
+                <div class="yield-ledger-list">
+                    <div class="yield-ledger-row">
+                        <time datetime="2026-05-25">May 25, 2026</time>
+                        <span class="yield-ledger-line"></span>
+                        <strong>+1.24 COFFEE</strong>
+                        <span class="yield-status">SETTLED</span>
+                    </div>
+                    <div class="yield-ledger-row">
+                        <time datetime="2026-05-24">May 24, 2026</time>
+                        <span class="yield-ledger-line"></span>
+                        <strong>+1.18 COFFEE</strong>
+                        <span class="yield-status">SETTLED</span>
+                    </div>
+                    <div class="yield-ledger-row">
+                        <time datetime="2026-05-23">May 23, 2026</time>
+                        <span class="yield-ledger-line"></span>
+                        <strong>+0.96 COFFEE</strong>
+                        <span class="yield-status">SETTLED</span>
+                    </div>
+                    <div class="yield-ledger-row">
+                        <time datetime="2026-05-22">May 22, 2026</time>
+                        <span class="yield-ledger-line"></span>
+                        <strong>+1.07 COFFEE</strong>
+                        <span class="yield-status">SETTLED</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="yield-manifesto">
+                <div>
+                    <p class="yield-kicker">The Roasting Standard</p>
+                    <h2>The Roasting Standard.</h2>
+                    <p>
+                        Seasonal harvest cycles shape the way each allocation appreciates: slower maturation, careful roasting, and daily settlement convert patient custody into measured COFFEE yield.
+                    </p>
+                </div>
+                <a href="story" class="yield-manifesto-link">
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20c8 0 14-6 14-14V4h-2C9 4 4 9 4 17v3h1Zm0 0 8-8" /></svg>
+                    READ THE MANIFESTO
+                    <span aria-hidden="true">-&gt;</span>
+                </a>
+            </section>
+        </div>
+    </div>
 }
 
 @code {
@@ -139,6 +231,8 @@ else
     private bool _isConnecting;
     private bool _paymentsConfigured;
     private string? _connectError;
+    private string? _dashboardError;
+    private bool _dashboardLoadStarted;
     private bool _jsInitialized;
     private IJSObjectReference? _stakingModule;
 
@@ -150,17 +244,18 @@ else
 
         var wallet = await ResolveWalletAddressAsync();
         _isConnected = !string.IsNullOrWhiteSpace(wallet);
-
-        if (_isConnected)
-        {
-            _dashboard = await Web3Service.GetDashboardDataAsync(wallet!);
-        }
-
-        _isLoading = false;
+        _dashboard = new CoffeeDashboardModel { WalletAddress = wallet ?? string.Empty };
+        _isLoading = _isConnected;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_isConnected && _isLoading && !_dashboardLoadStarted)
+        {
+            await LoadDashboardAsync();
+            return;
+        }
+
         if (!_isConnected || !_paymentsConfigured || _jsInitialized)
         {
             return;
@@ -182,6 +277,44 @@ else
             });
 
         _jsInitialized = true;
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        {
+            _isLoading = false;
+            _dashboardError = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _dashboardLoadStarted = true;
+        _isLoading = true;
+        _dashboardError = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            _dashboard = await Web3Service
+                .GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token)
+                .WaitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _dashboardError = "The Ankr RPC request timed out. Check the configured RPC URL and try again.";
+        }
+        catch (Exception ex)
+        {
+            _dashboardError = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+            _dashboardLoadStarted = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task<string?> ResolveWalletAddressAsync()
@@ -214,8 +347,9 @@ else
             _isConnected = !string.IsNullOrWhiteSpace(wallet);
             if (_isConnected)
             {
-                _dashboard = await Web3Service.GetDashboardDataAsync(wallet);
+                _dashboard = new CoffeeDashboardModel { WalletAddress = wallet };
                 _jsInitialized = false;
+                await LoadDashboardAsync();
             }
         }
         catch (Exception ex)
@@ -241,6 +375,22 @@ else
             : $"{address[..6]}...{address[^4..]}";
 
     private static string FormatAmount(decimal value) => value.ToString("0.####");
+
+    private string FormatDashboardAmount(decimal value, string suffix = "") =>
+        _isLoading ? "Syncing..." : $"{FormatAmount(value)}{suffix}";
+
+    private string FormatApr() => _isLoading ? "..." : $"+{_dashboard.CurrentApr:0.0}%";
+
+    private string EstimatedWalletUsd()
+    {
+        if (_isLoading)
+        {
+            return "Syncing...";
+        }
+
+        var estimatedUsd = (_dashboard.BnbBalance + _dashboard.AnkrBnbBalance) * 612.45m;
+        return estimatedUsd.ToString("$#,##0.00");
+    }
 
     public async ValueTask DisposeAsync()
     {

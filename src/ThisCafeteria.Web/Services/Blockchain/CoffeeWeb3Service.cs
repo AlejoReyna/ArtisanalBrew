@@ -1,4 +1,6 @@
 using System.Numerics;
+using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Contracts;
 using Microsoft.Extensions.Options;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
@@ -156,6 +158,63 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         }
     }
 
+    public async Task<bool> VerifyPaymentTransactionAsync(
+        string txHash,
+        string expectedCustomer,
+        decimal expectedAmount,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsTransactionHash(txHash) ||
+            !IsValidAddress(expectedCustomer) ||
+            expectedAmount <= 0m ||
+            !IsValidContract(_ankrBnbContract) ||
+            !IsValidContract(_chain.MarketplaceWallet))
+        {
+            return false;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var receipt = await _readOnlyWeb3.Eth.Transactions
+            .GetTransactionReceipt
+            .SendRequestAsync(txHash)
+            .ConfigureAwait(false);
+
+        if (receipt is null ||
+            receipt.Status?.Value != BigInteger.One ||
+            !AddressMatches(receipt.To, _ankrBnbContract))
+        {
+            return false;
+        }
+
+        var transaction = await _readOnlyWeb3.Eth.Transactions
+            .GetTransactionByHash
+            .SendRequestAsync(txHash)
+            .ConfigureAwait(false);
+
+        if (transaction is null ||
+            !AddressMatches(transaction.From, expectedCustomer) ||
+            !AddressMatches(transaction.To, _ankrBnbContract))
+        {
+            return false;
+        }
+
+        var expectedAmountWei = Web3.Convert.ToWei(expectedAmount);
+        if (!TryDecodeErc20Transfer(transaction.Input, out var recipient, out var transferredAmountWei) ||
+            !AddressMatches(recipient, _chain.MarketplaceWallet) ||
+            transferredAmountWei != expectedAmountWei)
+        {
+            return false;
+        }
+
+        var transferEvents = receipt.DecodeAllEvents<TransferEventDTO>();
+        return transferEvents.Any(transfer =>
+            AddressMatches(transfer.Log.Address, _ankrBnbContract) &&
+            AddressMatches(transfer.Event.From, expectedCustomer) &&
+            AddressMatches(transfer.Event.To, _chain.MarketplaceWallet) &&
+            transfer.Event.Value == expectedAmountWei);
+    }
+
     private async Task<decimal> GetErc20BalanceAsync(
         string walletAddress,
         string contractAddress,
@@ -185,6 +244,38 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         !string.IsNullOrWhiteSpace(address) &&
         AddressUtil.Current.IsValidEthereumAddressHexFormat(address);
 
+    private static bool IsTransactionHash(string? value) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        value.Length == 66 &&
+        value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
+        value[2..].All(Uri.IsHexDigit);
+
+    private static bool AddressMatches(string? actual, string expected) =>
+        !string.IsNullOrWhiteSpace(actual) &&
+        actual.Equals(expected, StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryDecodeErc20Transfer(
+        string? input,
+        out string recipient,
+        out BigInteger amount)
+    {
+        const string transferSelector = "0xa9059cbb";
+
+        recipient = string.Empty;
+        amount = BigInteger.Zero;
+
+        if (string.IsNullOrWhiteSpace(input) ||
+            !input.StartsWith(transferSelector, StringComparison.OrdinalIgnoreCase) ||
+            input.Length < 138)
+        {
+            return false;
+        }
+
+        recipient = $"0x{input.Substring(10 + 24, 40)}";
+        amount = BigInteger.Parse($"0{input.Substring(10 + 64, 64)}", System.Globalization.NumberStyles.HexNumber);
+        return IsValidAddress(recipient);
+    }
+
     private static bool IsGasFundingFailure(Exception exception)
     {
         var message = exception.Message;
@@ -199,5 +290,18 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         return trimmed.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
             ? trimmed[2..]
             : trimmed;
+    }
+
+    [Event("Transfer")]
+    private sealed class TransferEventDTO : IEventDTO
+    {
+        [Parameter("address", "from", 1, true)]
+        public string From { get; set; } = string.Empty;
+
+        [Parameter("address", "to", 2, true)]
+        public string To { get; set; } = string.Empty;
+
+        [Parameter("uint256", "value", 3, false)]
+        public BigInteger Value { get; set; }
     }
 }

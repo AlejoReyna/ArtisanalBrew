@@ -2,37 +2,76 @@
 
 <PageTitle>Our Story</PageTitle>
 
-<section class="page-intro story-intro">
-    <p class="eyebrow">Our Story</p>
-    <h1>Built for the quiet exchange between craft and care.</h1>
-    <p class="lede">
-        Artisanal Brew began as a shared table: one founder pulling espresso, another baking before sunrise, both interested in
-        the kind of hospitality that makes time feel wider.
-    </p>
+<style>
+    /* Comfy Viewport Animation Styles */
+    .comfy-animate {
+        opacity: 1;
+        transform: translateY(0);
+        /* Soft, easing curve for a relaxing, unhurried feel */
+        transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), 
+                    transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .comfy-animate.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Slightly different animation for images to give a "breathing" effect */
+    .comfy-animate-image {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1), 
+                    transform 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .comfy-animate-image.is-visible {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* Stagger delays for grouped elements */
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.3s; }
+    .delay-3 { transition-delay: 0.5s; }
+</style>
+
+<section class="hero editorial-hero editorial-hero--about story-intro">
+    <div class="hero__content">
+        <p class="eyebrow comfy-animate">Our Story</p>
+        <h1 class="comfy-animate delay-1">Built for the quiet exchange between craft and care.</h1>
+        <p class="lede comfy-animate delay-2">
+            Artisanal Brew didn’t begin with a grand business plan. It began during a sudden Tuesday downpour, 
+            a spilled bag of rye flour, and an extraordinarily opinionated stray orange tabby named Barnaby.
+        </p>
+    </div>
 </section>
 
-<section class="story-image story-image--wide"></section>
+<section class="story-image story-image--wide comfy-animate-image delay-1"></section>
 
 <section class="story-block story-block--asymmetric">
-    <div>
+    <div class="comfy-animate">
         <p class="eyebrow">Founders</p>
         <h2>A room shaped by ritual.</h2>
     </div>
-    <p>
-        Every detail is tuned for slower attention: marble counters that hold morning light, ceramics with weight, and a menu
-        that changes only when the ingredients ask it to.
+    <p class="comfy-animate delay-1">
+        Julian was roasting beans next door when Elena, baking her grandmother’s sourdough before sunrise, accidentally dropped a 50lb bag of flour. 
+        Julian brought over a freshly pulled espresso to help with the cleanup. Barnaby the cat immediately claimed the warm top of the 
+        espresso machine as his bed. Sitting around the flour-dusted table, watching the storm pass, they realized coffee and bread—and the 
+        time spent enjoying them—were simply better shared. 
     </p>
 </section>
 
 <section class="story-split">
-    <div class="story-image story-image--portrait"></div>
+    <div class="story-image story-image--portrait comfy-animate-image"></div>
     <div class="story-panel">
-        <p class="eyebrow">Philosophy</p>
-        <h2>Nothing rushed, nothing crowded.</h2>
-        <p>
-            We source coffee for clarity and sweetness, bake in small batches, and leave room between tables so conversation can
-            settle naturally.
+        <p class="eyebrow comfy-animate">Philosophy</p>
+        <h2 class="comfy-animate delay-1">Nothing rushed, nothing crowded.</h2>
+        <p class="comfy-animate delay-2">
+            Every detail today honors that rainy morning. We source coffee for clarity and sweetness, bake in small batches, 
+            and leave room between tables so conversation can settle naturally. The marble counters hold the morning light, 
+            the ceramics have a comforting weight, and the menu only changes when the ingredients ask it to.
         </p>
-        <a class="button button--ghost" href="visit">Plan a visit</a>
+        <a class="button button--ghost comfy-animate delay-3" href="visit">Plan a visit</a>
     </div>
 </section>

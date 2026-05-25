@@ -64,9 +64,11 @@
 
 .nav-wallet {
     align-items: center;
+    background: transparent;
     border: 1px solid #d8d0c4;
     border-radius: 999px;
     color: #2d2421;
+    cursor: pointer;
     display: inline-flex;
     font-size: 0.78rem;
     font-weight: 600;
@@ -74,6 +76,7 @@
     text-decoration: none;
 }
 
+.nav-wallet.active,
 ::deep .nav-wallet.active {
     background: #2d2421;
     color: #fbf9f4;
@@ -81,6 +84,13 @@
 
 .nav-logout {
     margin: 0;
+}
+
+.nav-utilities {
+    align-items: center;
+    display: flex;
+    gap: 1.5rem;
+    margin-left: auto;
 }
 
 .nav-login {
@@ -143,6 +153,7 @@
     background: transparent;
     border: 0;
     cursor: pointer;
+    font-size: 0.65rem;
     padding: 0;
 }
 
@@ -338,5 +349,12 @@
     .nav-login {
         align-self: flex-start;
         margin-top: 1rem;
+    }
+
+    .nav-utilities {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.9rem;
+        margin-left: 0;
     }
 }

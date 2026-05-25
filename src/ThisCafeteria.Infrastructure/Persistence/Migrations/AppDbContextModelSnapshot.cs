@@ -452,7 +452,9 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TransactionHash");
 
-                    b.HasIndex("PaymentTransactionHash");
+                    b.HasIndex("PaymentTransactionHash")
+                        .IsUnique()
+                        .HasFilter("\"PaymentTransactionHash\" IS NOT NULL");
 
                     b.HasIndex("WalletAddress", "ClaimedAtUtc");
 

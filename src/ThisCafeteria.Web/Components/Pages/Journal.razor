@@ -1,0 +1,97 @@
+@page "/journal"
+
+<PageTitle>The Journal | Artisanal Brew</PageTitle>
+
+<div class="journal-page">
+    <section class="journal-hero" aria-labelledby="journal-title">
+        <div class="journal-hero__copy" data-animate="fade-up">
+            <p class="journal-kicker">Volume IV &bull; Issue II</p>
+            <h1 id="journal-title">The Bloom: A Ritual of Patience</h1>
+            <p class="journal-hero__lede">
+                Exploring the scientific beauty and meditative pause that unfold when water first meets the grounds.
+            </p>
+        </div>
+        <div class="journal-hero__image"
+             role="img"
+             aria-label="A careful V60 pour-over coffee ritual in warm morning light"></div>
+    </section>
+
+    <section class="journal-section journal-stories" aria-labelledby="short-stories-title">
+        <div class="journal-section__header">
+            <div>
+                <h2 id="short-stories-title">Short Stories</h2>
+                <p>Brief field notes on beans, tools, and the rituals that make a quiet cup feel complete.</p>
+            </div>
+            <a class="journal-archive-link" href="journal">View Archive</a>
+        </div>
+
+        <div class="journal-story-grid stagger-container" data-stagger>
+            <article class="journal-story-card" data-animate="fade-up">
+                <div class="journal-story-card__image journal-story-card__image--origin"
+                     role="img"
+                     aria-label="Raw coffee beans gathered on a linen surface"></div>
+                <span class="journal-badge">Origin Focus</span>
+                <h3>Shade-Grown Lots from the Western Ridge</h3>
+                <p>What canopy, altitude, and hand sorting bring to a cup with soft citrus and toasted almond.</p>
+                <a href="journal" aria-label="Read more about shade-grown lots">Read More <span aria-hidden="true">&rarr;</span></a>
+            </article>
+
+            <article class="journal-story-card" data-animate="fade-up">
+                <div class="journal-story-card__image journal-story-card__image--tools"
+                     role="img"
+                     aria-label="Pour-over brewing tools arranged beside a ceramic cup"></div>
+                <span class="journal-badge">Brewing Tips</span>
+                <h3>The Quiet Geometry of the V60</h3>
+                <p>A practical note on spiral pours, drawdown rhythm, and the small corrections worth noticing.</p>
+                <a href="journal" aria-label="Read more about V60 brewing">Read More <span aria-hidden="true">&rarr;</span></a>
+            </article>
+
+            <article class="journal-story-card" data-animate="fade-up">
+                <div class="journal-story-card__image journal-story-card__image--reading"
+                     role="img"
+                     aria-label="A calm table with coffee, a book, and afternoon light"></div>
+                <span class="journal-badge">Slow Living</span>
+                <h3>Reading While the Kettle Cools</h3>
+                <p>On building a morning pause around the minutes that usually vanish before the first sip.</p>
+                <a href="journal" aria-label="Read more about reading while the kettle cools">Read More <span aria-hidden="true">&rarr;</span></a>
+            </article>
+        </div>
+    </section>
+
+    <section class="journal-subscribe" aria-labelledby="join-journal-title">
+        <h2 id="join-journal-title">Join the Journal</h2>
+        <p>Seasonal recipes, early releases, and thoughtful notes from the brew bar, sent with restraint.</p>
+        <form class="journal-subscribe__form">
+            <label class="visually-hidden" for="journal-email">Email address</label>
+            <input id="journal-email" name="email" type="email" placeholder="EMAIL ADDRESS" autocomplete="email" />
+            <button type="submit">Subscribe</button>
+        </form>
+        <p class="journal-subscribe__note">We write a few times each season and treat your inbox with the same care as our coffee.</p>
+    </section>
+
+    <footer class="journal-footer" aria-label="Journal footer">
+        <div class="journal-footer__brand">
+            <a class="journal-footer__logo" href="">Alexis Reyna</a>
+            <p>This is a fake website created for portfolio purposes to display my Web3, DevOps, and full-stack development skills.</p>
+            <small>&copy; 2026 Alexis Reyna. All rights reserved.</small>
+            <div class="journal-footer__icons" aria-label="Social and utility links">
+                <a href="visit" aria-label="Website">Globe</a>
+                <a href="visit" aria-label="Email">At</a>
+            </div>
+        </div>
+
+        <nav class="journal-footer__links" aria-label="Practice links">
+            <h2>Practice</h2>
+            <a href="story">Sustainability</a>
+            <a href="products">Wholesale</a>
+            <a href="story">Careers</a>
+        </nav>
+
+        <nav class="journal-footer__links" aria-label="Support links">
+            <h2>Support</h2>
+            <a href="cart">Shipping</a>
+            <a href="story">Privacy</a>
+            <a href="story">Terms</a>
+        </nav>
+    </footer>
+</div>

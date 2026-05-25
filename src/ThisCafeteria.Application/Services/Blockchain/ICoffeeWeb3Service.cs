@@ -11,5 +11,11 @@ public interface ICoffeeWeb3Service
     /// <summary>Mints COFFEE to <paramref name="toAddress"/> using the configured owner account. Returns the transaction hash.</summary>
     Task<string> MintCoffeeCoinAsync(string toAddress, decimal amount, CancellationToken cancellationToken = default);
 
+    Task<bool> VerifyPaymentTransactionAsync(
+        string txHash,
+        string expectedCustomer,
+        decimal expectedAmount,
+        CancellationToken cancellationToken = default);
+
     bool IsMintingConfigured { get; }
 }

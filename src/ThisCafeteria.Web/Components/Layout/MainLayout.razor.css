@@ -56,6 +56,15 @@ main {
     color: #2d2421;
 }
 
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .navbar-toggler {
+    background: rgba(0, 0, 0, 0.28);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) ::deep .navbar-toggler span {
+    background: #fff;
+}
+
 .public-main {
     padding-top: 4.75rem;
 }
@@ -86,15 +95,45 @@ main {
     }
 
 .site-footer {
-    border-top: 1px solid #d8d0c4;
+    align-items: center;
+    background: #030303;
+    color: #f7f4ef;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 2rem;
-    justify-content: space-between;
-    margin: 0 clamp(1.25rem, 3vw, 3rem);
-    padding: 2rem 0;
+    justify-content: center;
+    min-height: 12rem;
+    padding: 2.75rem clamp(1.25rem, 4vw, 4rem);
+    text-align: center;
+}
+
+.site-footer__content {
+    max-width: 48rem;
+}
+
+.site-footer h2 {
+    font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.1;
+    margin: 0;
 }
 
 .site-footer p {
     margin: 0;
+}
+
+.site-footer__rights {
+    color: #d7d2ca;
+    font-size: 0.95rem;
+    margin-top: 0.8rem;
+}
+
+.site-footer__disclaimer {
+    color: #aaa39a;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    margin-top: 1rem;
+}
+
+.public-page:has(.journal-page) .site-footer {
+    display: none;
 }

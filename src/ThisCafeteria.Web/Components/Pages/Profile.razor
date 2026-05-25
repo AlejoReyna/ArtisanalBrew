@@ -34,7 +34,7 @@ else if (_dashboard is not null)
         <div>
             <p class="eyebrow">My Profile</p>
             <h1>@_dashboard.DisplayName</h1>
-            <p class="lede">Manage your storefront identity, review your orders, and follow the transparency trail tied to your wallet.</p>
+            <p class="lede">Manage your storefront identity, review your orders, and keep your account details close at hand.</p>
         </div>
         <div class="profile-stat-card">
             <span>Total orders</span>
@@ -127,34 +127,6 @@ else if (_dashboard is not null)
         }
     </section>
 
-    <section class="profile-section" data-animate="fade-up">
-        <div class="section-heading">
-            <p class="eyebrow">Transparency</p>
-            <h2>On-chain receipts</h2>
-        </div>
-
-        @if (TransparencyRecords.Count == 0)
-        {
-            <article class="profile-card">
-                <p>Transparency receipts will appear here after your first order is recorded.</p>
-            </article>
-        }
-        else
-        {
-            <div class="receipt-list">
-                @foreach (var record in TransparencyRecords)
-                {
-                    <article class="receipt-row">
-                        <div>
-                            <span>@record.ProductName</span>
-                            <p>@record.OrderNumber · @record.Status</p>
-                        </div>
-                        <code>@ShortHash(record.OrderHash)</code>
-                    </article>
-                }
-            </div>
-        }
-    </section>
 }
 
 @code {
@@ -167,11 +139,6 @@ else if (_dashboard is not null)
     private string? _saveMessage;
     private List<string> _validationErrors = [];
     private bool _shouldRefreshAnimations = true;
-
-    private IReadOnlyCollection<TransparencyRecordDto> TransparencyRecords =>
-        _orders.SelectMany(order => order.TransparencyRecords)
-            .OrderByDescending(record => record.CreatedAt)
-            .ToArray();
 
     protected override async Task OnInitializedAsync()
     {
@@ -264,9 +231,6 @@ else if (_dashboard is not null)
 
     private static string FormatChain(int? chainId) =>
         chainId is null ? "Not linked" : chainId == 97 ? "BSC Testnet (97)" : $"Chain {chainId}";
-
-    private static string ShortHash(string hash) =>
-        hash.Length >= 14 ? $"{hash[..10]}...{hash[^4..]}" : hash;
 
     private sealed class ProfileEditModel
     {

@@ -11,7 +11,7 @@ const erc20TransferAbi = [
     }
 ];
 
-const bnbTestnetRpcUrl = "https://rpc.ankr.com/bsc_testnet_chapel";
+const bnbTestnetRpcUrl = "https://rpc.ankr.com/bsc_testnet_chapel/56e119a6270f4441ea452c1756c15ec402eb41bcb0965b5cb4b0fec0a6b4cb51";
 
 let web3Instance = null;
 
@@ -97,6 +97,7 @@ export function initCoffeePurchases(config) {
                 const mintResult = await mintLoyaltyReward(
                     activeAccount,
                     reward,
+                    price,
                     paymentReceipt.transactionHash
                 );
 
@@ -143,7 +144,7 @@ async function ensureBnbTestnet(chainIdHex) {
     }
 }
 
-async function mintLoyaltyReward(walletAddress, amount, paymentTransactionHash) {
+async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTransactionHash) {
     const response = await fetch("/Rewards/api/mint-loyalty", {
         method: "POST",
         credentials: "same-origin",
@@ -153,6 +154,7 @@ async function mintLoyaltyReward(walletAddress, amount, paymentTransactionHash) 
         body: JSON.stringify({
             walletAddress,
             amount,
+            paymentAmount,
             paymentTransactionHash
         })
     });

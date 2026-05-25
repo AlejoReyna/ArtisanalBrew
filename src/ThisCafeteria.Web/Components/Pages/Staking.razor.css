@@ -1,103 +1,578 @@
-.staking-dashboard {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    margin-bottom: 2rem;
-}
-
-.staking-dashboard .stat-card {
-    background: #fff;
-    border: 1px solid rgba(45, 36, 33, 0.12);
-    border-radius: 12px;
-    padding: 1.25rem;
-}
-
-.staking-dashboard .stat-card span {
-    color: rgba(45, 36, 33, 0.6);
-    display: block;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.staking-dashboard .stat-card strong {
-    color: #2d2421;
-    display: block;
-    font-size: 1.35rem;
-    margin-top: 0.35rem;
-}
-
-.staking-rewards-banner {
-    align-items: center;
-    background: #fff;
-    border: 1px solid rgba(212, 160, 55, 0.45);
-    border-radius: 14px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-}
-
-.staking-rewards-banner h2 {
-    color: #2d2421;
-    font-size: 1.25rem;
-    margin: 0 0 0.35rem;
-}
-
-.staking-rewards-banner .coffee-balance {
-    color: #b8860b;
-    font-size: 1.75rem;
-    margin: 0;
+.yield-dashboard [data-animate],
+[data-animate],
+[data-stagger],
+.stagger-container [data-animate] {
+    filter: none;
+    opacity: 1;
+    transform: none;
 }
 
 .staking-connect {
-    background: rgba(45, 36, 33, 0.04);
-    border-radius: 14px;
+    background: rgba(245, 242, 234, 0.9);
+    border: 1px solid rgba(45, 36, 33, 0.12);
+    border-radius: 8px;
     margin-bottom: 2rem;
-    padding: 2rem;
+    padding: clamp(2rem, 6vw, 5rem);
     text-align: center;
 }
 
-.staking-product-grid {
+.staking-connect h1,
+.staking-connect h2 {
+    color: #2d2421;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(2.6rem, 7vw, 5.7rem);
+    line-height: 0.95;
+    margin: 0 auto 1.25rem;
+    max-width: 58rem;
+}
+
+.staking-connect .lede {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.yield-dashboard {
+    align-items: start;
+    display: grid;
+    gap: clamp(1.25rem, 2.6vw, 2.5rem);
+    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    margin-bottom: clamp(3rem, 7vw, 6rem);
+}
+
+.yield-sidebar {
+    display: grid;
+    gap: 1.15rem;
+    position: sticky;
+    top: 6rem;
+}
+
+.yield-account-card {
+    background: #f2eee5;
+    border: 1px solid rgba(45, 36, 33, 0.1);
+    border-radius: 8px;
+    padding: 1.15rem;
+}
+
+.yield-kicker {
+    color: #8d6f55;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    line-height: 1.4;
+    margin: 0 0 0.9rem;
+    text-transform: uppercase;
+}
+
+.yield-account-stats {
+    display: grid;
+    gap: 0.85rem;
+    margin: 0 0 1rem;
+}
+
+.yield-account-stats div {
+    border-bottom: 1px solid rgba(45, 36, 33, 0.12);
+    padding-bottom: 0.85rem;
+}
+
+.yield-account-stats div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.yield-account-stats dt {
+    color: rgba(45, 36, 33, 0.62);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+}
+
+.yield-account-stats dd {
+    color: #2d2421;
+    font-size: clamp(1.05rem, 1.6vw, 1.32rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.yield-redeem-button {
+    background: #2d2421;
+    border: 1px solid #2d2421;
+    border-radius: 6px;
+    color: #fbf9f4;
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    min-height: 2.8rem;
+    padding: 0.7rem 0.8rem;
+    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    width: 100%;
+}
+
+.yield-redeem-button:hover:not(:disabled) {
+    background: #47614e;
+    border-color: #47614e;
+    transform: translateY(-1px);
+}
+
+.yield-redeem-button:disabled,
+.yield-allocate-link:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
+.yield-side-nav {
+    border-top: 1px solid rgba(45, 36, 33, 0.12);
+    display: grid;
+    gap: 0.15rem;
+    padding-top: 0.45rem;
+}
+
+.yield-side-nav__link {
+    align-items: center;
+    border-radius: 6px;
+    color: #746a63;
+    display: grid;
+    font-size: 0.76rem;
+    font-weight: 700;
+    gap: 0.65rem;
+    grid-template-columns: 1rem 1fr;
+    letter-spacing: 0.08em;
+    min-height: 2.4rem;
+    padding: 0.55rem 0.65rem;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.yield-side-nav__link svg {
+    fill: none;
+    height: 1rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+    width: 1rem;
+}
+
+.yield-side-nav__link.active,
+.yield-side-nav__link:hover {
+    background: rgba(45, 36, 33, 0.06);
+    color: #2d2421;
+}
+
+.yield-disconnect {
+    margin: 0;
+}
+
+.yield-disconnect button {
+    background: transparent;
+    border: 0;
+    color: rgba(45, 36, 33, 0.58);
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.45rem 0.2rem;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.yield-main {
+    display: grid;
+    gap: clamp(1.4rem, 2.8vw, 2.4rem);
+    min-width: 0;
+}
+
+.yield-hero {
+    align-items: start;
+    border-bottom: 1px solid rgba(45, 36, 33, 0.14);
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 13rem);
+    padding-bottom: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.yield-hero h1 {
+    color: #2d2421;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(3.6rem, 8vw, 7.8rem);
+    letter-spacing: -0.035em;
+    line-height: 0.88;
+    margin: 0 0 1rem;
+}
+
+.yield-hero p:not(.yield-kicker) {
+    color: #4d443f;
+    font-size: clamp(1rem, 1.6vw, 1.18rem);
+    line-height: 1.7;
+    margin: 0;
+    max-width: 42rem;
+}
+
+.yield-global-stat {
+    justify-self: end;
+    text-align: right;
+}
+
+.yield-global-stat span {
+    color: rgba(45, 36, 33, 0.58);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.yield-global-stat strong {
+    color: #47614e;
+    display: block;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 850;
+    letter-spacing: 0;
+    line-height: 1;
+}
+
+.yield-config-note {
+    background: #fff6df;
+    border: 1px solid rgba(166, 119, 45, 0.32);
+    border-radius: 6px;
+    color: #6f5122;
+    font-size: 0.88rem;
+    margin: 0;
+    padding: 0.8rem 1rem;
+}
+
+.yield-sync-note,
+.yield-error-note {
+    border-radius: 6px;
+    font-size: 0.88rem;
+    margin: 0;
+    padding: 0.8rem 1rem;
+}
+
+.yield-sync-note {
+    background: rgba(71, 97, 78, 0.1);
+    border: 1px solid rgba(71, 97, 78, 0.24);
+    color: #3f5b45;
+}
+
+.yield-error-note {
+    align-items: center;
+    background: #fff1ed;
+    border: 1px solid rgba(180, 79, 56, 0.28);
+    color: #7a3829;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.yield-error-note p {
+    color: inherit;
+    margin: 0;
+}
+
+.yield-error-note button {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid currentColor;
+    color: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    padding: 0 0 0.12rem;
+    text-transform: uppercase;
+}
+
+.yield-allocation-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.staking-product-card {
-    background: #fff;
-    border: 1px solid rgba(45, 36, 33, 0.1);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 1.25rem;
-    text-align: center;
-}
-
-.staking-product-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-}
-
-.staking-section-title {
-    background: #2d2421;
-    border-radius: 12px 12px 0 0;
-    color: #fbf9f4;
-    margin: 0;
-    padding: 0.85rem 1.25rem;
-}
-
-.staking-panel {
-    background: #fff;
-    border: 1px solid rgba(45, 36, 33, 0.1);
-    border-radius: 12px;
-    margin-bottom: 2.5rem;
+.yield-asset-card {
+    background: rgba(255, 253, 249, 0.82);
+    border: 1px solid rgba(45, 36, 33, 0.12);
+    border-radius: 8px;
+    min-width: 0;
     overflow: hidden;
 }
 
-.staking-panel-body {
-    padding: 1.25rem;
+.yield-asset-image {
+    aspect-ratio: 1 / 1;
+    background-position: center;
+    background-size: cover;
+    filter: saturate(0.86) contrast(1.04);
+    position: relative;
+}
+
+.yield-asset-image::after {
+    background: linear-gradient(180deg, rgba(45, 36, 33, 0.02), rgba(45, 36, 33, 0.24));
+    content: "";
+    inset: 0;
+    position: absolute;
+}
+
+.yield-asset-image span {
+    background: rgba(251, 249, 244, 0.92);
+    border: 1px solid rgba(45, 36, 33, 0.12);
+    border-radius: 999px;
+    color: #2d2421;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    padding: 0.42rem 0.56rem;
+    position: absolute;
+    right: 0.7rem;
+    text-transform: uppercase;
+    top: 0.7rem;
+    z-index: 1;
+}
+
+.yield-asset-image--espresso {
+    background-image: url("https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=900&q=80");
+}
+
+.yield-asset-image--reserve {
+    background-image: url("https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=900&q=80");
+}
+
+.yield-asset-image--seasonal {
+    background-image: url("https://images.unsplash.com/photo-1521302080334-4bebac2763a6?auto=format&fit=crop&w=900&q=80");
+}
+
+.yield-asset-body {
+    display: grid;
+    gap: 0.65rem;
+    padding: 1rem;
+}
+
+.yield-asset-body p {
+    color: rgba(45, 36, 33, 0.62);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.yield-asset-body h2 {
+    color: #2d2421;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.35rem, 2.2vw, 2rem);
+    letter-spacing: -0.025em;
+    line-height: 1;
+    margin: 0;
+}
+
+.yield-asset-body div {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    padding-top: 0.25rem;
+}
+
+.yield-asset-body strong {
+    color: #2d2421;
+    font-size: 0.98rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.yield-allocate-link {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid currentColor;
+    color: #2d2421;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    padding: 0 0 0.12rem;
+    text-transform: uppercase;
+}
+
+.yield-allocate-link:hover:not(:disabled) {
+    color: #8a4d34;
+}
+
+.yield-ledger {
+    border-top: 1px solid rgba(45, 36, 33, 0.14);
+    padding-top: 1.15rem;
+}
+
+.yield-ledger h2 {
+    color: #2d2421;
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.2em;
+    margin: 0 0 0.7rem;
+}
+
+.yield-ledger-list {
+    display: grid;
+}
+
+.yield-ledger-row {
+    align-items: center;
+    border-bottom: 1px solid rgba(45, 36, 33, 0.09);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: max-content minmax(1rem, 1fr) max-content max-content;
+    min-height: 3.1rem;
+}
+
+.yield-ledger-row time {
+    color: #2d2421;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.yield-ledger-line {
+    border-bottom: 1px dotted rgba(45, 36, 33, 0.32);
+    transform: translateY(0.08rem);
+}
+
+.yield-ledger-row strong {
+    color: #47614e;
+    font-size: 0.86rem;
+    font-weight: 850;
+}
+
+.yield-status {
+    border: 1px solid rgba(45, 36, 33, 0.22);
+    border-radius: 4px;
+    color: #2d2421;
+    font-size: 0.62rem;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+    padding: 0.28rem 0.48rem;
+}
+
+.yield-manifesto {
+    align-items: end;
+    background: #ece4d7;
+    border-radius: 8px;
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    margin-top: clamp(1rem, 3vw, 2.5rem);
+    padding: clamp(2rem, 5vw, 4rem);
+}
+
+.yield-manifesto h2 {
+    color: #2d2421;
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(2.3rem, 4.8vw, 4.8rem);
+    letter-spacing: -0.035em;
+    line-height: 0.94;
+    margin: 0 0 1rem;
+}
+
+.yield-manifesto p:not(.yield-kicker) {
+    color: #3f3732;
+    font-size: clamp(1rem, 1.5vw, 1.18rem);
+    line-height: 1.75;
+    margin: 0;
+    max-width: 44rem;
+}
+
+.yield-manifesto-link {
+    align-items: center;
+    color: #2d2421;
+    display: inline-flex;
+    flex-wrap: wrap;
+    font-size: 0.74rem;
+    font-weight: 850;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    letter-spacing: 0.12em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.yield-manifesto-link svg {
+    fill: none;
+    height: 1.25rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+    width: 1.25rem;
+}
+
+@media (max-width: 1100px) {
+    .yield-dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .yield-sidebar {
+        position: static;
+    }
+
+    .yield-side-nav {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .yield-disconnect {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .yield-hero,
+    .yield-manifesto {
+        grid-template-columns: 1fr;
+    }
+
+    .yield-global-stat {
+        justify-self: start;
+        text-align: left;
+    }
+
+    .yield-allocation-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .yield-asset-card {
+        display: grid;
+        grid-template-columns: minmax(8.5rem, 0.42fr) minmax(0, 1fr);
+    }
+
+    .yield-manifesto-link {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .yield-side-nav {
+        grid-template-columns: 1fr;
+    }
+
+    .yield-asset-card {
+        display: block;
+    }
+
+    .yield-ledger-row {
+        gap: 0.45rem 0.7rem;
+        grid-template-columns: 1fr max-content;
+        padding: 0.8rem 0;
+    }
+
+    .yield-ledger-line {
+        display: none;
+    }
+
+    .yield-status {
+        justify-self: end;
+    }
 }
