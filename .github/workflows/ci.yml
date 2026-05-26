@@ -83,7 +83,7 @@ jobs:
         run: find "$PUBLISH_DIR" -name '._*' -delete
 
       - name: Pack artifact
-        run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" 
+        run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR".
         
       - name: Prepare SSH key
         env:
