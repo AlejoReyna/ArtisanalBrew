@@ -8,9 +8,13 @@ public sealed record WalletChallengeResponse(
     string Message,
     string Nonce,
     int ChainId,
+    string ChainIdHex,
     string NetworkName,
     string RpcUrl,
-    string ExplorerUrl);
+    string ExplorerUrl,
+    string CurrencyName,
+    string CurrencySymbol,
+    int CurrencyDecimals);
 
 public sealed record WalletVerifyRequest(
     string Address,

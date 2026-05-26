@@ -1,15 +1,3 @@
-const baseSepolia = {
-    chainId: "0x14a34",
-    chainName: "Base Sepolia",
-    nativeCurrency: {
-        name: "Sepolia ETH",
-        symbol: "ETH",
-        decimals: 18
-    },
-    rpcUrls: ["https://sepolia.base.org"],
-    blockExplorerUrls: ["https://sepolia-explorer.base.org/"]
-};
-
 export async function loginWithWallet(walletName = "wallet") {
     const provider = getWalletProvider(walletName);
     if (!provider) {
@@ -26,9 +14,9 @@ export async function loginWithWallet(walletName = "wallet") {
             return { success: false, error: "No wallet account was selected." };
         }
 
-        await ensureBaseSepolia(provider);
-
         const challenge = await postJson("/api/wallet-auth/challenge", { address, walletName });
+        await ensureConfiguredNetwork(provider, challenge);
+
         const signature = await provider.request({
             method: "personal_sign",
             params: [challenge.message, address]
@@ -64,7 +52,7 @@ function getWalletProvider(walletName) {
     const normalizedName = walletName.toLowerCase();
 
     if (normalizedName.includes("metamask")) {
-        return providers.find(provider => provider.isMetaMask) ?? window.ethereum;
+        return providers.find(provider => provider.isMetaMask && !provider.isPhantom) ?? null;
     }
 
     if (normalizedName.includes("coinbase")) {
@@ -74,16 +62,17 @@ function getWalletProvider(walletName) {
     return window.ethereum;
 }
 
-async function ensureBaseSepolia(provider) {
+async function ensureConfiguredNetwork(provider, config) {
+    const network = buildWalletNetwork(config);
     const currentChainId = await provider.request({ method: "eth_chainId" });
-    if (currentChainId?.toLowerCase() === baseSepolia.chainId) {
+    if (currentChainId?.toLowerCase() === network.chainId) {
         return;
     }
 
     try {
         await provider.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: baseSepolia.chainId }]
+            params: [{ chainId: network.chainId }]
         });
     } catch (error) {
         if (error?.code !== 4902) {
@@ -92,9 +81,25 @@ async function ensureBaseSepolia(provider) {
 
         await provider.request({
             method: "wallet_addEthereumChain",
-            params: [baseSepolia]
+            params: [network]
         });
     }
+}
+
+function buildWalletNetwork(config) {
+    const chainId = config.chainIdHex ?? `0x${Number(config.chainId).toString(16)}`;
+
+    return {
+        chainId: chainId.toLowerCase(),
+        chainName: config.networkName ?? "Ethereum Sepolia",
+        nativeCurrency: {
+            name: config.currencyName ?? "Sepolia ETH",
+            symbol: config.currencySymbol ?? "ETH",
+            decimals: config.currencyDecimals ?? 18
+        },
+        rpcUrls: [config.rpcUrl],
+        blockExplorerUrls: [config.explorerUrl]
+    };
 }
 
 async function postJson(url, payload) {

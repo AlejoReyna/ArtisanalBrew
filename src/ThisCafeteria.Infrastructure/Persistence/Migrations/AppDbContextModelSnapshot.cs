@@ -224,6 +224,28 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<int?>("PaymentChainId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("PaymentEthAmount")
+                        .HasPrecision(28, 18)
+                        .HasColumnType("numeric(28,18)");
+
+                    b.Property<string>("PaymentExplorerUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("PaymentNetworkName")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("PaymentTransactionHash")
+                        .HasMaxLength(66)
+                        .HasColumnType("character varying(66)");
+
+                    b.Property<DateTime?>("PaidAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -247,12 +269,23 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("UserProfileId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("WalletAddress")
+                        .IsRequired()
+                        .HasMaxLength(42)
+                        .HasColumnType("character varying(42)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
 
+                    b.HasIndex("PaymentTransactionHash")
+                        .IsUnique()
+                        .HasFilter("\"PaymentTransactionHash\" IS NOT NULL");
+
                     b.HasIndex("UserProfileId");
+
+                    b.HasIndex("WalletAddress");
 
                     b.ToTable("Orders");
                 });

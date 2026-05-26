@@ -10,6 +10,13 @@ public sealed record OrderDto(
     decimal Subtotal,
     decimal Tax,
     decimal Total,
+    string WalletAddress,
+    string? PaymentTransactionHash,
+    int? PaymentChainId,
+    string? PaymentNetworkName,
+    decimal? PaymentEthAmount,
+    string? PaymentExplorerUrl,
+    DateTime? PaidAtUtc,
     DateTime CreatedAt,
     IReadOnlyCollection<CartItemDto> Items,
     IReadOnlyCollection<TransparencyRecordDto> TransparencyRecords);

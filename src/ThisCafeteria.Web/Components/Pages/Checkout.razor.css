@@ -87,21 +87,19 @@
 }
 
 .checkout-payment-method__mark {
-    align-items: center;
-    background: var(--white);
-    border: 1px solid var(--line);
     border-radius: 50%;
     display: flex;
     flex-shrink: 0;
     height: 4.5rem;
-    justify-content: center;
+    overflow: hidden;
     width: 4.5rem;
 }
 
-.checkout-payment-method__mark span {
-    color: #244c9c;
-    font-size: 0.88rem;
-    font-weight: 800;
+.checkout-payment-method__mark img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
 }
 
 .checkout-payment-method__copy h2 {

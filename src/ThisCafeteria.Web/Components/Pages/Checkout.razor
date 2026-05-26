@@ -4,9 +4,18 @@
 @inject IShoppingCartService CartService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
+@inject IOptions<BlockchainNetworkOptions> ChainOptions
+@inject IProfileService ProfileService
+@inject IOrderService OrderService
+@using System.Globalization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using ThisCafeteria.Application.DTOs
+@using ThisCafeteria.Application.Services
+@using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Web.Services.Cart
+@implements IAsyncDisposable
 
 <PageTitle>@(_paymentComplete ? "Order Confirmed" : "Checkout") | Artisanal Brew</PageTitle>
 
@@ -40,7 +49,7 @@
                 <p class="eyebrow">Payment confirmed</p>
                 <h1 class="checkout-success__title">Thank you.</h1>
                 <p class="checkout-success__lede">
-                    Your Base Sepolia ETH payment was accepted. We are preparing your order for roast and dispatch.
+                    Your Ethereum Sepolia ETH payment was accepted. We are preparing your order for roast and dispatch.
                 </p>
 
                 <dl class="checkout-success__receipt">
@@ -77,7 +86,7 @@
                     <a class="button button--ghost" href="products">Continue shopping</a>
                 </div>
 
-                <p class="checkout-success__dev-note muted">Development mode: payments are simulated and always succeed.</p>
+                <p class="checkout-success__dev-note muted">Sepolia transaction submitted on-chain.</p>
             </div>
 
             <aside class="checkout-summary checkout-summary--paid" data-animate="fade-up">
@@ -151,10 +160,10 @@
 
                 <article class="checkout-payment-method" data-animate="fade-up">
                     <div class="checkout-payment-method__mark">
-                        <span aria-hidden="true">ETH</span>
+                        <img src="/images/eth_logo.png" alt="" aria-hidden="true" width="72" height="72" />
                     </div>
                     <div class="checkout-payment-method__copy">
-                        <h2>Pay with ETH on Base Sepolia</h2>
+                        <h2>Pay with ETH on Ethereum Sepolia</h2>
                         <p>Secure decentralized transaction</p>
                     </div>
                 </article>
@@ -221,12 +230,15 @@
     private bool _paymentComplete;
     private string? _errorMessage;
     private string? _walletAddress;
+    private BlockchainNetworkOptions _chain = new();
+    private IJSObjectReference? _checkoutModule;
     private string _orderReference = string.Empty;
     private string _transactionHash = string.Empty;
     private DateTimeOffset _paidAt;
 
     protected override async Task OnInitializedAsync()
     {
+        _chain = ChainOptions.Value;
         await LoadCartAsync();
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -302,13 +314,63 @@
 
         try
         {
-            await Task.Delay(800);
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var applicationUserId = UserManager.GetUserId(authState.User);
+            if (string.IsNullOrWhiteSpace(applicationUserId))
+            {
+                throw new InvalidOperationException("Sign in with your wallet before paying.");
+            }
+
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (string.IsNullOrWhiteSpace(user?.WalletAddress))
+            {
+                throw new InvalidOperationException("Your account is not linked to a wallet.");
+            }
+
+            if (!IsConfiguredAddress(_chain.MarketplaceWallet))
+            {
+                throw new InvalidOperationException("Marketplace wallet is not configured.");
+            }
+
+            _checkoutModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import",
+                "/js/checkoutEth.js");
+
+            var payment = await _checkoutModule.InvokeAsync<CheckoutEthPaymentResult>(
+                "payWithNativeEth",
+                new
+                {
+                    amountEth = _ethAmount.ToString("0.##################", CultureInfo.InvariantCulture),
+                    marketplaceWallet = _chain.MarketplaceWallet,
+                    expectedWalletAddress = user.WalletAddress,
+                    chainIdHex = _chain.ChainIdHex,
+                    networkName = _chain.NetworkName,
+                    rpcUrl = _chain.RpcUrl,
+                    currencyName = _chain.CurrencyName,
+                    currencySymbol = _chain.CurrencySymbol,
+                    currencyDecimals = _chain.CurrencyDecimals,
+                    explorerUrl = _chain.ExplorerUrl
+                });
+
+            var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
+            var order = await OrderService.CreateOrderAsync(
+                new CreateOrderRequest(
+                    userProfileId,
+                    await CartService.ToOrderItemsAsync(),
+                    payment.FromAddress,
+                    payment.TransactionHash,
+                    _chain.ChainId,
+                    _chain.NetworkName,
+                    _ethAmount,
+                    BuildExplorerTransactionUrl(payment.TransactionHash),
+                    DateTime.UtcNow));
 
             _paidUsdAmount = _orderTotalUsd;
             _paidEthAmount = _ethAmount;
             _paidAt = DateTimeOffset.Now;
-            _orderReference = $"AB-{DateTimeOffset.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
-            _transactionHash = $"0x{Guid.NewGuid():N}";
+            _orderReference = order.OrderNumber;
+            _transactionHash = payment.TransactionHash;
+            _walletAddress = payment.FromAddress;
             _paidLines = _lines.ToList();
 
             await CartService.ClearAsync();
@@ -329,6 +391,16 @@
 
     private static string FormatEth(decimal amount) => $"{amount:0.####} ETH";
 
+    private static bool IsConfiguredAddress(string? address) =>
+        !string.IsNullOrWhiteSpace(address) &&
+        !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
+
+    private string BuildExplorerTransactionUrl(string transactionHash)
+    {
+        var explorerBase = _chain.ExplorerUrl.TrimEnd('/');
+        return $"{explorerBase}/tx/{transactionHash}";
+    }
+
     private static string ShortAddress(string? address)
     {
         if (string.IsNullOrWhiteSpace(address) || address.Length < 12)
@@ -337,5 +409,19 @@
         }
 
         return $"{address[..6]}…{address[^4..]}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_checkoutModule is not null)
+        {
+            await _checkoutModule.DisposeAsync();
+        }
+    }
+
+    private sealed class CheckoutEthPaymentResult
+    {
+        public string TransactionHash { get; set; } = string.Empty;
+        public string FromAddress { get; set; } = string.Empty;
     }
 }

@@ -23,10 +23,17 @@ public sealed class OrderService(
         {
             UserProfileId = request.UserProfileId,
             OrderNumber = $"TC-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}",
-            Status = OrderStatus.Pending,
+            Status = OrderStatus.Processing,
             Subtotal = subtotal,
             Tax = tax,
             Total = subtotal + tax,
+            WalletAddress = request.WalletAddress,
+            PaymentTransactionHash = request.PaymentTransactionHash,
+            PaymentChainId = request.PaymentChainId,
+            PaymentNetworkName = request.PaymentNetworkName,
+            PaymentEthAmount = request.PaymentEthAmount,
+            PaymentExplorerUrl = request.PaymentExplorerUrl,
+            PaidAtUtc = request.PaidAtUtc,
             CreatedAt = DateTime.UtcNow,
             Items = request.Items.Select(item => new OrderItem
             {
@@ -57,6 +64,13 @@ public sealed class OrderService(
         order.Subtotal,
         order.Tax,
         order.Total,
+        order.WalletAddress,
+        order.PaymentTransactionHash,
+        order.PaymentChainId,
+        order.PaymentNetworkName,
+        order.PaymentEthAmount,
+        order.PaymentExplorerUrl,
+        order.PaidAtUtc,
         order.CreatedAt,
         order.Items.Select(item => new CartItemDto(
             item.ProductId,

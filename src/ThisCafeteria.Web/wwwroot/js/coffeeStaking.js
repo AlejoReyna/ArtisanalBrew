@@ -14,15 +14,21 @@ const erc20TransferAbi = [
 let web3Instance = null;
 
 function getWeb3() {
-    if (!window.ethereum) {
+    const provider = getMetaMaskProvider();
+    if (!provider) {
         throw new Error("MetaMask is not installed.");
     }
 
     if (!web3Instance) {
-        web3Instance = new Web3(window.ethereum);
+        web3Instance = new Web3(provider);
     }
 
     return web3Instance;
+}
+
+function getMetaMaskProvider() {
+    const providers = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+    return providers.find(provider => provider.isMetaMask && !provider.isPhantom) ?? null;
 }
 
 export async function connectWalletForStaking() {
@@ -44,14 +50,14 @@ export async function connectWalletForStaking() {
 }
 
 export function initCoffeePurchases(config) {
-    if (!window.ethereum) {
+    if (!getMetaMaskProvider()) {
         return;
     }
 
     const web3 = getWeb3();
     const recipient = config.marketplaceWallet;
     const paymentTokenAddress = config.paymentTokenContract;
-    const networkName = config.networkName ?? "Base Sepolia";
+    const networkName = config.networkName ?? "Ethereum Sepolia";
     const paymentTokenLabel = config.paymentTokenSymbol ?? "payment token";
 
     if (!recipient || recipient === "0x0000000000000000000000000000000000000000") {
@@ -124,7 +130,7 @@ async function ensureConfiguredNetwork(config) {
     const chainIdHex = config.chainIdHex;
 
     try {
-        await window.ethereum.request({
+        await getMetaMaskProvider().request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: chainIdHex }]
         });
@@ -133,7 +139,7 @@ async function ensureConfiguredNetwork(config) {
             throw error;
         }
 
-        await window.ethereum.request({
+        await getMetaMaskProvider().request({
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: chainIdHex,

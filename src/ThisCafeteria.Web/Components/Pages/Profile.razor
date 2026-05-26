@@ -118,6 +118,18 @@ else if (_dashboard is not null)
                         <div>
                             <span class="order-number">@order.OrderNumber</span>
                             <p>@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</p>
+                            @if (!string.IsNullOrWhiteSpace(order.PaymentTransactionHash))
+                            {
+                                <p>
+                                    @ShortAddress(order.WalletAddress) · @order.PaymentNetworkName · @FormatEth(order.PaymentEthAmount)
+                                    @if (!string.IsNullOrWhiteSpace(order.PaymentExplorerUrl))
+                                    {
+                                        <a href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
+                                            @ShortAddress(order.PaymentTransactionHash)
+                                        </a>
+                                    }
+                                </p>
+                            }
                         </div>
                         <span class="status-badge">@order.Status</span>
                         <strong>@order.Total.ToString("C")</strong>
@@ -229,8 +241,11 @@ else if (_dashboard is not null)
         return address.Length >= 12 ? $"{address[..6]}...{address[^4..]}" : address;
     }
 
+    private static string FormatEth(decimal? amount) =>
+        amount is null ? "0 ETH" : $"{amount.Value:0.####} ETH";
+
     private static string FormatChain(int? chainId) =>
-        chainId is null ? "Not linked" : chainId == 84532 ? "Base Sepolia (84532)" : $"Chain {chainId}";
+        chainId is null ? "Not linked" : chainId == 11155111 ? "Ethereum Sepolia (11155111)" : $"Chain {chainId}";
 
     private sealed class ProfileEditModel
     {

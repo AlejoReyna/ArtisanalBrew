@@ -44,6 +44,7 @@ jobs:
       PUBLISH_DIR: publish-ec2
       ARCHIVE_NAME: thiscafeteria-web.tgz
       REMOTE_APP_DIR: /opt/thiscafeteria
+      REMOTE_ENV_FILE: /etc/thiscafeteria/thiscafeteria.env
       REMOTE_SERVICE: thiscafeteria
       REMOTE_TMP_ARCHIVE: /tmp/thiscafeteria-web.tgz
       EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT || '22' }}
@@ -57,6 +58,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Restore local tools
+        run: dotnet tool restore
+
       - name: Publish web app
         run: |
           dotnet publish src/ThisCafeteria.Web/ThisCafeteria.Web.csproj \
@@ -64,6 +68,16 @@ jobs:
             --runtime linux-x64 \
             --self-contained true \
             --output "$PUBLISH_DIR"
+
+      - name: Build migration bundle
+        run: |
+          dotnet ef migrations bundle \
+            --project src/ThisCafeteria.Infrastructure \
+            --startup-project src/ThisCafeteria.Web \
+            --configuration Release \
+            --runtime linux-x64 \
+            --self-contained \
+            --output "$PUBLISH_DIR/thiscafeteria-migrate"
 
       - name: Pack artifact
         run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" .
@@ -145,7 +159,7 @@ jobs:
             "$ARCHIVE_NAME" \
             "${EC2_USER}@${EC2_HOST}:$REMOTE_TMP_ARCHIVE"
 
-      - name: Install artifact and restart service
+      - name: Install artifact, run migrations, and restart service
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
@@ -161,6 +175,8 @@ jobs:
              sudo rm -rf $REMOTE_APP_DIR/* && \
              sudo tar -xzf $REMOTE_TMP_ARCHIVE -C $REMOTE_APP_DIR && \
              sudo chmod +x $REMOTE_APP_DIR/ThisCafeteria.Web && \
+             sudo chmod +x $REMOTE_APP_DIR/thiscafeteria-migrate && \
+             sudo bash -c \"set -a && . $REMOTE_ENV_FILE && set +a && exec $REMOTE_APP_DIR/thiscafeteria-migrate\" && \
              sudo systemctl start $REMOTE_SERVICE && \
              sudo systemctl status $REMOTE_SERVICE --no-pager -l"
 

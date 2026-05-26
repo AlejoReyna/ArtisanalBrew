@@ -88,9 +88,13 @@ public sealed class WalletAuthController(
             message,
             nonce,
             _chain.ChainId,
+            _chain.ChainIdHex,
             _chain.NetworkName,
             _chain.RpcUrl,
-            _chain.ExplorerUrl));
+            _chain.ExplorerUrl,
+            _chain.CurrencyName,
+            _chain.CurrencySymbol,
+            _chain.CurrencyDecimals));
     }
 
     [HttpPost("verify")]

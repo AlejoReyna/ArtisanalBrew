@@ -141,17 +141,11 @@
 }
 
 .eth-mark {
-    align-items: center;
-    background: #eef4ff;
-    border: 1px solid rgba(43, 91, 190, 0.22);
     border-radius: 50%;
-    color: #244c9c;
-    display: inline-flex;
+    display: block;
     flex-shrink: 0;
-    font-size: 0.46rem;
-    font-weight: 800;
     height: 1.7rem;
-    justify-content: center;
+    object-fit: cover;
     width: 1.7rem;
 }
 

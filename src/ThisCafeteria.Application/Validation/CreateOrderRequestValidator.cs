@@ -9,6 +9,19 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
     {
         RuleFor(x => x.UserProfileId).NotEmpty();
         RuleFor(x => x.Items).NotEmpty();
+        RuleFor(x => x.WalletAddress)
+            .NotEmpty()
+            .Length(42)
+            .Must(address => address.StartsWith("0x", StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.PaymentTransactionHash)
+            .NotEmpty()
+            .Length(66)
+            .Must(hash => hash.StartsWith("0x", StringComparison.OrdinalIgnoreCase));
+        RuleFor(x => x.PaymentChainId).GreaterThan(0);
+        RuleFor(x => x.PaymentNetworkName).NotEmpty().MaximumLength(80);
+        RuleFor(x => x.PaymentEthAmount).GreaterThan(0);
+        RuleFor(x => x.PaymentExplorerUrl).NotEmpty().MaximumLength(2_048);
+        RuleFor(x => x.PaidAtUtc).NotEmpty();
         RuleForEach(x => x.Items).ChildRules(item =>
         {
             item.RuleFor(x => x.ProductId).NotEmpty();
