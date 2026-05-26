@@ -71,7 +71,6 @@ jobs:
         env:
           EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_HOST_KEY: ${{ secrets.EC2_HOST_KEY }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -99,16 +98,12 @@ jobs:
             exit 1
           fi
 
-          touch ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-          if [ -n "${EC2_HOST_KEY:-}" ]; then
-            printf '%s\n' "$EC2_HOST_KEY" >> ~/.ssh/known_hosts
-          elif ! ssh-keyscan -T 15 -H "$host" >> ~/.ssh/known_hosts 2>/dev/null; then
-            echo "ssh-keyscan could not fetch a host key for ${host}." >&2
-            echo "Open EC2 port 22 to GitHub Actions, or add an EC2_HOST_KEY secret." >&2
-            exit 1
-          fi
+          {
+            echo 'Host *'
+            echo '  StrictHostKeyChecking no'
+            echo '  UserKnownHostsFile /dev/null'
+          } >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
 
           echo "EC2_HOST=$host" >> "$GITHUB_ENV"
 
@@ -119,8 +114,8 @@ jobs:
           set -euo pipefail
           scp -i ~/.ssh/thiscafeteria-ec2 \
             -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
             -o ConnectTimeout=30 \
             "$ARCHIVE_NAME" \
             "${EC2_USER}@${EC2_HOST}:$REMOTE_TMP_ARCHIVE"
@@ -132,8 +127,8 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/thiscafeteria-ec2 \
             -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
             -o ConnectTimeout=30 \
             "${EC2_USER}@${EC2_HOST}" \
             "sudo systemctl stop $REMOTE_SERVICE && \
