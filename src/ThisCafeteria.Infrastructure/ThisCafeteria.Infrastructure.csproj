@@ -3,9 +3,8 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.4.1" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.23.4" />
-    <PackageReference Include="AWSSDK.Signin" Version="3.*" />
     <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.13" />
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.13" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.32" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.*" />
