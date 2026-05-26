@@ -79,9 +79,12 @@ jobs:
             --self-contained \
             --output "$PUBLISH_DIR/thiscafeteria-migrate"
 
-      - name: Pack artifact
-        run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" .
+      - name: Remove macOS metadata files
+        run: find "$PUBLISH_DIR" -name '._*' -delete
 
+      - name: Pack artifact
+        run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" 
+        
       - name: Prepare SSH key
         env:
           EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
