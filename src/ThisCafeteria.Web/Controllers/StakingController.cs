@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Util;
+using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("staking")]
 [IgnoreAntiforgeryToken]
-public sealed class StakingController(ICoffeeWeb3Service web3Service) : Controller
+public sealed class StakingController(
+    ICoffeeWeb3Service web3Service,
+    BlockchainNetworkOptions chain) : Controller
 {
     private const string WalletSessionKey = "WalletAddress";
 
@@ -47,6 +50,11 @@ public sealed class StakingController(ICoffeeWeb3Service web3Service) : Controll
     [HttpPost("save-wallet-session")]
     public IActionResult SaveWalletSession([FromBody] SaveWalletSessionRequest request)
     {
+        if (request.ChainId != chain.ChainId)
+        {
+            return BadRequest($"Connect MetaMask to {chain.NetworkName} before starting an allocation.");
+        }
+
         if (string.IsNullOrWhiteSpace(request.WalletAddress) ||
             !AddressUtil.Current.IsValidEthereumAddressHexFormat(request.WalletAddress))
         {
@@ -75,5 +83,5 @@ public sealed class StakingController(ICoffeeWeb3Service web3Service) : Controll
         return HttpContext.Session.GetString(WalletSessionKey);
     }
 
-    public sealed record SaveWalletSessionRequest(string WalletAddress);
+    public sealed record SaveWalletSessionRequest(string WalletAddress, int ChainId);
 }

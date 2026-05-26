@@ -31,19 +31,26 @@ function getMetaMaskProvider() {
     return providers.find(provider => provider.isMetaMask && !provider.isPhantom) ?? null;
 }
 
-export async function connectWalletForStaking() {
+export async function connectWalletForStaking(config) {
     const web3 = getWeb3();
     const accounts = await web3.eth.requestAccounts();
     const account = accounts[0];
+    if (!account) {
+        throw new Error("No MetaMask account was selected.");
+    }
+
+    await ensureConfiguredNetwork(config);
+    const chainId = Number(await web3.eth.net.getId());
 
     const response = await fetch("/staking/save-wallet-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: account })
+        body: JSON.stringify({ walletAddress: account, chainId })
     });
 
     if (!response.ok) {
-        throw new Error("Could not save the wallet session.");
+        const errorText = await response.text();
+        throw new Error(errorText || "Could not save the wallet session.");
     }
 
     return account;
@@ -75,6 +82,7 @@ export function initCoffeePurchases(config) {
             const target = event.currentTarget;
             const price = target.getAttribute("data-price");
             const reward = target.getAttribute("data-reward");
+            const allocationName = target.getAttribute("data-allocation");
 
             if (!price || !reward) {
                 return;
@@ -83,16 +91,13 @@ export function initCoffeePurchases(config) {
             target.disabled = true;
 
             try {
-                const accounts = await web3.eth.getAccounts();
-                if (!accounts.length) {
-                    await web3.eth.requestAccounts();
-                }
+                await ensureConfiguredNetwork(config);
+                const accounts = await web3.eth.requestAccounts();
+                const activeAccount = accounts[0];
 
-                const activeAccount = (await web3.eth.getAccounts())[0];
-                const networkId = Number(await web3.eth.net.getId());
-
-                if (networkId !== config.chainId) {
-                    await ensureConfiguredNetwork(config);
+                if (config.expectedWalletAddress &&
+                    activeAccount.toLowerCase() !== config.expectedWalletAddress.toLowerCase()) {
+                    throw new Error(`MetaMask is connected to ${shortAddress(activeAccount)}. Switch to ${shortAddress(config.expectedWalletAddress)} to allocate from this session.`);
                 }
 
                 const tokenContract = new web3.eth.Contract(erc20TransferAbi, paymentTokenAddress);
@@ -108,7 +113,8 @@ export function initCoffeePurchases(config) {
                     activeAccount,
                     reward,
                     price,
-                    paymentReceipt.transactionHash
+                    paymentReceipt.transactionHash,
+                    allocationName
                 );
 
                 window.alert(
@@ -127,10 +133,19 @@ export function initCoffeePurchases(config) {
 }
 
 async function ensureConfiguredNetwork(config) {
+    if (!config) {
+        return;
+    }
+
+    const provider = getMetaMaskProvider();
     const chainIdHex = config.chainIdHex;
+    const currentChainId = await provider.request({ method: "eth_chainId" });
+    if (currentChainId?.toLowerCase() === chainIdHex?.toLowerCase()) {
+        return;
+    }
 
     try {
-        await getMetaMaskProvider().request({
+        await provider.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: chainIdHex }]
         });
@@ -139,7 +154,7 @@ async function ensureConfiguredNetwork(config) {
             throw error;
         }
 
-        await getMetaMaskProvider().request({
+        await provider.request({
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: chainIdHex,
@@ -156,7 +171,7 @@ async function ensureConfiguredNetwork(config) {
     }
 }
 
-async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTransactionHash) {
+async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTransactionHash, allocationName) {
     const response = await fetch("/Rewards/api/mint-loyalty", {
         method: "POST",
         credentials: "same-origin",
@@ -167,7 +182,8 @@ async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTr
             walletAddress,
             amount,
             paymentAmount,
-            paymentTransactionHash
+            paymentTransactionHash,
+            allocationName
         })
     });
 
@@ -177,4 +193,8 @@ async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTr
     }
 
     return response.json();
+}
+
+function shortAddress(address) {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }

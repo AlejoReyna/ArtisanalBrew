@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Util;
+using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Application.Services.Rewards;
 using ThisCafeteria.Domain.Entities;
@@ -14,6 +15,7 @@ namespace ThisCafeteria.Web.Controllers;
 public sealed class RewardsController(
     IRewardClaimService rewardClaimService,
     ICoffeeWeb3Service web3Service,
+    BlockchainNetworkOptions chain,
     AppDbContext dbContext) : Controller
 {
     [HttpGet("api/claimable")]
@@ -52,6 +54,16 @@ public sealed class RewardsController(
         if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
+        }
+
+        if (!TryResolveCurrentWallet(out var sessionWallet))
+        {
+            return Unauthorized("Connect or sign in with your wallet before minting allocation rewards.");
+        }
+
+        if (!AddressUtil.Current.AreAddressesTheSame(wallet, sessionWallet))
+        {
+            return BadRequest("The connected wallet does not match the allocation session wallet.");
         }
 
         if (request.Amount <= 0m)
@@ -103,8 +115,15 @@ public sealed class RewardsController(
         {
             WalletAddress = wallet,
             Amount = request.Amount,
-            ClaimType = "loyalty",
+            ClaimType = "allocation",
             PaymentTransactionHash = paymentTransactionHash,
+            PaymentAmount = request.PaymentAmount,
+            PaymentChainId = chain.ChainId,
+            PaymentNetworkName = chain.NetworkName,
+            PaymentTokenContract = chain.EffectivePaymentTokenContract,
+            MarketplaceWallet = chain.MarketplaceWallet,
+            AllocationName = NormalizeAllocationName(request.AllocationName),
+            PaymentExplorerUrl = BuildExplorerTransactionUrl(paymentTransactionHash),
             ClaimedAtUtc = DateTime.UtcNow
         };
 
@@ -133,6 +152,7 @@ public sealed class RewardsController(
         }
 
         claim.TransactionHash = mintTransactionHash;
+        claim.MintExplorerUrl = BuildExplorerTransactionUrl(mintTransactionHash);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
@@ -160,6 +180,28 @@ public sealed class RewardsController(
         return true;
     }
 
+    private bool TryResolveCurrentWallet(out string wallet)
+    {
+        wallet = string.Empty;
+
+        var candidates = new[]
+        {
+            User.FindFirst("wallet_address")?.Value,
+            User.Identity?.Name,
+            HttpContext.Session.GetString("WalletAddress")
+        };
+
+        foreach (var candidate in candidates)
+        {
+            if (TryNormalizeWallet(candidate, out wallet))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private Task<bool> PaymentHashExistsAsync(
         string paymentTransactionHash,
         CancellationToken cancellationToken) =>
@@ -182,11 +224,31 @@ public sealed class RewardsController(
         return true;
     }
 
+    private string BuildExplorerTransactionUrl(string transactionHash)
+    {
+        var explorer = chain.ExplorerUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(explorer))
+        {
+            return string.Empty;
+        }
+
+        return $"{explorer.TrimEnd('/')}/tx/{transactionHash}";
+    }
+
+    private static string? NormalizeAllocationName(string? value)
+    {
+        var normalized = value?.Trim();
+        return string.IsNullOrWhiteSpace(normalized)
+            ? null
+            : normalized[..Math.Min(normalized.Length, 120)];
+    }
+
     public sealed record WalletRequest(string WalletAddress);
 
     public sealed record MintLoyaltyRequest(
         string WalletAddress,
         decimal Amount,
         decimal PaymentAmount,
-        string PaymentTransactionHash);
+        string PaymentTransactionHash,
+        string? AllocationName);
 }

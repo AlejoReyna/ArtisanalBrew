@@ -246,6 +246,7 @@
 }
 
 .yield-sync-note,
+.yield-empty-note,
 .yield-error-note {
     border-radius: 6px;
     font-size: 0.88rem;
@@ -257,6 +258,12 @@
     background: rgba(71, 97, 78, 0.1);
     border: 1px solid rgba(71, 97, 78, 0.24);
     color: #3f5b45;
+}
+
+.yield-empty-note {
+    background: rgba(45, 36, 33, 0.04);
+    border: 1px solid rgba(45, 36, 33, 0.1);
+    color: #5d534d;
 }
 
 .yield-error-note {
@@ -427,14 +434,20 @@
     border-bottom: 1px solid rgba(45, 36, 33, 0.09);
     display: grid;
     gap: 0.75rem;
-    grid-template-columns: max-content minmax(1rem, 1fr) max-content max-content;
+    grid-template-columns: max-content max-content minmax(1rem, 1fr) max-content max-content max-content;
     min-height: 3.1rem;
 }
 
-.yield-ledger-row time {
+.yield-ledger-row time,
+.yield-ledger-name {
     color: #2d2421;
     font-size: 0.86rem;
     font-weight: 700;
+}
+
+.yield-ledger-name {
+    color: rgba(45, 36, 33, 0.62);
+    min-width: 0;
 }
 
 .yield-ledger-line {
@@ -456,6 +469,25 @@
     font-weight: 850;
     letter-spacing: 0.12em;
     padding: 0.28rem 0.48rem;
+}
+
+.yield-ledger-actions {
+    display: inline-flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.yield-ledger-actions a {
+    color: #8a4d34;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.yield-ledger-actions a:hover {
+    text-decoration: underline;
 }
 
 .yield-manifesto {
@@ -572,7 +604,12 @@
         display: none;
     }
 
-    .yield-status {
+    .yield-status,
+    .yield-ledger-actions {
         justify-self: end;
+    }
+
+    .yield-ledger-name {
+        grid-column: 1 / -1;
     }
 }

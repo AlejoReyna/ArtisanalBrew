@@ -3,26 +3,30 @@
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.DependencyInjection
 @using Microsoft.Extensions.Options
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Infrastructure.Identity
+@using ThisCafeteria.Infrastructure.Persistence
 @inject ICoffeeWeb3Service Web3Service
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
+@inject IServiceProvider Services
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 
-<PageTitle>Liquid Staking &amp; CoffeeCoin | Artisanal Brew</PageTitle>
+<PageTitle>Token Allocations &amp; CoffeeCoin | Artisanal Brew</PageTitle>
 
 @if (!_isConnected)
 {
     <section class="staking-connect" data-animate="fade-up">
         <p class="eyebrow">Wallet required</p>
-        <h2>Connect MetaMask to view balances and buy with yield.</h2>
-        <p class="lede">Sign in with your wallet from the nav bar, or connect here for a staking-only session.</p>
+        <h2>Connect MetaMask to allocate Sepolia tokens and earn COFFEE.</h2>
+        <p class="lede">Sign in with your wallet from the nav bar, or connect here for an allocation-only session.</p>
         @if (!string.IsNullOrWhiteSpace(_connectError))
         {
             <p class="text-danger">@_connectError</p>
@@ -35,7 +39,7 @@
 else
 {
     <div class="yield-dashboard" data-animate="fade-up">
-        <aside class="yield-sidebar" aria-label="Yield account overview">
+        <aside class="yield-sidebar" aria-label="Allocation account overview">
             <section class="yield-account-card">
                 <p class="yield-kicker">Account Overview</p>
                 <dl class="yield-account-stats">
@@ -59,10 +63,10 @@ else
                 </button>
             </section>
 
-            <nav class="yield-side-nav" aria-label="Yield sections">
+            <nav class="yield-side-nav" aria-label="Allocation sections">
                 <a class="yield-side-nav__link active" href="staking" aria-current="page">
                     <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 18.5h16M6 15l4-4 3 3 5-7M5 6h3m8 12v-4m-6 4v-7m-6 7v-3" /></svg>
-                    Yield Dashboard
+                    Allocation Dashboard
                 </a>
                 <a class="yield-side-nav__link" href="profile">
                     <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h3" /></svg>
@@ -75,7 +79,7 @@ else
             </nav>
 
             <form method="post" action="/staking/clear-wallet-session" class="yield-disconnect">
-                <button type="submit">Disconnect staking session</button>
+                <button type="submit">Disconnect allocation session</button>
             </form>
         </aside>
 
@@ -83,20 +87,20 @@ else
             <section class="yield-hero">
                 <div>
                     <p class="yield-kicker">Bean Allocation Ledger</p>
-                    <h1>Yield Harvest</h1>
+                    <h1>Token Allocations</h1>
                     <p>
-                        Bean allocations accrue daily appreciation from pooled harvest positions, converting yield activity into redeemable COFFEE rewards.
+                        Allocate the configured Sepolia ERC-20 payment token to the marketplace wallet and receive COFFEE rewards after the transfer is verified on-chain.
                     </p>
                 </div>
-                <div class="yield-global-stat" aria-label="Current harvest">
-                    <span>Current Harvest</span>
+                <div class="yield-global-stat" aria-label="Configured reward rate">
+                    <span>Configured Rate</span>
                     <strong>@FormatApr()</strong>
                 </div>
             </section>
 
             @if (_isLoading)
             {
-                <p class="yield-sync-note">Syncing wallet balances, pool allocation, and COFFEE reward data from the chain.</p>
+                <p class="yield-sync-note">Syncing wallet balances, token allocation history, and COFFEE reward data from the chain.</p>
             }
             else if (!string.IsNullOrWhiteSpace(_dashboardError))
             {
@@ -127,6 +131,7 @@ else
                                     class="yield-allocate-link btn-buy-token"
                                     data-price="0.01"
                                     data-reward="5"
+                                    data-allocation="Espresso Italiano"
                                     disabled="@(!_paymentsConfigured)">
                                 ALLOCATE
                             </button>
@@ -147,6 +152,7 @@ else
                                     class="yield-allocate-link btn-buy-token"
                                     data-price="0.02"
                                     data-reward="12"
+                                    data-allocation="Cortado Reserve"
                                     disabled="@(!_paymentsConfigured)">
                                 ALLOCATE
                             </button>
@@ -167,6 +173,7 @@ else
                                     class="yield-allocate-link btn-buy-token"
                                     data-price="0.015"
                                     data-reward="8"
+                                    data-allocation="Seasonal Micro-Lot"
                                     disabled="@(!_paymentsConfigured)">
                                 ALLOCATE
                             </button>
@@ -176,33 +183,38 @@ else
             </section>
 
             <section class="yield-ledger" aria-labelledby="yield-ledger-title">
-                <h2 id="yield-ledger-title">YIELD PERFORMANCE LEDGER</h2>
-                <div class="yield-ledger-list">
-                    <div class="yield-ledger-row">
-                        <time datetime="2026-05-25">May 25, 2026</time>
-                        <span class="yield-ledger-line"></span>
-                        <strong>+1.24 COFFEE</strong>
-                        <span class="yield-status">SETTLED</span>
+                <h2 id="yield-ledger-title">ALLOCATION HISTORY</h2>
+                @if (_recentAllocations.Count == 0)
+                {
+                    <p class="yield-empty-note">No verified allocations are linked to this wallet yet.</p>
+                }
+                else
+                {
+                    <div class="yield-ledger-list">
+                        @foreach (var allocation in _recentAllocations)
+                        {
+                            <div class="yield-ledger-row">
+                                <time datetime="@allocation.ClaimedAtUtc.ToString("O")">
+                                    @allocation.ClaimedAtUtc.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                                </time>
+                                <span class="yield-ledger-name">@allocation.DisplayName</span>
+                                <span class="yield-ledger-line"></span>
+                                <strong>+@FormatAmount(allocation.CoffeeAmount) COFFEE</strong>
+                                <span class="yield-status">SETTLED</span>
+                                <span class="yield-ledger-actions">
+                                    @if (!string.IsNullOrWhiteSpace(allocation.PaymentExplorerUrl))
+                                    {
+                                        <a href="@allocation.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">Payment</a>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(allocation.MintExplorerUrl))
+                                    {
+                                        <a href="@allocation.MintExplorerUrl" target="_blank" rel="noopener noreferrer">Mint</a>
+                                    }
+                                </span>
+                            </div>
+                        }
                     </div>
-                    <div class="yield-ledger-row">
-                        <time datetime="2026-05-24">May 24, 2026</time>
-                        <span class="yield-ledger-line"></span>
-                        <strong>+1.18 COFFEE</strong>
-                        <span class="yield-status">SETTLED</span>
-                    </div>
-                    <div class="yield-ledger-row">
-                        <time datetime="2026-05-23">May 23, 2026</time>
-                        <span class="yield-ledger-line"></span>
-                        <strong>+0.96 COFFEE</strong>
-                        <span class="yield-status">SETTLED</span>
-                    </div>
-                    <div class="yield-ledger-row">
-                        <time datetime="2026-05-22">May 22, 2026</time>
-                        <span class="yield-ledger-line"></span>
-                        <strong>+1.07 COFFEE</strong>
-                        <span class="yield-status">SETTLED</span>
-                    </div>
-                </div>
+                }
             </section>
 
             <section class="yield-manifesto">
@@ -210,7 +222,7 @@ else
                     <p class="yield-kicker">The Roasting Standard</p>
                     <h2>The Roasting Standard.</h2>
                     <p>
-                        Seasonal harvest cycles shape the way each allocation appreciates: slower maturation, careful roasting, and daily settlement convert patient custody into measured COFFEE yield.
+                        Seasonal harvest cycles shape each allocation: verified token transfers, careful fulfillment, and on-chain COFFEE rewards keep the ledger clear.
                     </p>
                 </div>
                 <a href="story" class="yield-manifesto-link">
@@ -225,6 +237,7 @@ else
 
 @code {
     private CoffeeDashboardModel _dashboard = new();
+    private IReadOnlyList<AllocationLedgerItem> _recentAllocations = [];
     private BlockchainNetworkOptions _chain = new();
     private bool _isLoading = true;
     private bool _isConnected;
@@ -272,6 +285,7 @@ else
             {
                 marketplaceWallet = _chain.MarketplaceWallet,
                 paymentTokenContract = _chain.EffectivePaymentTokenContract,
+                expectedWalletAddress = _dashboard.WalletAddress,
                 chainId = _chain.ChainId,
                 chainIdHex = _chain.ChainIdHex,
                 networkName = _chain.NetworkName,
@@ -306,6 +320,7 @@ else
             _dashboard = await Web3Service
                 .GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token)
                 .WaitAsync(timeout.Token);
+            await LoadRecentAllocationsAsync(timeout.Token);
         }
         catch (OperationCanceledException)
         {
@@ -349,7 +364,19 @@ else
                 "import",
                 "/js/coffeeStaking.js");
 
-            var wallet = await _stakingModule.InvokeAsync<string>("connectWalletForStaking");
+            var wallet = await _stakingModule.InvokeAsync<string>(
+                "connectWalletForStaking",
+                new
+                {
+                    chainId = _chain.ChainId,
+                    chainIdHex = _chain.ChainIdHex,
+                    networkName = _chain.NetworkName,
+                    rpcUrl = _chain.RpcUrl,
+                    currencyName = _chain.CurrencyName,
+                    currencySymbol = _chain.CurrencySymbol,
+                    currencyDecimals = _chain.CurrencyDecimals,
+                    explorerUrl = _chain.ExplorerUrl
+                });
             _isConnected = !string.IsNullOrWhiteSpace(wallet);
             if (_isConnected)
             {
@@ -366,6 +393,32 @@ else
         {
             _isConnecting = false;
         }
+    }
+
+    private async Task LoadRecentAllocationsAsync(CancellationToken cancellationToken)
+    {
+        _recentAllocations = [];
+
+        var dbContext = Services.GetService<AppDbContext>();
+        if (dbContext is null || string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        {
+            return;
+        }
+
+        _recentAllocations = await dbContext.RewardClaims
+            .AsNoTracking()
+            .Where(claim =>
+                claim.WalletAddress == _dashboard.WalletAddress &&
+                (claim.ClaimType == "allocation" || claim.ClaimType == "loyalty"))
+            .OrderByDescending(claim => claim.ClaimedAtUtc)
+            .Take(8)
+            .Select(claim => new AllocationLedgerItem(
+                claim.ClaimedAtUtc,
+                claim.AllocationName,
+                claim.Amount,
+                claim.PaymentExplorerUrl,
+                claim.MintExplorerUrl))
+            .ToListAsync(cancellationToken);
     }
 
     private static bool IsConfiguredAddress(string? address) =>
@@ -396,6 +449,18 @@ else
 
         var estimatedUsd = (_dashboard.NativeBalance + _dashboard.PaymentTokenBalance) * 612.45m;
         return estimatedUsd.ToString("$#,##0.00");
+    }
+
+    private sealed record AllocationLedgerItem(
+        DateTime ClaimedAtUtc,
+        string? AllocationName,
+        decimal CoffeeAmount,
+        string? PaymentExplorerUrl,
+        string? MintExplorerUrl)
+    {
+        public string DisplayName => string.IsNullOrWhiteSpace(AllocationName)
+            ? "Coffee allocation"
+            : AllocationName;
     }
 
     public async ValueTask DisposeAsync()
