@@ -1,13 +1,13 @@
-const bnbTestnet = {
-    chainId: "0x61",
-    chainName: "BSC Testnet",
+const baseSepolia = {
+    chainId: "0x14a34",
+    chainName: "Base Sepolia",
     nativeCurrency: {
-        name: "Test BNB",
-        symbol: "tBNB",
+        name: "Sepolia ETH",
+        symbol: "ETH",
         decimals: 18
     },
-    rpcUrls: ["https://rpc.ankr.com/bsc_testnet_chapel/56e119a6270f4441ea452c1756c15ec402eb41bcb0965b5cb4b0fec0a6b4cb51"],
-    blockExplorerUrls: ["https://testnet.bscscan.com/"]
+    rpcUrls: ["https://sepolia.base.org"],
+    blockExplorerUrls: ["https://sepolia-explorer.base.org/"]
 };
 
 export async function loginWithWallet(walletName = "wallet") {
@@ -26,9 +26,9 @@ export async function loginWithWallet(walletName = "wallet") {
             return { success: false, error: "No wallet account was selected." };
         }
 
-        await ensureBnbTestnet(provider);
+        await ensureBaseSepolia(provider);
 
-        const challenge = await postJson("/api/wallet-auth/challenge", { address });
+        const challenge = await postJson("/api/wallet-auth/challenge", { address, walletName });
         const signature = await provider.request({
             method: "personal_sign",
             params: [challenge.message, address]
@@ -39,13 +39,17 @@ export async function loginWithWallet(walletName = "wallet") {
             signature,
             message: challenge.message,
             nonce: challenge.nonce,
-            chainId: challenge.chainId
+            chainId: challenge.chainId,
+            walletName
         });
 
         return {
             success: verification.success,
             address: verification.address,
-            redirectUrl: verification.redirectUrl
+            redirectUrl: verification.redirectUrl,
+            statusStored: verification.statusStored,
+            statusPublished: verification.statusPublished,
+            awsMessageId: verification.awsMessageId
         };
     } catch (error) {
         return {
@@ -70,16 +74,16 @@ function getWalletProvider(walletName) {
     return window.ethereum;
 }
 
-async function ensureBnbTestnet(provider) {
+async function ensureBaseSepolia(provider) {
     const currentChainId = await provider.request({ method: "eth_chainId" });
-    if (currentChainId?.toLowerCase() === bnbTestnet.chainId) {
+    if (currentChainId?.toLowerCase() === baseSepolia.chainId) {
         return;
     }
 
     try {
         await provider.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: bnbTestnet.chainId }]
+            params: [{ chainId: baseSepolia.chainId }]
         });
     } catch (error) {
         if (error?.code !== 4902) {
@@ -88,7 +92,7 @@ async function ensureBnbTestnet(provider) {
 
         await provider.request({
             method: "wallet_addEthereumChain",
-            params: [bnbTestnet]
+            params: [baseSepolia]
         });
     }
 }

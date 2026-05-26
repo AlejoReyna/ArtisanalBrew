@@ -7,6 +7,11 @@ window.initPublicHeader = () => {
         window.publicHeaderObserver = null;
     }
 
+    if (window.publicHeaderController) {
+        window.publicHeaderController.abort();
+        window.publicHeaderController = null;
+    }
+
     if (!hero || !header) {
         header?.classList.remove('public-header--solid');
         return;
@@ -15,17 +20,22 @@ window.initPublicHeader = () => {
     const headerHeight = header.offsetHeight || 76;
     const rootMargin = `-${headerHeight}px 0px 0px 0px`;
 
-    const setSolid = (overHero) => {
-        header.classList.toggle('public-header--solid', !overHero);
+    const updateHeader = () => {
+        header.classList.toggle('public-header--solid', hero.getBoundingClientRect().bottom <= headerHeight);
     };
 
     window.publicHeaderObserver = new IntersectionObserver(
-        ([entry]) => setSolid(entry.isIntersecting),
+        () => updateHeader(),
         { root: null, rootMargin, threshold: 0 }
     );
 
     window.publicHeaderObserver.observe(hero);
 
-    const rect = hero.getBoundingClientRect();
-    setSolid(rect.bottom > headerHeight);
+    window.publicHeaderController = new AbortController();
+    const { signal } = window.publicHeaderController;
+
+    window.addEventListener('scroll', updateHeader, { passive: true, signal });
+    window.addEventListener('resize', updateHeader, { signal });
+
+    updateHeader();
 };

@@ -66,7 +66,7 @@ public sealed class RewardsController(
 
         if (!TryNormalizeTransactionHash(request.PaymentTransactionHash, out var paymentTransactionHash))
         {
-            return BadRequest("A valid ankrBNB payment transaction hash is required.");
+            return BadRequest("A valid payment token transaction hash is required.");
         }
 
         if (await PaymentHashExistsAsync(paymentTransactionHash, cancellationToken))
@@ -83,7 +83,7 @@ public sealed class RewardsController(
         if (!verified)
         {
             return BadRequest(
-                "Payment transaction could not be verified on-chain. It must be a successful ankrBNB transfer from your wallet to the configured marketplace wallet for the exact coffee price.");
+                "Payment transaction could not be verified on-chain. It must be a successful configured ERC-20 payment token transfer from your wallet to the configured marketplace wallet for the exact coffee price.");
         }
 
         if (!web3Service.IsMintingConfigured)

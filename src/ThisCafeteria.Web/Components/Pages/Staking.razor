@@ -4,14 +4,14 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
+@using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Infrastructure.Identity
-@using ThisCafeteria.Web.Configuration
 @inject ICoffeeWeb3Service Web3Service
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IHttpContextAccessor HttpContextAccessor
-@inject IOptions<BnbTestnetOptions> ChainOptions
+@inject IOptions<BlockchainNetworkOptions> ChainOptions
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 
@@ -44,8 +44,8 @@ else
                         <dd>@EstimatedWalletUsd()</dd>
                     </div>
                     <div>
-                        <dt>Pool Allocation</dt>
-                        <dd>@FormatDashboardAmount(_dashboard.AnkrBnbBalance, " ETH")</dd>
+                        <dt>Payment Token Balance</dt>
+                        <dd>@FormatDashboardAmount(_dashboard.PaymentTokenBalance)</dd>
                     </div>
                     <div>
                         <dt>COFFEE Balance</dt>
@@ -109,7 +109,7 @@ else
             @if (!_paymentsConfigured)
             {
                 <p class="yield-config-note">
-                    Configure the marketplace wallet and COFFEE contract before enabling on-chain reward redemption.
+                    Configure a Base Sepolia ERC-20 payment token, marketplace wallet, and COFFEE contract before enabling on-chain reward redemption.
                 </p>
             }
 
@@ -124,7 +124,7 @@ else
                         <div>
                             <strong>0.024 ETH</strong>
                             <button type="button"
-                                    class="yield-allocate-link btn-buy-ankr"
+                                    class="yield-allocate-link btn-buy-token"
                                     data-price="0.01"
                                     data-reward="5"
                                     disabled="@(!_paymentsConfigured)">
@@ -144,7 +144,7 @@ else
                         <div>
                             <strong>0.038 ETH</strong>
                             <button type="button"
-                                    class="yield-allocate-link btn-buy-ankr"
+                                    class="yield-allocate-link btn-buy-token"
                                     data-price="0.02"
                                     data-reward="12"
                                     disabled="@(!_paymentsConfigured)">
@@ -164,7 +164,7 @@ else
                         <div>
                             <strong>0.031 ETH</strong>
                             <button type="button"
-                                    class="yield-allocate-link btn-buy-ankr"
+                                    class="yield-allocate-link btn-buy-token"
                                     data-price="0.015"
                                     data-reward="8"
                                     disabled="@(!_paymentsConfigured)">
@@ -225,7 +225,7 @@ else
 
 @code {
     private CoffeeDashboardModel _dashboard = new();
-    private BnbTestnetOptions _chain = new();
+    private BlockchainNetworkOptions _chain = new();
     private bool _isLoading = true;
     private bool _isConnected;
     private bool _isConnecting;
@@ -240,6 +240,7 @@ else
     {
         _chain = ChainOptions.Value;
         _paymentsConfigured = IsConfiguredAddress(_chain.MarketplaceWallet) &&
+            IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
             IsConfiguredAddress(_chain.CoffeeCoinContract);
 
         var wallet = await ResolveWalletAddressAsync();
@@ -270,10 +271,15 @@ else
             new
             {
                 marketplaceWallet = _chain.MarketplaceWallet,
-                ankrBnbContract = _chain.AnkrBNBContract,
+                paymentTokenContract = _chain.EffectivePaymentTokenContract,
                 chainId = _chain.ChainId,
                 chainIdHex = _chain.ChainIdHex,
-                rpcUrl = _chain.RpcUrl
+                networkName = _chain.NetworkName,
+                rpcUrl = _chain.RpcUrl,
+                currencyName = _chain.CurrencyName,
+                currencySymbol = _chain.CurrencySymbol,
+                currencyDecimals = _chain.CurrencyDecimals,
+                explorerUrl = _chain.ExplorerUrl
             });
 
         _jsInitialized = true;
@@ -303,7 +309,7 @@ else
         }
         catch (OperationCanceledException)
         {
-            _dashboardError = "The Ankr RPC request timed out. Check the configured RPC URL and try again.";
+            _dashboardError = "The configured RPC request timed out. Check the configured RPC URL and try again.";
         }
         catch (Exception ex)
         {
@@ -388,7 +394,7 @@ else
             return "Syncing...";
         }
 
-        var estimatedUsd = (_dashboard.BnbBalance + _dashboard.AnkrBnbBalance) * 612.45m;
+        var estimatedUsd = (_dashboard.NativeBalance + _dashboard.PaymentTokenBalance) * 612.45m;
         return estimatedUsd.ToString("$#,##0.00");
     }
 

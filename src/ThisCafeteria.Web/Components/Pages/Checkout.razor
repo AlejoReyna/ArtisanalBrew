@@ -40,7 +40,7 @@
                 <p class="eyebrow">Payment confirmed</p>
                 <h1 class="checkout-success__title">Thank you.</h1>
                 <p class="checkout-success__lede">
-                    Your BNB payment was accepted. We are preparing your order for roast and dispatch.
+                    Your Base Sepolia ETH payment was accepted. We are preparing your order for roast and dispatch.
                 </p>
 
                 <dl class="checkout-success__receipt">
@@ -51,7 +51,7 @@
                     <div class="checkout-success__receipt-row">
                         <dt>Paid</dt>
                         <dd>
-                            @FormatBnb(_paidBnbAmount)
+                            @FormatEth(_paidEthAmount)
                             <span class="checkout-success__receipt-muted">(@FormatUsd(_paidUsdAmount) USD)</span>
                         </dd>
                     </div>
@@ -151,10 +151,10 @@
 
                 <article class="checkout-payment-method" data-animate="fade-up">
                     <div class="checkout-payment-method__mark">
-                        <img src="/images/bnb_logo.webp" alt="" width="48" height="48" />
+                        <span aria-hidden="true">ETH</span>
                     </div>
                     <div class="checkout-payment-method__copy">
-                        <h2>Pay with BNB (Binance Coin)</h2>
+                        <h2>Pay with ETH on Base Sepolia</h2>
                         <p>Secure decentralized transaction</p>
                     </div>
                 </article>
@@ -167,11 +167,11 @@
                         </div>
                         <div class="checkout-breakdown__row checkout-breakdown__row--rate">
                             <dt>Current Rate</dt>
-                            <dd><em>1 BNB = @FormatUsd(BnbUsdRate) USD</em></dd>
+                            <dd><em>1 ETH = @FormatUsd(EthUsdRate) USD</em></dd>
                         </div>
                         <div class="checkout-breakdown__row checkout-breakdown__row--amount">
                             <dt>Amount to Pay</dt>
-                            <dd>@FormatBnb(_bnbAmount)</dd>
+                            <dd>@FormatEth(_ethAmount)</dd>
                         </div>
                     </dl>
 
@@ -184,7 +184,7 @@
                             class="button button--dark checkout-breakdown__cta"
                             disabled="@_isPaying"
                             @onclick="PayAsync">
-                        @(_isPaying ? "Processing…" : "Pay with BNB")
+                        @(_isPaying ? "Processing…" : "Pay with ETH")
                     </button>
                 </section>
             </div>
@@ -205,7 +205,7 @@
 </section>
 
 @code {
-    private const decimal BnbUsdRate = 605.20m;
+    private const decimal EthUsdRate = 3750.00m;
     private const decimal ShippingUsd = 4.00m;
 
     private IReadOnlyList<MarketplaceCartLine> _lines = [];
@@ -213,8 +213,8 @@
     private decimal _orderTotalUsd;
     private decimal _subtotalUsd;
     private decimal _shippingUsd = ShippingUsd;
-    private decimal _bnbAmount;
-    private decimal _paidBnbAmount;
+    private decimal _ethAmount;
+    private decimal _paidEthAmount;
     private decimal _paidUsdAmount;
     private int _carouselIndex;
     private bool _isPaying;
@@ -261,7 +261,7 @@
 
         _subtotalUsd = _lines.Sum(line => line.LineTotal);
         _orderTotalUsd = _subtotalUsd + ShippingUsd;
-        _bnbAmount = _orderTotalUsd / BnbUsdRate;
+        _ethAmount = _orderTotalUsd / EthUsdRate;
     }
 
     private void ShowPreviousProduct()
@@ -305,7 +305,7 @@
             await Task.Delay(800);
 
             _paidUsdAmount = _orderTotalUsd;
-            _paidBnbAmount = _bnbAmount;
+            _paidEthAmount = _ethAmount;
             _paidAt = DateTimeOffset.Now;
             _orderReference = $"AB-{DateTimeOffset.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
             _transactionHash = $"0x{Guid.NewGuid():N}";
@@ -327,7 +327,7 @@
 
     private static string FormatUsd(decimal amount) => amount.ToString("$#,0.00");
 
-    private static string FormatBnb(decimal amount) => $"{amount:0.####} BNB";
+    private static string FormatEth(decimal amount) => $"{amount:0.####} ETH";
 
     private static string ShortAddress(string? address)
     {

@@ -1038,6 +1038,58 @@ p {
     font-size: 0.95rem;
 }
 
+.public-content:has(.editorial-hero--coffee) .journal-footer {
+    background: #31231c;
+    border-top-color: #5a463a;
+    box-sizing: border-box;
+    color: #fbf9f4;
+    margin: 0 calc(50% - 50vw) calc(clamp(1.25rem, 3vw, 3rem) * -1);
+    padding: clamp(3rem, 6vw, 5rem) max(clamp(1.25rem, 3vw, 3rem), calc((100vw - 1440px) / 2 + clamp(1.25rem, 3vw, 3rem)));
+    width: 100vw;
+}
+
+.public-content:has(.editorial-hero--coffee) .journal-footer a,
+.public-content:has(.editorial-hero--coffee) .journal-footer__logo,
+.public-content:has(.editorial-hero--coffee) .journal-footer__links a {
+    color: #fbf9f4;
+}
+
+.public-content:has(.editorial-hero--coffee) .journal-footer__brand p,
+.public-content:has(.editorial-hero--coffee) .journal-footer__brand small,
+.public-content:has(.editorial-hero--coffee) .journal-footer__links h2 {
+    color: #dccdc0;
+}
+
+.public-content:has(.editorial-hero--coffee) .journal-footer__icons a {
+    border-color: #7a6253;
+}
+
+.public-content:has(.story-intro) .journal-footer {
+    background: #050505;
+    border-top-color: #2f2f2f;
+    box-sizing: border-box;
+    color: #f8f6f2;
+    margin: 0 calc(50% - 50vw) calc(clamp(1.25rem, 3vw, 3rem) * -1);
+    padding: clamp(3rem, 6vw, 5rem) max(clamp(1.25rem, 3vw, 3rem), calc((100vw - 1440px) / 2 + clamp(1.25rem, 3vw, 3rem)));
+    width: 100vw;
+}
+
+.public-content:has(.story-intro) .journal-footer a,
+.public-content:has(.story-intro) .journal-footer__logo,
+.public-content:has(.story-intro) .journal-footer__links a {
+    color: #f8f6f2;
+}
+
+.public-content:has(.story-intro) .journal-footer__brand p,
+.public-content:has(.story-intro) .journal-footer__brand small,
+.public-content:has(.story-intro) .journal-footer__links h2 {
+    color: #b8b8b8;
+}
+
+.public-content:has(.story-intro) .journal-footer__icons a {
+    border-color: #5e5e5e;
+}
+
 @media (max-width: 900px) {
     .journal-hero__image {
         aspect-ratio: 4 / 3;

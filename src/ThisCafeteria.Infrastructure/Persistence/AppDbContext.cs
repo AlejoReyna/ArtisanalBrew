@@ -16,6 +16,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<TransparencyRecord> TransparencyRecords => Set<TransparencyRecord>();
     public DbSet<RewardClaim> RewardClaims => Set<RewardClaim>();
+    public DbSet<WalletStatusEvent> WalletStatusEvents => Set<WalletStatusEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

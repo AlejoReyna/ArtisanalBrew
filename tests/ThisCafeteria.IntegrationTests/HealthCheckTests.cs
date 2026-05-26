@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ThisCafeteria.IntegrationTests;
 
-public sealed class HealthCheckTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthCheckTests : IClassFixture<ThisCafeteriaWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> factory;
+    private readonly ThisCafeteriaWebApplicationFactory factory;
 
-    public HealthCheckTests(WebApplicationFactory<Program> factory)
+    public HealthCheckTests(ThisCafeteriaWebApplicationFactory factory)
     {
         this.factory = factory;
     }

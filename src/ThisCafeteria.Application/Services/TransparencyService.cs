@@ -1,17 +1,17 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Repositories;
 using ThisCafeteria.Domain.Entities;
 
 namespace ThisCafeteria.Application.Services;
 
-public sealed class TransparencyService(ITransparencyRecordRepository repository) : ITransparencyService
+public sealed class TransparencyService(
+    ITransparencyRecordRepository repository,
+    BlockchainNetworkOptions chainOptions) : ITransparencyService
 {
-    private const int BnbTestnetChainId = 97;
-    private const string BnbTestnetName = "BSC Testnet";
-
     public async Task CreatePendingRecordsForOrderAsync(Order order, CancellationToken cancellationToken = default)
     {
         if (order.Items.Count == 0)
@@ -28,8 +28,8 @@ public sealed class TransparencyService(ITransparencyRecordRepository repository
             Quantity = item.Quantity,
             Total = item.Total,
             OrderHash = orderHash,
-            ChainId = BnbTestnetChainId,
-            NetworkName = BnbTestnetName,
+            ChainId = chainOptions.ChainId,
+            NetworkName = chainOptions.NetworkName,
             Status = "Pending",
             CreatedAt = DateTime.UtcNow
         }).ToArray();

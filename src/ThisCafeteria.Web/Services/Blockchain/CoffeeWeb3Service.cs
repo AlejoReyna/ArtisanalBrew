@@ -8,6 +8,7 @@ using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Util;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts;
+using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Web.Configuration;
 
@@ -16,19 +17,19 @@ namespace ThisCafeteria.Web.Services.Blockchain;
 public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 {
     private readonly Web3 _readOnlyWeb3;
-    private readonly BnbTestnetOptions _chain;
+    private readonly BlockchainNetworkOptions _chain;
     private readonly CoffeeCoinOwnerOptions _owner;
-    private readonly string _ankrBnbContract;
+    private readonly string _paymentTokenContract;
     private readonly string _coffeeCoinContract;
 
     public CoffeeWeb3Service(
-        IOptions<BnbTestnetOptions> chainOptions,
+        IOptions<BlockchainNetworkOptions> chainOptions,
         IOptions<CoffeeCoinOwnerOptions> ownerOptions)
     {
         _chain = chainOptions.Value;
         _owner = ownerOptions.Value;
         _readOnlyWeb3 = new Web3(_chain.RpcUrl);
-        _ankrBnbContract = _chain.AnkrBNBContract;
+        _paymentTokenContract = _chain.EffectivePaymentTokenContract;
         _coffeeCoinContract = _chain.CoffeeCoinContract;
     }
 
@@ -66,19 +67,19 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             return new CoffeeDashboardModel();
         }
 
-        var bnbBalanceTask = _readOnlyWeb3.Eth.GetBalance.SendRequestAsync(walletAddress);
-        var ankrBalanceTask = GetErc20BalanceAsync(walletAddress, _ankrBnbContract, cancellationToken);
+        var nativeBalanceTask = _readOnlyWeb3.Eth.GetBalance.SendRequestAsync(walletAddress);
+        var paymentTokenBalanceTask = GetErc20BalanceAsync(walletAddress, _paymentTokenContract, cancellationToken);
         var coffeeBalanceTask = GetCoffeeCoinBalanceAsync(walletAddress, cancellationToken);
 
-        await Task.WhenAll(bnbBalanceTask, ankrBalanceTask, coffeeBalanceTask).ConfigureAwait(false);
+        await Task.WhenAll(nativeBalanceTask, paymentTokenBalanceTask, coffeeBalanceTask).ConfigureAwait(false);
 
-        var bnbWei = await bnbBalanceTask.ConfigureAwait(false);
+        var nativeWei = await nativeBalanceTask.ConfigureAwait(false);
 
         return new CoffeeDashboardModel
         {
             WalletAddress = walletAddress,
-            BnbBalance = Web3.Convert.FromWei(bnbWei.Value),
-            AnkrBnbBalance = await ankrBalanceTask.ConfigureAwait(false),
+            NativeBalance = Web3.Convert.FromWei(nativeWei.Value),
+            PaymentTokenBalance = await paymentTokenBalanceTask.ConfigureAwait(false),
             CoffeeCoinBalance = await coffeeBalanceTask.ConfigureAwait(false),
             CurrentApr = _chain.StakingAprPercent
         };
@@ -98,7 +99,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         if (!IsValidContract(_coffeeCoinContract))
         {
-            throw new InvalidOperationException("Blockchain:BNBTestnet:CoffeeCoinContract is not configured.");
+            throw new InvalidOperationException("Blockchain:Network:CoffeeCoinContract is not configured.");
         }
 
         if (!IsValidAddress(toAddress))
@@ -147,13 +148,13 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         catch (RpcResponseException exception) when (IsGasFundingFailure(exception))
         {
             throw new InvalidOperationException(
-                "CoffeeCoin mint failed because the configured owner wallet does not have enough tBNB to pay gas.",
+                $"CoffeeCoin mint failed because the configured owner wallet does not have enough {_chain.CurrencySymbol} on {_chain.NetworkName} to pay gas.",
                 exception);
         }
         catch (Exception exception) when (IsGasFundingFailure(exception))
         {
             throw new InvalidOperationException(
-                "CoffeeCoin mint failed because the configured owner wallet does not have enough tBNB to pay gas.",
+                $"CoffeeCoin mint failed because the configured owner wallet does not have enough {_chain.CurrencySymbol} on {_chain.NetworkName} to pay gas.",
                 exception);
         }
     }
@@ -167,7 +168,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         if (!IsTransactionHash(txHash) ||
             !IsValidAddress(expectedCustomer) ||
             expectedAmount <= 0m ||
-            !IsValidContract(_ankrBnbContract) ||
+            !IsValidContract(_paymentTokenContract) ||
             !IsValidContract(_chain.MarketplaceWallet))
         {
             return false;
@@ -182,7 +183,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         if (receipt is null ||
             receipt.Status?.Value != BigInteger.One ||
-            !AddressMatches(receipt.To, _ankrBnbContract))
+            !AddressMatches(receipt.To, _paymentTokenContract))
         {
             return false;
         }
@@ -194,7 +195,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         if (transaction is null ||
             !AddressMatches(transaction.From, expectedCustomer) ||
-            !AddressMatches(transaction.To, _ankrBnbContract))
+            !AddressMatches(transaction.To, _paymentTokenContract))
         {
             return false;
         }
@@ -209,7 +210,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         var transferEvents = receipt.DecodeAllEvents<TransferEventDTO>();
         return transferEvents.Any(transfer =>
-            AddressMatches(transfer.Log.Address, _ankrBnbContract) &&
+            AddressMatches(transfer.Log.Address, _paymentTokenContract) &&
             AddressMatches(transfer.Event.From, expectedCustomer) &&
             AddressMatches(transfer.Event.To, _chain.MarketplaceWallet) &&
             transfer.Event.Value == expectedAmountWei);

@@ -461,6 +461,57 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.ToTable("RewardClaims");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.WalletStatusEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AwsMessageId")
+                        .HasColumnType("text")
+                        .HasColumnName("aws_message_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("EventType")
+                        .HasColumnType("text")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("PayloadJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload_json");
+
+                    b.Property<DateTimeOffset?>("PublishedToAwsAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_to_aws_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<string>("WalletAddress")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("wallet_address");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AwsMessageId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WalletAddress", "CreatedAt")
+                        .HasDatabaseName("ix_wallet_status_events_wallet_created_at");
+
+                    b.ToTable("wallet_status_events");
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.TransparencyRecord", b =>
                 {
                     b.Property<Guid>("Id")

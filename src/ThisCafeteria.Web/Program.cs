@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Serilog;
 using ThisCafeteria.Application;
+using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Persistence;
@@ -17,6 +20,7 @@ using ThisCafeteria.Infrastructure.Configuration;
 LocalDotEnvLoader.LoadIfPresent();
 
 var builder = WebApplication.CreateBuilder(args);
+var hasDatabase = !string.IsNullOrWhiteSpace(DatabaseConnectionStringFactory.Resolve(builder.Configuration));
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
@@ -41,8 +45,15 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddHttpContextAccessor();
-builder.Services.Configure<BnbTestnetOptions>(
-    builder.Configuration.GetSection(BnbTestnetOptions.SectionName));
+var blockchainNetworkSection = builder.Configuration.GetSection(BlockchainNetworkOptions.SectionName);
+if (!blockchainNetworkSection.Exists())
+{
+    blockchainNetworkSection = builder.Configuration.GetSection(BlockchainNetworkOptions.LegacySectionName);
+}
+
+builder.Services.Configure<BlockchainNetworkOptions>(blockchainNetworkSection);
+builder.Services.AddSingleton(serviceProvider =>
+    serviceProvider.GetRequiredService<IOptions<BlockchainNetworkOptions>>().Value);
 builder.Services.Configure<CoffeeCoinOwnerOptions>(
     builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
 builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
@@ -53,21 +64,35 @@ builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services
-    .AddIdentity<ApplicationUser, IdentityRole>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = 8;
-        options.Password.RequireNonAlphanumeric = false;
-    })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.ConfigureApplicationCookie(options =>
+if (hasDatabase)
 {
-    options.LoginPath = "/";
-    options.AccessDeniedPath = "/access-denied";
-});
+    builder.Services
+        .AddIdentity<ApplicationUser, IdentityRole>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireNonAlphanumeric = false;
+        })
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
+
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.LoginPath = "/";
+        options.AccessDeniedPath = "/access-denied";
+    });
+}
+else
+{
+    builder.Services
+        .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
+        {
+            options.LoginPath = "/";
+            options.AccessDeniedPath = "/access-denied";
+            options.Cookie.Name = "ThisCafeteria.Wallet";
+        });
+}
 
 builder.Services.AddAuthorization(options =>
 {
@@ -101,7 +126,11 @@ app.MapHealthChecks("/health");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-await AdminIdentitySeeder.SeedAsync(app.Services, app.Configuration);
+if (hasDatabase)
+{
+    await AdminIdentitySeeder.SeedAsync(app.Services, app.Configuration);
+}
+
 ValidateMarketplaceCatalog(app.Services);
 
 app.Run();

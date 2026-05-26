@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.*" />
+    <PackageReference Include="AWSSDK.Signin" Version="3.*" />
     <PackageReference Include="AWSSDK.SimpleEmail" Version="3.*" />
     <PackageReference Include="AWSSDK.SQS" Version="3.*" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.*" />

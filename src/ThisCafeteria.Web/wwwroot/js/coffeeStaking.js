@@ -11,8 +11,6 @@ const erc20TransferAbi = [
     }
 ];
 
-const bnbTestnetRpcUrl = "https://rpc.ankr.com/bsc_testnet_chapel/56e119a6270f4441ea452c1756c15ec402eb41bcb0965b5cb4b0fec0a6b4cb51";
-
 let web3Instance = null;
 
 function getWeb3() {
@@ -52,15 +50,21 @@ export function initCoffeePurchases(config) {
 
     const web3 = getWeb3();
     const recipient = config.marketplaceWallet;
-    const ankrBnbAddress = config.ankrBnbContract;
-    const chainIdHex = config.chainIdHex;
+    const paymentTokenAddress = config.paymentTokenContract;
+    const networkName = config.networkName ?? "Base Sepolia";
+    const paymentTokenLabel = config.paymentTokenSymbol ?? "payment token";
 
     if (!recipient || recipient === "0x0000000000000000000000000000000000000000") {
         console.warn("MarketplaceWallet is not configured; coffee purchases are disabled.");
         return;
     }
 
-    document.querySelectorAll(".btn-buy-ankr").forEach((button) => {
+    if (!paymentTokenAddress || paymentTokenAddress === "0x0000000000000000000000000000000000000000") {
+        console.warn("PaymentTokenContract is not configured; coffee purchases are disabled.");
+        return;
+    }
+
+    document.querySelectorAll(".btn-buy-token").forEach((button) => {
         button.addEventListener("click", async (event) => {
             const target = event.currentTarget;
             const price = target.getAttribute("data-price");
@@ -82,13 +86,13 @@ export function initCoffeePurchases(config) {
                 const networkId = Number(await web3.eth.net.getId());
 
                 if (networkId !== config.chainId) {
-                    await ensureBnbTestnet(chainIdHex);
+                    await ensureConfiguredNetwork(config);
                 }
 
-                const tokenContract = new web3.eth.Contract(erc20TransferAbi, ankrBnbAddress);
+                const tokenContract = new web3.eth.Contract(erc20TransferAbi, paymentTokenAddress);
                 const valueInWei = web3.utils.toWei(price, "ether");
 
-                window.alert(`Processing payment of ${price} ankrBNB. Confirm in MetaMask...`);
+                window.alert(`Processing payment of ${price} ${paymentTokenLabel} on ${networkName}. Confirm in MetaMask...`);
 
                 const paymentReceipt = await tokenContract.methods
                     .transfer(recipient, valueInWei)
@@ -116,7 +120,9 @@ export function initCoffeePurchases(config) {
     });
 }
 
-async function ensureBnbTestnet(chainIdHex) {
+async function ensureConfiguredNetwork(config) {
+    const chainIdHex = config.chainIdHex;
+
     try {
         await window.ethereum.request({
             method: "wallet_switchEthereumChain",
@@ -131,14 +137,14 @@ async function ensureBnbTestnet(chainIdHex) {
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: chainIdHex,
-                chainName: "BSC Testnet",
+                chainName: config.networkName,
                 nativeCurrency: {
-                    name: "Test BNB",
-                    symbol: "tBNB",
-                    decimals: 18
+                    name: config.currencyName,
+                    symbol: config.currencySymbol,
+                    decimals: config.currencyDecimals
                 },
-                rpcUrls: [bnbTestnetRpcUrl],
-                blockExplorerUrls: ["https://testnet.bscscan.com/"]
+                rpcUrls: [config.rpcUrl],
+                blockExplorerUrls: [config.explorerUrl]
             }]
         });
     }

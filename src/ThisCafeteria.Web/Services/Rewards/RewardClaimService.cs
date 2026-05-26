@@ -19,8 +19,8 @@ public sealed class RewardClaimService(
             .GetLatestDailyClaimAsync(walletAddress, cancellationToken)
             .ConfigureAwait(false);
 
-        var dailyReward = RewardCalculator.DailyRewardFromAnkrBnb(
-            dashboard.AnkrBnbBalance,
+        var dailyReward = RewardCalculator.DailyRewardFromPaymentToken(
+            dashboard.PaymentTokenBalance,
             dashboard.CurrentApr);
 
         var canClaimToday = CanClaimToday(lastClaim?.ClaimedAtUtc);
@@ -29,7 +29,7 @@ public sealed class RewardClaimService(
         return new RewardClaimStatusModel
         {
             WalletAddress = walletAddress,
-            AnkrBnbBalance = dashboard.AnkrBnbBalance,
+            PaymentTokenBalance = dashboard.PaymentTokenBalance,
             EstimatedDailyReward = dailyReward,
             ClaimableAmount = claimable,
             CanClaimToday = canClaimToday && claimable > 0m,
@@ -59,7 +59,7 @@ public sealed class RewardClaimService(
             {
                 Success = false,
                 Error = status.ClaimableAmount <= 0m
-                    ? "No claimable rewards. Stake BNB to receive ankrBNB first."
+                    ? "No claimable rewards. Configure and fund the payment token balance first."
                     : "You already claimed today's reward. Come back tomorrow."
             };
         }
@@ -92,7 +92,7 @@ public sealed class RewardClaimService(
             return Task.FromResult(new RewardClaimResultModel
             {
                 Success = false,
-                Error = "A valid ankrBNB payment transaction hash is required."
+                Error = "A valid payment token transaction hash is required."
             });
         }
 

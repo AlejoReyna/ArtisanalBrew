@@ -22,6 +22,12 @@ main {
     z-index: 50;
 }
 
+.public-header.public-header--solid {
+    background-color: #fbf9f4;
+    backdrop-filter: none;
+    border-bottom-color: #d8d0c4;
+}
+
 .public-page:has(.editorial-hero) .public-header:not(.public-header--solid) {
     background-color: transparent;
     backdrop-filter: none;
@@ -93,47 +99,3 @@ main {
         right: 0.75rem;
         top: 0.5rem;
     }
-
-.site-footer {
-    align-items: center;
-    background: #030303;
-    color: #f7f4ef;
-    display: flex;
-    justify-content: center;
-    min-height: 12rem;
-    padding: 2.75rem clamp(1.25rem, 4vw, 4rem);
-    text-align: center;
-}
-
-.site-footer__content {
-    max-width: 48rem;
-}
-
-.site-footer h2 {
-    font-size: clamp(1.7rem, 2.6vw, 2.35rem);
-    font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1.1;
-    margin: 0;
-}
-
-.site-footer p {
-    margin: 0;
-}
-
-.site-footer__rights {
-    color: #d7d2ca;
-    font-size: 0.95rem;
-    margin-top: 0.8rem;
-}
-
-.site-footer__disclaimer {
-    color: #aaa39a;
-    font-size: 0.98rem;
-    line-height: 1.65;
-    margin-top: 1rem;
-}
-
-.public-page:has(.journal-page) .site-footer {
-    display: none;
-}

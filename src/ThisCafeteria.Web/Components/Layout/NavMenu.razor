@@ -7,7 +7,7 @@
 @implements IDisposable
 
 <nav class="site-nav" aria-label="Primary navigation">
-    <a class="navbar-brand" href="">Alexis Reyna</a>
+    <a class="navbar-brand" href="">Artisanal Brew</a>
 
     <button class="navbar-toggler"
             type="button"
@@ -53,11 +53,7 @@
                             type="button"
                             aria-haspopup="dialog"
                             @onclick="OpenWalletModal">
-                        <img class="bnb-mark"
-                             src="/images/bnb_logo.webp"
-                             alt=""
-                             width="27"
-                             height="27" />
+                        <span class="eth-mark" aria-hidden="true">ETH</span>
                         Login
                     </button>
                 </NotAuthorized>
@@ -254,6 +250,12 @@
             }
 
             _statusMessage = $"Signed in as {ShortAddress(result.Address)}.";
+            if (result.StatusStored || result.StatusPublished)
+            {
+                _statusMessage = result.StatusPublished
+                    ? $"Signed in as {ShortAddress(result.Address)}. Status published."
+                    : $"Signed in as {ShortAddress(result.Address)}. Status saved.";
+            }
             Navigation.NavigateTo(result.RedirectUrl ?? "/", forceLoad: true);
         }
         catch (JSException exception)
@@ -298,5 +300,8 @@
         public string? Address { get; set; }
         public string? RedirectUrl { get; set; }
         public string? Error { get; set; }
+        public bool StatusStored { get; set; }
+        public bool StatusPublished { get; set; }
+        public string? AwsMessageId { get; set; }
     }
 }

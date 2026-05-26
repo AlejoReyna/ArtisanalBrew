@@ -3,10 +3,10 @@ namespace ThisCafeteria.Application.Services.Rewards;
 public static class RewardCalculator
 {
     /// <summary>
-    /// Estimates daily COFFEE rewards from liquid-staked ankrBNB balance and APR (same units as ankrBNB).
+    /// Estimates daily COFFEE rewards from the configured payment token balance and APR.
     /// </summary>
-    public static decimal DailyRewardFromAnkrBnb(decimal ankrBnbBalance, decimal aprPercent) =>
-        ankrBnbBalance <= 0m || aprPercent <= 0m
+    public static decimal DailyRewardFromPaymentToken(decimal paymentTokenBalance, decimal aprPercent) =>
+        paymentTokenBalance <= 0m || aprPercent <= 0m
             ? 0m
-            : ankrBnbBalance * (aprPercent / 365m / 100m);
+            : paymentTokenBalance * (aprPercent / 365m / 100m);
 }

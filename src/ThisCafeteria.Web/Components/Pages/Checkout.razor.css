@@ -98,10 +98,10 @@
     width: 4.5rem;
 }
 
-.checkout-payment-method__mark img {
-    display: block;
-    height: 2.5rem;
-    width: 2.5rem;
+.checkout-payment-method__mark span {
+    color: #244c9c;
+    font-size: 0.88rem;
+    font-weight: 800;
 }
 
 .checkout-payment-method__copy h2 {
@@ -674,4 +674,3 @@
         position: static;
     }
 }
-

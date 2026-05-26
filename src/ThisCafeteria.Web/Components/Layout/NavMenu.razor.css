@@ -140,12 +140,18 @@
     top: -0.35rem;
 }
 
-.bnb-mark {
+.eth-mark {
+    align-items: center;
+    background: #eef4ff;
+    border: 1px solid rgba(43, 91, 190, 0.22);
     border-radius: 50%;
-    display: block;
+    color: #244c9c;
+    display: inline-flex;
     flex-shrink: 0;
+    font-size: 0.46rem;
+    font-weight: 800;
     height: 1.7rem;
-    object-fit: cover;
+    justify-content: center;
     width: 1.7rem;
 }
 
