@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Util;
 using ThisCafeteria.Application.Repositories;
@@ -8,6 +9,7 @@ using ThisCafeteria.Web.Models;
 
 namespace ThisCafeteria.Web.Controllers;
 
+[AllowAnonymous]
 [ApiController]
 [Route("api/wallet-status")]
 public sealed class WalletStatusController(
