@@ -68,22 +68,74 @@ jobs:
         run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" .
 
       - name: Prepare SSH key
+        env:
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_HOST_KEY: ${{ secrets.EC2_HOST_KEY }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/thiscafeteria-ec2
+          chmod 700 ~/.ssh
+
+          if [ -z "${EC2_SSH_PRIVATE_KEY:-}" ]; then
+            echo "EC2_SSH_PRIVATE_KEY secret is not configured." >&2
+            exit 1
+          fi
+
+          if [ -z "${EC2_HOST:-}" ]; then
+            echo "EC2_HOST secret is not configured." >&2
+            exit 1
+          fi
+
+          host="${EC2_HOST#http://}"
+          host="${host#https://}"
+          host="${host%%/*}"
+
+          printf '%s\n' "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/thiscafeteria-ec2
           chmod 600 ~/.ssh/thiscafeteria-ec2
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+          if ! ssh-keygen -y -f ~/.ssh/thiscafeteria-ec2 >/dev/null 2>&1; then
+            echo "EC2_SSH_PRIVATE_KEY is not a valid OpenSSH private key." >&2
+            exit 1
+          fi
+
+          touch ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+          if [ -n "${EC2_HOST_KEY:-}" ]; then
+            printf '%s\n' "$EC2_HOST_KEY" >> ~/.ssh/known_hosts
+          elif ! ssh-keyscan -T 15 -H "$host" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "ssh-keyscan could not fetch a host key for ${host}." >&2
+            echo "Open EC2 port 22 to GitHub Actions, or add an EC2_HOST_KEY secret." >&2
+            exit 1
+          fi
+
+          echo "EC2_HOST=$host" >> "$GITHUB_ENV"
 
       - name: Copy artifact to EC2
+        env:
+          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
+          set -euo pipefail
           scp -i ~/.ssh/thiscafeteria-ec2 \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=30 \
             "$ARCHIVE_NAME" \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:$REMOTE_TMP_ARCHIVE"
+            "${EC2_USER}@${EC2_HOST}:$REMOTE_TMP_ARCHIVE"
 
       - name: Install artifact and restart service
+        env:
+          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
+          set -euo pipefail
           ssh -i ~/.ssh/thiscafeteria-ec2 \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=30 \
+            "${EC2_USER}@${EC2_HOST}" \
             "sudo systemctl stop $REMOTE_SERVICE && \
              sudo rm -rf $REMOTE_APP_DIR/* && \
              sudo tar -xzf $REMOTE_TMP_ARCHIVE -C $REMOTE_APP_DIR && \
@@ -92,4 +144,4 @@ jobs:
              sudo systemctl status $REMOTE_SERVICE --no-pager -l"
 
       - name: Verify public health
-        run: curl --fail --show-error --silent "http://${{ secrets.EC2_HOST }}/health"
+        run: curl --fail --show-error --silent "http://${EC2_HOST}/health"
