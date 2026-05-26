@@ -9,7 +9,17 @@ public sealed class OrderRepository(AppDbContext dbContext) : IOrderRepository
     public async Task AddAsync(Order order, CancellationToken cancellationToken = default)
     {
         dbContext.Orders.Add(order);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new InvalidOperationException(
+                $"Could not save the order: {DbUpdateExceptionDetails.GetRootMessage(exception)}",
+                exception);
+        }
     }
 
     public async Task<IReadOnlyCollection<Order>> GetOrdersForUserAsync(Guid userProfileId, CancellationToken cancellationToken = default)

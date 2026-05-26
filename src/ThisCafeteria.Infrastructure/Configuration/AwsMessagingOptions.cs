@@ -8,4 +8,6 @@ public sealed class AwsMessagingOptions
     public string SqsQueueUrl { get; set; } = string.Empty;
     public string ServiceUrl { get; set; } = string.Empty;
     public string Profile { get; set; } = string.Empty;
+    public string S3BucketName { get; set; } = string.Empty;
+    public string SesSenderEmail { get; set; } = string.Empty;
 }

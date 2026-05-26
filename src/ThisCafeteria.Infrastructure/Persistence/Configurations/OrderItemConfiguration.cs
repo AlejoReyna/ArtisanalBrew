@@ -12,10 +12,9 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.Property(item => item.ProductName).HasMaxLength(160).IsRequired();
         builder.Property(item => item.UnitPrice).HasPrecision(18, 2);
         builder.Property(item => item.Total).HasPrecision(18, 2);
+        builder.Property(item => item.ProductId).IsRequired();
 
-        builder.HasOne(item => item.Product)
-            .WithMany()
-            .HasForeignKey(item => item.ProductId)
-            .OnDelete(DeleteBehavior.Restrict);
+        // Marketplace checkout stores a stable catalog id per slug; those ids are not rows in Products.
+        builder.Ignore(item => item.Product);
     }
 }

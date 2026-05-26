@@ -1,10 +1,12 @@
-using Amazon;
-using Amazon.Runtime.CredentialManagement;
+using Amazon.S3;
+using Amazon.SimpleEmailV2;
 using Amazon.SQS;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using QuestPDF.Infrastructure;
 using ThisCafeteria.Application.Repositories;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Infrastructure.Configuration;
 using ThisCafeteria.Infrastructure.Persistence;
 using ThisCafeteria.Infrastructure.Persistence.Repositories;
@@ -16,7 +18,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAwsMessaging(configuration);
+        services.AddAwsServices(configuration);
 
         var connectionString = DatabaseConnectionStringFactory.Resolve(configuration);
 
@@ -40,50 +42,34 @@ public static class DependencyInjection
         return services;
     }
 
-    public static IServiceCollection AddAwsMessaging(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAwsServices(this IServiceCollection services, IConfiguration configuration)
     {
+        QuestPDF.Settings.License = LicenseType.Community;
+
         var awsSection = configuration.GetSection(AwsMessagingOptions.SectionName);
         services.Configure<AwsMessagingOptions>(options =>
         {
-            options.Region = configuration["AWS_REGION"] ?? awsSection["Region"] ?? "us-east-1";
-            options.SqsQueueUrl = configuration["SQS_QUEUE_URL"] ?? awsSection["SqsQueueUrl"] ?? string.Empty;
-            options.ServiceUrl = configuration["AWS_SERVICE_URL"] ?? awsSection["ServiceUrl"] ?? string.Empty;
-            options.Profile = configuration["AWS_PROFILE"] ?? awsSection["Profile"] ?? string.Empty;
+            var bound = AwsClientFactory.BindOptions(configuration, awsSection);
+            options.Region = bound.Region;
+            options.SqsQueueUrl = bound.SqsQueueUrl;
+            options.ServiceUrl = bound.ServiceUrl;
+            options.Profile = bound.Profile;
+            options.S3BucketName = bound.S3BucketName;
+            options.SesSenderEmail = bound.SesSenderEmail;
         });
 
-        services.AddSingleton<IAmazonSQS>(_ =>
-        {
-            var options = new AwsMessagingOptions
-            {
-                Region = configuration["AWS_REGION"] ?? awsSection["Region"] ?? "us-east-1",
-                SqsQueueUrl = configuration["SQS_QUEUE_URL"] ?? awsSection["SqsQueueUrl"] ?? string.Empty,
-                ServiceUrl = configuration["AWS_SERVICE_URL"] ?? awsSection["ServiceUrl"] ?? string.Empty,
-                Profile = configuration["AWS_PROFILE"] ?? awsSection["Profile"] ?? string.Empty
-            };
+        var awsOptions = AwsClientFactory.BindOptions(configuration, awsSection);
 
-            var config = new AmazonSQSConfig();
-            if (!string.IsNullOrWhiteSpace(options.ServiceUrl))
-            {
-                config.ServiceURL = options.ServiceUrl;
-            }
-            else
-            {
-                config.RegionEndpoint = RegionEndpoint.GetBySystemName(options.Region);
-            }
+        services.AddSingleton(_ => AwsClientFactory.CreateSqsClient(awsOptions));
+        services.AddSingleton(_ => AwsClientFactory.CreateS3Client(awsOptions));
+        services.AddSingleton(_ => AwsClientFactory.CreateSesClient(awsOptions));
 
-            if (!string.IsNullOrWhiteSpace(options.Profile))
-            {
-                var profileStore = new CredentialProfileStoreChain();
-                if (profileStore.TryGetAWSCredentials(options.Profile, out var credentials))
-                {
-                    return new AmazonSQSClient(credentials, config);
-                }
-            }
-
-            return new AmazonSQSClient(config);
-        });
         services.AddScoped<ISqsMessagePublisher, SqsMessagePublisher>();
+        services.AddScoped<IReceiptService, ReceiptService>();
 
         return services;
     }
+
+    public static IServiceCollection AddAwsMessaging(this IServiceCollection services, IConfiguration configuration) =>
+        services.AddAwsServices(configuration);
 }

@@ -8,7 +8,7 @@ using ThisCafeteria.Infrastructure.Configuration;
 namespace ThisCafeteria.Infrastructure.Services;
 
 public sealed class SqsMessagePublisher(
-    IAmazonSQS sqs,
+    AmazonSQSClient sqs,
     IOptions<AwsMessagingOptions> options,
     ILogger<SqsMessagePublisher> logger) : ISqsMessagePublisher
 {
