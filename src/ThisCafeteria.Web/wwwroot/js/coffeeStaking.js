@@ -78,8 +78,18 @@ export function initCoffeePurchases(config) {
     }
 
     document.querySelectorAll(".btn-buy-token").forEach((button) => {
+        if (button.dataset.coffeeStakingBound === "true") {
+            return;
+        }
+
+        button.dataset.coffeeStakingBound = "true";
+
         button.addEventListener("click", async (event) => {
             const target = event.currentTarget;
+            if (target.dataset.transactionPending === "true") {
+                return;
+            }
+
             const price = target.getAttribute("data-price");
             const reward = target.getAttribute("data-reward");
             const allocationName = target.getAttribute("data-allocation");
@@ -88,6 +98,7 @@ export function initCoffeePurchases(config) {
                 return;
             }
 
+            target.dataset.transactionPending = "true";
             target.disabled = true;
 
             try {
@@ -126,6 +137,7 @@ export function initCoffeePurchases(config) {
                 const message = error?.message ?? "Transaction failed.";
                 window.alert(`Transaction cancelled or failed: ${message}`);
             } finally {
+                delete target.dataset.transactionPending;
                 target.disabled = false;
             }
         });
