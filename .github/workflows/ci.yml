@@ -46,6 +46,7 @@ jobs:
       REMOTE_APP_DIR: /opt/thiscafeteria
       REMOTE_SERVICE: thiscafeteria
       REMOTE_TMP_ARCHIVE: /tmp/thiscafeteria-web.tgz
+      EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT || '22' }}
 
     steps:
       - name: Checkout
@@ -71,6 +72,7 @@ jobs:
         env:
           EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -86,9 +88,15 @@ jobs:
             exit 1
           fi
 
+          if [ -z "${EC2_USER:-}" ]; then
+            echo "EC2_USER secret is not configured." >&2
+            exit 1
+          fi
+
           host="${EC2_HOST#http://}"
           host="${host#https://}"
           host="${host%%/*}"
+          host="${host%%:*}"
 
           printf '%s\n' "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/thiscafeteria-ec2
           chmod 600 ~/.ssh/thiscafeteria-ec2
@@ -107,6 +115,22 @@ jobs:
 
           echo "EC2_HOST=$host" >> "$GITHUB_ENV"
 
+      - name: Check EC2 SSH reachability
+        run: |
+          set -euo pipefail
+          if ! timeout 15 bash -c "cat < /dev/null > /dev/tcp/${EC2_HOST}/${EC2_SSH_PORT}" 2>/dev/null; then
+            {
+              echo "GitHub Actions cannot reach the EC2 host on TCP port ${EC2_SSH_PORT}."
+              echo
+              echo "This is a network/security-group failure, not an SSH key failure."
+              echo "Check that the EC2 instance is running, EC2_HOST is its current public IPv4/DNS name,"
+              echo "and the EC2 security group allows SSH from GitHub-hosted runners or from a self-hosted runner."
+              echo
+              echo "See docs/github-actions-ec2-deploy.md for the AWS security-group options."
+            } >&2
+            exit 1
+          fi
+
       - name: Copy artifact to EC2
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
@@ -117,6 +141,7 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             -o ConnectTimeout=30 \
+            -P "$EC2_SSH_PORT" \
             "$ARCHIVE_NAME" \
             "${EC2_USER}@${EC2_HOST}:$REMOTE_TMP_ARCHIVE"
 
@@ -130,6 +155,7 @@ jobs:
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             -o ConnectTimeout=30 \
+            -p "$EC2_SSH_PORT" \
             "${EC2_USER}@${EC2_HOST}" \
             "sudo systemctl stop $REMOTE_SERVICE && \
              sudo rm -rf $REMOTE_APP_DIR/* && \
