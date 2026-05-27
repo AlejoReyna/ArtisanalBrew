@@ -3,17 +3,67 @@
 <PageTitle>The Journal | Artisanal Brew</PageTitle>
 
 <div class="journal-page">
-    <section class="journal-hero" aria-labelledby="journal-title">
-        <div class="journal-hero__copy" data-animate="fade-up">
-            <p class="journal-kicker">Volume IV &bull; Issue II</p>
-            <h1 id="journal-title">The Bloom: A Ritual of Patience</h1>
-            <p class="journal-hero__lede">
-                Exploring the scientific beauty and meditative pause that unfold when water first meets the grounds.
-            </p>
+    <section class="journal-hero journal-carousel" aria-label="Featured journal articles" aria-roledescription="carousel">
+        <div class="journal-carousel__track">
+            <article class="journal-carousel__slide" aria-label="1 of 4" aria-roledescription="slide">
+                <div class="journal-hero__copy" data-animate="fade-up">
+                    <p class="journal-kicker">Volume IV &bull; Issue II</p>
+                    <h1>The Bloom: A Ritual of Patience</h1>
+                    <p class="journal-hero__lede">
+                        Exploring the scientific beauty and meditative pause that unfold when water first meets the grounds.
+                    </p>
+                </div>
+                <div class="journal-hero__image journal-hero__image--bloom"
+                     role="img"
+                     aria-label="A careful V60 pour-over coffee ritual in warm morning light"></div>
+            </article>
+
+            <article class="journal-carousel__slide" aria-label="2 of 4" aria-roledescription="slide">
+                <div class="journal-hero__copy" data-animate="fade-up">
+                    <p class="journal-kicker">Field Notes &bull; Harvest</p>
+                    <h1>What Altitude Leaves in the Cup</h1>
+                    <p class="journal-hero__lede">
+                        A closer look at cool mountain nights, slow ripening cherries, and the brightness they carry home.
+                    </p>
+                </div>
+                <div class="journal-hero__image journal-hero__image--altitude"
+                     role="img"
+                     aria-label="Coffee cherries ripening on a green mountain farm"></div>
+            </article>
+
+            <article class="journal-carousel__slide" aria-label="3 of 4" aria-roledescription="slide">
+                <div class="journal-hero__copy" data-animate="fade-up">
+                    <p class="journal-kicker">Brew Bar &bull; Technique</p>
+                    <h1>The Quiet Math of Water</h1>
+                    <p class="journal-hero__lede">
+                        How temperature, mineral balance, and a patient pour shape sweetness before the first sip.
+                    </p>
+                </div>
+                <div class="journal-hero__image journal-hero__image--water"
+                     role="img"
+                     aria-label="Steam rising from a kettle beside a ceramic coffee dripper"></div>
+            </article>
+
+            <article class="journal-carousel__slide" aria-label="4 of 4" aria-roledescription="slide">
+                <div class="journal-hero__copy" data-animate="fade-up">
+                    <p class="journal-kicker">Counter Culture &bull; Service</p>
+                    <h1>Designing a Slower Morning</h1>
+                    <p class="journal-hero__lede">
+                        On cafe rituals, familiar cups, and the small details that turn a daily stop into a pause.
+                    </p>
+                </div>
+                <div class="journal-hero__image journal-hero__image--morning"
+                     role="img"
+                     aria-label="A calm cafe counter with cups arranged for morning service"></div>
+            </article>
         </div>
-        <div class="journal-hero__image"
-             role="img"
-             aria-label="A careful V60 pour-over coffee ritual in warm morning light"></div>
+
+        <div class="journal-carousel__status" aria-hidden="true">
+            <span class="journal-carousel__status-bar"></span>
+            <span class="journal-carousel__status-bar"></span>
+            <span class="journal-carousel__status-bar"></span>
+            <span class="journal-carousel__status-bar"></span>
+        </div>
     </section>
 
     <section class="journal-section journal-stories" aria-labelledby="short-stories-title">

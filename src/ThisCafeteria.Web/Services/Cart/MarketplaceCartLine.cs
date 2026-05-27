@@ -5,7 +5,9 @@ public sealed record MarketplaceCartLine(
     string Name,
     string ImageClass,
     decimal UnitPrice,
-    int Quantity)
+    int Quantity,
+    string? ImageUrl = null,
+    Guid ProductId = default)
 {
     public decimal LineTotal => UnitPrice * Quantity;
 }

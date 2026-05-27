@@ -1,7 +1,422 @@
 @page "/admin/products"
 @layout AdminLayout
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "RequireAdmin")]
+@using ThisCafeteria.Domain.Enums
+@inject IProductService ProductService
+@inject IJSRuntime JS
 
 <PageTitle>Admin products</PageTitle>
 
-<h1>Admin products</h1>
-<p>Product management UI placeholder for protected admin workflows.</p>
+<section class="admin-products">
+    <div class="admin-products__heading">
+        <div>
+            <p class="eyebrow">Products</p>
+            <h1>Inventory</h1>
+        </div>
+        <span>@_products.Count product@(_products.Count == 1 ? string.Empty : "s")</span>
+    </div>
+
+    <div class="admin-products__grid">
+        <article class="admin-panel">
+            <h2>Add product</h2>
+
+            <EditForm Model="_form" OnSubmit="CreateProductAsync" class="admin-product-form">
+                <label for="product-name">Name</label>
+                <InputText id="product-name" @bind-Value="_form.Name" maxlength="160" />
+
+                <label for="product-description">Description</label>
+                <InputTextArea id="product-description" @bind-Value="_form.Description" maxlength="1000" />
+
+                <div class="admin-product-form__row">
+                    <div>
+                        <label for="product-price">Price</label>
+                        <InputNumber id="product-price" @bind-Value="_form.Price" />
+                    </div>
+                    <div>
+                        <label for="product-stock">Stock</label>
+                        <InputNumber id="product-stock" @bind-Value="_form.StockQuantity" />
+                    </div>
+                </div>
+
+                <label for="product-category">Category</label>
+                <InputSelect id="product-category" @bind-Value="_form.Category">
+                    @foreach (var category in Enum.GetValues<ProductCategory>())
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </InputSelect>
+
+                <label for="product-image">Image URL</label>
+                <InputText id="product-image" @bind-Value="_form.ImageUrl" maxlength="2048" />
+
+                @if (_messages.Count > 0)
+                {
+                    <ul class="admin-product-form__messages">
+                        @foreach (var message in _messages)
+                        {
+                            <li>@message</li>
+                        }
+                    </ul>
+                }
+
+                <button class="button button--dark" type="submit" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : "Add product")
+                </button>
+            </EditForm>
+        </article>
+
+        <article class="admin-panel admin-panel--wide">
+            <h2>Database products</h2>
+
+            @if (_isLoading)
+            {
+                <p>Loading products.</p>
+            }
+            else if (_products.Count == 0)
+            {
+                <p>No products exist in the database yet.</p>
+            }
+            else
+            {
+                <div class="admin-product-table-wrap">
+                    <table class="admin-product-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Product</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Price</th>
+                                <th scope="col">Stock</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var product in _products)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@product.Name</strong>
+                                        <span>@product.Slug</span>
+                                    </td>
+                                    <td>@product.Category</td>
+                                    <td>@product.Price.ToString("C")</td>
+                                    <td>@product.StockQuantity</td>
+                                    <td>@(product.IsActive ? "Active" : "Inactive")</td>
+                                    <td class="admin-product-table__actions">
+                                        <button type="button"
+                                                class="admin-product-table__button"
+                                                disabled="@_isSaving"
+                                                @onclick="() => ToggleProductAsync(product)">
+                                            @(product.IsActive ? "Deactivate" : "Reactivate")
+                                        </button>
+                                        <button type="button"
+                                                class="admin-product-table__button admin-product-table__button--delete"
+                                                disabled="@_isSaving"
+                                                @onclick="() => DeleteProductAsync(product)">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </article>
+    </div>
+</section>
+
+<style>
+    .admin-products {
+        height: calc(100vh - 4rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .admin-products__heading {
+        align-items: end;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-shrink: 0;
+    }
+
+    .admin-products__heading h1 {
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        margin: 0;
+    }
+
+    .admin-products__heading span {
+        color: #746a63;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .admin-products__grid {
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: minmax(320px, 1fr) 2fr;
+        align-items: stretch;
+        flex-grow: 1;
+        min-height: 0;
+    }
+
+    .admin-panel {
+        background: #fffdf9;
+        border: 1px solid #d8d0c4;
+        padding: clamp(1.25rem, 2vw, 2rem);
+        overflow-y: auto;
+        max-height: calc(100vh - 10rem); /* Ensure scrollable within screen height */
+    }
+
+    .admin-panel h2 {
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
+        margin-top: 0;
+    }
+
+    .admin-product-form {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .admin-product-form label {
+        font-weight: 700;
+    }
+
+    .admin-product-form input,
+    .admin-product-form textarea,
+    .admin-product-form select {
+        background: #fbf9f4;
+        border: 1px solid #d8d0c4;
+        color: #2d2421;
+        min-height: 3rem;
+        padding: 0.75rem 1rem;
+        width: 100%;
+    }
+
+    .admin-product-form textarea {
+        min-height: 8rem;
+        resize: vertical;
+    }
+
+    .admin-product-form__row {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-product-form__messages {
+        color: #b32121;
+        margin: 0;
+        padding-left: 1.2rem;
+    }
+
+    .admin-product-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admin-product-table {
+        border-collapse: collapse;
+        min-width: 720px;
+        width: 100%;
+    }
+
+    .admin-product-table th,
+    .admin-product-table td {
+        border-bottom: 1px solid #d8d0c4;
+        padding: 0.85rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .admin-product-table th {
+        color: #8d6f55;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .admin-product-table td span {
+        color: #746a63;
+        display: block;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .admin-product-table__button {
+        background: transparent;
+        border: 1px solid #2d2421;
+        color: #2d2421;
+        cursor: pointer;
+        font-weight: 700;
+        min-height: 2.4rem;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .admin-product-table__actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .admin-product-table__button--delete {
+        color: #b32121;
+        border-color: #b32121;
+    }
+
+    .admin-product-table__button--delete:hover:not(:disabled) {
+        background: #fdf2f2;
+    }
+
+    @@media (max-width: 980px) {
+        .admin-products {
+            height: auto;
+        }
+
+        .admin-products__grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+        }
+
+        .admin-product-form__row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    private readonly ProductFormModel _form = new();
+    private IReadOnlyCollection<ProductDto> _products = [];
+    private readonly List<string> _messages = [];
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProductsAsync();
+    }
+
+    private async Task CreateProductAsync()
+    {
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            await ProductService.CreateProductAsync(new CreateProductRequest(
+                _form.Name,
+                _form.Description,
+                _form.Price,
+                _form.StockQuantity,
+                _form.ImageUrl,
+                _form.Category));
+
+            _form.Reset();
+            await LoadProductsAsync();
+        }
+        catch (FluentValidation.ValidationException exception)
+        {
+            _messages.AddRange(exception.Errors.Select(error => error.ErrorMessage));
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ToggleProductAsync(ProductDto product)
+    {
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            await ProductService.UpdateProductAsync(
+                product.Id,
+                new UpdateProductRequest(
+                    product.Name,
+                    product.Description,
+                    product.Price,
+                    product.StockQuantity,
+                    product.ImageUrl,
+                    product.Category,
+                    !product.IsActive));
+
+            await LoadProductsAsync();
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteProductAsync(ProductDto product)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.Name}'? This action cannot be undone.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            var deleted = await ProductService.DeleteProductAsync(product.Id);
+            if (deleted)
+            {
+                await LoadProductsAsync();
+            }
+            else
+            {
+                _messages.Add("Product not found or could not be deleted.");
+            }
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        _isLoading = true;
+        _products = await ProductService.GetProductsAsync();
+        _isLoading = false;
+    }
+
+    private sealed class ProductFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Price { get; set; } = 1m;
+        public int StockQuantity { get; set; } = 1;
+        public string? ImageUrl { get; set; }
+        public ProductCategory Category { get; set; } = ProductCategory.Coffee;
+
+        public void Reset()
+        {
+            Name = string.Empty;
+            Description = string.Empty;
+            Price = 1m;
+            StockQuantity = 1;
+            ImageUrl = null;
+            Category = ProductCategory.Coffee;
+        }
+    }
+}

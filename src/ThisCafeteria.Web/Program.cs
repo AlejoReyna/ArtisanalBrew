@@ -134,6 +134,7 @@ app.MapRazorComponents<App>()
 if (hasDatabase)
 {
     await AdminIdentitySeeder.SeedAsync(app.Services, app.Configuration);
+    await SeedDatabaseAsync(app.Services);
 }
 
 ValidateMarketplaceCatalog(app.Services);
@@ -177,6 +178,13 @@ static void ValidateMarketplaceCatalog(IServiceProvider services)
     {
         logger.LogError(exception, "Marketplace catalog validation failed at startup");
     }
+}
+
+static async Task SeedDatabaseAsync(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await seeder.SeedAsync();
 }
 
 public partial class Program;

@@ -9,6 +9,8 @@
     background: #1f1a18;
     color: #fbf9f4;
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .admin-brand {
@@ -16,30 +18,70 @@
     display: inline-block;
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     text-decoration: none;
 }
 
-.admin-nav {
-    display: grid;
-    gap: 0.35rem;
+.admin-sidebar__menu {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 }
 
-.admin-nav ::deep a {
-    border: 1px solid rgba(251, 249, 244, 0.14);
+::deep .admin-menu-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(251, 249, 244, 0.14);
     color: rgba(251, 249, 244, 0.72);
-    padding: 0.85rem 1rem;
     text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+    box-sizing: border-box;
+    padding: 0.5rem 1rem;
 }
 
-.admin-nav ::deep a.active,
-.admin-nav ::deep a:hover {
+::deep .admin-menu-item:first-child {
+    border-top: 1px solid rgba(251, 249, 244, 0.14);
+}
+
+::deep .admin-menu-item:hover,
+::deep .admin-menu-item.active {
     background: rgba(251, 249, 244, 0.1);
     color: #fbf9f4;
 }
 
+::deep .admin-logout-form {
+    display: flex;
+    padding: 0;
+}
+
+::deep .admin-logout-form button {
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    font-size: inherit;
+    font-family: inherit;
+    font-weight: inherit;
+    display: flex;
+    align-items: center;
+}
+
 .admin-main {
     padding: clamp(1.5rem, 4vw, 4rem);
+}
+
+.admin-main--unauthorized {
+    display: grid;
+    gap: 1rem;
+    margin: 0 auto;
+    max-width: 44rem;
+    min-height: 70vh;
+    place-content: center;
 }
 
 @media (min-width: 800px) {
@@ -48,8 +90,9 @@
     }
 
     .admin-sidebar {
-        min-height: 100vh;
+        height: 100vh;
         position: sticky;
         top: 0;
+        box-sizing: border-box;
     }
 }

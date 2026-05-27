@@ -33,7 +33,10 @@
                 {
                     <li class="cart-line">
                         <a class="cart-line__media" href="@($"products/{line.Slug}")">
-                            <div class="image-frame cart-line__image @line.ImageClass" role="img" aria-label="@line.Name"></div>
+                            <div class="image-frame cart-line__image @line.ImageClass"
+                                 style="@BackgroundImage(line.ImageUrl)"
+                                 role="img"
+                                 aria-label="@line.Name"></div>
                         </a>
 
                         <div class="cart-line__details">
@@ -152,4 +155,7 @@
     }
 
     private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+
+    private static string? BackgroundImage(string? imageUrl) =>
+        string.IsNullOrWhiteSpace(imageUrl) ? null : $"background-image: url('{imageUrl}');";
 }

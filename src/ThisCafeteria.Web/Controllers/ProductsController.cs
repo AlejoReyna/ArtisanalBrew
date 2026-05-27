@@ -23,6 +23,13 @@ public sealed class ProductsController(IProductService productService) : Control
         return product is null ? NotFound() : Ok(product);
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<ProductDto>> GetProductBySlug(string slug, CancellationToken cancellationToken)
+    {
+        var product = await productService.GetProductBySlugAsync(slug, cancellationToken);
+        return product is null ? NotFound() : Ok(product);
+    }
+
     [Authorize(Policy = "RequireAdmin")]
     [HttpPost]
     public async Task<ActionResult<ProductDto>> CreateProduct(CreateProductRequest request, CancellationToken cancellationToken)

@@ -1,0 +1,80 @@
+@page "/admin/login"
+
+<PageTitle>Admin login</PageTitle>
+
+<section class="admin-login">
+    <div class="admin-login__panel">
+        <p class="eyebrow">Admin</p>
+        <h1>Sign in</h1>
+
+        @if (!string.IsNullOrWhiteSpace(Error))
+        {
+            <p class="admin-login__error">The admin email or password was not accepted.</p>
+        }
+
+        <form method="post" action="/admin/login-action" class="admin-login__form">
+            <label for="admin-email">Email</label>
+            <input id="admin-email" name="Email" type="email" autocomplete="username" required />
+
+            <label for="admin-password">Password</label>
+            <input id="admin-password" name="Password" type="password" autocomplete="current-password" required />
+
+            <label class="admin-login__remember">
+                <input name="RememberMe" type="checkbox" value="true" />
+                <span>Remember this admin session</span>
+            </label>
+
+            <button class="button button--dark" type="submit">Sign in</button>
+        </form>
+    </div>
+</section>
+
+<style>
+    .admin-login {
+        align-items: center;
+        display: grid;
+        min-height: 70vh;
+    }
+
+    .admin-login__panel {
+        border: 1px solid var(--line);
+        margin-inline: auto;
+        max-width: 32rem;
+        padding: clamp(1.5rem, 4vw, 3rem);
+        width: 100%;
+    }
+
+    .admin-login h1 {
+        font-size: clamp(2.5rem, 6vw, 4.5rem);
+    }
+
+    .admin-login__form {
+        display: grid;
+        gap: 0.8rem;
+        margin-top: 1.5rem;
+    }
+
+    .admin-login__form input:not([type="checkbox"]) {
+        background: var(--white);
+        border: 1px solid var(--line);
+        color: var(--ink);
+        min-height: 3rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .admin-login__remember {
+        align-items: center;
+        display: flex;
+        gap: 0.6rem;
+    }
+
+    .admin-login__error {
+        color: #b32121;
+        margin: 1rem 0 0;
+    }
+</style>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? Error { get; set; }
+}

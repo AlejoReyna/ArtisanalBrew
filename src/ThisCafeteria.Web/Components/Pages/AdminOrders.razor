@@ -1,7 +1,246 @@
 @page "/admin/orders"
 @layout AdminLayout
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "RequireAdmin")]
+@using ThisCafeteria.Application.DTOs
+@inject IOrderService OrderService
 
 <PageTitle>Admin orders</PageTitle>
 
-<h1>Admin orders</h1>
-<p>Order management UI placeholder for protected admin workflows.</p>
+<section class="admin-products">
+    <div class="admin-products__heading">
+        <div>
+            <p class="eyebrow">Commerce</p>
+            <h1>Orders</h1>
+        </div>
+        <span>@_transactions.Count transaction@(_transactions.Count == 1 ? string.Empty : "s")</span>
+    </div>
+
+    <div class="admin-panel admin-panel--wide" style="flex-grow: 1; overflow-y: auto;">
+        @if (_isLoadingTransactions)
+        {
+            <div class="transaction-ledger__state">
+                <p>Loading commerce transactions...</p>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_transactionLoadError))
+        {
+            <div class="transaction-ledger__state">
+                <p>@_transactionLoadError</p>
+            </div>
+        }
+        else if (_transactions.Count == 0)
+        {
+            <div class="transaction-ledger__state">
+                <p>No commerce transactions have been recorded yet.</p>
+            </div>
+        }
+        else
+        {
+            <div class="transaction-table-wrap">
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Order</th>
+                            <th scope="col">Products</th>
+                            <th scope="col">Wallet</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Transaction</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in _transactions)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="transaction-table__primary">@transaction.OrderNumber</span>
+                                    <span class="transaction-table__secondary">@FormatPaidAt(transaction.PaidAtUtc)</span>
+                                </td>
+                                <td>
+                                    <span class="transaction-table__primary">@transaction.ProductSummary</span>
+                                    <span class="transaction-table__secondary">@FormatItemCount(transaction.ItemCount)</span>
+                                </td>
+                                <td>
+                                    <span class="transaction-table__primary">@ShortAddress(transaction.WalletAddress)</span>
+                                    <span class="transaction-table__secondary">@FormatNetwork(transaction.PaymentNetworkName, transaction.PaymentChainId)</span>
+                                </td>
+                                <td>
+                                    <span class="transaction-table__primary">@transaction.Total.ToString("C")</span>
+                                    <span class="transaction-table__secondary">@FormatEth(transaction.PaymentEthAmount)</span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(transaction.PaymentExplorerUrl) &&
+                                        !string.IsNullOrWhiteSpace(transaction.PaymentTransactionHash))
+                                    {
+                                        <a href="@transaction.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
+                                            @ShortAddress(transaction.PaymentTransactionHash)
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="transaction-table__secondary">Pending chain record</span>
+                                    }
+                                    <span class="transaction-status">@transaction.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private IReadOnlyCollection<CommerceTransactionDto> _transactions = [];
+    private bool _isLoadingTransactions = true;
+    private string? _transactionLoadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _transactions = await OrderService.GetCommerceTransactionsAsync();
+        }
+        catch (Exception exception)
+        {
+            _transactionLoadError = $"Commerce transactions could not be loaded: {exception.Message}";
+        }
+        finally
+        {
+            _isLoadingTransactions = false;
+        }
+    }
+
+    private static string ShortAddress(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return "Not linked";
+        }
+
+        return address.Length >= 12 ? $"{address[..6]}...{address[^4..]}" : address;
+    }
+
+    private static string FormatNetwork(string? networkName, int? chainId)
+    {
+        if (!string.IsNullOrWhiteSpace(networkName))
+        {
+            return networkName;
+        }
+
+        return chainId is null ? "Not recorded" : $"Chain {chainId}";
+    }
+
+    private static string FormatEth(decimal? amount) =>
+        amount is null ? "Not recorded" : $"{amount.Value:0.####} ETH";
+
+    private static string FormatItemCount(int itemCount) =>
+        itemCount == 1 ? "1 item" : $"{itemCount} items";
+
+    private static string FormatPaidAt(DateTime? paidAtUtc) =>
+        paidAtUtc is null ? "Pending" : FormatDate(paidAtUtc.Value);
+
+    private static string FormatDate(DateTime date) =>
+        date.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
+}
+
+<style>
+    .admin-products {
+        height: calc(100vh - 4rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .admin-products__heading {
+        align-items: end;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-shrink: 0;
+    }
+
+    .admin-products__heading h1 {
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        margin: 0;
+    }
+
+    .admin-products__heading span {
+        color: #746a63;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .admin-panel {
+        background: #fffdf9;
+        border: 1px solid #d8d0c4;
+        padding: clamp(1.25rem, 2vw, 2rem);
+    }
+
+    .transaction-table-wrap {
+        overflow-x: auto;
+    }
+
+    .transaction-table {
+        border-collapse: collapse;
+        min-width: 760px;
+        width: 100%;
+    }
+
+    .transaction-table th,
+    .transaction-table td {
+        border-bottom: 1px solid #d8d0c4;
+        padding: 0.85rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .transaction-table th {
+        color: #8d6f55;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .transaction-table td {
+        color: #2d2421;
+    }
+
+    .transaction-table tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .transaction-table__primary {
+        color: #2d2421;
+        display: block;
+        font-weight: 700;
+    }
+
+    .transaction-table__secondary {
+        color: #746a63;
+        display: block;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .transaction-table a {
+        color: #2d2421;
+        font-weight: 700;
+    }
+
+    .transaction-status {
+        border: 1px solid #d8d0c4;
+        border-radius: 999px;
+        display: table;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        margin-top: 0.5rem;
+        padding: 0.35rem 0.7rem;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+</style>

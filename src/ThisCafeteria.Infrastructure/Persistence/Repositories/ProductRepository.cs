@@ -19,6 +19,13 @@ public sealed class ProductRepository(AppDbContext dbContext) : IProductReposito
         return dbContext.Products.FirstOrDefaultAsync(product => product.Id == id, cancellationToken);
     }
 
+    public Task<Product?> GetProductBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        return dbContext.Products
+            .AsNoTracking()
+            .FirstOrDefaultAsync(product => product.Slug == slug, cancellationToken);
+    }
+
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {
         dbContext.Products.Add(product);
@@ -33,8 +40,12 @@ public sealed class ProductRepository(AppDbContext dbContext) : IProductReposito
 
     public async Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
     {
-        product.IsActive = false;
-        product.UpdatedAt = DateTime.UtcNow;
+        var cartItems = await dbContext.CartItems
+            .Where(item => item.ProductId == product.Id)
+            .ToArrayAsync(cancellationToken);
+
+        dbContext.CartItems.RemoveRange(cartItems);
+        dbContext.Products.Remove(product);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

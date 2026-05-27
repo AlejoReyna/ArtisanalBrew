@@ -1,15 +1,23 @@
 @page "/products/{Slug}"
 @rendermode InteractiveServer
 @inject IJSRuntime JS
+@inject IProductService ProductService
 @inject IShoppingCartService CartService
 @inject ICartMutationClient CartMutationClient
 @inject ILogger<ProductDetails> Logger
+@using ThisCafeteria.Domain.Enums
 @using ThisCafeteria.Web.Catalog
 @using ThisCafeteria.Web.Services.Cart
 
-<PageTitle>@(product?.Name ?? "Product") | Artisanal Brew</PageTitle>
+<PageTitle>@(_product?.Name ?? "Product") | Artisanal Brew</PageTitle>
 
-@if (product is null)
+@if (_isLoading)
+{
+    <section class="product-detail product-detail--empty" data-animate="fade-up">
+        <h1>Loading product</h1>
+    </section>
+}
+else if (_product is null)
 {
     <section class="product-detail product-detail--empty" data-animate="fade-up">
         <h1>Product not found</h1>
@@ -19,15 +27,13 @@
 }
 else
 {
+    var product = BuildDetail(_product);
+
     <nav class="product-detail__back" aria-label="Breadcrumb" data-animate="fade-up">
         <a href="products">← Shop</a>
     </nav>
 
-    <section class="product-detail-hero" data-animate="fade-up">
-        <div class="product-detail-hero__media">
-            <div class="image-frame product-detail-hero__image @product.ImageClass" role="img" aria-label="@product.Name product photography"></div>
-        </div>
-
+    <section class="product-detail-hero" data-product-detail="@product.Slug" data-animate="fade-up">
         <div class="product-detail-hero__copy">
             <p class="eyebrow">@product.Eyebrow</p>
             <h1>@product.Name</h1>
@@ -35,7 +41,7 @@ else
             <p class="product-detail-hero__narrative">@product.Description</p>
 
             <div class="product-detail-hero__notes">
-                <p class="product-detail-hero__notes-label">@(product.Section == MarketplaceCatalog.BeansSection ? "Flavor Notes" : "Highlights")</p>
+                <p class="product-detail-hero__notes-label">Highlights</p>
                 <ul>
                     @foreach (var note in product.FlavorNotes)
                     {
@@ -53,6 +59,14 @@ else
                     @(_isAdding ? "Adding…" : "Add to cart")
                 </button>
             </div>
+        </div>
+
+        <div class="product-detail-hero__media" data-product-detail-media>
+            <div class="image-frame product-detail-hero__image @product.ImageClass"
+                 style="@BackgroundImage(product.RegionImageSrc)"
+                 role="img"
+                 aria-label="@product.Name product photography"
+                 data-product-detail-image></div>
         </div>
     </section>
 
@@ -131,21 +145,28 @@ else
     [Parameter]
     public string Slug { get; set; } = string.Empty;
 
-    private MarketplaceProductDetail? product;
+    private ProductDto? _product;
+    private bool _isLoading = true;
     private bool _isAdding;
+    private bool _shouldRunDetailEntry;
     private int _quantity = 1;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        product = MarketplaceCatalog.TryGetBySlug(Slug);
+        _isLoading = true;
+        _product = await ProductService.GetProductBySlugAsync(Slug);
         _quantity = 1;
+        _isLoading = false;
+        _shouldRunDetailEntry = _product is not null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender || _shouldRunDetailEntry)
         {
+            _shouldRunDetailEntry = false;
             await JS.InvokeVoidAsync("queueAnimations");
+            await JS.InvokeVoidAsync("productTransition.playDetailEntry", Slug);
         }
     }
 
@@ -192,7 +213,7 @@ else
 
     private async Task AddToCartAsync()
     {
-        if (product is null || _isAdding)
+        if (_product is null || _isAdding)
         {
             return;
         }
@@ -201,10 +222,10 @@ else
 
         try
         {
-            await CartMutationClient.AddAsync(product.Slug, _quantity);
+            await CartMutationClient.AddAsync(_product.Slug, _quantity);
             var toastMessage = _quantity == 1
-                ? $"{product.Name} added to cart."
-                : $"{_quantity} × {product.Name} added to cart.";
+                ? $"{_product.Name} added to cart."
+                : $"{_quantity} × {_product.Name} added to cart.";
             await ShowCartToastAsync(toastMessage);
         }
         catch (Exception exception)
@@ -212,7 +233,7 @@ else
             Logger.LogError(
                 exception,
                 "Add to cart failed on product page. Slug={Slug}, Quantity={Quantity}",
-                product?.Slug,
+                _product?.Slug,
                 _quantity);
             await ShowCartToastAsync("This product could not be added.", "error");
         }
@@ -233,4 +254,75 @@ else
             // Toast is best-effort; cart state is already updated.
         }
     }
+
+    private static MarketplaceProductDetail BuildDetail(ProductDto product)
+    {
+        var section = SectionLabel(product.Category);
+        return new MarketplaceProductDetail(
+            product.Slug,
+            product.Name,
+            section,
+            ImageClassFor(product.Category),
+            section.ToUpperInvariant(),
+            product.Price,
+            product.Description,
+            HighlightsFor(product),
+            [
+                new("Category", section),
+                new("Stock", product.StockQuantity.ToString()),
+                new("Status", product.IsActive ? "Active" : "Inactive")
+            ],
+            "Product Details",
+            "Availability",
+            product.IsActive ? "Available" : "Unavailable",
+            "Inventory",
+            $"{product.StockQuantity} in stock",
+            "Fulfillment",
+            "Marketplace checkout",
+            "/story",
+            "Our Story",
+            [
+                new("Slug", product.Slug),
+                new("Product ID", product.Id.ToString())
+            ],
+            product.ImageUrl);
+    }
+
+    private static IReadOnlyList<string> HighlightsFor(ProductDto product)
+    {
+        var trimmed = product.Description.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return [SectionLabel(product.Category), "Marketplace item", "Ready for checkout"];
+        }
+
+        return trimmed
+            .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Take(3)
+            .DefaultIfEmpty(trimmed)
+            .ToArray();
+    }
+
+    private static string SectionLabel(ProductCategory category) =>
+        category switch
+        {
+            ProductCategory.Espresso => "Espresso",
+            ProductCategory.Latte => "Latte",
+            ProductCategory.Pastry => "Pastry",
+            ProductCategory.Merchandise => "Merchandise",
+            _ => "Coffee"
+        };
+
+    private static string ImageClassFor(ProductCategory category) =>
+        category switch
+        {
+            ProductCategory.Espresso => "image-frame--espresso",
+            ProductCategory.Latte => "image-frame--latte",
+            ProductCategory.Merchandise => "image-frame--equipment",
+            ProductCategory.Pastry => "image-frame--ceramics",
+            _ => "image-frame--coldbrew"
+        };
+
+    private static string? BackgroundImage(string? imageUrl) =>
+        string.IsNullOrWhiteSpace(imageUrl) ? null : $"background-image: url('{imageUrl}');";
 }

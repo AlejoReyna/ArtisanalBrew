@@ -23,6 +23,12 @@ public sealed class ProductService(
         return product is null ? null : Map(product);
     }
 
+    public async Task<ProductDto?> GetProductBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        var product = await productRepository.GetProductBySlugAsync(slug, cancellationToken);
+        return product is null ? null : Map(product);
+    }
+
     public async Task<ProductDto> CreateProductAsync(CreateProductRequest request, CancellationToken cancellationToken = default)
     {
         await createValidator.ValidateAndThrowAsync(request, cancellationToken);

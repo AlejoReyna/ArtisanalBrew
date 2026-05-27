@@ -3,12 +3,13 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using ThisCafeteria.Application.DTOs;
-using ThisCafeteria.Web.Catalog;
+using ThisCafeteria.Application.Services;
 
 namespace ThisCafeteria.Web.Services.Cart;
 
 public sealed class ShoppingCartService(
     IHttpContextAccessor httpContextAccessor,
+    IProductService productService,
     ILogger<ShoppingCartService> logger) : IShoppingCartService
 {
     private const string SessionKey = "MarketplaceCart";
@@ -55,24 +56,28 @@ public sealed class ShoppingCartService(
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be at least 1.");
         }
 
-        MarketplaceProductDetail? product;
-        try
-        {
-            product = MarketplaceCatalog.TryGetBySlug(slug);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Cart catalog lookup threw for slug {Slug}", slug);
-            throw new InvalidOperationException($"Catalog lookup failed for '{slug}'. See logs for details.", exception);
-        }
+        var product = await productService.GetProductBySlugAsync(slug, cancellationToken);
 
         if (product is null)
         {
-            logger.LogError(
-                "Cart AddAsync catalog miss. Slug={Slug}, KnownSlugs={KnownSlugs}",
-                slug,
-                string.Join(", ", MarketplaceCatalog.Summaries.Select(summary => summary.Slug)));
+            logger.LogError("Cart AddAsync product miss. Slug={Slug}", slug);
             throw new InvalidOperationException($"Product '{slug}' was not found in the catalog.");
+        }
+
+        if (!product.IsActive)
+        {
+            logger.LogWarning("Cart AddAsync rejected inactive product {Slug}", slug);
+            throw new InvalidOperationException($"Product '{slug}' is not available.");
+        }
+
+        if (product.StockQuantity < quantity)
+        {
+            logger.LogWarning(
+                "Cart AddAsync rejected insufficient stock. Slug={Slug}, Requested={Quantity}, Stock={Stock}",
+                slug,
+                quantity,
+                product.StockQuantity);
+            throw new InvalidOperationException($"Only {product.StockQuantity} unit(s) of '{product.Name}' are available.");
         }
 
         logger.LogDebug(
@@ -99,9 +104,11 @@ public sealed class ShoppingCartService(
             lines.Add(new MarketplaceCartLine(
                 product.Slug,
                 product.Name,
-                product.ImageClass,
+                ImageClassFor(product.Category),
                 product.Price,
-                quantity));
+                quantity,
+                product.ImageUrl,
+                product.Id));
             logger.LogInformation(
                 "Cart added new line. Slug={Slug}, Quantity={Quantity}, LineCount={LineCount}",
                 slug,
@@ -155,7 +162,7 @@ public sealed class ShoppingCartService(
     {
         var lines = await LoadAsync(cancellationToken);
         return lines.Select(line => new CartItemDto(
-            ProductIdFromSlug(line.Slug),
+            line.ProductId == Guid.Empty ? ProductIdFromSlug(line.Slug) : line.ProductId,
             line.Name,
             line.Quantity,
             line.UnitPrice)).ToArray();
@@ -402,4 +409,14 @@ public sealed class ShoppingCartService(
         bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
         return new Guid(bytes);
     }
+
+    private static string ImageClassFor(ThisCafeteria.Domain.Enums.ProductCategory category) =>
+        category switch
+        {
+            ThisCafeteria.Domain.Enums.ProductCategory.Espresso => "image-frame--espresso",
+            ThisCafeteria.Domain.Enums.ProductCategory.Latte => "image-frame--latte",
+            ThisCafeteria.Domain.Enums.ProductCategory.Merchandise => "image-frame--equipment",
+            ThisCafeteria.Domain.Enums.ProductCategory.Pastry => "image-frame--ceramics",
+            _ => "image-frame--coldbrew"
+        };
 }

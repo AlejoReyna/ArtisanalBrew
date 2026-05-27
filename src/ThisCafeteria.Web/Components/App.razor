@@ -24,6 +24,7 @@
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="js/cartToast.js"></script>
     <script src="js/publicHeader.js"></script>
+    <script src="js/productTransition.js"></script>
     <script>
         window.animationObserver = null;
 
@@ -73,9 +74,19 @@
         };
 
         document.addEventListener('DOMContentLoaded', window.queueAnimations);
-        document.addEventListener('blazor:enhancedload', window.queueAnimations);
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
-        document.addEventListener('blazor:enhancedload', window.queuePublicHeader);
+
+        const onEnhancedLoad = () => {
+            window.queueAnimations();
+            window.queuePublicHeader();
+        };
+
+        if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
+            window.Blazor.addEventListener('enhancedload', onEnhancedLoad);
+        }
+
+        document.addEventListener('enhancedload', onEnhancedLoad);
+        document.addEventListener('blazor:enhancedload', onEnhancedLoad);
     </script>
 </body>
 

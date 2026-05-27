@@ -1,5 +1,6 @@
 @page "/admin"
 @layout AdminLayout
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "RequireAdmin")]
 
 <PageTitle>Admin</PageTitle>
 

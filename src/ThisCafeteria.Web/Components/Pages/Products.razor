@@ -1,10 +1,12 @@
 @page "/products"
 @rendermode InteractiveServer
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject IProductService ProductService
 @inject IShoppingCartService CartService
 @inject ICartMutationClient CartMutationClient
 @inject ILogger<Products> Logger
-@using ThisCafeteria.Web.Catalog
+@using ThisCafeteria.Domain.Enums
 @using ThisCafeteria.Web.Services.Cart
 
 <PageTitle>Shop | Artisanal Brew</PageTitle>
@@ -19,24 +21,42 @@
     }
 </ul>
 
-@{
-    var visibleProducts = activeSection == MarketplaceCatalog.AllSection
-        ? MarketplaceCatalog.Summaries
-        : MarketplaceCatalog.Summaries.Where(product => product.Section == activeSection);
+@if (_isLoading)
+{
+    <section class="page-intro" data-animate="fade-up">
+        <p class="eyebrow">Shop</p>
+        <h1>Loading products.</h1>
+    </section>
 }
+else if (!string.IsNullOrWhiteSpace(_loadError))
+{
+    <section class="page-intro" data-animate="fade-up">
+        <p class="eyebrow">Shop</p>
+        <h1>Products could not be loaded.</h1>
+        <p class="lede">@_loadError</p>
+    </section>
+}
+else
+{
+    var visibleProducts = activeSection == AllSection
+        ? _products.Where(product => product.IsActive)
+        : _products.Where(product => product.IsActive && product.Category.ToString() == activeSection);
 
-<div class="product-grid stagger-container" data-stagger>
+    <div class="product-grid stagger-container" data-stagger>
     @foreach (var product in visibleProducts)
     {
         var quantity = GetQuantity(product.Slug);
         var isAdding = _addingSlug == product.Slug;
 
-        <article class="marketplace-card" data-animate="fade-up">
-            <a class="marketplace-card__link" href="@($"products/{product.Slug}")">
-                <div class="image-frame @product.ImageClass"></div>
-                <p class="eyebrow">@SectionLabel(product.Section)</p>
+        <article class="marketplace-card" data-animate="fade-up" data-product-card data-product-slug="@product.Slug">
+            <a class="marketplace-card__link"
+               href="@($"products/{product.Slug}")"
+               @onclick:preventDefault="true"
+               @onclick="() => NavigateToProductAsync(product)">
+                <div class="image-frame @ImageClassFor(product.Category)" style="@BackgroundImage(product.ImageUrl)" data-product-image></div>
+                <p class="eyebrow">@SectionLabel(product.Category.ToString())</p>
                 <h3>@product.Name</h3>
-                <p class="price">@FormatListPrice(product.Slug)</p>
+                <p class="price">@FormatPrice(product.Price)</p>
             </a>
 
             <div class="marketplace-card__actions">
@@ -51,21 +71,46 @@
             </div>
         </article>
     }
-</div>
+    </div>
+}
 
 @code {
+    private const string AllSection = "All";
+
     private static readonly IReadOnlyList<ProductSection> Sections =
     [
-        new(MarketplaceCatalog.AllSection, "All Items"),
-        new(MarketplaceCatalog.BeansSection, "Single Origin Beans"),
-        new(MarketplaceCatalog.EquipmentSection, "Brewing Equipment"),
-        new(MarketplaceCatalog.CeramicsSection, "Ceramics & Goods")
+        new(AllSection, "All Items"),
+        new(ProductCategory.Coffee.ToString(), "Coffee"),
+        new(ProductCategory.Espresso.ToString(), "Espresso"),
+        new(ProductCategory.Latte.ToString(), "Latte"),
+        new(ProductCategory.Pastry.ToString(), "Pastry"),
+        new(ProductCategory.Merchandise.ToString(), "Merchandise")
     ];
 
-    private string activeSection = MarketplaceCatalog.AllSection;
+    private IReadOnlyCollection<ProductDto> _products = [];
+    private bool _isLoading = true;
+    private string? _loadError;
+    private string activeSection = AllSection;
     private bool shouldRefreshAnimations = true;
     private readonly Dictionary<string, int> _quantities = new(StringComparer.Ordinal);
     private string? _addingSlug;
+    private string? _openingSlug;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _products = await ProductService.GetProductsAsync();
+        }
+        catch (Exception exception)
+        {
+            _loadError = exception.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -88,7 +133,29 @@
     private void SetQuantity(string slug, int quantity) =>
         _quantities[slug] = Math.Clamp(quantity, 1, 99);
 
-    private async Task AddToCartAsync(MarketplaceProductSummary product, int quantity)
+    private async Task NavigateToProductAsync(ProductDto product)
+    {
+        if (_openingSlug is not null)
+        {
+            return;
+        }
+
+        _openingSlug = product.Slug;
+
+        try
+        {
+            await JS.InvokeVoidAsync("productTransition.playFromCard", product.Slug);
+        }
+        catch (JSException)
+        {
+        }
+        finally
+        {
+            Navigation.NavigateTo($"/products/{product.Slug}");
+        }
+    }
+
+    private async Task AddToCartAsync(ProductDto product, int quantity)
     {
         if (_addingSlug is not null)
         {
@@ -100,11 +167,9 @@
         try
         {
             await CartMutationClient.AddAsync(product.Slug, quantity);
-            var detail = MarketplaceCatalog.TryGetBySlug(product.Slug);
-            var name = detail?.Name ?? product.Name;
             var label = quantity == 1
-                ? $"{name} added to cart."
-                : $"{quantity} × {name} added to cart.";
+                ? $"{product.Name} added to cart."
+                : $"{quantity} × {product.Name} added to cart.";
             await ShowCartToastAsync(label);
         }
         catch (Exception exception)
@@ -135,13 +200,22 @@
     }
 
     private static string SectionLabel(string section) =>
-        Sections.First(item => item.Key == section).Label;
+        Sections.FirstOrDefault(item => item.Key == section)?.Label ?? section;
 
-    private static string FormatListPrice(string slug)
-    {
-        var detail = MarketplaceCatalog.TryGetBySlug(slug);
-        return detail is null ? string.Empty : detail.Price.ToString("$#,0.00");
-    }
+    private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+
+    private static string ImageClassFor(ProductCategory category) =>
+        category switch
+        {
+            ProductCategory.Espresso => "image-frame--espresso",
+            ProductCategory.Latte => "image-frame--latte",
+            ProductCategory.Merchandise => "image-frame--equipment",
+            ProductCategory.Pastry => "image-frame--ceramics",
+            _ => "image-frame--coldbrew"
+        };
+
+    private static string? BackgroundImage(string? imageUrl) =>
+        string.IsNullOrWhiteSpace(imageUrl) ? null : $"background-image: url('{imageUrl}');";
 
     private sealed record ProductSection(string Key, string Label);
 }

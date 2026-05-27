@@ -1,18 +1,33 @@
 @inherits LayoutComponentBase
 
-<div class="admin-layout">
-    <aside class="admin-sidebar">
-        <a class="admin-brand" href="admin">Artisanal Brew Admin</a>
+<AuthorizeView Policy="RequireAdmin">
+    <Authorized>
+        <div class="admin-layout">
+            <aside class="admin-sidebar">
+                <a class="admin-brand" href="admin">Artisanal Brew Admin</a>
 
-        <nav class="admin-nav" aria-label="Admin navigation">
-            <NavLink href="admin" Match="NavLinkMatch.All">Dashboard</NavLink>
-            <NavLink href="admin/products">Products</NavLink>
-            <NavLink href="admin/orders">Orders</NavLink>
-            <NavLink href="">Back to public site</NavLink>
-        </nav>
-    </aside>
+                <div class="admin-sidebar__menu">
+                    <NavLink href="admin" Match="NavLinkMatch.All" class="admin-menu-item">Dashboard</NavLink>
+                    <NavLink href="admin/products" class="admin-menu-item">Products</NavLink>
+                    <NavLink href="admin/orders" class="admin-menu-item">Orders</NavLink>
+                    <NavLink href="" class="admin-menu-item">Back to public site</NavLink>
+                    <form method="post" action="/admin/logout" class="admin-logout-form admin-menu-item">
+                        <button type="submit">Sign out</button>
+                    </form>
+                </div>
+            </aside>
 
-    <main class="admin-main">
-        @Body
-    </main>
-</div>
+            <main class="admin-main">
+                @Body
+            </main>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <main class="admin-main admin-main--unauthorized">
+            <p class="eyebrow">Admin</p>
+            <h1>Sign in required.</h1>
+            <p>Use the admin account to manage products and orders.</p>
+            <a class="button button--dark" href="admin/login">Admin login</a>
+        </main>
+    </NotAuthorized>
+</AuthorizeView>
