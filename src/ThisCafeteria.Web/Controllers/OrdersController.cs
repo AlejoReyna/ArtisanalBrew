@@ -36,4 +36,12 @@ public sealed class OrdersController(
         var orders = await orderService.GetOrdersForUserAsync(userProfileId, cancellationToken);
         return Ok(orders);
     }
+
+    [Authorize(Policy = "RequireAdmin")]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteOrder(Guid id, CancellationToken cancellationToken)
+    {
+        var deleted = await orderService.DeleteOrderAsync(id, cancellationToken);
+        return deleted ? NoContent() : NotFound();
+    }
 }

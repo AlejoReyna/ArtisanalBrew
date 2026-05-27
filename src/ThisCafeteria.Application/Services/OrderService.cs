@@ -62,6 +62,18 @@ public sealed class OrderService(
         return orders.Select(MapCommerceTransaction).ToArray();
     }
 
+    public async Task<bool> DeleteOrderAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var order = await orderRepository.GetByIdAsync(id, cancellationToken);
+        if (order is null)
+        {
+            return false;
+        }
+
+        await orderRepository.DeleteAsync(order, cancellationToken);
+        return true;
+    }
+
     private static OrderDto Map(Order order) => new(
         order.Id,
         order.OrderNumber,
@@ -101,6 +113,7 @@ public sealed class OrderService(
             record.RecordedOnChainAt)).ToArray());
 
     private static CommerceTransactionDto MapCommerceTransaction(Order order) => new(
+        order.Id,
         order.OrderNumber,
         order.Status,
         order.Total,

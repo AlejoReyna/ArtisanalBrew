@@ -22,6 +22,13 @@ public sealed class OrderRepository(AppDbContext dbContext) : IOrderRepository
         }
     }
 
+    public async Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Orders
+            .Include(order => order.Items)
+            .FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<Order>> GetCommerceTransactionsAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.Orders
@@ -41,5 +48,21 @@ public sealed class OrderRepository(AppDbContext dbContext) : IOrderRepository
             .Where(order => order.UserProfileId == userProfileId)
             .OrderByDescending(order => order.CreatedAt)
             .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Order order, CancellationToken cancellationToken = default)
+    {
+        dbContext.Orders.Remove(order);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new InvalidOperationException(
+                $"Could not delete the order: {DbUpdateExceptionDetails.GetRootMessage(exception)}",
+                exception);
+        }
     }
 }

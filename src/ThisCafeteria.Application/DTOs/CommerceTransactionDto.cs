@@ -3,6 +3,7 @@ using ThisCafeteria.Domain.Enums;
 namespace ThisCafeteria.Application.DTOs;
 
 public sealed record CommerceTransactionDto(
+    Guid OrderId,
     string OrderNumber,
     OrderStatus Status,
     decimal Total,

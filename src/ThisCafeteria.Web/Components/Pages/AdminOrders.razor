@@ -4,6 +4,7 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "RequireAdmin")]
 @using ThisCafeteria.Application.DTOs
 @inject IOrderService OrderService
+@inject IJSRuntime JS
 
 <PageTitle>Admin orders</PageTitle>
 
@@ -46,6 +47,7 @@
                             <th scope="col">Wallet</th>
                             <th scope="col">Total</th>
                             <th scope="col">Transaction</th>
+                            <th scope="col">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -82,6 +84,14 @@
                                     }
                                     <span class="transaction-status">@transaction.Status</span>
                                 </td>
+                                <td>
+                                    <button type="button"
+                                            class="transaction-table__delete"
+                                            disabled="@_isDeletingOrder"
+                                            @onclick="() => DeleteOrderAsync(transaction)">
+                                        Delete
+                                    </button>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -94,12 +104,20 @@
 @code {
     private IReadOnlyCollection<CommerceTransactionDto> _transactions = [];
     private bool _isLoadingTransactions = true;
+    private bool _isDeletingOrder;
     private string? _transactionLoadError;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadTransactionsAsync();
+    }
+
+    private async Task LoadTransactionsAsync()
+    {
         try
         {
+            _isLoadingTransactions = true;
+            _transactionLoadError = null;
             _transactions = await OrderService.GetCommerceTransactionsAsync();
         }
         catch (Exception exception)
@@ -109,6 +127,39 @@
         finally
         {
             _isLoadingTransactions = false;
+        }
+    }
+
+    private async Task DeleteOrderAsync(CommerceTransactionDto transaction)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete order {transaction.OrderNumber}? Blockchain records cannot be edited, and this removes the local order record.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        _isDeletingOrder = true;
+        _transactionLoadError = null;
+
+        try
+        {
+            var deleted = await OrderService.DeleteOrderAsync(transaction.OrderId);
+            if (deleted)
+            {
+                await LoadTransactionsAsync();
+            }
+            else
+            {
+                _transactionLoadError = "Order not found or could not be deleted.";
+            }
+        }
+        catch (Exception exception)
+        {
+            _transactionLoadError = $"Order could not be deleted: {exception.Message}";
+        }
+        finally
+        {
+            _isDeletingOrder = false;
         }
     }
 
@@ -229,6 +280,20 @@
     .transaction-table a {
         color: #2d2421;
         font-weight: 700;
+    }
+
+    .transaction-table__delete {
+        background: transparent;
+        border: 1px solid #b32121;
+        color: #b32121;
+        cursor: pointer;
+        font-weight: 700;
+        min-height: 2.4rem;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .transaction-table__delete:hover:not(:disabled) {
+        background: #fdf2f2;
     }
 
     .transaction-status {

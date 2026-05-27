@@ -29,7 +29,7 @@
 }
 
 ::deep .admin-menu-item {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     border-bottom: 1px solid rgba(251, 249, 244, 0.14);
@@ -37,7 +37,8 @@
     text-decoration: none;
     transition: background 0.2s, color 0.2s;
     box-sizing: border-box;
-    padding: 0.5rem 1rem;
+    padding: 0.25rem 1rem;
+    min-height: 2.25rem;
 }
 
 ::deep .admin-menu-item:first-child {
@@ -53,6 +54,7 @@
 ::deep .admin-logout-form {
     display: flex;
     padding: 0;
+    margin-top: auto;
 }
 
 ::deep .admin-logout-form button {

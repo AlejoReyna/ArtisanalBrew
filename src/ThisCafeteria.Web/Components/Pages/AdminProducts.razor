@@ -19,9 +19,17 @@
 
     <div class="admin-products__grid">
         <article class="admin-panel">
-            <h2>Add product</h2>
+            <div class="admin-panel__title-row">
+                <h2>@(_editingProductId is null ? "Add product" : "Edit product")</h2>
+                @if (_editingProductId is not null)
+                {
+                    <button class="admin-product-form__cancel" type="button" disabled="@_isSaving" @onclick="CancelEdit">
+                        Cancel
+                    </button>
+                }
+            </div>
 
-            <EditForm Model="_form" OnSubmit="CreateProductAsync" class="admin-product-form">
+            <EditForm Model="_form" OnSubmit="SaveProductAsync" class="admin-product-form">
                 <label for="product-name">Name</label>
                 <InputText id="product-name" @bind-Value="_form.Name" maxlength="160" />
 
@@ -61,7 +69,7 @@
                 }
 
                 <button class="button button--dark" type="submit" disabled="@_isSaving">
-                    @(_isSaving ? "Saving..." : "Add product")
+                    @(_isSaving ? "Saving..." : _editingProductId is null ? "Add product" : "Save changes")
                 </button>
             </EditForm>
         </article>
@@ -104,6 +112,12 @@
                                     <td>@product.StockQuantity</td>
                                     <td>@(product.IsActive ? "Active" : "Inactive")</td>
                                     <td class="admin-product-table__actions">
+                                        <button type="button"
+                                                class="admin-product-table__button"
+                                                disabled="@_isSaving"
+                                                @onclick="() => EditProduct(product)">
+                                            Edit
+                                        </button>
                                         <button type="button"
                                                 class="admin-product-table__button"
                                                 disabled="@_isSaving"
@@ -173,7 +187,15 @@
 
     .admin-panel h2 {
         font-size: clamp(1.5rem, 3vw, 2.25rem);
-        margin-top: 0;
+        margin: 0;
+    }
+
+    .admin-panel__title-row {
+        align-items: center;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 1rem;
     }
 
     .admin-product-form {
@@ -211,6 +233,16 @@
         color: #b32121;
         margin: 0;
         padding-left: 1.2rem;
+    }
+
+    .admin-product-form__cancel {
+        background: transparent;
+        border: 0;
+        color: #746a63;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 0;
+        text-decoration: underline;
     }
 
     .admin-product-table-wrap {
@@ -290,6 +322,8 @@
     private readonly ProductFormModel _form = new();
     private IReadOnlyCollection<ProductDto> _products = [];
     private readonly List<string> _messages = [];
+    private Guid? _editingProductId;
+    private bool _editingProductIsActive;
     private bool _isLoading = true;
     private bool _isSaving;
 
@@ -297,6 +331,9 @@
     {
         await LoadProductsAsync();
     }
+
+    private Task SaveProductAsync() =>
+        _editingProductId is null ? CreateProductAsync() : UpdateProductAsync(_editingProductId.Value);
 
     private async Task CreateProductAsync()
     {
@@ -330,6 +367,62 @@
         }
     }
 
+    private async Task UpdateProductAsync(Guid productId)
+    {
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            var updated = await ProductService.UpdateProductAsync(
+                productId,
+                new UpdateProductRequest(
+                    _form.Name,
+                    _form.Description,
+                    _form.Price,
+                    _form.StockQuantity,
+                    _form.ImageUrl,
+                    _form.Category,
+                    _editingProductIsActive));
+
+            if (updated is null)
+            {
+                _messages.Add("Product not found or could not be updated.");
+                return;
+            }
+
+            CancelEdit();
+            await LoadProductsAsync();
+        }
+        catch (FluentValidation.ValidationException exception)
+        {
+            _messages.AddRange(exception.Errors.Select(error => error.ErrorMessage));
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void EditProduct(ProductDto product)
+    {
+        _messages.Clear();
+        _editingProductId = product.Id;
+        _editingProductIsActive = product.IsActive;
+        _form.Load(product);
+    }
+
+    private void CancelEdit()
+    {
+        _editingProductId = null;
+        _editingProductIsActive = false;
+        _form.Reset();
+    }
+
     private async Task ToggleProductAsync(ProductDto product)
     {
         _isSaving = true;
@@ -347,6 +440,11 @@
                     product.ImageUrl,
                     product.Category,
                     !product.IsActive));
+
+            if (_editingProductId == product.Id)
+            {
+                _editingProductIsActive = !product.IsActive;
+            }
 
             await LoadProductsAsync();
         }
@@ -376,6 +474,11 @@
             var deleted = await ProductService.DeleteProductAsync(product.Id);
             if (deleted)
             {
+                if (_editingProductId == product.Id)
+                {
+                    CancelEdit();
+                }
+
                 await LoadProductsAsync();
             }
             else
@@ -417,6 +520,16 @@
             StockQuantity = 1;
             ImageUrl = null;
             Category = ProductCategory.Coffee;
+        }
+
+        public void Load(ProductDto product)
+        {
+            Name = product.Name;
+            Description = product.Description;
+            Price = product.Price;
+            StockQuantity = product.StockQuantity;
+            ImageUrl = product.ImageUrl;
+            Category = product.Category;
         }
     }
 }
