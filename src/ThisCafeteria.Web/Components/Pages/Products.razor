@@ -80,11 +80,9 @@ else
     private static readonly IReadOnlyList<ProductSection> Sections =
     [
         new(AllSection, "All Items"),
-        new(ProductCategory.Coffee.ToString(), "Coffee"),
-        new(ProductCategory.Espresso.ToString(), "Espresso"),
-        new(ProductCategory.Latte.ToString(), "Latte"),
-        new(ProductCategory.Pastry.ToString(), "Pastry"),
-        new(ProductCategory.Merchandise.ToString(), "Merchandise")
+        new(ProductCategory.Beans.ToString(), "Single Origin Beans"),
+        new(ProductCategory.BrewingEquipment.ToString(), "Brewing Equipment"),
+        new(ProductCategory.CeramicsAndGoods.ToString(), "Ceramics & Goods")
     ];
 
     private IReadOnlyCollection<ProductDto> _products = [];
@@ -207,10 +205,8 @@ else
     private static string ImageClassFor(ProductCategory category) =>
         category switch
         {
-            ProductCategory.Espresso => "image-frame--espresso",
-            ProductCategory.Latte => "image-frame--latte",
-            ProductCategory.Merchandise => "image-frame--equipment",
-            ProductCategory.Pastry => "image-frame--ceramics",
+            ProductCategory.BrewingEquipment => "image-frame--equipment",
+            ProductCategory.CeramicsAndGoods => "image-frame--ceramics",
             _ => "image-frame--coldbrew"
         };
 

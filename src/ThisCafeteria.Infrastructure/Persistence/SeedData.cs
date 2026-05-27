@@ -24,7 +24,7 @@ internal static class SeedData
                 Price = 3.50m,
                 StockQuantity = 100,
                 ImageUrl = "/images/products/house-espresso.jpg",
-                Category = ProductCategory.Espresso,
+                Category = ProductCategory.Beans,
                 IsActive = true,
                 CreatedAt = createdAt
             },
@@ -37,7 +37,7 @@ internal static class SeedData
                 Price = 5.75m,
                 StockQuantity = 80,
                 ImageUrl = "/images/products/vanilla-cloud-latte.jpg",
-                Category = ProductCategory.Latte,
+                Category = ProductCategory.Beans,
                 IsActive = true,
                 CreatedAt = createdAt
             },
@@ -50,7 +50,7 @@ internal static class SeedData
                 Price = 4.95m,
                 StockQuantity = 60,
                 ImageUrl = "/images/products/midnight-cold-brew.jpg",
-                Category = ProductCategory.Coffee,
+                Category = ProductCategory.Beans,
                 IsActive = true,
                 CreatedAt = createdAt
             });

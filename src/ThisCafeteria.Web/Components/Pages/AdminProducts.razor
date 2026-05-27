@@ -510,7 +510,7 @@
         public decimal Price { get; set; } = 1m;
         public int StockQuantity { get; set; } = 1;
         public string? ImageUrl { get; set; }
-        public ProductCategory Category { get; set; } = ProductCategory.Coffee;
+        public ProductCategory Category { get; set; } = ProductCategory.Beans;
 
         public void Reset()
         {
@@ -519,7 +519,7 @@
             Price = 1m;
             StockQuantity = 1;
             ImageUrl = null;
-            Category = ProductCategory.Coffee;
+            Category = ProductCategory.Beans;
         }
 
         public void Load(ProductDto product)

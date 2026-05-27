@@ -17,7 +17,7 @@ public sealed class CreateProductRequestValidatorTests
             3.50m,
             10,
             null,
-            ProductCategory.Espresso);
+            ProductCategory.Beans);
 
         var result = validator.Validate(request);
 

@@ -413,10 +413,8 @@ public sealed class ShoppingCartService(
     private static string ImageClassFor(ThisCafeteria.Domain.Enums.ProductCategory category) =>
         category switch
         {
-            ThisCafeteria.Domain.Enums.ProductCategory.Espresso => "image-frame--espresso",
-            ThisCafeteria.Domain.Enums.ProductCategory.Latte => "image-frame--latte",
-            ThisCafeteria.Domain.Enums.ProductCategory.Merchandise => "image-frame--equipment",
-            ThisCafeteria.Domain.Enums.ProductCategory.Pastry => "image-frame--ceramics",
+            ThisCafeteria.Domain.Enums.ProductCategory.BrewingEquipment => "image-frame--equipment",
+            ThisCafeteria.Domain.Enums.ProductCategory.CeramicsAndGoods => "image-frame--ceramics",
             _ => "image-frame--coldbrew"
         };
 }

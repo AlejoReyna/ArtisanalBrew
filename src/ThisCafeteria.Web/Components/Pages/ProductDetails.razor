@@ -306,20 +306,17 @@ else
     private static string SectionLabel(ProductCategory category) =>
         category switch
         {
-            ProductCategory.Espresso => "Espresso",
-            ProductCategory.Latte => "Latte",
-            ProductCategory.Pastry => "Pastry",
-            ProductCategory.Merchandise => "Merchandise",
-            _ => "Coffee"
+            ProductCategory.Beans => "Single Origin Beans",
+            ProductCategory.BrewingEquipment => "Brewing Equipment",
+            ProductCategory.CeramicsAndGoods => "Ceramics & Goods",
+            _ => "Single Origin Beans"
         };
 
     private static string ImageClassFor(ProductCategory category) =>
         category switch
         {
-            ProductCategory.Espresso => "image-frame--espresso",
-            ProductCategory.Latte => "image-frame--latte",
-            ProductCategory.Merchandise => "image-frame--equipment",
-            ProductCategory.Pastry => "image-frame--ceramics",
+            ProductCategory.BrewingEquipment => "image-frame--equipment",
+            ProductCategory.CeramicsAndGoods => "image-frame--ceramics",
             _ => "image-frame--coldbrew"
         };
 
