@@ -63,6 +63,8 @@ jobs:
 
       - name: Publish web app
         run: |
+          rm -rf "$PUBLISH_DIR"
+          mkdir -p "$PUBLISH_DIR"
           dotnet publish src/ThisCafeteria.Web/ThisCafeteria.Web.csproj \
             --configuration Release \
             --runtime linux-x64 \
@@ -82,9 +84,17 @@ jobs:
       - name: Remove macOS metadata files
         run: find "$PUBLISH_DIR" -name '._*' -delete
 
+      - name: Verify publish artifact dependencies
+        run: |
+          set -euo pipefail
+          test -f "$PUBLISH_DIR/AWSSDK.SQS.dll"
+          test -f "$PUBLISH_DIR/AWSSDK.SimpleEmailV2.dll"
+          grep -q '"AWSSDK.SQS/4.' "$PUBLISH_DIR/ThisCafeteria.Web.deps.json"
+          grep -q '"AWSSDK.SimpleEmailV2/4.' "$PUBLISH_DIR/ThisCafeteria.Web.deps.json"
+
       - name: Pack artifact
         run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" .
-        
+
       - name: Prepare SSH key
         env:
           EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
@@ -179,6 +189,7 @@ jobs:
              sudo tar -xzf $REMOTE_TMP_ARCHIVE -C $REMOTE_APP_DIR && \
              sudo chmod +x $REMOTE_APP_DIR/ThisCafeteria.Web && \
              sudo chmod +x $REMOTE_APP_DIR/thiscafeteria-migrate && \
+             sudo chown -R www-data:www-data $REMOTE_APP_DIR && \
              sudo bash -c \"set -a && . $REMOTE_ENV_FILE && set +a && exec $REMOTE_APP_DIR/thiscafeteria-migrate\" && \
              sudo systemctl start $REMOTE_SERVICE && \
              sudo systemctl status $REMOTE_SERVICE --no-pager -l"

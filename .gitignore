@@ -5,6 +5,7 @@ obj/
 .idea/
 .dotnet_home/
 TestResults/
+publish-ec2/
 *.user
 *.suo
 *.nupkg
