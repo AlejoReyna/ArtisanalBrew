@@ -17,5 +17,20 @@ public interface ICoffeeWeb3Service
         decimal expectedAmount,
         CancellationToken cancellationToken = default);
 
+    Task<decimal> GetStakedPaymentTokenBalanceAsync(
+        string walletAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<decimal> GetPendingStakingRewardsAsync(
+        string walletAddress,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> VerifyStakingTransactionAsync(
+        string txHash,
+        string expectedWallet,
+        decimal expectedAmount,
+        StakingTransactionType transactionType,
+        CancellationToken cancellationToken = default);
+
     bool IsMintingConfigured { get; }
 }

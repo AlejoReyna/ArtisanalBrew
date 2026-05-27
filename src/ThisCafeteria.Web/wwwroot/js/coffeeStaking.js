@@ -11,6 +11,36 @@ const erc20TransferAbi = [
     }
 ];
 
+const erc20ApproveAbi = [
+    {
+        constant: false,
+        inputs: [
+            { name: "spender", type: "address" },
+            { name: "amount", type: "uint256" }
+        ],
+        name: "approve",
+        outputs: [{ name: "", type: "bool" }],
+        type: "function"
+    }
+];
+
+const stakingPoolAbi = [
+    {
+        constant: false,
+        inputs: [{ name: "amount", type: "uint256" }],
+        name: "stake",
+        outputs: [],
+        type: "function"
+    },
+    {
+        constant: false,
+        inputs: [{ name: "amount", type: "uint256" }],
+        name: "unstake",
+        outputs: [],
+        type: "function"
+    }
+];
+
 let web3Instance = null;
 
 function getWeb3() {
@@ -76,6 +106,8 @@ export function initCoffeePurchases(config) {
         console.warn("PaymentTokenContract is not configured; coffee purchases are disabled.");
         return;
     }
+
+    bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel, networkName);
 
     document.querySelectorAll(".btn-buy-token").forEach((button) => {
         if (button.dataset.coffeeStakingBound === "true") {
@@ -144,6 +176,132 @@ export function initCoffeePurchases(config) {
     });
 }
 
+function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel, networkName) {
+    const stakingPoolAddress = config.stakingPoolContract;
+
+    if (!stakingPoolAddress || stakingPoolAddress === "0x0000000000000000000000000000000000000000") {
+        console.warn("StakingPoolContract is not configured; staking is disabled.");
+        return;
+    }
+
+    document.querySelectorAll(".btn-stake-token").forEach((button) => {
+        if (button.dataset.coffeeStakingBound === "true") {
+            return;
+        }
+
+        button.dataset.coffeeStakingBound = "true";
+        button.addEventListener("click", async (event) => {
+            const target = event.currentTarget;
+            if (target.dataset.transactionPending === "true") {
+                return;
+            }
+
+            target.dataset.transactionPending = "true";
+            target.disabled = true;
+
+            try {
+                const amount = readTokenAmount("stake-amount", "Enter an amount to stake.");
+                const activeAccount = await prepareWalletForTransaction(config, web3);
+                const amountWei = web3.utils.toWei(amount, "ether");
+                const tokenContract = new web3.eth.Contract(erc20ApproveAbi, paymentTokenAddress);
+                const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
+
+                window.alert(`Approve ${amount} ${paymentTokenLabel} for staking on ${networkName}. Confirm in MetaMask...`);
+                await tokenContract.methods
+                    .approve(stakingPoolAddress, amountWei)
+                    .send({ from: activeAccount });
+
+                window.alert(`Stake ${amount} ${paymentTokenLabel}. Confirm in MetaMask...`);
+                const receipt = await stakingContract.methods
+                    .stake(amountWei)
+                    .send({ from: activeAccount });
+
+                await recordStakingTransaction("/staking/api/record-stake", activeAccount, amount, receipt.transactionHash);
+                window.alert(`Stake recorded. Transaction: ${shortAddress(receipt.transactionHash)}`);
+                window.location.reload();
+            } catch (error) {
+                const message = error?.message ?? "Stake transaction failed.";
+                window.alert(`Stake cancelled or failed: ${message}`);
+            } finally {
+                delete target.dataset.transactionPending;
+                target.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll(".btn-unstake-token").forEach((button) => {
+        if (button.dataset.coffeeStakingBound === "true") {
+            return;
+        }
+
+        button.dataset.coffeeStakingBound = "true";
+        button.addEventListener("click", async (event) => {
+            const target = event.currentTarget;
+            if (target.dataset.transactionPending === "true") {
+                return;
+            }
+
+            target.dataset.transactionPending = "true";
+            target.disabled = true;
+
+            try {
+                const amount = readTokenAmount("unstake-amount", "Enter an amount to unstake.");
+                const stakedBalance = Number(config.stakedTokenBalance ?? 0);
+                if (Number(amount) > stakedBalance) {
+                    throw new Error(`You can unstake up to ${stakedBalance} ${paymentTokenLabel}.`);
+                }
+
+                const activeAccount = await prepareWalletForTransaction(config, web3);
+                const amountWei = web3.utils.toWei(amount, "ether");
+                const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
+
+                window.alert(`Unstake ${amount} ${paymentTokenLabel}. Confirm in MetaMask...`);
+                const receipt = await stakingContract.methods
+                    .unstake(amountWei)
+                    .send({ from: activeAccount });
+
+                await recordStakingTransaction("/staking/api/record-unstake", activeAccount, amount, receipt.transactionHash);
+                window.alert(`Unstake recorded. Transaction: ${shortAddress(receipt.transactionHash)}`);
+                window.location.reload();
+            } catch (error) {
+                const message = error?.message ?? "Unstake transaction failed.";
+                window.alert(`Unstake cancelled or failed: ${message}`);
+            } finally {
+                delete target.dataset.transactionPending;
+                target.disabled = false;
+            }
+        });
+    });
+}
+
+async function prepareWalletForTransaction(config, web3) {
+    await ensureConfiguredNetwork(config);
+    const accounts = await web3.eth.requestAccounts();
+    const activeAccount = accounts[0];
+
+    if (!activeAccount) {
+        throw new Error("No MetaMask account was selected.");
+    }
+
+    if (config.expectedWalletAddress &&
+        activeAccount.toLowerCase() !== config.expectedWalletAddress.toLowerCase()) {
+        throw new Error(`MetaMask is connected to ${shortAddress(activeAccount)}. Switch to ${shortAddress(config.expectedWalletAddress)} to use this staking session.`);
+    }
+
+    return activeAccount;
+}
+
+function readTokenAmount(inputId, missingMessage) {
+    const input = document.getElementById(inputId);
+    const amount = input?.value?.trim();
+
+    if (!amount || Number(amount) <= 0) {
+        throw new Error(missingMessage);
+    }
+
+    return amount;
+}
+
 async function ensureConfiguredNetwork(config) {
     if (!config) {
         return;
@@ -202,6 +360,28 @@ async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTr
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || "Payment succeeded, but loyalty minting failed.");
+    }
+
+    return response.json();
+}
+
+async function recordStakingTransaction(endpoint, walletAddress, amount, transactionHash) {
+    const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            walletAddress,
+            amount,
+            transactionHash
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Staking transaction succeeded, but server verification failed.");
     }
 
     return response.json();

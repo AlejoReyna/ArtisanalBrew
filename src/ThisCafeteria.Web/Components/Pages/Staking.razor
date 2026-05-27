@@ -1,4 +1,5 @@
 @page "/staking"
+@layout StakingLayout
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components.Authorization
@@ -8,6 +9,7 @@
 @using Microsoft.Extensions.Options
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Application.Services.Blockchain
+@using ThisCafeteria.Domain.Entities
 @using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Infrastructure.Persistence
 @using ThisCafeteria.Web.Services.Blockchain
@@ -54,14 +56,22 @@ else
                         <dd>@FormatDashboardAmount(_dashboard.PaymentTokenBalance)</dd>
                     </div>
                     <div>
+                        <dt>Staked Balance</dt>
+                        <dd>@FormatDashboardAmount(_dashboard.StakedPaymentTokenBalance)</dd>
+                    </div>
+                    <div>
+                        <dt>Pending Rewards</dt>
+                        <dd>@FormatDashboardAmount(_dashboard.PendingStakingRewards, " COFFEE")</dd>
+                    </div>
+                    <div>
                         <dt>COFFEE Balance</dt>
                         <dd>@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
                     </div>
                 </dl>
                 <button type="button"
                         class="yield-redeem-button"
-                        disabled="@(!_paymentsConfigured)">
-                    REDEEM REWARDS
+                        disabled="@(!_stakingConfigured)">
+                    STAKING ENABLED
                 </button>
             </section>
 
@@ -86,17 +96,21 @@ else
         </aside>
 
         <div class="yield-main">
+
             <section class="yield-hero">
-                <div>
+                <div class="yield-hero-text">
                     <p class="yield-kicker">Bean Allocation Ledger</p>
-                    <h1>Token Allocations</h1>
-                    <p>
-                        Allocate the configured Sepolia ERC-20 payment token to the marketplace wallet and receive COFFEE rewards after the transfer is verified on-chain.
-                    </p>
-                </div>
-                <div class="yield-global-stat" aria-label="Configured reward rate">
-                    <span>Configured Rate</span>
-                    <strong>@FormatApr()</strong>
+                    <div class="yield-title-row">
+                        <h1>Token Allocations</h1>
+                        <span class="yield-title-note">@_chain.NetworkName · connected</span>
+                    </div>
+                    <div class="yield-hero-summary">
+                        <p class="yield-hero-lede">Deposit your payment tokens into the brewing pool to lock in your yield. Track your active allocation, earn freshly roasted rewards, and unstake your principal at any time.</p>
+                        <div class="yield-global-stat" aria-label="Configured reward rate">
+                            <span>Contract Annual Yield</span>
+                            <strong>@FormatApr()</strong>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -112,139 +126,133 @@ else
                 </div>
             }
 
-            @if (!_paymentsConfigured)
+            @if (!_stakingConfigured)
             {
                 <p class="yield-config-note">
-                    Configure an Ethereum Sepolia ERC-20 payment token, marketplace wallet, and COFFEE contract before enabling on-chain reward redemption.
+                    Configure an Ethereum Sepolia ERC-20 payment token and staking pool contract before enabling staking and unstaking.
                 </p>
             }
 
-            <section class="yield-allocation-grid" aria-label="Asset allocations">
+            <section class="yield-allocation-grid" aria-label="Staking actions">
+
                 <article class="yield-asset-card">
-                    <div class="yield-asset-image yield-asset-image--espresso">
-                        <span>+5 COFFEE</span>
+                    <div class="yield-card-visual yield-card-visual--espresso">
+                        <span class="yield-card-tag">Stake</span>
                     </div>
-                    <div class="yield-asset-body">
-                        <p>Washed Colombia / Citrus, panela</p>
-                        <h2>Espresso Italiano</h2>
-                        <div>
-                            <strong>0.024 ETH</strong>
+                    <div class="yield-card-body">
+                        <p class="yield-card-eyebrow">Brewing Pool Deposit</p>
+                        <h2>Stake Tokens</h2>
+                        <p class="yield-card-desc">Lock payment tokens into the pool to earn freshly roasted COFFEE rewards on your deposit.</p>
+                        <div class="yield-card-footer">
+                            <div class="yield-input-group">
+                                <input id="stake-amount"
+                                       class="yield-token-input"
+                                       type="number"
+                                       min="0"
+                                       step="0.0001"
+                                       placeholder="0.0"
+                                       disabled="@(!_stakingConfigured)" />
+                                <button type="button" class="yield-max-btn" disabled="@(!_stakingConfigured)">MAX</button>
+                            </div>
                             <button type="button"
-                                    class="yield-allocate-link btn-buy-token"
-                                    data-price="0.01"
-                                    data-reward="5"
-                                    data-allocation="Espresso Italiano"
-                                    disabled="@(!_paymentsConfigured)">
-                                ALLOCATE
+                                    class="yield-cta-btn yield-cta-btn--dark btn-stake-token"
+                                    disabled="@(!_stakingConfigured)">
+                                Confirm Stake
                             </button>
                         </div>
                     </div>
                 </article>
 
                 <article class="yield-asset-card">
-                    <div class="yield-asset-image yield-asset-image--reserve">
-                        <span>+12 COFFEE</span>
+                    <div class="yield-card-visual yield-card-visual--reserve">
+                        <span class="yield-card-tag">Unstake</span>
                     </div>
-                    <div class="yield-asset-body">
-                        <p>Natural Ethiopia / Berry, cacao</p>
-                        <h2>Cortado Reserve</h2>
-                        <div>
-                            <strong>0.038 ETH</strong>
+                    <div class="yield-card-body">
+                        <p class="yield-card-eyebrow">Principal Withdrawal</p>
+                        <h2>Unstake Principal</h2>
+                        <p class="yield-card-desc">Withdraw your staked principal back to your wallet whenever you are ready.</p>
+                        <div class="yield-card-footer">
+                            <div class="yield-input-group">
+                                <input id="unstake-amount"
+                                       class="yield-token-input"
+                                       type="number"
+                                       min="0"
+                                       step="0.0001"
+                                       max="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
+                                       placeholder="0.0"
+                                       disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)" />
+                                <button type="button" class="yield-max-btn" disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">MAX</button>
+                            </div>
                             <button type="button"
-                                    class="yield-allocate-link btn-buy-token"
-                                    data-price="0.02"
-                                    data-reward="12"
-                                    data-allocation="Cortado Reserve"
-                                    disabled="@(!_paymentsConfigured)">
-                                ALLOCATE
+                                    class="yield-cta-btn yield-cta-btn--outline btn-unstake-token"
+                                    disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">
+                                Unstake Now
                             </button>
                         </div>
                     </div>
                 </article>
 
-                <article class="yield-asset-card">
-                    <div class="yield-asset-image yield-asset-image--seasonal">
-                        <span>+8 COFFEE</span>
-                    </div>
-                    <div class="yield-asset-body">
-                        <p>Honey Guatemala / Almond, fig</p>
-                        <h2>Seasonal Micro-Lot</h2>
-                        <div>
-                            <strong>0.031 ETH</strong>
-                            <button type="button"
-                                    class="yield-allocate-link btn-buy-token"
-                                    data-price="0.015"
-                                    data-reward="8"
-                                    data-allocation="Seasonal Micro-Lot"
-                                    disabled="@(!_paymentsConfigured)">
-                                ALLOCATE
-                            </button>
-                        </div>
-                    </div>
-                </article>
             </section>
 
-            <section class="yield-ledger" aria-labelledby="yield-ledger-title">
-                <h2 id="yield-ledger-title">ALLOCATION HISTORY</h2>
-                @if (_recentAllocations.Count == 0)
+            <section class="yield-activity" aria-labelledby="yield-activity-title">
+                <h2 id="yield-activity-title" class="yield-activity-heading">Recent Activity</h2>
+                @if (_stakingLedger.Count == 0)
                 {
-                    <p class="yield-empty-note">No verified allocations are linked to this wallet yet.</p>
+                    <p class="yield-empty-note">No verified staking transactions are linked to this wallet yet.</p>
                 }
                 else
                 {
-                    <div class="yield-ledger-list">
-                        @foreach (var allocation in _recentAllocations)
+                    <div class="yield-activity-list">
+                        @foreach (var entry in _stakingLedger)
                         {
-                            <div class="yield-ledger-row">
-                                <time datetime="@allocation.ClaimedAtUtc.ToString("O")">
-                                    @allocation.ClaimedAtUtc.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
-                                </time>
-                                <span class="yield-ledger-name">@allocation.DisplayName</span>
-                                <span class="yield-ledger-line"></span>
-                                <strong>+@FormatAmount(allocation.CoffeeAmount) COFFEE</strong>
-                                <span class="yield-status">SETTLED</span>
-                                <span class="yield-ledger-actions">
-                                    @if (!string.IsNullOrWhiteSpace(allocation.PaymentExplorerUrl))
+                            <div class="yield-activity-row">
+                                <div class="yield-activity-icon @(entry.ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase) ? "yield-activity-icon--out" : "yield-activity-icon--in")">
+                                    @if (entry.ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <a href="@allocation.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">Payment</a>
+                                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                                            <path d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                                        </svg>
                                     }
-                                    @if (!string.IsNullOrWhiteSpace(allocation.MintExplorerUrl))
+                                    else
                                     {
-                                        <a href="@allocation.MintExplorerUrl" target="_blank" rel="noopener noreferrer">Mint</a>
+                                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                                            <path d="M12 5v14M5 12h14" />
+                                        </svg>
                                     }
-                                </span>
+                                </div>
+                                <div class="yield-activity-meta">
+                                    <span class="yield-activity-label">@entry.DisplayName</span>
+                                    <time class="yield-activity-time" datetime="@entry.RecordedAtUtc.ToString("O")">
+                                        @entry.RecordedAtUtc.ToLocalTime().ToString("MMM d, yyyy · h:mm tt")
+                                    </time>
+                                </div>
+                                <span class="yield-activity-line"></span>
+                                <strong class="yield-activity-amount @(entry.ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase) ? "yield-activity-amount--neg" : "yield-activity-amount--pos")">
+                                    @entry.AmountPrefix@FormatAmount(entry.Amount)
+                                </strong>
+                                <span class="yield-confirmed-tag">Confirmed</span>
+                                @if (!string.IsNullOrWhiteSpace(entry.ExplorerUrl))
+                                {
+                                    <a class="yield-activity-tx" href="@entry.ExplorerUrl" target="_blank" rel="noopener noreferrer">Tx ↗</a>
+                                }
                             </div>
                         }
                     </div>
                 }
             </section>
 
-            <section class="yield-manifesto">
-                <div>
-                    <p class="yield-kicker">The Roasting Standard</p>
-                    <h2>The Roasting Standard.</h2>
-                    <p>
-                        Seasonal harvest cycles shape each allocation: verified token transfers, careful fulfillment, and on-chain COFFEE rewards keep the ledger clear.
-                    </p>
-                </div>
-                <a href="story" class="yield-manifesto-link">
-                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 20c8 0 14-6 14-14V4h-2C9 4 4 9 4 17v3h1Zm0 0 8-8" /></svg>
-                    READ THE MANIFESTO
-                    <span aria-hidden="true">-&gt;</span>
-                </a>
-            </section>
         </div>
     </div>
 }
 
 @code {
     private CoffeeDashboardModel _dashboard = new();
-    private IReadOnlyList<AllocationLedgerItem> _recentAllocations = [];
+    private IReadOnlyList<StakingLedgerItem> _stakingLedger = [];
     private BlockchainNetworkOptions _chain = new();
     private bool _isLoading = true;
     private bool _isConnected;
     private bool _isConnecting;
-    private bool _paymentsConfigured;
+    private bool _stakingConfigured;
     private string? _connectError;
     private string? _dashboardError;
     private decimal? _ethUsdPrice;
@@ -255,9 +263,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         _chain = ChainOptions.Value;
-        _paymentsConfigured = IsConfiguredAddress(_chain.MarketplaceWallet) &&
-            IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
-            IsConfiguredAddress(_chain.CoffeeCoinContract);
+        _stakingConfigured = IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
+            IsConfiguredAddress(_chain.StakingPoolContract);
 
         var wallet = await ResolveWalletAddressAsync();
         _isConnected = !string.IsNullOrWhiteSpace(wallet);
@@ -273,7 +280,7 @@ else
             return;
         }
 
-        if (!_isConnected || !_paymentsConfigured || _jsInitialized)
+        if (!_isConnected || !_stakingConfigured || _jsInitialized)
         {
             return;
         }
@@ -288,7 +295,9 @@ else
             {
                 marketplaceWallet = _chain.MarketplaceWallet,
                 paymentTokenContract = _chain.EffectivePaymentTokenContract,
+                stakingPoolContract = _chain.StakingPoolContract,
                 expectedWalletAddress = _dashboard.WalletAddress,
+                stakedTokenBalance = _dashboard.StakedPaymentTokenBalance,
                 chainId = _chain.ChainId,
                 chainIdHex = _chain.ChainIdHex,
                 networkName = _chain.NetworkName,
@@ -325,7 +334,7 @@ else
 
             _dashboard = await dashboardTask.WaitAsync(timeout.Token);
             _ethUsdPrice = await ethUsdPriceTask.WaitAsync(timeout.Token);
-            await LoadRecentAllocationsAsync(timeout.Token);
+            await LoadStakingLedgerAsync(timeout.Token);
         }
         catch (OperationCanceledException)
         {
@@ -400,9 +409,9 @@ else
         }
     }
 
-    private async Task LoadRecentAllocationsAsync(CancellationToken cancellationToken)
+    private async Task LoadStakingLedgerAsync(CancellationToken cancellationToken)
     {
-        _recentAllocations = [];
+        _stakingLedger = [];
 
         var dbContext = Services.GetService<AppDbContext>();
         if (dbContext is null || string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
@@ -410,20 +419,24 @@ else
             return;
         }
 
-        _recentAllocations = await dbContext.RewardClaims
-            .AsNoTracking()
-            .Where(claim =>
-                claim.WalletAddress == _dashboard.WalletAddress &&
-                (claim.ClaimType == "allocation" || claim.ClaimType == "loyalty"))
-            .OrderByDescending(claim => claim.ClaimedAtUtc)
-            .Take(8)
-            .Select(claim => new AllocationLedgerItem(
-                claim.ClaimedAtUtc,
-                claim.AllocationName,
-                claim.Amount,
-                claim.PaymentExplorerUrl,
-                claim.MintExplorerUrl))
-            .ToListAsync(cancellationToken);
+        try
+        {
+            _stakingLedger = await dbContext.StakingLedgerEntries
+                .AsNoTracking()
+                .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
+                .OrderByDescending(entry => entry.RecordedAtUtc)
+                .Take(8)
+                .Select(entry => new StakingLedgerItem(
+                    entry.RecordedAtUtc,
+                    entry.ActionType,
+                    entry.Amount,
+                    entry.ExplorerUrl))
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
+        {
+            _stakingLedger = [];
+        }
     }
 
     private static bool IsConfiguredAddress(string? address) =>
@@ -432,6 +445,11 @@ else
         address.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
         address[2..].All(Uri.IsHexDigit) &&
         !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsMissingStakingLedgerTable(Exception exception) =>
+        exception.Message.Contains("42P01", StringComparison.OrdinalIgnoreCase) ||
+        exception.Message.Contains("StakingLedgerEntries", StringComparison.OrdinalIgnoreCase) ||
+        (exception.InnerException is not null && IsMissingStakingLedgerTable(exception.InnerException));
 
     private static string ShortAddress(string address) =>
         string.IsNullOrWhiteSpace(address) || address.Length < 10
@@ -461,23 +479,33 @@ else
         return $"{estimatedUsd:$#,##0.00}";
     }
 
-    private sealed record AllocationLedgerItem(
-        DateTime ClaimedAtUtc,
-        string? AllocationName,
-        decimal CoffeeAmount,
-        string? PaymentExplorerUrl,
-        string? MintExplorerUrl)
+    private sealed record StakingLedgerItem(
+        DateTime RecordedAtUtc,
+        string ActionType,
+        decimal Amount,
+        string ExplorerUrl)
     {
-        public string DisplayName => string.IsNullOrWhiteSpace(AllocationName)
-            ? "Coffee allocation"
-            : AllocationName;
+        public string DisplayName => ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase)
+            ? "Unstaked"
+            : "Staked";
+
+        public string AmountPrefix => ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase)
+            ? "-"
+            : "+";
     }
 
     public async ValueTask DisposeAsync()
     {
         if (_stakingModule is not null)
         {
-            await _stakingModule.DisposeAsync();
+            try
+            {
+                await _stakingModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit can disconnect before module disposal during hot reload or navigation.
+            }
         }
     }
 }

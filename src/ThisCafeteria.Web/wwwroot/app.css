@@ -128,6 +128,13 @@ p {
     padding: clamp(1.25rem, 3vw, 3rem);
 }
 
+.content:has(.yield-dashboard) {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+    padding: 0;
+}
+
 .eyebrow {
     color: var(--accent);
     font-size: 0.75rem;
@@ -1095,7 +1102,8 @@ p {
 
 .journal-subscribe {
     background: #f2eee5;
-    margin: 0 calc(50% - 50vw) clamp(5rem, 10vw, 8rem);
+    margin: 0 auto;
+    max-width: 72rem;
     padding: clamp(4rem, 9vw, 7rem) clamp(1.25rem, 3vw, 3rem);
     text-align: center;
 }

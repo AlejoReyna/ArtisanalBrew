@@ -7,6 +7,8 @@
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
 @inject IProfileService ProfileService
 @inject IOrderService OrderService
+@inject IReceiptService ReceiptService
+@using System.ComponentModel.DataAnnotations
 @using System.Globalization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.Extensions.Options
@@ -80,6 +82,47 @@
                         <dd>@_paidAt.ToString("MMMM d, yyyy · h:mm tt")</dd>
                     </div>
                 </dl>
+
+                <section class="checkout-receipt-email" aria-labelledby="checkout-receipt-title">
+                    <p class="eyebrow" id="checkout-receipt-title">Email receipt</p>
+                    <p class="checkout-receipt-email__lede">
+                        Enter your email address and we will send a PDF copy of this receipt.
+                    </p>
+
+                    @if (_receiptSent)
+                    {
+                        <p class="checkout-receipt-email__status checkout-receipt-email__status--success" role="status">
+                            Receipt sent to @_receiptEmail.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="checkout-receipt-email__form">
+                            <label for="checkout-receipt-email">Email address</label>
+                            <input id="checkout-receipt-email"
+                                   class="checkout-receipt-email__input"
+                                   type="email"
+                                   autocomplete="email"
+                                   placeholder="you@example.com"
+                                   @bind="_receiptEmail"
+                                   disabled="@_isSendingReceipt" />
+
+                            @if (!string.IsNullOrWhiteSpace(_receiptError))
+                            {
+                                <p class="checkout-receipt-email__status checkout-receipt-email__status--error" role="alert">
+                                    @_receiptError
+                                </p>
+                            }
+
+                            <button type="button"
+                                    class="button button--dark checkout-receipt-email__submit"
+                                    disabled="@(_isSendingReceipt || string.IsNullOrWhiteSpace(_receiptEmail))"
+                                    @onclick="SendReceiptAsync">
+                                @(_isSendingReceipt ? "Sending…" : "Send receipt")
+                            </button>
+                        </div>
+                    }
+                </section>
 
                 <div class="checkout-success__actions">
                     <a class="button button--dark" href="orders">View orders</a>
@@ -235,6 +278,12 @@
     private string _orderReference = string.Empty;
     private string _transactionHash = string.Empty;
     private DateTimeOffset _paidAt;
+    private OrderDto? _completedOrder;
+    private Guid _completedUserProfileId;
+    private string _receiptEmail = string.Empty;
+    private bool _isSendingReceipt;
+    private bool _receiptSent;
+    private string? _receiptError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -372,6 +421,11 @@
             _transactionHash = payment.TransactionHash;
             _walletAddress = payment.FromAddress;
             _paidLines = _lines.ToList();
+            _completedOrder = order;
+            _completedUserProfileId = userProfileId;
+            _receiptEmail = string.Empty;
+            _receiptSent = false;
+            _receiptError = null;
 
             await CartService.ClearAsync();
 
@@ -386,6 +440,66 @@
             _isPaying = false;
         }
     }
+
+    private async Task SendReceiptAsync()
+    {
+        if (_isSendingReceipt || _receiptSent || _completedOrder is null)
+        {
+            return;
+        }
+
+        var email = _receiptEmail.Trim();
+        if (!IsValidEmail(email))
+        {
+            _receiptError = "Enter a valid email address.";
+            return;
+        }
+
+        _isSendingReceipt = true;
+        _receiptError = null;
+
+        try
+        {
+            var dashboard = await ProfileService.GetProfileDashboardAsync(_completedUserProfileId);
+            var order = _completedOrder;
+            var purchaseDate = order.PaidAtUtc ?? order.CreatedAt;
+
+            await ReceiptService.SendReceiptAsync(
+                new OrderDetails
+                {
+                    OrderId = order.OrderNumber,
+                    CustomerEmail = email,
+                    CustomerName = dashboard.DisplayName,
+                    PurchaseDate = new DateTimeOffset(purchaseDate, TimeSpan.Zero),
+                    Items = order.Items
+                        .Select(item => new OrderItemDetails
+                        {
+                            Name = item.ProductName,
+                            Qty = item.Quantity,
+                            Price = item.UnitPrice
+                        })
+                        .ToArray(),
+                    Subtotal = order.Subtotal,
+                    Tax = order.Tax,
+                    Total = order.Total
+                });
+
+            _receiptEmail = email;
+            _receiptSent = true;
+        }
+        catch (Exception exception)
+        {
+            _receiptError = exception.Message;
+        }
+        finally
+        {
+            _isSendingReceipt = false;
+        }
+    }
+
+    private static bool IsValidEmail(string email) =>
+        !string.IsNullOrWhiteSpace(email) &&
+        new EmailAddressAttribute().IsValid(email);
 
     private static string FormatUsd(decimal amount) => amount.ToString("$#,0.00");
 
