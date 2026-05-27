@@ -10,6 +10,7 @@
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Infrastructure.Persistence
+@using ThisCafeteria.Web.Services.Blockchain
 @inject ICoffeeWeb3Service Web3Service
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
@@ -18,6 +19,7 @@
 @inject IServiceProvider Services
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
+@inject IEthUsdPriceService EthUsdPriceService
 
 <PageTitle>Token Allocations &amp; CoffeeCoin | Artisanal Brew</PageTitle>
 
@@ -45,7 +47,7 @@ else
                 <dl class="yield-account-stats">
                     <div>
                         <dt>Wallet Balance</dt>
-                        <dd>@EstimatedWalletUsd()</dd>
+                        <dd>@FormatNativeWalletBalance()</dd>
                     </div>
                     <div>
                         <dt>Payment Token Balance</dt>
@@ -245,6 +247,7 @@ else
     private bool _paymentsConfigured;
     private string? _connectError;
     private string? _dashboardError;
+    private decimal? _ethUsdPrice;
     private bool _dashboardLoadStarted;
     private bool _jsInitialized;
     private IJSObjectReference? _stakingModule;
@@ -317,9 +320,11 @@ else
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
-            _dashboard = await Web3Service
-                .GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token)
-                .WaitAsync(timeout.Token);
+            var dashboardTask = Web3Service.GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token);
+            var ethUsdPriceTask = EthUsdPriceService.GetEthUsdPriceAsync(timeout.Token);
+
+            _dashboard = await dashboardTask.WaitAsync(timeout.Token);
+            _ethUsdPrice = await ethUsdPriceTask.WaitAsync(timeout.Token);
             await LoadRecentAllocationsAsync(timeout.Token);
         }
         catch (OperationCanceledException)
@@ -440,15 +445,20 @@ else
 
     private string FormatApr() => _isLoading ? "..." : $"+{_dashboard.CurrentApr:0.0}%";
 
-    private string EstimatedWalletUsd()
+    private string FormatNativeWalletBalance()
     {
         if (_isLoading)
         {
             return "Syncing...";
         }
 
-        var estimatedUsd = (_dashboard.NativeBalance + _dashboard.PaymentTokenBalance) * 612.45m;
-        return estimatedUsd.ToString("$#,##0.00");
+        if (_ethUsdPrice is null)
+        {
+            return $"{FormatAmount(_dashboard.NativeBalance)} {_chain.CurrencySymbol}";
+        }
+
+        var estimatedUsd = _dashboard.NativeBalance * _ethUsdPrice.Value;
+        return $"{estimatedUsd:$#,##0.00}";
     }
 
     private sealed record AllocationLedgerItem(

@@ -56,6 +56,12 @@ public sealed class OrderService(
         return orders.Select(Map).ToArray();
     }
 
+    public async Task<IReadOnlyCollection<CommerceTransactionDto>> GetCommerceTransactionsAsync(CancellationToken cancellationToken = default)
+    {
+        var orders = await orderRepository.GetCommerceTransactionsAsync(cancellationToken);
+        return orders.Select(MapCommerceTransaction).ToArray();
+    }
+
     private static OrderDto Map(Order order) => new(
         order.Id,
         order.OrderNumber,
@@ -93,4 +99,34 @@ public sealed class OrderService(
             record.Status,
             record.CreatedAt,
             record.RecordedOnChainAt)).ToArray());
+
+    private static CommerceTransactionDto MapCommerceTransaction(Order order) => new(
+        order.OrderNumber,
+        order.Status,
+        order.Total,
+        order.WalletAddress,
+        order.PaymentTransactionHash,
+        order.PaymentChainId,
+        order.PaymentNetworkName,
+        order.PaymentEthAmount,
+        order.PaymentExplorerUrl,
+        order.PaidAtUtc,
+        order.CreatedAt,
+        order.Items.Sum(item => item.Quantity),
+        BuildProductSummary(order.Items));
+
+    private static string BuildProductSummary(IReadOnlyCollection<OrderItem> items)
+    {
+        if (items.Count == 0)
+        {
+            return "No items";
+        }
+
+        var productNames = items
+            .OrderBy(item => item.ProductName)
+            .Select(item => item.Quantity > 1 ? $"{item.ProductName} x{item.Quantity}" : item.ProductName)
+            .ToArray();
+
+        return string.Join(", ", productNames);
+    }
 }

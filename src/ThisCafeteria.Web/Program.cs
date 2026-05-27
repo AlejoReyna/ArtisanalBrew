@@ -57,6 +57,11 @@ builder.Services.AddSingleton(serviceProvider =>
 builder.Services.Configure<CoffeeCoinOwnerOptions>(
     builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
 builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
+builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.coingecko.com/api/v3/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
 builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
 builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();

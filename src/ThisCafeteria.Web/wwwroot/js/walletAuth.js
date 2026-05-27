@@ -59,6 +59,23 @@ function getWalletProvider(walletName) {
         return providers.find(provider => provider.isCoinbaseWallet) ?? window.ethereum;
     }
 
+    if (normalizedName.includes("phantom")) {
+        return providers.find(provider => provider.isPhantom)
+            ?? window.phantom?.ethereum
+            ?? null;
+    }
+
+    if (normalizedName.includes("brave")) {
+        return providers.find(provider => provider.isBraveWallet)
+            ?? (window.ethereum?.isBraveWallet ? window.ethereum : null);
+    }
+
+    if (normalizedName.includes("trust")) {
+        return providers.find(provider => provider.isTrust || provider.isTrustWallet)
+            ?? window.trustwallet
+            ?? null;
+    }
+
     return window.ethereum;
 }
 

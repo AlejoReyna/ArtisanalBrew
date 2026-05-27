@@ -1205,8 +1205,16 @@ p {
 .user-menu-backdrop {
     background: rgba(31, 26, 24, 0.32);
     inset: 0;
+    opacity: 0;
+    pointer-events: none;
     position: fixed;
+    transition: opacity 220ms ease;
     z-index: 1500;
+}
+
+.user-menu-backdrop--open {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .user-menu {
@@ -1218,13 +1226,29 @@ p {
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    max-width: min(24rem, 100vw);
+    max-width: min(24rem, calc(100vw - 1rem));
+    opacity: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 1.35rem;
+    pointer-events: none;
     position: fixed;
     right: 0;
     top: 0;
+    transform: translate3d(104%, 0, 0);
+    transition:
+        transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 220ms ease,
+        box-shadow 360ms ease;
+    will-change: transform;
     width: 24rem;
     z-index: 1501;
+}
+
+.user-menu--open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0);
 }
 
 .user-menu__header {
@@ -1233,6 +1257,35 @@ p {
     display: flex;
     justify-content: space-between;
     padding-bottom: 1.1rem;
+}
+
+.user-menu__header,
+.user-menu__links,
+.user-menu__logout {
+    opacity: 0;
+    transform: translateX(0.7rem);
+    transition:
+        opacity 240ms ease,
+        transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.user-menu--open .user-menu__header,
+.user-menu--open .user-menu__links,
+.user-menu--open .user-menu__logout {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.user-menu--open .user-menu__header {
+    transition-delay: 70ms;
+}
+
+.user-menu--open .user-menu__links {
+    transition-delay: 115ms;
+}
+
+.user-menu--open .user-menu__logout {
+    transition-delay: 155ms;
 }
 
 .user-menu__header h2 {
@@ -1257,7 +1310,15 @@ p {
     justify-content: center;
     line-height: 1;
     padding: 0;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
     width: 2.4rem;
+}
+
+.user-menu__header button:hover {
+    background: #2d2421;
+    border-color: #2d2421;
+    color: #fbf9f4;
+    transform: rotate(90deg);
 }
 
 .user-menu__links {
@@ -1275,11 +1336,13 @@ p {
     padding: 1rem 0;
     text-decoration: none;
     text-transform: uppercase;
+    transition: color 160ms ease, padding-left 160ms ease;
 }
 
 .user-menu__item.active,
 .user-menu__item:hover {
     color: #8d6f55;
+    padding-left: 0.35rem;
 }
 
 .user-menu__logout {
@@ -1297,7 +1360,33 @@ p {
     letter-spacing: 0.14em;
     min-height: 3.1rem;
     text-transform: uppercase;
+    transition: background 160ms ease, transform 160ms ease;
     width: 100%;
+}
+
+.user-menu__logout button:hover {
+    background: #3a2e29;
+    transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .user-menu-backdrop,
+    .user-menu,
+    .user-menu__header,
+    .user-menu__links,
+    .user-menu__logout,
+    .user-menu__header button,
+    .user-menu__item,
+    .user-menu__logout button {
+        transition: none;
+    }
+
+    .user-menu,
+    .user-menu__header,
+    .user-menu__links,
+    .user-menu__logout {
+        transform: none;
+    }
 }
 
 .cart-toast-host {

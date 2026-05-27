@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Amazon.SQS;
 using Amazon.SQS.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,7 +7,6 @@ using ThisCafeteria.Infrastructure.Configuration;
 namespace ThisCafeteria.Infrastructure.Services;
 
 public sealed class SqsMessagePublisher(
-    AmazonSQSClient sqs,
     IOptions<AwsMessagingOptions> options,
     ILogger<SqsMessagePublisher> logger) : ISqsMessagePublisher
 {
@@ -25,31 +23,47 @@ public sealed class SqsMessagePublisher(
             return null;
         }
 
-        var request = new SendMessageRequest
+        try
         {
-            QueueUrl = queueUrl,
-            MessageBody = JsonSerializer.Serialize(message, JsonOptions),
-            MessageAttributes =
+            using var sqs = AwsClientFactory.CreateSqsClient(options.Value);
+            var request = new SendMessageRequest
             {
-                ["messageType"] = new MessageAttributeValue
+                QueueUrl = queueUrl,
+                MessageBody = JsonSerializer.Serialize(message, JsonOptions),
+                MessageAttributes =
                 {
-                    DataType = "String",
-                    StringValue = typeof(TMessage).Name
+                    ["messageType"] = new MessageAttributeValue
+                    {
+                        DataType = "String",
+                        StringValue = typeof(TMessage).Name
+                    }
                 }
+            };
+
+            if (queueUrl.EndsWith(".fifo", StringComparison.OrdinalIgnoreCase))
+            {
+                request.MessageGroupId = typeof(TMessage).Name;
+                request.MessageDeduplicationId = Guid.NewGuid().ToString("N");
             }
-        };
 
-        if (queueUrl.EndsWith(".fifo", StringComparison.OrdinalIgnoreCase))
-        {
-            request.MessageGroupId = typeof(TMessage).Name;
-            request.MessageDeduplicationId = Guid.NewGuid().ToString("N");
+            var response = await sqs.SendMessageAsync(request, cancellationToken).ConfigureAwait(false);
+            logger.LogInformation(
+                "Published {MessageType} status message to SQS. MessageId={MessageId}",
+                typeof(TMessage).Name,
+                response.MessageId);
+            return response.MessageId;
         }
-
-        var response = await sqs.SendMessageAsync(request, cancellationToken).ConfigureAwait(false);
-        logger.LogInformation(
-            "Published {MessageType} status message to SQS. MessageId={MessageId}",
-            typeof(TMessage).Name,
-            response.MessageId);
-        return response.MessageId;
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                exception,
+                "SQS status publish skipped for {MessageType}; the AWS SQS client could not be created or the message could not be sent.",
+                typeof(TMessage).Name);
+            return null;
+        }
     }
 }

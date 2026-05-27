@@ -22,6 +22,16 @@ public sealed class OrderRepository(AppDbContext dbContext) : IOrderRepository
         }
     }
 
+    public async Task<IReadOnlyCollection<Order>> GetCommerceTransactionsAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Orders
+            .AsNoTracking()
+            .Include(order => order.Items)
+            .OrderByDescending(order => order.PaidAtUtc ?? order.CreatedAt)
+            .ThenByDescending(order => order.CreatedAt)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<Order>> GetOrdersForUserAsync(Guid userProfileId, CancellationToken cancellationToken = default)
     {
         return await dbContext.Orders
