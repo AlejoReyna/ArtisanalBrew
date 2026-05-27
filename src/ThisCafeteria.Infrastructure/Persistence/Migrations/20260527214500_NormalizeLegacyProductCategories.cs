@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #nullable disable
 
 namespace ThisCafeteria.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260527214500_NormalizeLegacyProductCategories")]
     public partial class NormalizeLegacyProductCategories : Migration
     {
         /// <inheritdoc />
