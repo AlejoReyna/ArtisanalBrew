@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using ThisCafeteria.Domain.Entities;
 using ThisCafeteria.Domain.Enums;
+using ThisCafeteria.Infrastructure.Configuration;
 
 namespace ThisCafeteria.Infrastructure.Persistence;
 
-public sealed class DatabaseSeeder(AppDbContext dbContext)
+public sealed class DatabaseSeeder(AppDbContext dbContext, IOptions<CatalogOptions> catalogOptions)
 {
     private static readonly IReadOnlyList<CatalogSeedProduct> CatalogProducts =
     [
@@ -43,8 +45,12 @@ public sealed class DatabaseSeeder(AppDbContext dbContext)
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         await dbContext.Database.MigrateAsync(cancellationToken);
-        await SeedCatalogProductsAsync(cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        if (catalogOptions.Value.SeedProductsOnStartup)
+        {
+            await SeedCatalogProductsAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private async Task SeedCatalogProductsAsync(CancellationToken cancellationToken)

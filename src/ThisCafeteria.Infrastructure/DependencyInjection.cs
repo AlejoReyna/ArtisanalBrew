@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IWalletStatusEventRepository, WalletStatusEventRepository>();
         services.AddScoped<IS3StorageService, S3StorageService>();
         services.AddScoped<IEmailSender, SesEmailSender>();
+        services.Configure<CatalogOptions>(configuration.GetSection(CatalogOptions.SectionName));
         services.AddScoped<DatabaseSeeder>();
 
         return services;
