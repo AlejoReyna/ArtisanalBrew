@@ -9,4 +9,5 @@ public sealed record CreateOrderRequest(
     string PaymentNetworkName,
     decimal PaymentEthAmount,
     string PaymentExplorerUrl,
-    DateTime PaidAtUtc);
+    DateTime PaidAtUtc,
+    string? CouponCode = null);

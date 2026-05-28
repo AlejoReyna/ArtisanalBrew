@@ -11,6 +11,7 @@
 
 <PageTitle>Shop | Artisanal Brew</PageTitle>
 
+<section class="products-shop">
 <ul class="category-filter" data-animate="fade-up">
     @foreach (var section in Sections)
     {
@@ -38,9 +39,10 @@ else if (!string.IsNullOrWhiteSpace(_loadError))
 }
 else
 {
-    var visibleProducts = activeSection == AllSection
-        ? _products.Where(product => product.IsActive)
-        : _products.Where(product => product.IsActive && product.Category.ToString() == activeSection);
+    var visibleProducts = OrderProductsForDisplay(
+        activeSection == AllSection
+            ? _products.Where(product => product.IsActive)
+            : _products.Where(product => product.IsActive && product.Category.ToString() == activeSection));
 
     <div class="product-grid stagger-container" data-stagger>
     @foreach (var product in visibleProducts)
@@ -73,6 +75,7 @@ else
     }
     </div>
 }
+</section>
 
 @code {
     private const string AllSection = "All";
@@ -196,6 +199,20 @@ else
         {
         }
     }
+
+    private static IEnumerable<ProductDto> OrderProductsForDisplay(IEnumerable<ProductDto> products) =>
+        products
+            .OrderBy(product => CategorySortOrder(product.Category))
+            .ThenBy(product => product.Name, StringComparer.Ordinal);
+
+    private static int CategorySortOrder(ProductCategory category) =>
+        category switch
+        {
+            ProductCategory.Beans => 0,
+            ProductCategory.BrewingEquipment => 1,
+            ProductCategory.CeramicsAndGoods => 2,
+            _ => int.MaxValue
+        };
 
     private static string SectionLabel(string section) =>
         Sections.FirstOrDefault(item => item.Key == section)?.Label ?? section;

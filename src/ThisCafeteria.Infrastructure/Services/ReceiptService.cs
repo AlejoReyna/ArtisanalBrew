@@ -145,9 +145,27 @@ public sealed class ReceiptService(
 
                             summary.Item().Row(row =>
                             {
+                                row.RelativeItem().Text("Shipping");
+                                row.ConstantItem(90).AlignRight().Text(order.Shipping.ToString("C"));
+                            });
+
+                            summary.Item().Row(row =>
+                            {
                                 row.RelativeItem().Text("Tax");
                                 row.ConstantItem(90).AlignRight().Text(order.Tax.ToString("C"));
                             });
+
+                            if (order.DiscountAmount > 0)
+                            {
+                                var couponLabel = string.IsNullOrWhiteSpace(order.CouponCode)
+                                    ? "Coupon"
+                                    : $"Coupon ({order.CouponCode})";
+                                summary.Item().Row(row =>
+                                {
+                                    row.RelativeItem().Text(couponLabel);
+                                    row.ConstantItem(90).AlignRight().Text($"-{order.DiscountAmount:C}");
+                                });
+                            }
 
                             summary.Item().PaddingTop(6).LineHorizontal(1);
 

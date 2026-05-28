@@ -22,6 +22,11 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
         RuleFor(x => x.PaymentEthAmount).GreaterThan(0);
         RuleFor(x => x.PaymentExplorerUrl).NotEmpty().MaximumLength(2_048);
         RuleFor(x => x.PaidAtUtc).NotEmpty();
+        RuleFor(x => x.CouponCode)
+            .MaximumLength(64)
+            .Matches("^[A-Za-z0-9_-]+$")
+            .When(x => !string.IsNullOrWhiteSpace(x.CouponCode))
+            .WithMessage("Coupon code can only contain letters, numbers, underscores, and hyphens.");
         RuleForEach(x => x.Items).ChildRules(item =>
         {
             item.RuleFor(x => x.ProductId).NotEmpty();

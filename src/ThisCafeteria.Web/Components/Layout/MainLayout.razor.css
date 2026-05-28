@@ -79,6 +79,10 @@ main {
     padding-top: 0;
 }
 
+.public-page:has(.journal-hero) .public-main {
+    padding-top: 0;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;

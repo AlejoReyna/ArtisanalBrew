@@ -1,420 +1,238 @@
 @page "/"
-@inject IOrderService OrderService
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Artisanal Brew Cafeteria</PageTitle>
 
-<section class="hero editorial-hero editorial-hero--coffee">
-    <div class="hero__media" aria-hidden="true"></div>
-    <div class="hero__content">
-        <p class="eyebrow" data-animate="fade-up">Est. 2024</p>
-        <h1 data-animate="blur">A sanctuary for the <span class="headline-italic">patient brewer.</span></h1>
-        <p class="lede" data-animate="fade-up">
-            Embrace the slow living movement with seasonal coffee, manual brewing, and pastry made for lingering.
-        </p>
-        <div class="hero__actions" data-animate="fade-up">
-            <a class="button button--dark" href="products">Explore the menu</a>
-            <a class="button button--ghost" href="story">Our story</a>
-        </div>
-    </div>
-</section>
+<Hero />
+<Concept />
+<Offerings />
+<Journal />
+
+<style>
+    .recruiter-showcase {
+        --recruiter-bg: #fbf9f4;
+        --recruiter-ink: var(--charcoal, #211b17);
+        --recruiter-muted: rgba(33, 27, 23, 0.62);
+        --recruiter-line: rgba(33, 27, 23, 0.12);
+        --recruiter-card: rgba(255, 252, 246, 0.78);
+        isolation: isolate;
+        overflow: clip;
+        padding-block: clamp(5rem, 10vw, 9rem);
+        position: relative;
+    }
+
+    .recruiter-showcase::before {
+        background:
+            linear-gradient(90deg, rgba(33, 27, 23, 0.06) 1px, transparent 1px),
+            linear-gradient(180deg, rgba(33, 27, 23, 0.05) 1px, transparent 1px);
+        background-size: 72px 72px;
+        content: "";
+        inset: 0;
+        mask-image: radial-gradient(circle at 50% 30%, black, transparent 72%);
+        opacity: 0.55;
+        pointer-events: none;
+        position: absolute;
+        z-index: -2;
+    }
+
+    .recruiter-showcase::after {
+        background: linear-gradient(180deg, transparent, rgba(251, 249, 244, 0.84) 70%, var(--recruiter-bg));
+        content: "";
+        inset: auto 0 0;
+        height: 30%;
+        pointer-events: none;
+        position: absolute;
+        z-index: -1;
+    }
+
+    .recruiter-orb {
+        aspect-ratio: 1;
+        border-radius: 999px;
+        filter: blur(2px);
+        opacity: 0;
+        pointer-events: none;
+        position: absolute;
+        transform: scale(0.72);
+        transition: opacity 1.2s ease, transform 1.4s cubic-bezier(.16, 1, .3, 1);
+        width: clamp(14rem, 28vw, 28rem);
+        z-index: -1;
+    }
+
+    .recruiter-orb--one {
+        background: radial-gradient(circle, rgba(138, 91, 54, 0.18), transparent 68%);
+        right: -8vw;
+        top: 8%;
+    }
+
+    .recruiter-showcase.is-in-view .recruiter-orb {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .recruiter-section-heading {
+        margin-inline: auto;
+        max-width: 820px;
+        text-align: center;
+    }
+
+    .recruiter-kicker {
+        color: var(--recruiter-muted);
+        font-size: clamp(1rem, 1.4vw, 1.15rem);
+        line-height: 1.8;
+        margin: 1.2rem auto 0;
+        max-width: 620px;
+    }
+
+    [data-recruiter-animate] {
+        opacity: 0;
+        transform: translate3d(0, 36px, 0);
+        transition:
+            opacity 900ms ease,
+            filter 1000ms ease,
+            clip-path 1000ms cubic-bezier(.16, 1, .3, 1),
+            transform 1000ms cubic-bezier(.16, 1, .3, 1);
+        transition-delay: var(--recruiter-delay, 0ms);
+        will-change: transform, opacity, filter, clip-path;
+    }
+
+    [data-recruiter-animate="reveal"] {
+        clip-path: inset(0 0 102% 0 round 0.18em);
+        filter: blur(12px);
+        transform: translate3d(0, 18px, 0) scale(0.985);
+    }
+
+    [data-recruiter-animate="card"] {
+        filter: blur(14px);
+        transform: translate3d(0, 58px, 0) rotateX(14deg) scale(0.96);
+        transform-origin: center bottom;
+    }
+
+    .is-visible[data-recruiter-animate] {
+        clip-path: inset(0 0 0 0 round 0);
+        filter: blur(0);
+        opacity: 1;
+        transform: translate3d(0, 0, 0) rotateX(0) scale(1);
+    }
+
+    @@keyframes recruiterSteam {
+        0%, 100% { opacity: 0; transform: translate3d(0, 28px, 0) scaleY(0.75); }
+        45% { opacity: 0.85; transform: translate3d(8px, -36px, 0) scaleY(1.15); }
+        70% { opacity: 0.15; transform: translate3d(-10px, -72px, 0) scaleY(1.35); }
+    }
+
+    @@keyframes recruiterPour {
+        0%, 100% { opacity: 0.25; transform: translateX(-50%) scaleY(0.72); }
+        50% { opacity: 1; transform: translateX(-50%) scaleY(1); }
+    }
+
+    @@keyframes recruiterPulse {
+        0%, 100% { opacity: 0.35; transform: translateX(-50%) scale(0.92); }
+        50% { opacity: 0.9; transform: translateX(-50%) scale(1.05); }
+    }
+
+    @@keyframes recruiterFloat {
+        0%, 100% { translate: 0 0; }
+        50% { translate: 0 -14px; }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        [data-recruiter-animate],
+        .recruiter-orb {
+            animation: none !important;
+            clip-path: none !important;
+            filter: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+    }
+</style>
+
+<script suppress-error="BL9992">
+    window.recruiterShowcaseMotion = window.recruiterShowcaseMotion || {
+        instances: [],
+        init() {
+            this.destroy();
+
+            const sections = Array.from(document.querySelectorAll('[data-recruiter-section]'));
+            if (!sections.length) return;
+
+            const revealElement = (element) => element.classList.add('is-visible');
+            const hideElement = (element) => element.classList.remove('is-visible');
+
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    const section = entry.target;
+                    const animated = Array.from(section.querySelectorAll('[data-recruiter-animate]'));
+
+                    if (entry.isIntersecting) {
+                        section.classList.add('is-in-view');
+                        animated.forEach((element, index) => {
+                            element.style.setProperty('--recruiter-delay', `${Math.min(index * 110, 520)}ms`);
+                            window.requestAnimationFrame(() => revealElement(element));
+                        });
+                    } else {
+                        section.classList.remove('is-in-view');
+                        animated.forEach(hideElement);
+                    }
+                });
+            }, {
+                threshold: 0.28,
+                rootMargin: '0px 0px -12% 0px'
+            });
+
+            sections.forEach((section) => sectionObserver.observe(section));
+            this.instances.push(sectionObserver);
+
+            const journalCards = Array.from(document.querySelectorAll('.recruiter-journal-index .recruiter-journal-entry'));
+            if (journalCards.length) {
+                const cardObserver = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) {
+                            return;
+                        }
+
+                        const card = entry.target;
+                        const index = journalCards.indexOf(card);
+                        const delay = Math.max(index, 0) * 150;
+                        card.style.setProperty('--recruiter-delay', `${delay}ms`);
+                        card.classList.add('is-visible');
+                        cardObserver.unobserve(card);
+                    });
+                }, { threshold: 0.2 });
+
+                journalCards.forEach((card) => cardObserver.observe(card));
+                this.instances.push(cardObserver);
+            }
+        },
+        destroy() {
+            this.instances.forEach((observer) => observer.disconnect());
+            this.instances = [];
+        }
+    };
+
+    window.recruiterShowcaseMotion.init();
+</script>
 
 @code {
-    private IReadOnlyCollection<CommerceTransactionDto> _transactions = [];
-    private bool _isLoadingTransactions = true;
-    private string? _transactionLoadError;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
+        }
+    }
 
-    protected override async Task OnInitializedAsync()
+    public async ValueTask DisposeAsync()
     {
         try
         {
-            _transactions = await OrderService.GetCommerceTransactionsAsync();
+            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.destroy");
         }
-        catch (Exception exception)
+        catch
         {
-            _transactionLoadError = $"Commerce transactions could not be loaded: {exception.Message}";
-        }
-        finally
-        {
-            _isLoadingTransactions = false;
+            // JS runtime may already be disconnected during navigation or prerender disposal.
         }
     }
-
-    private static string ShortAddress(string? address)
-    {
-        if (string.IsNullOrWhiteSpace(address))
-        {
-            return "Not linked";
-        }
-
-        return address.Length >= 12 ? $"{address[..6]}...{address[^4..]}" : address;
-    }
-
-    private static string FormatNetwork(string? networkName, int? chainId)
-    {
-        if (!string.IsNullOrWhiteSpace(networkName))
-        {
-            return networkName;
-        }
-
-        return chainId is null ? "Not recorded" : $"Chain {chainId}";
-    }
-
-    private static string FormatEth(decimal? amount) =>
-        amount is null ? "Not recorded" : $"{amount.Value:0.####} ETH";
-
-    private static string FormatItemCount(int itemCount) =>
-        itemCount == 1 ? "1 item" : $"{itemCount} items";
-
-    private static string FormatPaidAt(DateTime? paidAtUtc) =>
-        paidAtUtc is null ? "Pending" : FormatDate(paidAtUtc.Value);
-
-    private static string FormatDate(DateTime date) =>
-        date.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
 }
-
-<style>
-    .concept-section {
-        padding: clamp(4rem, 8vw, 8rem) 0;
-        overflow: hidden;
-    }
-    .concept-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        align-items: stretch;
-        gap: clamp(1.25rem, 3vw, 3rem);
-        width: 100%;
-        position: relative;
-    }
-    .concept-content {
-        z-index: 10;
-        background: #fbf9f4; /* Matches body background */
-        padding: 4rem 2rem 4rem 0; /* Zero left padding for less sangría */
-        position: relative;
-    }
-    /* Extends the background to the far left edge of the screen */
-    .concept-content::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 100%;
-        width: 50vw;
-        background: #fbf9f4;
-    }
-    .transaction-ledger {
-        background: var(--charcoal);
-        color: var(--surface);
-        min-width: 0;
-        padding: clamp(1.25rem, 3vw, 2.5rem);
-    }
-
-    .transaction-ledger .section-heading {
-        max-width: none;
-    }
-
-    .transaction-ledger .eyebrow,
-    .transaction-ledger p {
-        color: rgba(251, 249, 244, 0.72);
-    }
-
-    .transaction-ledger h2,
-    .transaction-ledger .lede {
-        color: var(--surface);
-    }
-
-    .transaction-ledger h2 {
-        font-size: clamp(2rem, 3vw, 3.25rem);
-    }
-
-    .transaction-ledger__summary {
-        align-items: start;
-        display: flex;
-        gap: 1rem;
-        justify-content: space-between;
-        margin: 1.5rem 0 1rem;
-    }
-
-    .transaction-ledger__summary p {
-        margin: 0;
-    }
-
-    .transaction-ledger__count {
-        color: var(--surface);
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-
-    .transaction-table-wrap {
-        border: 1px solid rgba(251, 249, 244, 0.18);
-        overflow-x: auto;
-    }
-
-    .transaction-table {
-        border-collapse: collapse;
-        min-width: 760px;
-        width: 100%;
-    }
-
-    .transaction-table th,
-    .transaction-table td {
-        border-bottom: 1px solid rgba(251, 249, 244, 0.14);
-        padding: 0.85rem;
-        text-align: left;
-        vertical-align: top;
-    }
-
-    .transaction-table th {
-        color: rgba(251, 249, 244, 0.66);
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-
-    .transaction-table td {
-        color: var(--surface);
-    }
-
-    .transaction-table tr:last-child td {
-        border-bottom: 0;
-    }
-
-    .transaction-table__primary {
-        color: var(--surface);
-        display: block;
-        font-weight: 700;
-    }
-
-    .transaction-table__secondary {
-        color: rgba(251, 249, 244, 0.62);
-        display: block;
-        font-size: 0.85rem;
-        margin-top: 0.25rem;
-    }
-
-    .transaction-table a {
-        color: var(--surface);
-        font-weight: 700;
-    }
-
-    .transaction-status {
-        border: 1px solid rgba(251, 249, 244, 0.28);
-        border-radius: 999px;
-        display: table;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        margin-top: 0.5rem;
-        padding: 0.35rem 0.7rem;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-
-    .transaction-ledger__state {
-        border: 1px solid rgba(251, 249, 244, 0.18);
-        color: rgba(251, 249, 244, 0.72);
-        margin-top: 2rem;
-        padding: clamp(1.25rem, 2vw, 2rem);
-    }
-
-    .transaction-ledger__state p {
-        margin: 0;
-    }
-
-    @@media (max-width: 900px) {
-        .concept-grid {
-            display: flex;
-            flex-direction: column;
-        }
-        .concept-content {
-            padding: 2rem 0 0;
-        }
-        .concept-content::before {
-            display: none;
-        }
-
-        .transaction-ledger__summary {
-            align-items: start;
-            flex-direction: column;
-        }
-    }
-
-    [data-animate="slide-right"] { transform: translateX(-40px); }
-    [data-animate="slide-right"].is-visible { transform: translateX(0); }
-
-    [data-animate="slide-left"] { transform: translateX(40px); }
-    [data-animate="slide-left"].is-visible { transform: translateX(0); }
-
-    [data-animate="scale-up"] { transform: scale(0.9); }
-    [data-animate="scale-up"].is-visible { transform: scale(1); }
-
-    [data-animate="flip-up"] { transform: perspective(400px) rotateX(20deg); }
-    [data-animate="flip-up"].is-visible { transform: perspective(400px) rotateX(0deg); }
-
-    [data-animate="fade-in"] { transform: none; }
-    [data-animate="fade-in"].is-visible { transform: none; }
-</style>
-
-<section class="section concept-section">
-    <div class="concept-grid">
-        <div class="concept-content">
-            <p class="eyebrow" data-animate="slide-right">The Concept</p>
-            <h2 data-animate="flip-up">A fully on-chain experience.</h2>
-            <p class="lede" style="margin-top: 1.5rem;" data-animate="fade-in">
-                Welcome to a conceptual space where artisanal coffee culture meets Web3 infrastructure.
-                While our seasonal roasts might be theoretical, the technology is very real.
-            </p>
-            <p class="lede" style="margin-top: 1rem;" data-animate="scale-up">
-                This entire marketplace operates fully on the Ethereum Sepolia testnet—a digital sandbox
-                for the patient brewer. Enjoy a new kind of commerce where every transaction is immutable,
-                and your digital wallet connects directly with the art of coffee roasting.
-            </p>
-            <div style="margin-top: 2rem;" data-animate="blur">
-                <a class="button button--dark" href="products">Explore Products</a>
-            </div>
-        </div>
-        <div class="transaction-ledger" data-animate="fade-up">
-            <div class="section-heading">
-                <p class="eyebrow">Commerce Ledger</p>
-                <h2>Transactions.</h2>
-                <p class="lede">
-                    Every row is loaded from the database-backed order ledger.
-                </p>
-            </div>
-
-            @if (_isLoadingTransactions)
-            {
-                <div class="transaction-ledger__state">
-                    <p>Loading commerce transactions.</p>
-                </div>
-            }
-            else if (!string.IsNullOrWhiteSpace(_transactionLoadError))
-            {
-                <div class="transaction-ledger__state">
-                    <p>@_transactionLoadError</p>
-                </div>
-            }
-            else if (_transactions.Count == 0)
-            {
-                <div class="transaction-ledger__state">
-                    <p>No commerce transactions have been recorded yet.</p>
-                </div>
-            }
-            else
-            {
-                <div class="transaction-ledger__summary">
-                    <p>Showing all transactions stored for the commerce.</p>
-                    <span class="transaction-ledger__count">@_transactions.Count transaction@(_transactions.Count == 1 ? string.Empty : "s")</span>
-                </div>
-
-                <div class="transaction-table-wrap">
-                    <table class="transaction-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Order</th>
-                                <th scope="col">Products</th>
-                                <th scope="col">Wallet</th>
-                                <th scope="col">Total</th>
-                                <th scope="col">Transaction</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var transaction in _transactions)
-                            {
-                                <tr>
-                                    <td>
-                                        <span class="transaction-table__primary">@transaction.OrderNumber</span>
-                                        <span class="transaction-table__secondary">@FormatPaidAt(transaction.PaidAtUtc)</span>
-                                    </td>
-                                    <td>
-                                        <span class="transaction-table__primary">@transaction.ProductSummary</span>
-                                        <span class="transaction-table__secondary">@FormatItemCount(transaction.ItemCount)</span>
-                                    </td>
-                                    <td>
-                                        <span class="transaction-table__primary">@ShortAddress(transaction.WalletAddress)</span>
-                                        <span class="transaction-table__secondary">@FormatNetwork(transaction.PaymentNetworkName, transaction.PaymentChainId)</span>
-                                    </td>
-                                    <td>
-                                        <span class="transaction-table__primary">@transaction.Total.ToString("C")</span>
-                                        <span class="transaction-table__secondary">@FormatEth(transaction.PaymentEthAmount)</span>
-                                    </td>
-                                    <td>
-                                        @if (!string.IsNullOrWhiteSpace(transaction.PaymentExplorerUrl) &&
-                                            !string.IsNullOrWhiteSpace(transaction.PaymentTransactionHash))
-                                        {
-                                            <a href="@transaction.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
-                                                @ShortAddress(transaction.PaymentTransactionHash)
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="transaction-table__secondary">Pending chain record</span>
-                                        }
-                                        <span class="transaction-status">@transaction.Status</span>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
-    </div>
-</section>
-
-<section class="section">
-    <div class="section-heading">
-        <p class="eyebrow" data-animate="fade-up">Curated Offerings</p>
-        <h2 data-animate="blur">Menu highlights for the unhurried table.</h2>
-    </div>
-
-    <div class="offering-grid stagger-container" data-stagger>
-        <article class="offering-card" data-animate="fade-up">
-            <div class="image-frame image-frame--espresso"></div>
-            <p class="eyebrow">Espresso</p>
-            <h3>House Espresso</h3>
-            <p>A bright double shot with chocolate notes and a satin finish.</p>
-        </article>
-        <article class="offering-card offering-card--offset" data-animate="fade-up">
-            <div class="image-frame image-frame--latte"></div>
-            <p class="eyebrow">Latte</p>
-            <h3>Vanilla Cloud Latte</h3>
-            <p>Steamed milk, espresso, and a quiet vanilla finish.</p>
-        </article>
-        <article class="offering-card" data-animate="fade-up">
-            <div class="image-frame image-frame--coldbrew"></div>
-            <p class="eyebrow">Cold Brew</p>
-            <h3>Midnight Cold Brew</h3>
-            <p>Slow-steeped and polished with a deep roasted profile.</p>
-        </article>
-    </div>
-</section>
-
-<section class="section journal-preview">
-    <div class="section-heading">
-        <p class="eyebrow" data-animate="fade-up">Journal</p>
-        <h2 data-animate="blur">Notes from the counter.</h2>
-    </div>
-
-    <div class="journal-grid stagger-container" data-stagger>
-        <article class="journal-card journal-card--tall" data-animate="fade-up">
-            <span>01</span>
-            <h3>The morning dial-in</h3>
-            <p>How grind, water, and patience shape the first cup of the day.</p>
-        </article>
-        <article class="journal-card" data-animate="fade-up">
-            <span>02</span>
-            <h3>Pastry as architecture</h3>
-            <p>Layered dough, cultured butter, and restraint.</p>
-        </article>
-        <article class="journal-card" data-animate="fade-up">
-            <span>03</span>
-            <h3>Designing for pause</h3>
-            <p>Why the room is kept soft, spacious, and deliberately slow.</p>
-        </article>
-    </div>
-</section>

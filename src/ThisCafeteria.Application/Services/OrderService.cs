@@ -8,25 +8,30 @@ namespace ThisCafeteria.Application.Services;
 
 public sealed class OrderService(
     IOrderRepository orderRepository,
+    ICouponRepository couponRepository,
+    IOrderPricingService pricingService,
     ITransparencyService transparencyService,
     IValidator<CreateOrderRequest> validator) : IOrderService
 {
-    private const decimal TaxRate = 0.16m;
-
     public async Task<OrderDto> CreateOrderAsync(CreateOrderRequest request, CancellationToken cancellationToken = default)
     {
         await validator.ValidateAndThrowAsync(request, cancellationToken);
 
-        var subtotal = request.Items.Sum(item => item.UnitPrice * item.Quantity);
-        var tax = decimal.Round(subtotal * TaxRate, 2, MidpointRounding.AwayFromZero);
+        var coupon = await ResolveCouponAsync(request, cancellationToken);
+        var pricing = pricingService.Calculate(request.Items, coupon);
         var order = new Order
         {
             UserProfileId = request.UserProfileId,
             OrderNumber = $"TC-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}",
             Status = OrderStatus.Processing,
-            Subtotal = subtotal,
-            Tax = tax,
-            Total = subtotal + tax,
+            Subtotal = pricing.Subtotal,
+            Shipping = pricing.Shipping,
+            Tax = pricing.Tax,
+            CouponId = coupon?.Id,
+            CouponCode = coupon?.Code,
+            CouponDiscountPercent = coupon?.DiscountPercent,
+            DiscountAmount = pricing.DiscountAmount,
+            Total = pricing.Total,
             WalletAddress = request.WalletAddress,
             PaymentTransactionHash = request.PaymentTransactionHash,
             PaymentChainId = request.PaymentChainId,
@@ -44,6 +49,17 @@ public sealed class OrderService(
                 Total = item.UnitPrice * item.Quantity
             }).ToList()
         };
+
+        if (coupon is not null)
+        {
+            order.CouponRedemption = new CouponRedemption
+            {
+                CouponId = coupon.Id,
+                UserProfileId = request.UserProfileId,
+                OrderId = order.Id,
+                RedeemedAtUtc = DateTime.UtcNow
+            };
+        }
 
         await orderRepository.AddAsync(order, cancellationToken);
         await transparencyService.CreatePendingRecordsForOrderAsync(order, cancellationToken);
@@ -80,7 +96,11 @@ public sealed class OrderService(
         order.UserProfileId,
         order.Status,
         order.Subtotal,
+        order.Shipping,
         order.Tax,
+        order.CouponCode,
+        order.CouponDiscountPercent,
+        order.DiscountAmount,
         order.Total,
         order.WalletAddress,
         order.PaymentTransactionHash,
@@ -127,6 +147,36 @@ public sealed class OrderService(
         order.CreatedAt,
         order.Items.Sum(item => item.Quantity),
         BuildProductSummary(order.Items));
+
+    private async Task<Coupon?> ResolveCouponAsync(CreateOrderRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.CouponCode))
+        {
+            return null;
+        }
+
+        var coupon = await couponRepository.GetByNormalizedCodeAsync(
+            CouponService.NormalizeCode(request.CouponCode),
+            cancellationToken);
+        if (coupon is null || !coupon.IsActive)
+        {
+            throw new InvalidOperationException("Coupon code is invalid or inactive.");
+        }
+
+        var pricing = pricingService.Calculate(request.Items);
+        if (pricing.TotalBeforeDiscount < coupon.MinimumOrderTotal)
+        {
+            throw new InvalidOperationException(
+                $"Coupon requires a minimum order total of {coupon.MinimumOrderTotal:C}.");
+        }
+
+        if (await couponRepository.HasUserRedeemedAsync(coupon.Id, request.UserProfileId, cancellationToken))
+        {
+            throw new InvalidOperationException("You have already redeemed this coupon.");
+        }
+
+        return coupon;
+    }
 
     private static string BuildProductSummary(IReadOnlyCollection<OrderItem> items)
     {

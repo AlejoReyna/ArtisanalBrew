@@ -1,0 +1,348 @@
+@inject IOrderService OrderService
+
+<section class="section concept-section">
+    <div class="concept-grid">
+        <div class="concept-content">
+            <p class="eyebrow" data-animate="slide-right">The Concept</p>
+            <h2 data-animate="flip-up">A fully on-chain experience.</h2>
+            <p class="lede" style="margin-top: 1.5rem;" data-animate="fade-in">
+                Welcome to a conceptual space where artisanal coffee culture meets Web3 infrastructure.
+                While our seasonal roasts might be theoretical, the technology is very real.
+            </p>
+            <p class="lede" style="margin-top: 1rem;" data-animate="scale-up">
+                This entire marketplace operates fully on the Ethereum Sepolia testnet—a digital sandbox
+                for the patient brewer. Enjoy a new kind of commerce where every transaction is immutable,
+                and your digital wallet connects directly with the art of coffee roasting.
+            </p>
+            <div style="margin-top: 2rem;" data-animate="blur">
+                <a class="button button--dark" href="products">Explore Products</a>
+            </div>
+        </div>
+        <div class="transaction-ledger" data-animate="fade-up">
+            <div class="section-heading">
+                <p class="eyebrow">Commerce Ledger</p>
+                <h2>Transactions.</h2>
+                <p class="lede">
+                    Every row is loaded from the database-backed order ledger.
+                </p>
+            </div>
+
+            @if (_isLoadingTransactions)
+            {
+                <div class="transaction-ledger__state">
+                    <p>Loading commerce transactions.</p>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(_transactionLoadError))
+            {
+                <div class="transaction-ledger__state">
+                    <p>@_transactionLoadError</p>
+                </div>
+            }
+            else if (_transactions.Count == 0)
+            {
+                <div class="transaction-ledger__state">
+                    <p>No commerce transactions have been recorded yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="transaction-ledger__summary">
+                    <p>Showing all transactions stored for the commerce.</p>
+                    <span class="transaction-ledger__count">@_transactions.Count transaction@(_transactions.Count == 1 ? string.Empty : "s")</span>
+                </div>
+
+                <div class="transaction-table-wrap">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Order</th>
+                                <th scope="col">Products</th>
+                                <th scope="col">Wallet</th>
+                                <th scope="col">Total</th>
+                                <th scope="col">Transaction</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var transaction in _transactions)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="transaction-table__primary">@transaction.OrderNumber</span>
+                                        <span class="transaction-table__secondary">@FormatPaidAt(transaction.PaidAtUtc)</span>
+                                    </td>
+                                    <td>
+                                        <span class="transaction-table__primary">@transaction.ProductSummary</span>
+                                        <span class="transaction-table__secondary">@FormatItemCount(transaction.ItemCount)</span>
+                                    </td>
+                                    <td>
+                                        <span class="transaction-table__primary">@ShortAddress(transaction.WalletAddress)</span>
+                                        <span class="transaction-table__secondary">@FormatNetwork(transaction.PaymentNetworkName, transaction.PaymentChainId)</span>
+                                    </td>
+                                    <td>
+                                        <span class="transaction-table__primary">@transaction.Total.ToString("C")</span>
+                                        <span class="transaction-table__secondary">@FormatEth(transaction.PaymentEthAmount)</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(transaction.PaymentExplorerUrl) &&
+                                            !string.IsNullOrWhiteSpace(transaction.PaymentTransactionHash))
+                                        {
+                                            <a href="@transaction.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
+                                                @ShortAddress(transaction.PaymentTransactionHash)
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="transaction-table__secondary">Pending chain record</span>
+                                        }
+                                        <span class="transaction-status">@transaction.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<style>
+    .concept-section {
+        padding: clamp(4rem, 8vw, 8rem) 0;
+        overflow: hidden;
+    }
+    .concept-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: stretch;
+        gap: clamp(1.25rem, 3vw, 3rem);
+        width: 100%;
+        position: relative;
+    }
+    .concept-content {
+        z-index: 10;
+        background: #fbf9f4;
+        padding: 4rem 2rem 4rem 0;
+        position: relative;
+    }
+    .concept-content::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 100%;
+        width: 50vw;
+        background: #fbf9f4;
+    }
+    .transaction-ledger {
+        background: var(--charcoal);
+        color: var(--surface);
+        min-width: 0;
+        padding: clamp(1.25rem, 3vw, 2.5rem);
+    }
+
+    .transaction-ledger .section-heading {
+        max-width: none;
+    }
+
+    .transaction-ledger .eyebrow,
+    .transaction-ledger p {
+        color: rgba(251, 249, 244, 0.72);
+    }
+
+    .transaction-ledger h2,
+    .transaction-ledger .lede {
+        color: var(--surface);
+    }
+
+    .transaction-ledger h2 {
+        font-size: clamp(2rem, 3vw, 3.25rem);
+    }
+
+    .transaction-ledger__summary {
+        align-items: start;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin: 1.5rem 0 1rem;
+    }
+
+    .transaction-ledger__summary p {
+        margin: 0;
+    }
+
+    .transaction-ledger__count {
+        color: var(--surface);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .transaction-table-wrap {
+        border: 1px solid rgba(251, 249, 244, 0.18);
+        overflow-x: auto;
+    }
+
+    .transaction-table {
+        border-collapse: collapse;
+        min-width: 760px;
+        width: 100%;
+    }
+
+    .transaction-table th,
+    .transaction-table td {
+        border-bottom: 1px solid rgba(251, 249, 244, 0.14);
+        padding: 0.85rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .transaction-table th {
+        color: rgba(251, 249, 244, 0.66);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .transaction-table td {
+        color: var(--surface);
+    }
+
+    .transaction-table tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .transaction-table__primary {
+        color: var(--surface);
+        display: block;
+        font-weight: 700;
+    }
+
+    .transaction-table__secondary {
+        color: rgba(251, 249, 244, 0.62);
+        display: block;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .transaction-table a {
+        color: var(--surface);
+        font-weight: 700;
+    }
+
+    .transaction-status {
+        border: 1px solid rgba(251, 249, 244, 0.28);
+        border-radius: 999px;
+        display: table;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        margin-top: 0.5rem;
+        padding: 0.35rem 0.7rem;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .transaction-ledger__state {
+        border: 1px solid rgba(251, 249, 244, 0.18);
+        color: rgba(251, 249, 244, 0.72);
+        margin-top: 2rem;
+        padding: clamp(1.25rem, 2vw, 2rem);
+    }
+
+    .transaction-ledger__state p {
+        margin: 0;
+    }
+
+    @@media (max-width: 900px) {
+        .concept-grid {
+            display: flex;
+            flex-direction: column;
+        }
+        .concept-content {
+            padding: 2rem 0 0;
+        }
+        .concept-content::before {
+            display: none;
+        }
+
+        .transaction-ledger__summary {
+            align-items: start;
+            flex-direction: column;
+        }
+    }
+
+    [data-animate="slide-right"] { transform: translateX(-40px); }
+    [data-animate="slide-right"].is-visible { transform: translateX(0); }
+
+    [data-animate="slide-left"] { transform: translateX(40px); }
+    [data-animate="slide-left"].is-visible { transform: translateX(0); }
+
+    [data-animate="scale-up"] { transform: scale(0.9); }
+    [data-animate="scale-up"].is-visible { transform: scale(1); }
+
+    [data-animate="flip-up"] { transform: perspective(400px) rotateX(20deg); }
+    [data-animate="flip-up"].is-visible { transform: perspective(400px) rotateX(0deg); }
+
+    [data-animate="fade-in"] { transform: none; }
+    [data-animate="fade-in"].is-visible { transform: none; }
+</style>
+
+@code {
+    private IReadOnlyCollection<CommerceTransactionDto> _transactions = [];
+    private bool _isLoadingTransactions = true;
+    private string? _transactionLoadError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _transactions = await OrderService.GetCommerceTransactionsAsync();
+        }
+        catch (Exception exception)
+        {
+            _transactionLoadError = $"Commerce transactions could not be loaded: {exception.Message}";
+        }
+        finally
+        {
+            _isLoadingTransactions = false;
+        }
+    }
+
+    private static string ShortAddress(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return "Not linked";
+        }
+
+        return address.Length >= 12 ? $"{address[..6]}...{address[^4..]}" : address;
+    }
+
+    private static string FormatNetwork(string? networkName, int? chainId)
+    {
+        if (!string.IsNullOrWhiteSpace(networkName))
+        {
+            return networkName;
+        }
+
+        return chainId is null ? "Not recorded" : $"Chain {chainId}";
+    }
+
+    private static string FormatEth(decimal? amount) =>
+        amount is null ? "Not recorded" : $"{amount.Value:0.####} ETH";
+
+    private static string FormatItemCount(int itemCount) =>
+        itemCount == 1 ? "1 item" : $"{itemCount} items";
+
+    private static string FormatPaidAt(DateTime? paidAtUtc) =>
+        paidAtUtc is null ? "Pending" : FormatDate(paidAtUtc.Value);
+
+    private static string FormatDate(DateTime date) =>
+        date.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
+}

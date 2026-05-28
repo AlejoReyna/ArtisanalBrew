@@ -1,0 +1,484 @@
+@page "/admin/coupons"
+@layout AdminLayout
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "RequireAdmin")]
+@inject ICouponService CouponService
+@inject IJSRuntime JS
+
+<PageTitle>Admin coupons</PageTitle>
+
+<section class="admin-coupons">
+    <div class="admin-coupons__heading">
+        <div>
+            <p class="eyebrow">Promotions</p>
+            <h1>Coupons</h1>
+        </div>
+        <span>@_coupons.Count coupon@(_coupons.Count == 1 ? string.Empty : "s")</span>
+    </div>
+
+    <div class="admin-coupons__grid">
+        <article class="admin-panel">
+            <div class="admin-panel__title-row">
+                <h2>@(_editingCouponId is null ? "Add coupon" : "Edit coupon")</h2>
+                @if (_editingCouponId is not null)
+                {
+                    <button class="admin-coupon-form__cancel" type="button" disabled="@_isSaving" @onclick="CancelEdit">
+                        Cancel
+                    </button>
+                }
+            </div>
+
+            <EditForm Model="_form" OnSubmit="SaveCouponAsync" class="admin-coupon-form">
+                <label for="coupon-code">Word</label>
+                <InputText id="coupon-code" @bind-Value="_form.Code" maxlength="64" />
+
+                <div class="admin-coupon-form__row">
+                    <div>
+                        <label for="coupon-discount">Discount %</label>
+                        <InputNumber id="coupon-discount" @bind-Value="_form.DiscountPercent" />
+                    </div>
+                    <div>
+                        <label for="coupon-minimum">Minimum buy</label>
+                        <InputNumber id="coupon-minimum" @bind-Value="_form.MinimumOrderTotal" />
+                    </div>
+                </div>
+
+                @if (_editingCouponId is not null)
+                {
+                    <label class="admin-coupon-form__checkbox">
+                        <InputCheckbox @bind-Value="_form.IsActive" />
+                        Active
+                    </label>
+                }
+
+                @if (_messages.Count > 0)
+                {
+                    <ul class="admin-coupon-form__messages">
+                        @foreach (var message in _messages)
+                        {
+                            <li>@message</li>
+                        }
+                    </ul>
+                }
+
+                <button class="button button--dark" type="submit" disabled="@_isSaving">
+                    @(_isSaving ? "Saving..." : _editingCouponId is null ? "Add coupon" : "Save changes")
+                </button>
+            </EditForm>
+        </article>
+
+        <article class="admin-panel admin-panel--wide">
+            <h2>Database coupons</h2>
+
+            @if (_isLoading)
+            {
+                <p>Loading coupons.</p>
+            }
+            else if (_coupons.Count == 0)
+            {
+                <p>No coupons exist in the database yet.</p>
+            }
+            else
+            {
+                <div class="admin-coupon-table-wrap">
+                    <table class="admin-coupon-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Word</th>
+                                <th scope="col">Discount</th>
+                                <th scope="col">Minimum buy</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var coupon in _coupons)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@coupon.Code</strong>
+                                    </td>
+                                    <td>@coupon.DiscountPercent.ToString("0.##")%</td>
+                                    <td>@coupon.MinimumOrderTotal.ToString("C")</td>
+                                    <td>@(coupon.IsActive ? "Active" : "Inactive")</td>
+                                    <td class="admin-coupon-table__actions">
+                                        <button type="button"
+                                                class="admin-coupon-table__button"
+                                                disabled="@_isSaving"
+                                                @onclick="() => EditCoupon(coupon)">
+                                            Edit
+                                        </button>
+                                        <button type="button"
+                                                class="admin-coupon-table__button"
+                                                disabled="@_isSaving"
+                                                @onclick="() => ToggleCouponAsync(coupon)">
+                                            @(coupon.IsActive ? "Deactivate" : "Reactivate")
+                                        </button>
+                                        <button type="button"
+                                                class="admin-coupon-table__button admin-coupon-table__button--delete"
+                                                disabled="@_isSaving"
+                                                @onclick="() => DeleteCouponAsync(coupon)">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </article>
+    </div>
+</section>
+
+<style>
+    .admin-coupons {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 4rem);
+    }
+
+    .admin-coupons__heading {
+        align-items: end;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+    }
+
+    .admin-coupons__heading h1 {
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        margin: 0;
+    }
+
+    .admin-coupons__heading span {
+        color: #746a63;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .admin-coupons__grid {
+        align-items: stretch;
+        display: grid;
+        flex-grow: 1;
+        gap: 2rem;
+        grid-template-columns: minmax(320px, 1fr) 2fr;
+        min-height: 0;
+    }
+
+    .admin-panel {
+        background: #fffdf9;
+        border: 1px solid #d8d0c4;
+        max-height: calc(100vh - 10rem);
+        overflow-y: auto;
+        padding: clamp(1.25rem, 2vw, 2rem);
+    }
+
+    .admin-panel h2 {
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
+        margin: 0;
+    }
+
+    .admin-panel__title-row {
+        align-items: center;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .admin-coupon-form {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .admin-coupon-form label {
+        font-weight: 700;
+    }
+
+    .admin-coupon-form input {
+        background: #fbf9f4;
+        border: 1px solid #d8d0c4;
+        color: #2d2421;
+        min-height: 3rem;
+        padding: 0.75rem 1rem;
+        width: 100%;
+    }
+
+    .admin-coupon-form__row {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-coupon-form__checkbox {
+        align-items: center;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .admin-coupon-form__checkbox input {
+        min-height: auto;
+        width: auto;
+    }
+
+    .admin-coupon-form__messages {
+        color: #b32121;
+        margin: 0;
+        padding-left: 1.2rem;
+    }
+
+    .admin-coupon-form__cancel {
+        background: transparent;
+        border: 0;
+        color: #746a63;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 0;
+        text-decoration: underline;
+    }
+
+    .admin-coupon-table-wrap {
+        overflow-x: auto;
+    }
+
+    .admin-coupon-table {
+        border-collapse: collapse;
+        min-width: 720px;
+        width: 100%;
+    }
+
+    .admin-coupon-table th,
+    .admin-coupon-table td {
+        border-bottom: 1px solid #d8d0c4;
+        padding: 0.85rem;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .admin-coupon-table__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .admin-coupon-table__button {
+        background: #2d2421;
+        border: 0;
+        color: #fffdf9;
+        cursor: pointer;
+        font: inherit;
+        padding: 0.45rem 0.75rem;
+    }
+
+    .admin-coupon-table__button--delete {
+        background: #8b1e1e;
+    }
+
+    @@media (max-width: 900px) {
+        .admin-coupons {
+            height: auto;
+        }
+
+        .admin-coupons__grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-panel {
+            max-height: none;
+        }
+    }
+</style>
+
+@code {
+    private readonly CouponFormModel _form = new();
+    private IReadOnlyCollection<CouponDto> _coupons = [];
+    private readonly List<string> _messages = [];
+    private Guid? _editingCouponId;
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCouponsAsync();
+    }
+
+    private Task SaveCouponAsync() =>
+        _editingCouponId is null ? CreateCouponAsync() : UpdateCouponAsync(_editingCouponId.Value);
+
+    private async Task CreateCouponAsync()
+    {
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            await CouponService.CreateCouponAsync(new CreateCouponRequest(
+                _form.Code,
+                _form.DiscountPercent,
+                _form.MinimumOrderTotal));
+
+            _form.Reset();
+            await LoadCouponsAsync();
+        }
+        catch (FluentValidation.ValidationException exception)
+        {
+            _messages.AddRange(exception.Errors.Select(error => error.ErrorMessage));
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task UpdateCouponAsync(Guid couponId)
+    {
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            var updated = await CouponService.UpdateCouponAsync(
+                couponId,
+                new UpdateCouponRequest(
+                    _form.Code,
+                    _form.DiscountPercent,
+                    _form.MinimumOrderTotal,
+                    _form.IsActive));
+
+            if (updated is null)
+            {
+                _messages.Add("Coupon not found or could not be updated.");
+                return;
+            }
+
+            CancelEdit();
+            await LoadCouponsAsync();
+        }
+        catch (FluentValidation.ValidationException exception)
+        {
+            _messages.AddRange(exception.Errors.Select(error => error.ErrorMessage));
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void EditCoupon(CouponDto coupon)
+    {
+        _messages.Clear();
+        _editingCouponId = coupon.Id;
+        _form.Load(coupon);
+    }
+
+    private void CancelEdit()
+    {
+        _editingCouponId = null;
+        _form.Reset();
+    }
+
+    private async Task ToggleCouponAsync(CouponDto coupon)
+    {
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            await CouponService.UpdateCouponAsync(
+                coupon.Id,
+                new UpdateCouponRequest(
+                    coupon.Code,
+                    coupon.DiscountPercent,
+                    coupon.MinimumOrderTotal,
+                    !coupon.IsActive));
+
+            await LoadCouponsAsync();
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteCouponAsync(CouponDto coupon)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete coupon '{coupon.Code}'? Redeemed coupons will be deactivated instead.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _messages.Clear();
+
+        try
+        {
+            var deleted = await CouponService.DeleteCouponAsync(coupon.Id);
+            if (deleted)
+            {
+                if (_editingCouponId == coupon.Id)
+                {
+                    CancelEdit();
+                }
+
+                await LoadCouponsAsync();
+            }
+            else
+            {
+                _messages.Add("Coupon not found or could not be deleted.");
+            }
+        }
+        catch (Exception exception)
+        {
+            _messages.Add(exception.Message);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task LoadCouponsAsync()
+    {
+        _isLoading = true;
+        _coupons = await CouponService.GetCouponsAsync();
+        _isLoading = false;
+    }
+
+    private sealed class CouponFormModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public decimal DiscountPercent { get; set; } = 10m;
+        public decimal MinimumOrderTotal { get; set; }
+        public bool IsActive { get; set; } = true;
+
+        public void Reset()
+        {
+            Code = string.Empty;
+            DiscountPercent = 10m;
+            MinimumOrderTotal = 0m;
+            IsActive = true;
+        }
+
+        public void Load(CouponDto coupon)
+        {
+            Code = coupon.Code;
+            DiscountPercent = coupon.DiscountPercent;
+            MinimumOrderTotal = coupon.MinimumOrderTotal;
+            IsActive = coupon.IsActive;
+        }
+    }
+}

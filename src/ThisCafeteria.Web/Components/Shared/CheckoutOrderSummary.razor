@@ -92,6 +92,17 @@ else if (Lines.Count == 1)
         <dt>Shipping</dt>
         <dd>@FormatUsd(ShippingUsd)</dd>
     </div>
+    <div class="checkout-summary__line">
+        <dt>Tax</dt>
+        <dd>@FormatUsd(TaxUsd)</dd>
+    </div>
+    @if (DiscountUsd > 0)
+    {
+        <div class="checkout-summary__line">
+            <dt>Coupon @CouponCode</dt>
+            <dd>-@FormatUsd(DiscountUsd)</dd>
+        </div>
+    }
     <div class="checkout-summary__line checkout-summary__line--total">
         <dt>Total</dt>
         <dd>@FormatUsd(OrderTotalUsd) USD</dd>
@@ -117,6 +128,15 @@ else if (Lines.Count == 1)
 
     [Parameter]
     public decimal ShippingUsd { get; set; }
+
+    [Parameter]
+    public decimal TaxUsd { get; set; }
+
+    [Parameter]
+    public string? CouponCode { get; set; }
+
+    [Parameter]
+    public decimal DiscountUsd { get; set; }
 
     [Parameter]
     public decimal OrderTotalUsd { get; set; }

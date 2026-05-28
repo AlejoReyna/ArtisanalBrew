@@ -11,5 +11,6 @@ public sealed class UserProfile
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Order> Orders { get; set; } = [];
+    public List<CouponRedemption> CouponRedemptions { get; set; } = [];
     public Cart? Cart { get; set; }
 }

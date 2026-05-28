@@ -1,0 +1,475 @@
+<section class="section recruiter-showcase recruiter-showcase--journal recruiter-journal-index journal-preview" data-recruiter-section>
+    <div class="recruiter-journal-index__ambient" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <div class="recruiter-journal-index__layout">
+        <aside class="recruiter-journal-index__masthead">
+            <p class="eyebrow" data-recruiter-animate="lift">Journal</p>
+            <h2 data-recruiter-animate="reveal">Notes from the counter.</h2>
+            <p class="recruiter-kicker" data-recruiter-animate="lift">
+                A quieter editorial system: structured like a tasting archive, animated like a product interface,
+                and paced for readers who linger.
+            </p>
+
+            <div class="recruiter-journal-index__signal" data-recruiter-animate="lift" aria-label="Journal metadata">
+                <span>@($"{JournalCatalog.HomeArticles.Count:00} field notes")</span>
+                <span>Manual brew</span>
+                <span>Slow design</span>
+            </div>
+        </aside>
+
+        <div class="recruiter-journal-index__list stagger-container" data-stagger data-recruiter-stagger>
+            @for (var index = 0; index < JournalCatalog.HomeArticles.Count; index++)
+            {
+                var article = JournalCatalog.HomeArticles[index];
+                var entryNumber = (index + 1).ToString("00");
+                var entryClass = "recruiter-journal-entry";
+                if (article.IsFeature)
+                {
+                    entryClass += " recruiter-journal-entry--feature";
+                }
+                if (article.IsDark)
+                {
+                    entryClass += " recruiter-journal-entry--dark";
+                }
+
+                <article class="@entryClass" data-recruiter-animate="journal-line">
+                    <a class="recruiter-journal-entry__link" href="journal" aria-label="@($"Read {article.Title}")">
+                        <div class="@JournalCatalog.HomeImageClass(article.ImageKey)" aria-hidden="true"></div>
+                        <span class="recruiter-journal-entry__content">
+                            <span class="recruiter-journal-entry__header">
+                                <span class="recruiter-journal-entry__number">@entryNumber</span>
+                                <span class="recruiter-journal-entry__separator" aria-hidden="true">|</span>
+                                <span class="recruiter-journal-entry__label">@article.CategoryLabel</span>
+                            </span>
+                            <span class="recruiter-journal-entry__text-reveal">
+                                <h3>@article.Title</h3>
+                            </span>
+                            <span class="recruiter-journal-entry__text-reveal recruiter-journal-entry__text-reveal--body">
+                                <p>@article.Summary</p>
+                            </span>
+                        </span>
+                        <span class="recruiter-journal-entry__meta">
+                            <span>@article.ReadTime</span>
+                            <span aria-hidden="true">↗</span>
+                        </span>
+                    </a>
+                </article>
+            }
+        </div>
+    </div>
+</section>
+
+<style>
+    .recruiter-journal-index {
+        --journal-ink: var(--charcoal, #211b17);
+        --journal-surface: var(--surface, #fbf9f4);
+        --journal-muted: rgba(33, 27, 23, 0.62);
+        --journal-line: rgba(33, 27, 23, 0.13);
+        padding-block: clamp(3.5rem, 7vw, 7rem);
+        padding-inline: clamp(0.75rem, 1.8vw, 1.75rem);
+        position: relative;
+    }
+
+    .recruiter-journal-index::before {
+        background: linear-gradient(90deg, var(--journal-line), transparent);
+        content: "";
+        height: 1px;
+        left: clamp(0.75rem, 1.8vw, 1.75rem);
+        position: absolute;
+        right: clamp(0.75rem, 1.8vw, 1.75rem);
+        top: clamp(1.25rem, 3vw, 2rem);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 1200ms cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .recruiter-journal-index.is-in-view::before {
+        transform: scaleX(1);
+    }
+
+    .recruiter-journal-index__layout {
+        align-items: start;
+        display: grid;
+        gap: clamp(1.5rem, 4vw, 4rem);
+        grid-template-columns: minmax(250px, 0.52fr) minmax(0, 1.48fr);
+        margin-inline: 0;
+        max-width: none;
+        width: 100%;
+    }
+
+    .recruiter-journal-index__masthead {
+        align-self: start;
+        min-width: 0;
+        opacity: 1;
+        padding-left: 0;
+        position: sticky;
+        top: 5rem;
+        visibility: visible;
+    }
+
+    .recruiter-journal-index__masthead [data-recruiter-animate] {
+        clip-path: none;
+        filter: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .recruiter-journal-index.is-in-view .recruiter-journal-index__masthead [data-recruiter-animate] {
+        clip-path: inset(0 0 0 0 round 0);
+        filter: blur(0);
+        opacity: 1;
+        transform: translate3d(0, 0, 0) rotateX(0) scale(1);
+    }
+
+    .recruiter-journal-index__masthead .recruiter-kicker {
+        margin-inline: 0;
+        max-width: 28rem;
+        text-align: left;
+    }
+
+    .recruiter-journal-index__signal {
+        border-top: 1px solid var(--journal-line);
+        display: grid;
+        gap: 0.85rem;
+        margin-top: clamp(1.5rem, 3vw, 2.5rem);
+        padding-top: 1.2rem;
+        max-width: 28rem;
+    }
+
+    .recruiter-journal-index__signal span {
+        color: var(--journal-muted);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .recruiter-journal-index__list {
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+        grid-template-columns: 1fr;
+        margin-top: 0;
+        min-width: 0;
+    }
+
+    .recruiter-journal-entry {
+        background: var(--journal-surface);
+        border: 1px solid var(--journal-line);
+        border-radius: clamp(1.4rem, 2vw, 2.25rem);
+        box-shadow: 0 28px 80px rgba(33, 27, 23, 0.05);
+        min-height: auto;
+        overflow: hidden;
+        padding: 0;
+        position: relative;
+        transition: box-shadow 450ms ease, transform 450ms cubic-bezier(.16, 1, .3, 1), border-color 450ms ease;
+    }
+
+    .recruiter-journal-entry__link {
+        align-items: stretch;
+        color: inherit;
+        display: grid;
+        gap: clamp(0.75rem, 1.5vw, 1.25rem);
+        grid-template-columns: clamp(10rem, 18vw, 16rem) minmax(0, 1fr) auto;
+        min-height: clamp(7.5rem, 11vw, 10rem);
+        padding: 0;
+        position: relative;
+        text-decoration: none;
+    }
+
+    .recruiter-journal-entry__visual {
+        align-self: stretch;
+        aspect-ratio: auto;
+        background-position: center;
+        background-size: cover;
+        border-radius: 0;
+        height: 100%;
+        margin-bottom: 0;
+        min-height: inherit;
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+        transition: transform 450ms cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .recruiter-journal-entry--dark .recruiter-journal-entry__visual {
+        background: rgba(251, 249, 244, 0.06);
+    }
+
+    /* Unified Background Hover Effect */
+    .recruiter-journal-entry__link::before {
+        background: radial-gradient(circle at top right, rgba(138, 91, 54, 0.08), transparent 50%);
+        content: "";
+        inset: 0;
+        opacity: 0;
+        position: absolute;
+        transition: opacity 500ms ease;
+        z-index: -1;
+    }
+
+    .recruiter-journal-entry__content {
+        display: block;
+        max-width: 640px;
+        min-width: 0;
+        padding-block: clamp(0.85rem, 1.5vw, 1.25rem);
+    }
+
+    /* Text Animations Base States */
+    .recruiter-journal-entry__header,
+    .recruiter-journal-entry__text-reveal h3,
+    .recruiter-journal-entry__text-reveal p,
+    .recruiter-journal-entry__meta {
+        filter: blur(8px);
+        opacity: 0;
+        transform: translate3d(0, 24px, 0);
+        transition: 
+            opacity 800ms ease,
+            filter 900ms ease,
+            transform 1000ms cubic-bezier(.16, 1, .3, 1);
+    }
+
+    /* Text Animation Staggering */
+    .recruiter-journal-entry__header {
+        transition-delay: calc(var(--recruiter-delay, 0ms) + 100ms);
+    }
+    
+    .recruiter-journal-entry__text-reveal h3 {
+        transition-delay: calc(var(--recruiter-delay, 0ms) + 220ms);
+    }
+
+    .recruiter-journal-entry__text-reveal p {
+        transition-delay: calc(var(--recruiter-delay, 0ms) + 340ms);
+    }
+
+    .recruiter-journal-entry__meta {
+        transition-delay: calc(var(--recruiter-delay, 0ms) + 460ms);
+    }
+
+    /* Text Animation Active States */
+    .recruiter-journal-entry.is-visible .recruiter-journal-entry__header,
+    .recruiter-journal-entry.is-visible .recruiter-journal-entry__text-reveal h3,
+    .recruiter-journal-entry.is-visible .recruiter-journal-entry__text-reveal p,
+    .recruiter-journal-entry.is-visible .recruiter-journal-entry__meta {
+        filter: blur(0);
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+
+    .recruiter-journal-entry__header {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: clamp(0.45rem, 0.9vw, 0.7rem);
+        margin-bottom: 0.45rem;
+    }
+
+    .recruiter-journal-entry__number,
+    .recruiter-journal-entry__separator,
+    .recruiter-journal-entry__label {
+        font-size: clamp(0.72rem, 1.35vw, 0.95rem);
+        font-weight: 850;
+        letter-spacing: -0.04em;
+        line-height: 1;
+    }
+
+    .recruiter-journal-entry__number {
+        color: rgba(33, 27, 23, 0.36);
+        flex: 0 0 auto;
+    }
+
+    .recruiter-journal-entry__separator {
+        color: rgba(33, 27, 23, 0.22);
+        flex: 0 0 auto;
+        font-weight: 500;
+    }
+
+    .recruiter-journal-entry__label {
+        color: var(--accent);
+        flex: 0 1 auto;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .recruiter-journal-entry__text-reveal {
+        display: block;
+    }
+
+    .recruiter-journal-entry__content h3 {
+        color: var(--journal-ink);
+        font-size: clamp(1.05rem, 1.85vw, 1.65rem);
+        letter-spacing: -0.05em;
+        line-height: 1;
+        margin: 0 0 0.35rem;
+    }
+
+    .recruiter-journal-entry__content p:not(.eyebrow) {
+        color: var(--journal-muted);
+        font-size: clamp(0.82rem, 1.2vw, 0.95rem);
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    .recruiter-journal-entry__meta {
+        align-items: center;
+        color: var(--journal-muted);
+        display: inline-flex;
+        gap: 1rem;
+        font-size: 0.75rem;
+        font-weight: 850;
+        letter-spacing: 0.12em;
+        padding-right: clamp(1.25rem, 2.5vw, 2rem);
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .recruiter-journal-entry__meta span:last-child {
+        align-items: center;
+        border: 1px solid var(--journal-line);
+        border-radius: 999px;
+        display: inline-flex;
+        height: 2.75rem;
+        justify-content: center;
+        transition: background 360ms ease, color 360ms ease, transform 420ms cubic-bezier(.16, 1, .3, 1);
+        width: 2.75rem;
+    }
+
+    .recruiter-journal-index__ambient {
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        position: absolute;
+        z-index: -1;
+    }
+
+    .recruiter-journal-index__ambient span {
+        background: rgba(33, 27, 23, 0.055);
+        border-radius: 999px;
+        height: 0.5rem;
+        opacity: 0;
+        position: absolute;
+        transform: translateX(-2rem) scaleX(0.4);
+        transform-origin: left;
+        transition: opacity 900ms ease, transform 1400ms cubic-bezier(.16, 1, .3, 1);
+        width: clamp(8rem, 18vw, 18rem);
+    }
+
+    .recruiter-journal-index__ambient span:nth-child(1) { right: 8%; top: 18%; }
+    .recruiter-journal-index__ambient span:nth-child(2) { right: 16%; top: 48%; transition-delay: 140ms; }
+    .recruiter-journal-index__ambient span:nth-child(3) { right: 4%; top: 76%; transition-delay: 280ms; }
+
+    .recruiter-journal-index.is-in-view .recruiter-journal-index__ambient span {
+        opacity: 1;
+        transform: translateX(0) scaleX(1);
+    }
+
+    .recruiter-journal-entry--dark {
+        background: var(--journal-ink);
+    }
+
+    .recruiter-journal-entry--dark .recruiter-journal-entry__link::before {
+        background: radial-gradient(circle at top right, rgba(255, 252, 246, 0.08), transparent 50%);
+    }
+
+    .recruiter-journal-entry--dark .recruiter-journal-entry__content h3,
+    .recruiter-journal-entry--dark .recruiter-journal-entry__number,
+    .recruiter-journal-entry--dark .recruiter-journal-entry__meta span:last-child {
+        color: var(--journal-surface);
+    }
+
+    .recruiter-journal-entry--dark .recruiter-journal-entry__separator {
+        color: rgba(251, 249, 244, 0.28);
+    }
+
+    .recruiter-journal-entry--dark .recruiter-journal-entry__label {
+        color: rgba(251, 249, 244, 0.72);
+    }
+
+    .recruiter-journal-entry--dark .recruiter-journal-entry__content p,
+    .recruiter-journal-entry--dark .recruiter-journal-entry__meta {
+        color: rgba(251, 249, 244, 0.66);
+    }
+
+    @@media (hover: hover) {
+        .recruiter-journal-entry:hover {
+            border-color: rgba(33, 27, 23, 0.24);
+            box-shadow: 0 36px 90px rgba(33, 27, 23, 0.1);
+            transform: translateY(-6px);
+        }
+
+        .recruiter-journal-entry:hover .recruiter-journal-entry__visual {
+            transform: scale(1.05);
+        }
+
+        .recruiter-journal-entry__link:hover::before {
+            opacity: 1;
+        }
+
+        .recruiter-journal-entry__link:hover .recruiter-journal-entry__meta span:last-child {
+            background: var(--journal-ink);
+            color: var(--journal-surface);
+            transform: translate3d(0.35rem, -0.35rem, 0);
+        }
+
+        .recruiter-journal-entry--dark:hover .recruiter-journal-entry__meta span:last-child {
+            background: var(--journal-surface);
+            color: var(--journal-ink);
+        }
+    }
+
+    @@media (max-width: 980px) {
+        .recruiter-journal-index {
+            padding-inline: clamp(1rem, 4vw, 1.5rem);
+        }
+
+        .recruiter-journal-index__layout {
+            grid-template-columns: 1fr;
+        }
+
+        .recruiter-journal-index__masthead {
+            position: relative;
+            top: auto;
+        }
+
+        .recruiter-journal-entry__link {
+            grid-template-columns: 1fr;
+            min-height: auto;
+        }
+
+        .recruiter-journal-entry__visual {
+            aspect-ratio: 16 / 9;
+            min-height: clamp(7rem, 24vw, 11rem);
+        }
+
+        .recruiter-journal-entry__content {
+            padding: 0 clamp(1.35rem, 4vw, 1.75rem);
+        }
+
+        .recruiter-journal-entry__meta {
+            justify-content: space-between;
+            padding: 0 clamp(1.35rem, 4vw, 1.75rem) clamp(1.35rem, 4vw, 1.75rem);
+            width: 100%;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .recruiter-journal-index::before,
+        .recruiter-journal-entry,
+        .recruiter-journal-entry__link::before,
+        .recruiter-journal-entry__meta span:last-child,
+        .recruiter-journal-index__ambient span,
+        .recruiter-journal-entry__header,
+        .recruiter-journal-entry__text-reveal h3,
+        .recruiter-journal-entry__text-reveal p,
+        .recruiter-journal-entry__meta {
+            animation: none !important;
+            clip-path: none !important;
+            filter: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+    }
+</style>

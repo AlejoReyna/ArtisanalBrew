@@ -9,7 +9,12 @@ public sealed class Order
     public Guid UserProfileId { get; set; }
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public decimal Subtotal { get; set; }
+    public decimal Shipping { get; set; }
     public decimal Tax { get; set; }
+    public Guid? CouponId { get; set; }
+    public string? CouponCode { get; set; }
+    public decimal? CouponDiscountPercent { get; set; }
+    public decimal DiscountAmount { get; set; }
     public decimal Total { get; set; }
     public string WalletAddress { get; set; } = string.Empty;
     public string? PaymentTransactionHash { get; set; }
@@ -25,4 +30,6 @@ public sealed class Order
 
     public UserProfile? UserProfile { get; set; }
     public Receipt? Receipt { get; set; }
+    public Coupon? Coupon { get; set; }
+    public CouponRedemption? CouponRedemption { get; set; }
 }

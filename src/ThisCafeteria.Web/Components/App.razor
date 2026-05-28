@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["ThisCafeteria.Web.styles.css"]" />
     <ImportMap />
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="images/green_bean.svg" />
     <HeadOutlet />
 </head>
 
@@ -51,7 +51,7 @@
             window.animationObserver = observer;
 
             const animatedElements = document.querySelectorAll(
-                '[data-animate]:not(.is-visible), [data-stagger]:not(.is-visible)'
+                '[data-animate]:not(.is-visible), [data-stagger]:not(.is-visible), .comfy-animate:not(.is-visible), .comfy-animate-image:not(.is-visible)'
             );
 
             animatedElements.forEach(el => observer.observe(el));

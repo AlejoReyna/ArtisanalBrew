@@ -7,6 +7,8 @@
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
 @inject IProfileService ProfileService
 @inject IOrderService OrderService
+@inject ICouponService CouponService
+@inject IOrderPricingService PricingService
 @inject IReceiptService ReceiptService
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
@@ -170,6 +172,17 @@
                                 <dt>Shipping</dt>
                                 <dd>@FormatUsd(_shippingUsd)</dd>
                             </div>
+                            <div class="checkout-summary__line">
+                                <dt>Tax</dt>
+                                <dd>@FormatUsd(_taxUsd)</dd>
+                            </div>
+                            @if (_discountUsd > 0)
+                            {
+                                <div class="checkout-summary__line">
+                                    <dt>Coupon @_appliedCoupon?.Code</dt>
+                                    <dd>-@FormatUsd(_discountUsd)</dd>
+                                </div>
+                            }
                             <div class="checkout-summary__line checkout-summary__line--total">
                                 <dt>Total</dt>
                                 <dd>@FormatUsd(_orderTotalUsd) USD</dd>
@@ -211,8 +224,68 @@
                     </div>
                 </article>
 
+                <section class="checkout-coupon" data-animate="fade-up">
+                    <label for="checkout-coupon-code">Coupon word</label>
+                    <div class="checkout-coupon__form">
+                        <input id="checkout-coupon-code"
+                               class="checkout-coupon__input"
+                               type="text"
+                               maxlength="64"
+                               placeholder="Enter coupon"
+                               @bind="_couponCode"
+                               disabled="@(_isApplyingCoupon || _isPaying || _appliedCoupon is not null)" />
+                        @if (_appliedCoupon is null)
+                        {
+                            <button type="button"
+                                    class="button button--ghost checkout-coupon__button"
+                                    disabled="@(_isApplyingCoupon || _isPaying || string.IsNullOrWhiteSpace(_couponCode))"
+                                    @onclick="ApplyCouponAsync">
+                                @(_isApplyingCoupon ? "Applying..." : "Apply")
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="button button--ghost checkout-coupon__button"
+                                    disabled="@_isPaying"
+                                    @onclick="RemoveCoupon">
+                                Remove
+                            </button>
+                        }
+                    </div>
+                    @if (_appliedCoupon is not null)
+                    {
+                        <p class="checkout-coupon__status checkout-coupon__status--success">
+                            @_appliedCoupon.Code applied for @_appliedCoupon.DiscountPercent.ToString("0.##")% off.
+                        </p>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_couponMessage))
+                    {
+                        <p class="checkout-coupon__status checkout-coupon__status--error" role="alert">@_couponMessage</p>
+                    }
+                </section>
+
                 <section class="checkout-breakdown" data-animate="fade-up">
                     <dl class="checkout-breakdown__rows">
+                        <div class="checkout-breakdown__row">
+                            <dt>Subtotal</dt>
+                            <dd>@FormatUsd(_subtotalUsd)</dd>
+                        </div>
+                        <div class="checkout-breakdown__row">
+                            <dt>Shipping</dt>
+                            <dd>@FormatUsd(_shippingUsd)</dd>
+                        </div>
+                        <div class="checkout-breakdown__row">
+                            <dt>Tax</dt>
+                            <dd>@FormatUsd(_taxUsd)</dd>
+                        </div>
+                        @if (_discountUsd > 0)
+                        {
+                            <div class="checkout-breakdown__row">
+                                <dt>Discount</dt>
+                                <dd>-@FormatUsd(_discountUsd)</dd>
+                            </div>
+                        }
                         <div class="checkout-breakdown__row">
                             <dt>Order Total</dt>
                             <dd>@FormatUsd(_orderTotalUsd)</dd>
@@ -247,6 +320,9 @@
                                       CarouselIndex="_carouselIndex"
                                       SubtotalUsd="_subtotalUsd"
                                       ShippingUsd="_shippingUsd"
+                                      TaxUsd="_taxUsd"
+                                      CouponCode="_appliedCoupon?.Code"
+                                      DiscountUsd="_discountUsd"
                                       OrderTotalUsd="_orderTotalUsd"
                                       OnPrevious="ShowPreviousProduct"
                                       OnNext="ShowNextProduct"
@@ -258,13 +334,14 @@
 
 @code {
     private const decimal EthUsdRate = 3750.00m;
-    private const decimal ShippingUsd = 4.00m;
 
     private IReadOnlyList<MarketplaceCartLine> _lines = [];
     private IReadOnlyList<MarketplaceCartLine> _paidLines = [];
     private decimal _orderTotalUsd;
     private decimal _subtotalUsd;
-    private decimal _shippingUsd = ShippingUsd;
+    private decimal _shippingUsd;
+    private decimal _taxUsd;
+    private decimal _discountUsd;
     private decimal _ethAmount;
     private decimal _paidEthAmount;
     private decimal _paidUsdAmount;
@@ -284,6 +361,10 @@
     private bool _isSendingReceipt;
     private bool _receiptSent;
     private string? _receiptError;
+    private string _couponCode = string.Empty;
+    private CouponDto? _appliedCoupon;
+    private bool _isApplyingCoupon;
+    private string? _couponMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -320,9 +401,19 @@
             _lines = await CartService.GetLinesAsync();
         }
 
-        _subtotalUsd = _lines.Sum(line => line.LineTotal);
-        _orderTotalUsd = _subtotalUsd + ShippingUsd;
+        await RefreshPricingAsync();
+    }
+
+    private async Task RefreshPricingAsync(CouponDto? coupon = null, OrderPricingDto? quotedPricing = null)
+    {
+        var pricing = quotedPricing ?? PricingService.Calculate(await CartService.ToOrderItemsAsync());
+        _subtotalUsd = pricing.Subtotal;
+        _shippingUsd = pricing.Shipping;
+        _taxUsd = pricing.Tax;
+        _discountUsd = pricing.DiscountAmount;
+        _orderTotalUsd = pricing.Total;
         _ethAmount = _orderTotalUsd / EthUsdRate;
+        _appliedCoupon = coupon;
     }
 
     private void ShowPreviousProduct()
@@ -349,6 +440,74 @@
         {
             _carouselIndex = index;
         }
+    }
+
+    private async Task ApplyCouponAsync()
+    {
+        if (_isApplyingCoupon || string.IsNullOrWhiteSpace(_couponCode))
+        {
+            return;
+        }
+
+        _isApplyingCoupon = true;
+        _couponMessage = null;
+
+        try
+        {
+            var userProfileId = await GetCurrentUserProfileIdAsync();
+            var quote = await CouponService.QuoteCouponAsync(
+                userProfileId,
+                await CartService.ToOrderItemsAsync(),
+                _couponCode);
+            _couponCode = quote.Coupon.Code;
+            await RefreshPricingAsync(quote.Coupon, quote.Pricing);
+        }
+        catch (Exception exception)
+        {
+            _appliedCoupon = null;
+            _discountUsd = 0m;
+            _couponMessage = exception.Message;
+            await RefreshPricingAsync();
+        }
+        finally
+        {
+            _isApplyingCoupon = false;
+        }
+    }
+
+    private async Task RevalidateCouponAsync(Guid userProfileId)
+    {
+        if (_appliedCoupon is null)
+        {
+            await RefreshPricingAsync();
+            return;
+        }
+
+        var quote = await CouponService.QuoteCouponAsync(
+            userProfileId,
+            await CartService.ToOrderItemsAsync(),
+            _appliedCoupon.Code);
+        await RefreshPricingAsync(quote.Coupon, quote.Pricing);
+    }
+
+    private async Task<Guid> GetCurrentUserProfileIdAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var applicationUserId = UserManager.GetUserId(authState.User);
+        if (string.IsNullOrWhiteSpace(applicationUserId))
+        {
+            throw new InvalidOperationException("Sign in with your wallet before applying a coupon.");
+        }
+
+        return await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
+    }
+
+    private async Task RemoveCoupon()
+    {
+        _appliedCoupon = null;
+        _couponCode = string.Empty;
+        _couponMessage = null;
+        await RefreshPricingAsync();
     }
 
     private async Task PayAsync()
@@ -381,6 +540,9 @@
                 throw new InvalidOperationException("Marketplace wallet is not configured.");
             }
 
+            var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
+            await RevalidateCouponAsync(userProfileId);
+
             _checkoutModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
                 "import",
                 "/js/checkoutEth.js");
@@ -401,7 +563,6 @@
                     explorerUrl = _chain.ExplorerUrl
                 });
 
-            var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
             var order = await OrderService.CreateOrderAsync(
                 new CreateOrderRequest(
                     userProfileId,
@@ -412,7 +573,8 @@
                     _chain.NetworkName,
                     _ethAmount,
                     BuildExplorerTransactionUrl(payment.TransactionHash),
-                    DateTime.UtcNow));
+                    DateTime.UtcNow,
+                    _appliedCoupon?.Code));
 
             _paidUsdAmount = _orderTotalUsd;
             _paidEthAmount = _ethAmount;
@@ -480,7 +642,11 @@
                         })
                         .ToArray(),
                     Subtotal = order.Subtotal,
+                    Shipping = order.Shipping,
                     Tax = order.Tax,
+                    CouponCode = order.CouponCode,
+                    CouponDiscountPercent = order.CouponDiscountPercent,
+                    DiscountAmount = order.DiscountAmount,
                     Total = order.Total
                 });
 

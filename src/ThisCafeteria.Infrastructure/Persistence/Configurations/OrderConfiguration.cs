@@ -13,7 +13,11 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(order => order.OrderNumber).IsUnique();
         builder.Property(order => order.Status).HasConversion<string>().HasMaxLength(80);
         builder.Property(order => order.Subtotal).HasPrecision(18, 2);
+        builder.Property(order => order.Shipping).HasPrecision(18, 2);
         builder.Property(order => order.Tax).HasPrecision(18, 2);
+        builder.Property(order => order.CouponCode).HasMaxLength(64);
+        builder.Property(order => order.CouponDiscountPercent).HasPrecision(5, 2);
+        builder.Property(order => order.DiscountAmount).HasPrecision(18, 2);
         builder.Property(order => order.Total).HasPrecision(18, 2);
         builder.Property(order => order.WalletAddress).HasMaxLength(42).IsRequired();
         builder.Property(order => order.PaymentTransactionHash).HasMaxLength(66);
@@ -29,6 +33,11 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasOne(order => order.UserProfile)
             .WithMany(user => user.Orders)
             .HasForeignKey(order => order.UserProfileId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(order => order.Coupon)
+            .WithMany()
+            .HasForeignKey(order => order.CouponId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(order => order.Items)

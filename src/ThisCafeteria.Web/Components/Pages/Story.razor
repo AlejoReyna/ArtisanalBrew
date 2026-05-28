@@ -3,75 +3,318 @@
 <PageTitle>Our Story</PageTitle>
 
 <style>
-    /* Comfy Viewport Animation Styles */
-    .comfy-animate {
-        opacity: 1;
-        transform: translateY(0);
-        /* Soft, easing curve for a relaxing, unhurried feel */
-        transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), 
-                    transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    /* Minimalist Journal Styles */
+    .narrative-text {
+        font-family: "EB Garamond", "Times New Roman", Times, serif;
+        font-size: 1.35rem;
+        line-height: 1.8;
+        color: rgba(20, 16, 12, 0.85);
     }
 
-    .comfy-animate.is-visible {
-        opacity: 1;
-        transform: translateY(0);
+    .hero-text {
+        font-family: "EB Garamond", "Times New Roman", Times, serif;
+        font-size: 1.35rem;
+        line-height: 1.8;
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 55ch;
+        margin-inline: auto;
     }
 
-    /* Slightly different animation for images to give a "breathing" effect */
-    .comfy-animate-image {
-        opacity: 1;
-        transform: scale(1);
-        transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1), 
-                    transform 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+    /* Override the hero background to be coffee related (different from original) */
+    .editorial-hero--about::before {
+        background-image: url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80') !important;
+        filter: saturate(0.8) contrast(1.1) !important;
     }
 
-    .comfy-animate-image.is-visible {
-        opacity: 1;
-        transform: scale(1);
+    /* Navbar override for Story page */
+    .public-page:has(.story-intro) .public-header.public-header--solid {
+        background-color: #6B4A38 !important;
+        border-bottom-color: transparent !important;
+    }
+    .public-page:has(.story-intro) .public-header.public-header--solid .navbar-brand,
+    .public-page:has(.story-intro) .public-header.public-header--solid .nav-link,
+    .public-page:has(.story-intro) .public-header.public-header--solid .nav-cart {
+        color: #fbf9f4 !important;
+    }
+    .public-page:has(.story-intro) .public-header.public-header--solid .nav-link:hover,
+    .public-page:has(.story-intro) .public-header.public-header--solid .nav-link.active {
+        border-bottom-color: #fbf9f4 !important;
+    }
+    .public-page:has(.story-intro) .public-header.public-header--solid .nav-wallet {
+        border-color: rgba(251, 249, 244, 0.45) !important;
+        color: #fbf9f4 !important;
+    }
+    .public-page:has(.story-intro) .public-header.public-header--solid .nav-wallet.active {
+        background: #fbf9f4 !important;
+        color: #2d2421 !important;
+    }
+    .public-page:has(.story-intro) .public-header.public-header--solid .navbar-toggler {
+        background: rgba(255,255,255,0.1) !important;
+        border-color: rgba(255,255,255,0.3) !important;
+    }
+    .public-page:has(.story-intro) .public-header.public-header--solid .navbar-toggler span {
+        background: #fbf9f4 !important;
     }
 
-    /* Stagger delays for grouped elements */
-    .delay-1 { transition-delay: 0.1s; }
-    .delay-2 { transition-delay: 0.3s; }
-    .delay-3 { transition-delay: 0.5s; }
+    /* ===== Grid Designs ===== */
+    
+    /* Origins: Typographic Grid + Image */
+    .grid-origins {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 4rem;
+        margin: 8rem 0;
+        align-items: start;
+    }
+    
+    .origins-title {
+        grid-column: 1 / -1;
+    }
+
+    .origins-image {
+        grid-column: 1 / 2;
+        background-image: url('https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
+        background-size: cover;
+        background-position: center;
+        border-radius: 12px;
+        min-height: 400px;
+        position: relative;
+    }
+
+    .origins-image::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        background: linear-gradient(to bottom, transparent 60%, rgba(20, 16, 12, 0.2));
+        pointer-events: none;
+    }
+
+    .origins-text-container {
+        grid-column: 2 / 3;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+    }
+
+    /* Sourcing: Grid Layout */
+    .grid-sourcing {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        margin: 8rem 0;
+        align-items: start;
+    }
+
+    .sourcing-content {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+    }
+
+    /* Atmosphere: Centered Split Typography Grid */
+    .grid-atmosphere {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3rem;
+        margin: 10rem auto;
+        max-width: 900px;
+    }
+
+    .atmosphere-title {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .atmosphere-text-1 {
+        text-align: right;
+    }
+
+    .atmosphere-text-2 {
+        text-align: left;
+    }
+
+    /* ===== Story Image Backgrounds ===== */
+    .story-image {
+        background-size: cover;
+        background-position: center;
+        border-radius: 12px;
+        position: relative;
+    }
+
+    .story-image::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 12px;
+        background: linear-gradient(to bottom, transparent 60%, rgba(20, 16, 12, 0.3));
+        pointer-events: none;
+    }
+
+    /* Transition Wide Image: Coffee pouring / latte art */
+    .story-image--wide {
+        background-image: url('https://images.unsplash.com/photo-1511920170033-f8396924c348?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+        min-height: 520px;
+    }
+
+    .manifesto-block {
+        text-align: center;
+        margin: 10rem auto 6rem;
+        padding: 0 2rem;
+    }
+
+    .manifesto-heading {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        max-width: 18ch;
+        margin-inline: auto;
+        line-height: 1.1;
+        color: var(--ink);
+    }
+
+    .manifesto-cta {
+        background-color: #4A3228;
+        border: 1px solid #4A3228;
+        color: #fbf9f4;
+        margin-top: 3rem;
+        transition: background-color 220ms ease, border-color 220ms ease;
+    }
+
+    .manifesto-cta:hover {
+        background-color: #6B4A38;
+        border-color: #6B4A38;
+        color: #fbf9f4;
+    }
+
+    /* ===== Responsive ===== */
+    @@media (max-width: 1024px) {
+        .grid-origins {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+        }
+        .origins-title, .origins-image, .origins-text-container {
+            grid-column: 1 / -1;
+        }
+        .origins-text-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .grid-sourcing {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        .sourcing-content {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        .grid-atmosphere {
+            grid-template-columns: 1fr;
+        }
+        .atmosphere-text-1, .atmosphere-text-2 {
+            text-align: center;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .story-image--wide {
+            min-height: 300px;
+        }
+    }
 </style>
 
-<section class="hero editorial-hero editorial-hero--about story-intro">
+<!-- ==================== HERO SECTION ==================== -->
+<section class="hero editorial-hero editorial-hero--about story-intro stagger-container" data-stagger>
     <div class="hero__content">
-        <p class="eyebrow comfy-animate">Our Story</p>
-        <h1 class="comfy-animate delay-1">Built for the quiet exchange between craft and care.</h1>
-        <p class="lede comfy-animate delay-2">
-            Artisanal Brew didn’t begin with a grand business plan. It began during a sudden Tuesday downpour, 
-            a spilled bag of rye flour, and an extraordinarily opinionated stray orange tabby named Barnaby.
+        <p class="eyebrow" data-animate="fade-up" style="transition-delay: 0.1s;">Our Story</p>
+        <h1 data-animate="fade-up" style="transition-delay: 0.4s;">Proof of Brew.</h1>
+        <p class="hero-text" data-animate="fade-up" style="transition-delay: 0.8s;">
+            Born in a fluorescent-lit crypto conference hall. Served warm in a ceramic cup. 
+            A space where craft meets decentralized settlement.
         </p>
     </div>
 </section>
 
-<section class="story-image story-image--wide comfy-animate-image delay-1"></section>
-
-<section class="story-block story-block--asymmetric">
-    <div class="comfy-animate">
-        <p class="eyebrow">Founders</p>
-        <h2>A room shaped by ritual.</h2>
-    </div>
-    <p class="comfy-animate delay-1">
-        Julian was roasting beans next door when Elena, baking her grandmother’s sourdough before sunrise, accidentally dropped a 50lb bag of flour. 
-        Julian brought over a freshly pulled espresso to help with the cleanup. Barnaby the cat immediately claimed the warm top of the 
-        espresso machine as his bed. Sitting around the flour-dusted table, watching the storm pass, they realized coffee and bread—and the 
-        time spent enjoying them—were simply better shared. 
-    </p>
+<!-- ==================== TRANSITION IMAGE ==================== -->
+<section class="story-image story-image--wide stagger-container" data-stagger
+         role="img"
+         aria-label="Rich espresso pouring into a ceramic cup.">
 </section>
 
-<section class="story-split">
-    <div class="story-image story-image--portrait comfy-animate-image"></div>
-    <div class="story-panel">
-        <p class="eyebrow comfy-animate">Philosophy</p>
-        <h2 class="comfy-animate delay-1">Nothing rushed, nothing crowded.</h2>
-        <p class="comfy-animate delay-2">
-            Every detail today honors that rainy morning. We source coffee for clarity and sweetness, bake in small batches, 
-            and leave room between tables so conversation can settle naturally. The marble counters hold the morning light, 
-            the ceramics have a comforting weight, and the menu only changes when the ingredients ask it to.
-        </p>
-        <a class="button button--ghost comfy-animate delay-3" href="visit">Plan a visit</a>
+<!-- ==================== ORIGINS SECTION ==================== -->
+<section class="grid-origins stagger-container" data-stagger>
+    <div class="origins-title" data-animate="fade-up" style="transition-delay: 0.1s;">
+        <p class="eyebrow">Origins</p>
+        <h2>The catalyst.</h2>
     </div>
+    
+    <div class="origins-image" data-animate="fade-up" style="transition-delay: 0.3s;" role="img" aria-label="Coffee cup on saucer."></div>
+    
+    <div class="origins-text-container">
+        <div data-animate="fade-up" style="transition-delay: 0.5s;">
+            <p class="narrative-text">
+                Seven years of writing smart contracts for DeFi protocols had yielded brilliant, invisible code securing millions in value—but none of it was tangible. A developer craved something real. The dream was simple: a physical location where every asset was traceable on-chain, and every customer could seamlessly settle their tab in Ethereum.
+            </p>
+        </div>
+
+        <div data-animate="fade-up" style="transition-delay: 0.9s;">
+            <p class="narrative-text">
+                The reality was harder. Most commercial landlords had no idea what a wallet address even was. It took one broken espresso machine at a hackathon, and a conversation that lasted until sunrise, to finalize the vision. Together, they imagined a physical space where slow craft met fast, trustless settlement.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SOURCING SECTION ==================== -->
+<section class="grid-sourcing stagger-container" data-stagger>
+    <div class="sourcing-content">
+        <div class="sourcing-title" data-animate="fade-up" style="transition-delay: 0.1s;">
+            <p class="eyebrow">Sourcing</p>
+            <h2>Transparent crop.</h2>
+        </div>
+        
+        <div data-animate="fade-up" style="transition-delay: 0.5s;">
+            <p class="narrative-text">
+                Single-origin. Micro-batches. Sourced exclusively from independent farmers who share our ethos of sustainability and quality. We don't hide our supply chain behind corporate jargon; we publish it to a public ledger. Every sack of beans is logged upon arrival. The roast profiles are immutably documented. 
+            </p>
+        </div>
+
+        <div data-animate="fade-up" style="transition-delay: 0.9s;">
+            <p class="narrative-text">
+                By cutting out traditional middlemen and leveraging decentralized finance, we ensure that a larger percentage of the yield goes directly back to the hands that cultivated the soil. It is trust built through cryptography, tasted in the cup.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== ATMOSPHERE SECTION ==================== -->
+<section class="grid-atmosphere stagger-container" data-stagger>
+    <div class="atmosphere-title" data-animate="fade-up" style="transition-delay: 0.1s;">
+        <p class="eyebrow">Atmosphere</p>
+        <h2>Brutalist comfort.</h2>
+    </div>
+    
+    <div class="atmosphere-text-1" data-animate="fade-up" style="transition-delay: 0.5s;">
+        <p class="narrative-text">
+            Exposed concrete walls meet the warmth of soft amber lighting and natural wood. There is no corporate background music here, just the quiet hum of an Ethereum node syncing in the back room and the hiss of the steam wand. 
+        </p>
+    </div>
+
+    <div class="atmosphere-text-2" data-animate="fade-up" style="transition-delay: 0.9s;">
+        <p class="narrative-text">
+            We designed the floor plan to offer generous space to breathe, read, and write code. It’s an analog sanctuary built for a digital world—a place to anchor yourself before diving back into the decentralized ether.
+        </p>
+    </div>
+</section>
+
+    <!-- ==================== THE MANIFESTO ==================== -->
+<section class="manifesto-block stagger-container" data-stagger>
+    <p class="eyebrow" data-animate="fade-up" style="transition-delay: 0.2s;">The Manifesto</p>
+    <h2 class="manifesto-heading" data-animate="fade-up" style="transition-delay: 0.6s;">
+        Decentralize everything.<br/> Except the craft.
+    </h2>
+    <a class="button manifesto-cta" data-animate="fade-up" href="products" style="transition-delay: 1.0s; display: inline-block;">
+        Shop the beans
+    </a>
 </section>

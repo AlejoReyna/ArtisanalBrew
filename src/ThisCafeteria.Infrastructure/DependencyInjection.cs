@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ICouponRepository, CouponRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<ITransparencyRecordRepository, TransparencyRecordRepository>();
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
