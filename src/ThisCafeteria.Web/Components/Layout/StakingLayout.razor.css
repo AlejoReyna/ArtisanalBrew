@@ -7,21 +7,6 @@ main {
     min-height: 100vh;
 }
 
-.public-header {
-    background-color: rgba(251, 249, 244, 0.86);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid #d8d0c4;
-    left: 0;
-    position: fixed;
-    right: 0;
-    top: 0;
-    transition:
-        background-color 220ms ease,
-        backdrop-filter 220ms ease,
-        border-color 220ms ease;
-    z-index: 50;
-}
-
 .public-main {
     padding-top: 4.75rem;
 }

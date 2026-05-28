@@ -15,8 +15,8 @@
 <ul class="category-filter" data-animate="fade-up">
     @foreach (var section in Sections)
     {
-        <li class="@(activeSection == section.Key ? "active" : "")"
-            @onclick="() => SetSection(section.Key)">
+        <li class="@(selectedSection == section.Key ? "active" : "")"
+            @onclick="() => SetSectionAsync(section.Key)">
             @section.Label
         </li>
     }
@@ -40,11 +40,12 @@ else if (!string.IsNullOrWhiteSpace(_loadError))
 else
 {
     var visibleProducts = OrderProductsForDisplay(
-        activeSection == AllSection
+        displayedSection == AllSection
             ? _products.Where(product => product.IsActive)
-            : _products.Where(product => product.IsActive && product.Category.ToString() == activeSection));
+            : _products.Where(product => product.IsActive && product.Category.ToString() == displayedSection));
 
-    <div class="product-grid stagger-container" data-stagger>
+    <div class="product-grid-wrapper @GetGridWrapperClass()">
+    <div @key="displayedSection" class="product-grid stagger-container" data-stagger>
     @foreach (var product in visibleProducts)
     {
         var quantity = GetQuantity(product.Slug);
@@ -74,6 +75,7 @@ else
         </article>
     }
     </div>
+    </div>
 }
 </section>
 
@@ -91,8 +93,14 @@ else
     private IReadOnlyCollection<ProductDto> _products = [];
     private bool _isLoading = true;
     private string? _loadError;
-    private string activeSection = AllSection;
+    private string selectedSection = AllSection;
+    private string displayedSection = AllSection;
+    private string? _gridTransitionClass;
+    private bool _isTransitioning;
     private bool shouldRefreshAnimations = true;
+    private const int CategoryFadeOutMs = 180;
+    private const int CategoryFadeInMs = 340;
+    private const int FrameDelayMs = 16;
     private readonly Dictionary<string, int> _quantities = new(StringComparer.Ordinal);
     private string? _addingSlug;
     private string? _openingSlug;
@@ -122,10 +130,38 @@ else
         }
     }
 
-    private void SetSection(string section)
+    private string GetGridWrapperClass()
     {
-        activeSection = section;
+        return _gridTransitionClass ?? string.Empty;
+    }
+
+    private async Task SetSectionAsync(string section)
+    {
+        if (section == selectedSection || _isTransitioning)
+        {
+            return;
+        }
+
+        selectedSection = section;
+        _isTransitioning = true;
+        _gridTransitionClass = "is-fading-out";
+        StateHasChanged();
+
+        await Task.Delay(CategoryFadeOutMs);
+
+        displayedSection = section;
         shouldRefreshAnimations = true;
+        _gridTransitionClass = "is-fading-in";
+        StateHasChanged();
+
+        await Task.Delay(FrameDelayMs);
+
+        _gridTransitionClass = null;
+        StateHasChanged();
+
+        await Task.Delay(CategoryFadeInMs);
+
+        _isTransitioning = false;
     }
 
     private int GetQuantity(string slug) =>

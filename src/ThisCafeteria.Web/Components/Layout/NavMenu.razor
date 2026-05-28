@@ -7,6 +7,7 @@
 @using System.Security.Claims
 @implements IDisposable
 
+<header class="public-header">
 <nav class="site-nav" aria-label="Primary navigation">
     <a class="navbar-brand" href="">Artisanal Brew</a>
 
@@ -70,30 +71,76 @@
         </div>
     </div>
 </nav>
+</header>
 
 <AuthorizeView>
     <Authorized>
         @if (_isUserMenuRendered)
         {
             <div class="@UserMenuBackdropCssClass" role="presentation" @onclick="CloseUserMenuAsync"></div>
-            <aside class="@UserMenuCssClass" role="dialog" aria-modal="true" aria-labelledby="user-menu-title" aria-hidden="@UserMenuAriaHidden">
-                <div class="user-menu__header">
-                    <h2 id="user-menu-title">Account</h2>
-                    <button type="button" aria-label="Close account menu" @onclick="CloseUserMenuAsync">x</button>
-                </div>
+            <aside class="@UserMenuCssClass" role="dialog" aria-modal="true" aria-labelledby="user-menu-brand-title" aria-hidden="@UserMenuAriaHidden">
+                <header class="user-menu__brand">
+                    <div class="user-menu__brand-copy">
+                        <a id="user-menu-brand-title" class="user-menu__logo" href="" @onclick="CloseUserMenuAsync">Artisanal Brew</a>
+                        <p class="user-menu__tag label-caps">Premium Staking</p>
+                    </div>
+                    <button class="user-menu__close"
+                            type="button"
+                            aria-label="Close account menu"
+                            @onclick="CloseUserMenuAsync">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </header>
 
-                <nav class="user-menu__links" aria-label="Account links">
-                    <NavLink href="profile" class="user-menu__item" ActiveClass="active" @onclick="CloseUserMenuAsync">
-                        My Profile
-                    </NavLink>
-                    <NavLink href="orders" class="user-menu__item" ActiveClass="active" @onclick="CloseUserMenuAsync">
-                        Orders
-                    </NavLink>
+                <nav class="user-menu__nav" aria-label="Dashboard sections">
+                    <ul class="user-menu__list">
+                        <li>
+                            <NavLink href="profile" class="user-menu__row" ActiveClass="user-menu__row--active" @onclick="CloseUserMenuAsync">
+                                <span class="user-menu__label">Account Overview</span>
+                                <span class="user-menu__goto">
+                                    <span class="user-menu__goto-text">View section</span>
+                                    <span class="user-menu__goto-icon" aria-hidden="true">→</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink href="staking" class="user-menu__row" ActiveClass="user-menu__row--active" @onclick="CloseUserMenuAsync">
+                                <span class="user-menu__label">Allocation Dashboard</span>
+                                <span class="user-menu__goto">
+                                    <span class="user-menu__goto-text">View section</span>
+                                    <span class="user-menu__goto-icon" aria-hidden="true">→</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink href="orders" class="user-menu__row" ActiveClass="user-menu__row--active" @onclick="CloseUserMenuAsync">
+                                <span class="user-menu__label">Transaction Logs</span>
+                                <span class="user-menu__goto">
+                                    <span class="user-menu__goto-text">View section</span>
+                                    <span class="user-menu__goto-icon" aria-hidden="true">→</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink href="profile" class="user-menu__row" ActiveClass="user-menu__row--active" @onclick="CloseUserMenuAsync">
+                                <span class="user-menu__label">Preferences</span>
+                                <span class="user-menu__goto">
+                                    <span class="user-menu__goto-text">View section</span>
+                                    <span class="user-menu__goto-icon" aria-hidden="true">→</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                    </ul>
                 </nav>
 
-                <form method="post" action="/api/wallet-auth/logout" class="user-menu__logout">
-                    <button type="submit">Log out</button>
-                </form>
+                <div class="user-menu__foot">
+                    <NavLink href="staking" class="user-menu__new-stake" @onclick="CloseUserMenuAsync">
+                        New Stake
+                    </NavLink>
+                    <form method="post" action="/api/wallet-auth/logout" class="user-menu__logout">
+                        <button type="submit">Log out</button>
+                    </form>
+                </div>
             </aside>
         }
     </Authorized>
@@ -244,9 +291,11 @@
         _isUserMenuRendered = true;
 
         await InvokeAsync(StateHasChanged);
-        await Task.Yield();
+        // Esperamos a que el navegador pinte el menú fuera de la pantalla antes de animarlo hacia adentro
+        await Task.Delay(50);
 
         _isUserMenuOpen = true;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task CloseUserMenuAsync()
