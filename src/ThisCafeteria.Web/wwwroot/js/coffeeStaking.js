@@ -74,6 +74,7 @@ export async function connectWalletForStaking(config) {
 
     const response = await fetch("/staking/save-wallet-session", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ walletAddress: account, chainId })
     });

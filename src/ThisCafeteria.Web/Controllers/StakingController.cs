@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nethereum.Util;
+using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Domain.Entities;
@@ -13,7 +15,8 @@ namespace ThisCafeteria.Web.Controllers;
 public sealed class StakingController(
     ICoffeeWeb3Service web3Service,
     BlockchainNetworkOptions chain,
-    AppDbContext dbContext) : Controller
+    AppDbContext dbContext,
+    IServiceProvider serviceProvider) : Controller
 {
     private const string WalletSessionKey = "WalletAddress";
 
@@ -135,7 +138,8 @@ public sealed class StakingController(
             return BadRequest("A valid wallet address is required.");
         }
 
-        if (!TryResolveCurrentWallet(out var sessionWallet))
+        var (foundSessionWallet, sessionWallet) = await TryResolveCurrentWalletAsync();
+        if (!foundSessionWallet)
         {
             return Unauthorized("Connect or sign in with your wallet before recording staking activity.");
         }
@@ -229,26 +233,34 @@ public sealed class StakingController(
         IsConfiguredAddress(chain.EffectivePaymentTokenContract) &&
         IsConfiguredAddress(chain.StakingPoolContract);
 
-    private bool TryResolveCurrentWallet(out string wallet)
+    private async Task<(bool Found, string Wallet)> TryResolveCurrentWalletAsync()
     {
-        wallet = string.Empty;
-
-        var candidates = new[]
+        var candidates = new List<string?>
         {
             User.FindFirst("wallet_address")?.Value,
             User.Identity?.Name,
             HttpContext.Session.GetString(WalletSessionKey)
         };
 
-        foreach (var candidate in candidates)
+        var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
+        if (User.Identity?.IsAuthenticated == true && userManager is not null)
         {
-            if (TryNormalizeWallet(candidate, out wallet))
+            var user = await userManager.GetUserAsync(User);
+            if (!string.IsNullOrWhiteSpace(user?.WalletAddress))
             {
-                return true;
+                candidates.Insert(0, user.WalletAddress);
             }
         }
 
-        return false;
+        foreach (var candidate in candidates)
+        {
+            if (TryNormalizeWallet(candidate, out var wallet))
+            {
+                return (true, wallet);
+            }
+        }
+
+        return (false, string.Empty);
     }
 
     private Task<bool> StakingTransactionExistsAsync(

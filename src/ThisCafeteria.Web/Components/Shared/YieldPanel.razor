@@ -9,6 +9,8 @@
 @using ThisCafeteria.Domain.Entities
 @using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Infrastructure.Persistence
+@using System.Security.Claims
+@using Nethereum.Util
 @using ThisCafeteria.Web.Services.Blockchain
 @inject ICoffeeWeb3Service Web3Service
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -25,7 +27,7 @@
     <section class="staking-connect" data-animate="fade-up">
         <p class="eyebrow">Wallet required</p>
         <h2>Connect MetaMask to allocate Sepolia tokens and earn COFFEE.</h2>
-        <p class="lede">Sign in with your wallet from the nav bar, or connect here for an allocation-only session.</p>
+        <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
         @if (!string.IsNullOrWhiteSpace(_connectError))
         {
             <p class="text-danger">@_connectError</p>
@@ -131,7 +133,6 @@ else
 
             <section class="yield-hero">
                 <div class="yield-hero-text">
-                    <p class="yield-kicker">Bean Allocation Ledger</p>
                     <div class="yield-title-row">
                         <h1>Token Allocations</h1>
                         <span class="yield-title-note">@_chain.NetworkName · connected</span>
@@ -301,10 +302,49 @@ else
         _stakingConfigured = IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
             IsConfiguredAddress(_chain.StakingPoolContract);
 
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
+        await ApplyResolvedWalletAsync();
+    }
+
+    private async Task ApplyResolvedWalletAsync()
+    {
         var wallet = await ResolveWalletAddressAsync();
+        var wasConnected = _isConnected;
         _isConnected = !string.IsNullOrWhiteSpace(wallet);
         _dashboard = new CoffeeDashboardModel { WalletAddress = wallet ?? string.Empty };
-        _isLoading = _isConnected;
+
+        if (_isConnected && (!wasConnected || _isLoading))
+        {
+            _isLoading = true;
+            _jsInitialized = false;
+        }
+        else if (!_isConnected)
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async void OnAuthenticationStateChangedAsync(Task<AuthenticationState> authenticationStateTask)
+    {
+        try
+        {
+            await authenticationStateTask;
+            if (_isConnected)
+            {
+                return;
+            }
+
+            await ApplyResolvedWalletAsync();
+            if (_isConnected)
+            {
+                await InvokeAsync(StateHasChanged);
+                await LoadDashboardAsync();
+            }
+        }
+        catch
+        {
+            // Ignore auth revalidation failures during circuit teardown.
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -390,16 +430,69 @@ else
     private async Task<string?> ResolveWalletAddressAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true)
+        var principal = authState.User;
+
+        if (principal.Identity?.IsAuthenticated == true)
         {
-            var user = await UserManager.GetUserAsync(authState.User);
-            if (!string.IsNullOrWhiteSpace(user?.WalletAddress))
+            var fromClaim = principal.FindFirst("wallet_address")?.Value
+                ?? TryGetWalletFromPrincipalName(principal);
+            if (TryNormalizeWallet(fromClaim, out var claimWallet))
             {
-                return user.WalletAddress;
+                SyncWalletSession(claimWallet);
+                return claimWallet;
+            }
+
+            var user = await UserManager.GetUserAsync(principal);
+            if (TryNormalizeWallet(user?.WalletAddress, out var userWallet))
+            {
+                SyncWalletSession(userWallet);
+                return userWallet;
             }
         }
 
-        return HttpContextAccessor.HttpContext?.Session.GetString("WalletAddress");
+        var sessionWallet = HttpContextAccessor.HttpContext?.Session.GetString("WalletAddress");
+        return TryNormalizeWallet(sessionWallet, out var normalizedSession)
+            ? normalizedSession
+            : null;
+    }
+
+    private void SyncWalletSession(string wallet)
+    {
+        var httpContext = HttpContextAccessor.HttpContext;
+        if (httpContext is null)
+        {
+            return;
+        }
+
+        var existing = httpContext.Session.GetString("WalletAddress");
+        if (string.Equals(existing, wallet, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        httpContext.Session.SetString("WalletAddress", wallet);
+    }
+
+    private static string? TryGetWalletFromPrincipalName(ClaimsPrincipal principal)
+    {
+        var name = principal.Identity?.Name;
+        return IsValidEthereumAddress(name) ? name : null;
+    }
+
+    private static bool IsValidEthereumAddress(string? address) =>
+        !string.IsNullOrWhiteSpace(address) &&
+        AddressUtil.Current.IsValidEthereumAddressHexFormat(address);
+
+    private static bool TryNormalizeWallet(string? address, out string checksum)
+    {
+        checksum = string.Empty;
+        if (!IsValidEthereumAddress(address))
+        {
+            return false;
+        }
+
+        checksum = AddressUtil.Current.ConvertToChecksumAddress(address!);
+        return true;
     }
 
     private async Task ConnectWalletAsync()
@@ -531,6 +624,8 @@ else
 
     public async ValueTask DisposeAsync()
     {
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChangedAsync;
+
         if (_stakingModule is not null)
         {
             try

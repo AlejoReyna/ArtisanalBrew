@@ -1,0 +1,6 @@
+<Project>
+  <!-- Prevent VBCSCompiler/MSBuild deadlocks when dotnet watch is suspended (Ctrl+Z). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+</Project>

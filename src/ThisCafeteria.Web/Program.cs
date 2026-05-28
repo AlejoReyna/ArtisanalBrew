@@ -81,6 +81,8 @@ if (hasDatabase)
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
 
+    builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
+
     builder.Services.ConfigureApplicationCookie(options =>
     {
         options.LoginPath = "/";

@@ -64,38 +64,10 @@
     width: 100%;
 }
 
-.profile-dash__brand {
-    display: grid;
-    gap: 0.5rem;
-}
-
-.profile-dash__logo {
-    color: var(--dash-espresso);
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
-    font-size: clamp(1.65rem, 2.4vw, 2rem);
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    line-height: 1.1;
-    text-decoration: none;
-}
-
-.profile-dash__logo:hover {
-    opacity: 0.82;
-}
-
-.profile-dash__tag {
-    color: var(--dash-muted);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    margin: 0;
-    text-transform: uppercase;
-}
+/* ── Sidebar identity ── */
 
 .profile-dash__identity {
     border-bottom: 1px solid var(--dash-line);
-    border-top: 1px solid var(--dash-line);
     padding: 0 0 1.1rem;
 }
 
