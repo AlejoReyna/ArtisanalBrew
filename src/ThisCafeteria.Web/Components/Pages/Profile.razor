@@ -1,4 +1,5 @@
 @page "/profile"
+@layout StakingLayout
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @using FluentValidation
@@ -15,130 +16,193 @@
 
 @if (_isLoading)
 {
-    <section class="page-intro stagger-container" data-animate="fade-up">
+    <section class="staking-connect">
         <p class="eyebrow">Customer Profile</p>
-        <h1>Loading your profile.</h1>
+        <h2>Loading your profile.</h2>
     </section>
 }
 else if (!string.IsNullOrWhiteSpace(_loadError))
 {
-    <section class="page-intro stagger-container" data-animate="fade-up">
+    <section class="staking-connect">
         <p class="eyebrow">Customer Profile</p>
-        <h1>We could not load your profile.</h1>
+        <h2>We could not load your profile.</h2>
         <p class="lede">@_loadError</p>
     </section>
 }
 else if (_dashboard is not null)
 {
-    <section class="page-intro page-intro--split stagger-container profile-intro" data-animate="fade-up">
-        <div>
-            <p class="eyebrow">My Profile</p>
-            <h1>@_dashboard.DisplayName</h1>
-            <p class="lede">Manage your storefront identity, review your orders, and keep your account details close at hand.</p>
-        </div>
-        <div class="profile-stat-card">
-            <span>Total orders</span>
-            <strong>@_dashboard.TotalOrders</strong>
-        </div>
-    </section>
+    @if (_showYield)
+    {
+        <YieldPanel OnBackToProfile="ShowProfileView" />
+    }
+    else
+    {
+        <div class="profile-dash">
+            <aside class="profile-dash__aside" aria-label="Profile navigation">
+                <header class="profile-dash__brand">
+                    <a class="profile-dash__logo" href="/">Artisanal Brew</a>
+                    <p class="profile-dash__tag">Premium Staking</p>
+                </header>
 
-    <section class="profile-grid stagger-container" data-stagger>
-        <article class="profile-card" data-animate="fade-up">
-            <p class="eyebrow">Identity Summary</p>
-            <dl class="profile-facts">
-                <div>
-                    <dt>Wallet</dt>
-                    <dd>@ShortAddress(_dashboard.WalletAddress)</dd>
-                </div>
-                <div>
-                    <dt>Network</dt>
-                    <dd>@FormatChain(_dashboard.WalletChainId)</dd>
-                </div>
-                <div>
-                    <dt>Role</dt>
-                    <dd>@_dashboard.Role</dd>
-                </div>
-                <div>
-                    <dt>Member since</dt>
-                    <dd>@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</dd>
-                </div>
-            </dl>
-        </article>
-
-        <article class="profile-card" data-animate="fade-up">
-            <p class="eyebrow">Display Name</p>
-            <EditForm Model="_editModel" OnSubmit="SaveDisplayNameAsync" class="profile-form">
-                <label for="display-name">Name shown on your profile</label>
-                <InputText id="display-name"
-                           class="profile-input"
-                           @bind-Value="_editModel.DisplayName"
-                           maxlength="160" />
-                <small>Use 2 to 160 characters. HTML tags are not allowed.</small>
-
-                @if (_validationErrors.Count > 0)
-                {
-                    <ul class="profile-errors">
-                        @foreach (var error in _validationErrors)
-                        {
-                            <li>@error</li>
-                        }
-                    </ul>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(_saveMessage))
-                {
-                    <p class="profile-save-message">@_saveMessage</p>
-                }
-
-                <button class="button button--dark" type="submit" disabled="@_isSaving">
-                    @(_isSaving ? "Saving..." : "Save display name")
-                </button>
-            </EditForm>
-        </article>
-    </section>
-
-    <section id="orders" class="profile-section" data-animate="fade-up">
-        <div class="section-heading">
-            <p class="eyebrow">Order History</p>
-            <h2>Recent orders</h2>
-        </div>
-
-        @if (_orders.Count == 0)
-        {
-            <article class="profile-card">
-                <p>No orders are linked to your profile yet.</p>
-            </article>
-        }
-        else
-        {
-            <div class="orders-list">
-                @foreach (var order in _orders)
-                {
-                    <article class="order-row">
+                <section class="profile-dash__identity">
+                    <p class="profile-dash__name">@_dashboard.DisplayName</p>
+                    <dl class="profile-dash__quickstats">
                         <div>
-                            <span class="order-number">@order.OrderNumber</span>
-                            <p>@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</p>
-                            @if (!string.IsNullOrWhiteSpace(order.PaymentTransactionHash))
+                            <dt>Total orders</dt>
+                            <dd>@_dashboard.TotalOrders</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <nav class="profile-dash__nav" aria-label="Profile sections">
+                    <ul class="profile-dash__list">
+                        
+                        <li class="profile-dash__item">
+                            <a class="profile-dash__link" href="#identity">
+                                <span class="profile-dash__label">Identity &amp; Network</span>
+                                <span class="profile-dash__goto"><span>View section</span><span aria-hidden="true">→</span></span>
+                            </a>
+                        </li>
+                        <li class="profile-dash__item">
+                            <a class="profile-dash__link" href="#orders">
+                                <span class="profile-dash__label">Order History</span>
+                                <span class="profile-dash__goto"><span>View section</span><span aria-hidden="true">→</span></span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="profile-dash__foot">
+                    <button type="button" class="profile-dash__yield-btn" @onclick="ShowYieldView">
+                        Go to Yield
+                    </button>
+                    <form method="post" action="/api/wallet-auth/logout" class="profile-dash__logout">
+                        <button type="submit">Log out</button>
+                    </form>
+                </div>
+            </aside>
+
+            <div class="profile-dash__main">
+
+                <section id="overview" class="profile-dash__hero">
+                    <p class="profile-dash__kicker">Account Overview</p>
+                    <div class="profile-dash__title-row">
+                        @if (_isEditingName)
+                        {
+                            <EditForm Model="_editModel" OnSubmit="SaveDisplayNameAsync" class="profile-dash__name-edit">
+                                <InputText class="profile-dash__name-input"
+                                           @bind-Value="_editModel.DisplayName"
+                                           maxlength="160"
+                                           aria-label="Display name" />
+                                <button class="profile-dash__save-icon-btn" type="submit" disabled="@_isSaving" aria-label="Save display name">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                </button>
+                            </EditForm>
+                        }
+                        else
+                        {
+                            <h1 class="profile-dash__name-heading">
+                                <span class="profile-dash__name-text">@_dashboard.DisplayName</span>
+                                <button type="button"
+                                        class="profile-dash__edit-btn"
+                                        aria-label="Edit display name"
+                                        @onclick="StartEditingName">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                </button>
+                            </h1>
+                        }
+                    </div>
+
+                    @if (_isEditingName)
+                    {
+                        @if (_validationErrors.Count > 0)
+                        {
+                            <ul class="profile-dash__errors">
+                                @foreach (var error in _validationErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(_saveMessage))
+                        {
+                            <p class="profile-dash__save-message">@_saveMessage</p>
+                        }
+                    }
+                </section>
+
+                <section id="identity" class="profile-dash__section">
+                    <p class="profile-dash__section-kicker">Identity &amp; Network</p>
+                    <h2 class="profile-dash__section-title">Identity summary</h2>
+                    <dl class="profile-dash__facts">
+                        <div>
+                            <dt>Wallet</dt>
+                            <dd>@ShortAddress(_dashboard.WalletAddress)</dd>
+                        </div>
+                        <div>
+                            <dt>Network</dt>
+                            <dd>@FormatChain(_dashboard.WalletChainId)</dd>
+                        </div>
+                        <div>
+                            <dt>Role</dt>
+                            <dd>@_dashboard.Role</dd>
+                        </div>
+                        <div>
+                            <dt>Member since</dt>
+                            <dd>@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <section id="orders" class="profile-dash__section">
+                    <p class="profile-dash__section-kicker">Order History</p>
+                    <h2 class="profile-dash__section-title">Recent orders</h2>
+
+                    @if (_orders.Count == 0)
+                    {
+                        <p class="profile-dash__empty">No orders are linked to your profile yet.</p>
+                    }
+                    else
+                    {
+                        <div class="profile-dash__orders">
+                            @foreach (var order in _orders)
                             {
-                                <p>
-                                    @ShortAddress(order.WalletAddress) · @order.PaymentNetworkName · @FormatEth(order.PaymentEthAmount)
-                                    @if (!string.IsNullOrWhiteSpace(order.PaymentExplorerUrl))
-                                    {
-                                        <a href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
-                                            @ShortAddress(order.PaymentTransactionHash)
-                                        </a>
-                                    }
-                                </p>
+                                <article class="profile-dash__order">
+                                    <div>
+                                        <span class="profile-dash__order-number">@order.OrderNumber</span>
+                                        <p>@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</p>
+                                        @if (!string.IsNullOrWhiteSpace(order.PaymentTransactionHash))
+                                        {
+                                            <p>
+                                                @ShortAddress(order.WalletAddress) · @order.PaymentNetworkName · @FormatEth(order.PaymentEthAmount)
+                                                @if (!string.IsNullOrWhiteSpace(order.PaymentExplorerUrl))
+                                                {
+                                                    <a href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
+                                                        @ShortAddress(order.PaymentTransactionHash)
+                                                    </a>
+                                                }
+                                            </p>
+                                        }
+                                    </div>
+                                    <span class="profile-dash__status">@order.Status</span>
+                                    <strong>@order.Total.ToString("C")</strong>
+                                </article>
                             }
                         </div>
-                        <span class="status-badge">@order.Status</span>
-                        <strong>@order.Total.ToString("C")</strong>
-                    </article>
-                }
-            </div>
-        }
-    </section>
+                    }
+                </section>
 
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -147,10 +211,11 @@ else if (_dashboard is not null)
     private IReadOnlyCollection<OrderDto> _orders = [];
     private bool _isLoading = true;
     private bool _isSaving;
+    private bool _isEditingName;
+    private bool _showYield;
     private string? _loadError;
     private string? _saveMessage;
     private List<string> _validationErrors = [];
-    private bool _shouldRefreshAnimations = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,13 +252,21 @@ else if (_dashboard is not null)
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private void ShowYieldView() => _showYield = true;
+
+    private void ShowProfileView() => _showYield = false;
+
+    private void StartEditingName()
     {
-        if (firstRender || _shouldRefreshAnimations)
+        if (_dashboard is null)
         {
-            _shouldRefreshAnimations = false;
-            await JS.InvokeVoidAsync("queueAnimations");
+            return;
         }
+
+        _editModel.DisplayName = _dashboard.DisplayName;
+        _validationErrors = [];
+        _saveMessage = null;
+        _isEditingName = true;
     }
 
     private async Task SaveDisplayNameAsync()
@@ -216,6 +289,7 @@ else if (_dashboard is not null)
             _dashboard = _dashboard with { DisplayName = updated.DisplayName };
             _editModel.DisplayName = updated.DisplayName;
             _saveMessage = "Display name updated.";
+            _isEditingName = false;
         }
         catch (ValidationException exception)
         {

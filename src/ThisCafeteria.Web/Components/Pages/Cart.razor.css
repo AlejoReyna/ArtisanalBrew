@@ -15,8 +15,20 @@
     margin-top: 1rem;
 }
 
+.cart-page__empty {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    text-align: center;
+}
+
 .cart-page__empty .lede {
-    margin-bottom: 2rem;
+    font-weight: 300;
+    margin: 0;
 }
 
 .cart-page__layout {
