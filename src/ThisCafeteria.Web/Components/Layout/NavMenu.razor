@@ -155,12 +155,14 @@
                  aria-labelledby="wallet-modal-title"
                  @onclick:stopPropagation="true">
             <div class="wallet-modal__header">
-                <h2 id="wallet-modal-title">Connect a wallet</h2>
+                <div>
+                    <h2 id="wallet-modal-title">Connect a wallet</h2>
+                </div>
                 <button class="wallet-modal__close"
                         type="button"
                         aria-label="Close wallet selection"
                         @onclick="CloseWalletModal">
-                    x
+                    ×
                 </button>
             </div>
 
@@ -172,7 +174,9 @@
                     <span class="wallet-option__icon wallet-option__icon--metamask" aria-hidden="true">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="" loading="lazy" />
                     </span>
-                    <span>MetaMask</span>
+                    <span class="wallet-option__copy">
+                        <span class="wallet-option__name">MetaMask</span>
+                    </span>
                     <span class="wallet-option__arrow">›</span>
                 </button>
 
@@ -181,9 +185,11 @@
                         disabled="@_isConnecting"
                         @onclick='() => ConnectWalletAsync("Phantom")'>
                     <span class="wallet-option__icon wallet-option__icon--phantom" aria-hidden="true">
-                        <img src="https://coinlaunch.space/media/images/4/8/5/0/4850.sp3ow1.114x114.png" alt="" loading="lazy" />
+                        <img src="images/phantom-wallet.svg" alt="" loading="lazy" />
                     </span>
-                    <span>Phantom</span>
+                    <span class="wallet-option__copy">
+                        <span class="wallet-option__name">Phantom</span>
+                    </span>
                     <span class="wallet-option__arrow">›</span>
                 </button>
 
@@ -194,7 +200,9 @@
                     <span class="wallet-option__icon wallet-option__icon--coinbase" aria-hidden="true">
                         <img src="https://avatars.githubusercontent.com/u/18060234?s=200&amp;v=4" alt="" loading="lazy" />
                     </span>
-                    <span>Coinbase Wallet</span>
+                    <span class="wallet-option__copy">
+                        <span class="wallet-option__name">Coinbase Wallet</span>
+                    </span>
                     <span class="wallet-option__arrow">›</span>
                 </button>
 
@@ -205,10 +213,25 @@
                     <span class="wallet-option__icon wallet-option__icon--brave" aria-hidden="true">
                         <img src="https://logodownload.org/wp-content/uploads/2022/04/brave-logo-5.png" alt="" loading="lazy" />
                     </span>
-                    <span>Brave Wallet</span>
+                    <span class="wallet-option__copy">
+                        <span class="wallet-option__name">Brave Wallet</span>
+                    </span>
+                    <span class="wallet-option__arrow">›</span>
+                </button>
+
+                <button class="wallet-option"
+                        type="button"
+                        disabled="@_isConnecting"
+                        @onclick='() => ConnectWalletAsync("Other wallet")'>
+                    <span class="wallet-option__icon wallet-option__icon--other" aria-hidden="true"></span>
+                    <span class="wallet-option__copy">
+                        <span class="wallet-option__name">Other wallet</span>
+                    </span>
                     <span class="wallet-option__arrow">›</span>
                 </button>
             </div>
+
+            <p class="wallet-modal__note">A signature may be requested to verify ownership.</p>
 
             @if (!string.IsNullOrWhiteSpace(_statusMessage))
             {
