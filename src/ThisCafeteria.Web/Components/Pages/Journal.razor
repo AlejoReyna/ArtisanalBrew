@@ -16,6 +16,12 @@
                         <p class="journal-kicker">@article.Kicker</p>
                         <h1>@article.Title</h1>
                         <p class="journal-hero__lede">@article.Summary</p>
+                        @if (JournalArticleContents.TryGetBody(article.Slug, out _))
+                        {
+                            <a class="journal-hero__read-link" href="@JournalCatalog.ArticleUrl(article.Slug)">
+                                Read Article <span aria-hidden="true">&rarr;</span>
+                            </a>
+                        }
                     </div>
                     <div class="@JournalCatalog.HeroImageClass(article.ImageKey)"
                          role="img"
@@ -28,6 +34,37 @@
             @foreach (var _ in JournalCatalog.FeaturedArticles)
             {
                 <span class="journal-carousel__status-bar"></span>
+            }
+        </div>
+    </section>
+
+    <section class="journal-section journal-field-notes" aria-labelledby="field-notes-title">
+        <div class="journal-section__header">
+            <div>
+                <h2 id="field-notes-title">Field Notes</h2>
+                <p>Longer reads on bloom, origin, and the quiet science behind every cup.</p>
+            </div>
+        </div>
+
+        <div class="journal-field-notes__grid stagger-container" data-stagger>
+            @foreach (var article in JournalCatalog.HomeArticles)
+            {
+                <article class="journal-field-notes__card" data-animate="fade-up">
+                    <a class="journal-field-notes__link" href="@JournalCatalog.ArticleUrl(article.Slug)">
+                        <div class="@JournalCatalog.HeroImageClass(article.ImageKey) journal-field-notes__image"
+                             role="img"
+                             aria-label="@article.ImageAriaLabel"></div>
+                        <div class="journal-field-notes__copy">
+                            <span class="journal-badge">@article.CategoryLabel</span>
+                            <p class="journal-kicker">@article.Kicker</p>
+                            <h3>@article.Title</h3>
+                            <p>@article.Summary</p>
+                            <span class="journal-field-notes__meta">
+                                @article.ReadTime <span aria-hidden="true">&rarr;</span>
+                            </span>
+                        </div>
+                    </a>
+                </article>
             }
         </div>
     </section>

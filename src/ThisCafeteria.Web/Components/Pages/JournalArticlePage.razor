@@ -1,0 +1,45 @@
+@page "/journal/{Slug}"
+
+<PageTitle>@(_article?.Title ?? "Journal") | Artisanal Brew</PageTitle>
+
+@if (_article is null || _body is null)
+{
+    <div class="journal-page journal-article-missing">
+        <h1>Article not found</h1>
+        <p>This field note may have moved or is still being written.</p>
+        <a class="journal-archive-link" href="journal">Back to the Journal</a>
+    </div>
+}
+else
+{
+    <div class="journal-page journal-page--article">
+        <JournalNewsletter Article="_article"
+                           Body="_body"
+                           RelatedArticles="_relatedArticles" />
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+
+    private Catalog.JournalArticle? _article;
+    private JournalArticleBody? _body;
+    private IReadOnlyList<Catalog.JournalArticle> _relatedArticles = Array.Empty<Catalog.JournalArticle>();
+
+    protected override void OnParametersSet()
+    {
+        if (JournalCatalog.TryGetArticle(Slug, out var article) &&
+            JournalArticleContents.TryGetBody(Slug, out var body))
+        {
+            _article = article;
+            _body = body;
+            _relatedArticles = JournalArticleContents.RelatedArticles(Slug);
+            return;
+        }
+
+        _article = null;
+        _body = null;
+        _relatedArticles = Array.Empty<Catalog.JournalArticle>();
+    }
+}

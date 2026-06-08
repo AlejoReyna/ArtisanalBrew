@@ -37,11 +37,11 @@ else if (_dashboard is not null)
     }
     else
     {
-        <div class="profile-dash">
-            <aside class="profile-dash__aside" aria-label="Profile navigation">
-                <section class="profile-dash__identity">
-                    <p class="profile-dash__name">@_dashboard.DisplayName</p>
-                    <dl class="profile-dash__quickstats">
+        <div class="yield-dashboard">
+            <aside class="yield-sidebar" aria-label="Profile navigation">
+                <section class="yield-sidebar__identity">
+                    <p class="yield-sidebar__kicker">Account Overview</p>
+                    <dl class="yield-sidebar__stats">
                         <div>
                             <dt>Total orders</dt>
                             <dd>@_dashboard.TotalOrders</dd>
@@ -49,29 +49,34 @@ else if (_dashboard is not null)
                     </dl>
                 </section>
 
-                <nav class="profile-dash__nav" aria-label="Profile sections">
-                    <ul class="profile-dash__list">
-                        
-                        <li class="profile-dash__item">
-                            <a class="profile-dash__link" href="#identity">
-                                <span class="profile-dash__label">Identity &amp; Network</span>
-                                <span class="profile-dash__goto"><span>View section</span><span aria-hidden="true">→</span></span>
+                <nav class="yield-sidebar__nav" aria-label="Profile sections">
+                    <ul class="yield-sidebar__list">
+                        <li>
+                            <a class="yield-sidebar__link" href="#identity">
+                                <span class="yield-sidebar__label">Identity &amp; Network</span>
+                                <span class="yield-sidebar__goto">
+                                    <span>View section</span>
+                                    <span aria-hidden="true">→</span>
+                                </span>
                             </a>
                         </li>
-                        <li class="profile-dash__item">
-                            <a class="profile-dash__link" href="#orders">
-                                <span class="profile-dash__label">Order History</span>
-                                <span class="profile-dash__goto"><span>View section</span><span aria-hidden="true">→</span></span>
+                        <li>
+                            <a class="yield-sidebar__link" href="#orders">
+                                <span class="yield-sidebar__label">Order History</span>
+                                <span class="yield-sidebar__goto">
+                                    <span>View section</span>
+                                    <span aria-hidden="true">→</span>
+                                </span>
                             </a>
                         </li>
                     </ul>
                 </nav>
 
-                <div class="profile-dash__foot">
-                    <button type="button" class="profile-dash__yield-btn" @onclick="ShowYieldView">
+                <div class="yield-sidebar__foot">
+                    <button type="button" class="yield-sidebar__new-stake" @onclick="ShowYieldView">
                         Go to Yield
                     </button>
-                    <form method="post" action="/api/wallet-auth/logout" class="profile-dash__logout">
+                    <form method="post" action="/api/wallet-auth/logout" class="yield-sidebar__disconnect">
                         <button type="submit">Log out</button>
                     </form>
                 </div>

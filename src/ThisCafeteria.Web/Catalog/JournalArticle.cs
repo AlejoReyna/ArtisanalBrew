@@ -1,6 +1,7 @@
 namespace ThisCafeteria.Web.Catalog;
 
 public sealed record JournalArticle(
+    string Slug,
     string Kicker,
     string Title,
     string Summary,

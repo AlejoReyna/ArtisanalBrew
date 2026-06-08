@@ -26,7 +26,7 @@
 {
     <section class="staking-connect" data-animate="fade-up">
         <p class="eyebrow">Wallet required</p>
-        <h2>Connect MetaMask to allocate Sepolia tokens and earn COFFEE.</h2>
+        <h2>Connect your wallet to allocate Sepolia tokens and earn COFFEE.</h2>
         <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
         @if (!string.IsNullOrWhiteSpace(_connectError))
         {
@@ -53,11 +53,6 @@ else
                     <span aria-hidden="true">&larr;</span> Back to Profile
                 </button>
             }
-
-            <header class="yield-sidebar__brand">
-                <a class="yield-sidebar__logo" href="/">Artisanal Brew</a>
-                <p class="yield-sidebar__tag">Premium Staking</p>
-            </header>
 
             <section class="yield-sidebar__identity">
                 <p class="yield-sidebar__kicker">Account Overview</p>
@@ -123,9 +118,7 @@ else
 
             <div class="yield-sidebar__foot">
                 <a class="yield-sidebar__new-stake" href="#stake-amount">New Stake</a>
-                <form method="post" action="/staking/clear-wallet-session" class="yield-sidebar__disconnect">
-                    <button type="submit">Disconnect allocation session</button>
-                </form>
+                
             </div>
         </aside>
 

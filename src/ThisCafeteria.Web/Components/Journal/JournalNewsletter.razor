@@ -1,0 +1,127 @@
+@using ThisCafeteria.Web.Catalog
+
+<article class="journal-newsletter">
+    <section class="journal-newsletter__cover" aria-label="Article header">
+        <div class="journal-newsletter__stamp" aria-hidden="true">
+            <span class="journal-newsletter__stamp-inner">AB</span>
+        </div>
+
+        <div class="journal-newsletter__cover-copy" data-animate="fade-up">
+            <a class="journal-newsletter__back" href="journal">
+                <span aria-hidden="true">&larr;</span> Back to the Journal
+            </a>
+            <p class="journal-newsletter__brand">Artisanal Brew Journal</p>
+            <p class="journal-kicker">@Article.Kicker</p>
+            <h1>@Article.Title</h1>
+            <p class="journal-newsletter__lede">@Article.Summary</p>
+            <div class="journal-newsletter__meta">
+                <span>@JournalArticleContents.AuthorName</span>
+                <span aria-hidden="true">&middot;</span>
+                <span>@Body.PublishedDate</span>
+                <span aria-hidden="true">&middot;</span>
+                <span>@Article.ReadTime</span>
+            </div>
+        </div>
+
+        <div class="@JournalCatalog.HeroImageClass(Article.ImageKey) journal-newsletter__cover-image"
+             role="img"
+             aria-label="@Article.ImageAriaLabel"
+             data-animate="fade-up"></div>
+    </section>
+
+    <div class="journal-newsletter__scroll">
+        <div class="journal-newsletter__body">
+            <p class="journal-newsletter__intro" data-animate="fade-up">@Body.Intro</p>
+
+            @foreach (var section in Body.Sections)
+            {
+                if (section.IsAside)
+                {
+                    <aside class="journal-newsletter__aside" data-animate="fade-up">
+                        @if (!string.IsNullOrWhiteSpace(section.Eyebrow))
+                        {
+                            <p class="journal-newsletter__aside-label">@section.Eyebrow</p>
+                        }
+                        <p>@section.Body</p>
+                    </aside>
+                }
+                else
+                {
+                    <section class="journal-newsletter__section" data-animate="fade-up">
+                        @if (!string.IsNullOrWhiteSpace(section.Eyebrow))
+                        {
+                            <p class="eyebrow">@section.Eyebrow</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(section.Heading))
+                        {
+                            <h2>@section.Heading</h2>
+                        }
+                        <p>@section.Body</p>
+                        @if (!string.IsNullOrWhiteSpace(section.PullQuote))
+                        {
+                            <blockquote class="journal-newsletter__pullquote">
+                                <span aria-hidden="true">&ldquo;</span>@section.PullQuote<span aria-hidden="true">&rdquo;</span>
+                            </blockquote>
+                        }
+                    </section>
+                }
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Body.ClosingNote))
+            {
+                <footer class="journal-newsletter__closing" data-animate="fade-up">
+                    <div class="journal-newsletter__divider" aria-hidden="true"></div>
+                    <p class="journal-newsletter__next-issue">
+                        <span class="journal-newsletter__next-label">Next in the Journal</span>
+                        @Body.ClosingNote
+                    </p>
+                    <p class="journal-newsletter__signoff">
+                        With care from the brew bar,
+                        <span class="journal-newsletter__signature">@JournalArticleContents.AuthorName</span>
+                    </p>
+                </footer>
+            }
+        </div>
+
+        @if (RelatedArticles.Count > 0)
+        {
+            <section class="journal-newsletter__more" aria-labelledby="more-from-journal">
+                <h2 id="more-from-journal">More from the Journal</h2>
+                <div class="journal-newsletter__more-grid">
+                    @foreach (var related in RelatedArticles)
+                    {
+                        <a class="journal-newsletter__more-card" href="@JournalCatalog.ArticleUrl(related.Slug)">
+                            <div class="@JournalCatalog.HomeImageClass(related.ImageKey)" aria-hidden="true"></div>
+                            <span class="journal-badge">@related.CategoryLabel</span>
+                            <h3>@related.Title</h3>
+                            <span class="journal-newsletter__more-link">Read <span aria-hidden="true">&rarr;</span></span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+
+        <section class="journal-newsletter__subscribe" aria-labelledby="article-subscribe-title">
+            <div class="journal-newsletter__subscribe-card">
+                <p class="journal-newsletter__subscribe-eyebrow" id="article-subscribe-title">Stay in the loop</p>
+                <p class="journal-newsletter__subscribe-copy">Seasonal notes from the brew bar, delivered with the same restraint as our pours.</p>
+                <form class="journal-newsletter__subscribe-form">
+                    <label class="visually-hidden" for="article-newsletter-email">Email address</label>
+                    <input id="article-newsletter-email" name="email" type="email" placeholder="your@email.com" autocomplete="email" />
+                    <button type="submit">Subscribe</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public JournalArticle Article { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public JournalArticleBody Body { get; set; } = default!;
+
+    [Parameter]
+    public IReadOnlyList<JournalArticle> RelatedArticles { get; set; } = Array.Empty<JournalArticle>();
+}

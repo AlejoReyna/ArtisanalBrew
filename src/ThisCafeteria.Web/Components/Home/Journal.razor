@@ -37,7 +37,7 @@
                 }
 
                 <article class="@entryClass" data-recruiter-animate="journal-line">
-                    <a class="recruiter-journal-entry__link" href="journal" aria-label="@($"Read {article.Title}")">
+                    <a class="recruiter-journal-entry__link" href="@JournalCatalog.ArticleUrl(article.Slug)" aria-label="@($"Read {article.Title}")">
                         <div class="@JournalCatalog.HomeImageClass(article.ImageKey)" aria-hidden="true"></div>
                         <span class="recruiter-journal-entry__content">
                             <span class="recruiter-journal-entry__header">

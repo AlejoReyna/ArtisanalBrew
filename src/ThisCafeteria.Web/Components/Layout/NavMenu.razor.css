@@ -10,6 +10,7 @@
 
 .navbar-brand {
     color: #2d2421;
+    font-family: var(--font-display);
     font-size: clamp(1.35rem, 2vw, 1.85rem);
     letter-spacing: -0.04em;
     text-decoration: none;
@@ -45,6 +46,7 @@
 
 ::deep .nav-link {
     color: #746a63;
+    font-family: var(--font-sans);
     font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.12em;
@@ -70,6 +72,7 @@
     color: #2d2421;
     cursor: pointer;
     display: inline-flex;
+    font-family: var(--font-sans);
     font-size: 0.78rem;
     font-weight: 600;
     padding: 0.55rem;
@@ -101,6 +104,7 @@
     color: #fffdf9;
     cursor: pointer;
     display: inline-flex;
+    font-family: var(--font-sans);
     font-size: 0.78rem;
     font-weight: 700;
     gap: 0.55rem;
@@ -129,6 +133,7 @@
     border-radius: 999px;
     color: #fbf9f4;
     display: inline-flex;
+    font-family: var(--font-sans);
     font-size: 0.62rem;
     font-weight: 700;
     height: 1.1rem;
@@ -153,6 +158,7 @@
     background: transparent;
     border: 0;
     cursor: pointer;
+    font-family: var(--font-sans);
     font-size: 0.65rem;
     padding: 0;
 }

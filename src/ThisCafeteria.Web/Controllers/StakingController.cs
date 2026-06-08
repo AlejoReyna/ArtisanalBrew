@@ -92,7 +92,7 @@ public sealed class StakingController(
     {
         if (request.ChainId != chain.ChainId)
         {
-            return BadRequest($"Connect MetaMask to {chain.NetworkName} before starting an allocation.");
+            return BadRequest($"Connect your wallet to {chain.NetworkName} before starting an allocation.");
         }
 
         if (string.IsNullOrWhiteSpace(request.WalletAddress) ||

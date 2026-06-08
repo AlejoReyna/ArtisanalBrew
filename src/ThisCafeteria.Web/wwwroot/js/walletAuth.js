@@ -1,5 +1,5 @@
 export async function loginWithWallet(walletName = "wallet") {
-    const provider = getWalletProvider(walletName);
+    const provider = await getWalletProvider(walletName);
     if (!provider) {
         return {
             success: false,
@@ -47,12 +47,12 @@ export async function loginWithWallet(walletName = "wallet") {
     }
 }
 
-function getWalletProvider(walletName) {
-    const providers = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+async function getWalletProvider(walletName) {
+    const providers = await getAvailableProviders();
     const normalizedName = walletName.toLowerCase();
 
     if (normalizedName.includes("metamask")) {
-        return providers.find(provider => provider.isMetaMask && !provider.isPhantom) ?? null;
+        return findMetaMaskProvider(providers);
     }
 
     if (normalizedName.includes("coinbase")) {
@@ -76,7 +76,69 @@ function getWalletProvider(walletName) {
             ?? null;
     }
 
-    return window.ethereum;
+    if (normalizedName.includes("other")) {
+        return providers.find(provider => !isDisplayedWalletProvider(provider)) ?? window.ethereum ?? null;
+    }
+
+    return findMetaMaskProvider(providers) ?? window.ethereum ?? providers[0] ?? null;
+}
+
+async function getAvailableProviders() {
+    const injectedProviders = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+    const announcedProviders = await getAnnouncedProviders();
+    const providers = [
+        ...announcedProviders.map(announcement => announcement.provider),
+        ...injectedProviders
+    ];
+
+    return providers.filter((provider, index) => provider && providers.indexOf(provider) === index);
+}
+
+function getAnnouncedProviders() {
+    if (typeof window === "undefined") {
+        return Promise.resolve([]);
+    }
+
+    return new Promise(resolve => {
+        const providers = [];
+        const onAnnouncement = event => {
+            if (event.detail?.provider) {
+                providers.push(event.detail);
+            }
+        };
+
+        window.addEventListener("eip6963:announceProvider", onAnnouncement);
+        window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+        window.setTimeout(() => {
+            window.removeEventListener("eip6963:announceProvider", onAnnouncement);
+            resolve(providers);
+        }, 80);
+    });
+}
+
+function findMetaMaskProvider(providers) {
+    return providers.find(isMetaMaskProvider) ?? null;
+}
+
+function isMetaMaskProvider(provider) {
+    return Boolean(
+        provider?.isMetaMask &&
+        !provider.isPhantom &&
+        !provider.isCoinbaseWallet &&
+        !provider.isBraveWallet &&
+        !provider.isTrust &&
+        !provider.isTrustWallet
+    );
+}
+
+function isDisplayedWalletProvider(provider) {
+    return Boolean(
+        isMetaMaskProvider(provider) ||
+        provider?.isPhantom ||
+        provider?.isCoinbaseWallet ||
+        provider?.isBraveWallet
+    );
 }
 
 async function ensureConfiguredNetwork(provider, config) {

@@ -5,6 +5,7 @@ public static class JournalCatalog
     public static readonly IReadOnlyList<JournalArticle> FeaturedArticles =
     [
         new(
+            "the-bloom",
             "Volume IV • Issue II",
             "The Bloom: A Ritual of Patience",
             "Exploring the scientific beauty and meditative pause that unfold when water first meets the grounds.",
@@ -14,6 +15,7 @@ public static class JournalCatalog
             "A careful V60 pour-over coffee ritual in warm morning light",
             IsFeature: true),
         new(
+            "what-altitude-leaves-in-the-cup",
             "Field Notes • Harvest",
             "What Altitude Leaves in the Cup",
             "A closer look at cool mountain nights, slow ripening cherries, and the brightness they carry home.",
@@ -22,6 +24,7 @@ public static class JournalCatalog
             "altitude",
             "Coffee cherries ripening on a green mountain farm"),
         new(
+            "the-quiet-math-of-water",
             "Brew Bar • Technique",
             "The Quiet Math of Water",
             "How temperature, mineral balance, and a patient pour shape sweetness before the first sip.",
@@ -30,6 +33,7 @@ public static class JournalCatalog
             "water",
             "Steam rising from a kettle beside a ceramic coffee dripper"),
         new(
+            "designing-a-slower-morning",
             "Counter Culture • Service",
             "Designing a Slower Morning",
             "On cafe rituals, familiar cups, and the small details that turn a daily stop into a pause.",
@@ -43,6 +47,7 @@ public static class JournalCatalog
     public static readonly IReadOnlyList<JournalArticle> ShortStories =
     [
         new(
+            "shade-grown-lots",
             "Origin Focus",
             "Shade-Grown Lots from the Western Ridge",
             "What canopy, altitude, and hand sorting bring to a cup with soft citrus and toasted almond.",
@@ -51,6 +56,7 @@ public static class JournalCatalog
             "origin",
             "Raw coffee beans gathered on a linen surface"),
         new(
+            "quiet-geometry-v60",
             "Brewing Tips",
             "The Quiet Geometry of the V60",
             "A practical note on spiral pours, drawdown rhythm, and the small corrections worth noticing.",
@@ -59,6 +65,7 @@ public static class JournalCatalog
             "tools",
             "Pour-over brewing tools arranged beside a ceramic cup"),
         new(
+            "reading-while-kettle-cools",
             "Slow Living",
             "Reading While the Kettle Cools",
             "On building a morning pause around the minutes that usually vanish before the first sip.",
@@ -76,4 +83,16 @@ public static class JournalCatalog
     public static string StoryImageClass(string imageKey) => $"journal-story-card__image journal-story-card__image--{imageKey}";
 
     public static string HomeImageClass(string imageKey) => $"recruiter-journal-entry__visual journal-thumb journal-thumb--{imageKey}";
+
+    public static string ArticleUrl(string slug) => $"journal/{slug}";
+
+    public static bool TryGetArticle(string slug, out JournalArticle? article)
+    {
+        article = AllArticles.FirstOrDefault(entry =>
+            string.Equals(entry.Slug, slug, StringComparison.OrdinalIgnoreCase));
+        return article is not null;
+    }
+
+    public static IReadOnlyList<JournalArticle> AllArticles =>
+        FeaturedArticles.Concat(ShortStories).ToArray();
 }

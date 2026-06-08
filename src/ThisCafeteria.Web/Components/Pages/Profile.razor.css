@@ -11,7 +11,7 @@
 
 .staking-connect h2 {
     color: #2C1B12;
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
+    font-family: var(--font-sidebar-display);
     font-size: clamp(2.4rem, 6vw, 4.5rem);
     font-weight: 400;
     line-height: 1;
@@ -24,9 +24,9 @@
     margin-right: auto;
 }
 
-/* ── Dashboard shell ── */
+/* ── Main content ── */
 
-.profile-dash {
+.profile-dash__main {
     --dash-cream: #FAF9F5;
     --dash-espresso: #2C1B12;
     --dash-sand: #EFE9DF;
@@ -37,230 +37,6 @@
     --dash-muted: rgba(44, 27, 18, 0.58);
     --dash-header-offset: 4.75rem;
     --dash-gutter: clamp(1.25rem, 2.6vw, 2.5rem);
-    align-items: stretch;
-    background: var(--dash-cream);
-    display: grid;
-    grid-template-columns:
-        minmax(16rem, 20.5rem)
-        minmax(0, 1fr);
-    margin: 0;
-    min-height: calc(100dvh - var(--dash-header-offset));
-    width: 100%;
-}
-
-/* ── Sidebar ── */
-
-.profile-dash__aside {
-    background: var(--dash-sand);
-    border-right: 1px solid var(--dash-line);
-    display: flex;
-    flex-direction: column;
-    gap: clamp(1.5rem, 3vw, 2.25rem);
-    height: calc(100dvh - var(--dash-header-offset));
-    min-height: calc(100dvh - var(--dash-header-offset));
-    padding: clamp(1.75rem, 3vw, 2.5rem) clamp(1.35rem, 2.4vw, 1.85rem);
-    position: sticky;
-    top: var(--dash-header-offset);
-    width: 100%;
-}
-
-/* ── Sidebar identity ── */
-
-.profile-dash__identity {
-    border-bottom: 1px solid var(--dash-line);
-    padding: 0 0 1.1rem;
-}
-
-.profile-dash__kicker {
-    color: var(--dash-muted);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    margin: 0 0 0.5rem;
-    text-transform: uppercase;
-}
-
-.profile-dash__name {
-    color: var(--dash-espresso);
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
-    font-size: 1.5rem;
-    font-weight: 400;
-    line-height: 1.1;
-    margin: 0 0 0.85rem;
-}
-
-.profile-dash__quickstats {
-    margin: 0;
-}
-
-.profile-dash__quickstats div {
-    align-items: baseline;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: space-between;
-}
-
-.profile-dash__quickstats dt {
-    color: var(--dash-muted);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-}
-
-.profile-dash__quickstats dd {
-    color: var(--dash-espresso);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin: 0;
-}
-
-/* ── Sidebar navigation ── */
-
-.profile-dash__nav {
-    flex: 1;
-    min-height: 0;
-}
-
-.profile-dash__list {
-    display: grid;
-    gap: 0.35rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.profile-dash__link {
-    align-items: center;
-    border-radius: 3px;
-    color: var(--dash-espresso);
-    display: grid;
-    gap: 0.5rem 1rem;
-    grid-template-columns: 1fr auto;
-    padding: 0.8rem 0.75rem;
-    position: relative;
-    text-decoration: none;
-    transition: background 180ms ease, padding-left 180ms ease;
-}
-
-.profile-dash__link::before {
-    background: var(--dash-espresso);
-    border-radius: 0 2px 2px 0;
-    bottom: 0.55rem;
-    content: "";
-    left: 0;
-    opacity: 0;
-    position: absolute;
-    top: 0.55rem;
-    transition: opacity 180ms ease;
-    width: 2px;
-}
-
-.profile-dash__link:hover,
-.profile-dash__link:focus-visible {
-    background: var(--dash-sand-hover);
-    outline: none;
-    padding-left: 1rem;
-}
-
-.profile-dash__link:hover::before,
-.profile-dash__link:focus-visible::before {
-    opacity: 1;
-}
-
-.profile-dash__label {
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
-    font-size: 1.05rem;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    line-height: 1.25;
-}
-
-.profile-dash__goto {
-    align-items: center;
-    color: var(--dash-muted);
-    display: inline-flex;
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 0.58rem;
-    font-weight: 600;
-    gap: 0.3rem;
-    letter-spacing: 0.14em;
-    opacity: 0;
-    text-transform: uppercase;
-    transition: color 160ms ease, opacity 180ms ease, transform 160ms ease;
-}
-
-.profile-dash__link:hover .profile-dash__goto,
-.profile-dash__link:focus-visible .profile-dash__goto {
-    opacity: 1;
-}
-
-.profile-dash__link:hover .profile-dash__goto {
-    color: var(--dash-espresso);
-    transform: translateX(2px);
-}
-
-/* ── Sidebar foot ── */
-
-.profile-dash__foot {
-    display: grid;
-    gap: 1rem;
-}
-
-.profile-dash__yield-btn {
-    align-items: center;
-    background: var(--dash-espresso);
-    border: 0;
-    border-radius: 2px;
-    color: var(--dash-cream);
-    cursor: pointer;
-    display: flex;
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 0.68rem;
-    font-weight: 700;
-    justify-content: center;
-    letter-spacing: 0.18em;
-    min-height: 3.1rem;
-    padding: 0.85rem 1.25rem;
-    text-transform: uppercase;
-    transition: background 180ms ease, transform 160ms ease;
-    width: 100%;
-}
-
-.profile-dash__yield-btn:hover {
-    background: #3d281c;
-    transform: translateY(-1px);
-}
-
-.profile-dash__logout {
-    margin: 0;
-}
-
-.profile-dash__logout button {
-    background: transparent;
-    border: 0;
-    color: var(--dash-muted);
-    cursor: pointer;
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    padding: 0.25rem 0;
-    text-align: left;
-    text-transform: uppercase;
-    transition: color 160ms ease;
-    width: 100%;
-}
-
-.profile-dash__logout button:hover {
-    color: var(--dash-espresso);
-}
-
-/* ── Main content ── */
-
-.profile-dash__main {
     display: grid;
     gap: clamp(1.4rem, 2.8vw, 2.4rem);
     min-width: 0;
@@ -276,6 +52,16 @@
     display: grid;
     gap: 0.8rem;
     padding-bottom: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.profile-dash__kicker {
+    color: var(--dash-muted);
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
 }
 
 .profile-dash__section-kicker,
@@ -294,11 +80,11 @@
     color: var(--dash-espresso);
     display: inline-flex;
     flex-wrap: nowrap;
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
+    font-family: var(--font-sidebar-display);
     font-size: clamp(2.6rem, 5vw, 4.25rem);
     font-weight: 400;
     gap: 0.65rem;
-    letter-spacing: -0.01em;
+    letter-spacing: 0.01em;
     line-height: 0.98;
     margin: 0;
     max-width: 100%;
@@ -324,10 +110,10 @@
     border: 0;
     border-bottom: 1px solid rgba(44, 27, 18, 0.22);
     color: var(--dash-espresso);
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
+    font-family: var(--font-sidebar-display);
     font-size: clamp(2.6rem, 5vw, 4.25rem);
     font-weight: 400;
-    letter-spacing: -0.01em;
+    letter-spacing: 0.01em;
     line-height: 0.98;
     max-width: calc(100% - 6rem);
     min-width: 8rem;
@@ -389,7 +175,7 @@
 
 .profile-dash__section-kicker {
     color: var(--dash-muted);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-size: 0.62rem;
     font-weight: 600;
     letter-spacing: 0.18em;
@@ -399,7 +185,7 @@
 
 .profile-dash__section-title {
     color: var(--dash-espresso);
-    font-family: "EB Garamond", "Times New Roman", Times, serif;
+    font-family: var(--font-sidebar-display);
     font-size: clamp(1.6rem, 2.6vw, 2.2rem);
     font-weight: 400;
     line-height: 1.05;
@@ -424,7 +210,7 @@
 
 .profile-dash__facts dt {
     color: var(--dash-muted);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-size: 0.6rem;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -434,7 +220,7 @@
 
 .profile-dash__facts dd {
     color: var(--dash-espresso);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-size: 1rem;
     font-weight: 600;
     margin: 0;
@@ -509,14 +295,14 @@
 
 .profile-dash__order-number {
     color: var(--dash-espresso);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-size: 0.95rem;
     font-weight: 700;
 }
 
 .profile-dash__order strong {
     color: var(--dash-espresso);
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-weight: 700;
 }
 
@@ -525,7 +311,7 @@
     border: 1px solid rgba(44, 27, 18, 0.13);
     border-radius: 4px;
     color: #5d534d;
-    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-size: 0.6rem;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -534,24 +320,6 @@
 }
 
 /* ── Responsive ── */
-
-@media (max-width: 1100px) {
-    .profile-dash {
-        grid-template-columns: 1fr;
-    }
-
-    .profile-dash__aside {
-        gap: 1.25rem;
-        height: auto;
-        min-height: 0;
-        padding: 1.35rem var(--dash-gutter);
-        position: static;
-    }
-
-    .profile-dash__goto {
-        opacity: 1;
-    }
-}
 
 @media (max-width: 640px) {
     .profile-dash__order {
