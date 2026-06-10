@@ -11,6 +11,7 @@
 @inject IOrderPricingService PricingService
 @inject IReceiptService ReceiptService
 @inject NavigationManager Navigation
+@inject ILogger<Checkout> Logger
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
 @using Microsoft.AspNetCore.Identity
@@ -477,14 +478,18 @@
 
     private async Task LoadCartAsync()
     {
+        Logger.LogInformation("Checkout LoadCartAsync START");
         _lines = await CartService.GetLinesAsync();
+        Logger.LogInformation("Checkout LoadCartAsync after GetLinesAsync. LineCount={Count}", _lines.Count);
         if (_lines.Count == 0)
         {
+            Logger.LogInformation("Checkout LoadCartAsync calling RefreshFromStorageAsync");
             await CartService.RefreshFromStorageAsync();
             _lines = await CartService.GetLinesAsync();
         }
 
         await RefreshPricingAsync();
+        Logger.LogInformation("Checkout LoadCartAsync END. FinalLineCount={Count}", _lines.Count);
     }
 
     private async Task RefreshPricingAsync(CouponDto? coupon = null, OrderPricingDto? quotedPricing = null)

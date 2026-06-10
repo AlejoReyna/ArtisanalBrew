@@ -4,6 +4,7 @@
 @inject ICartMutationClient CartMutationClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject ILogger<Cart> Logger
 @using ThisCafeteria.Web.Services.Cart
 
 <PageTitle>Cart | Artisanal Brew</PageTitle>
@@ -92,6 +93,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Logger.LogInformation("Cart OnInitializedAsync START. ProductSlug={Slug}", ProductSlug);
         if (!string.IsNullOrWhiteSpace(ProductSlug))
         {
             try
@@ -109,6 +111,7 @@
         }
 
         await ReloadCartAsync();
+        Logger.LogInformation("Cart OnInitializedAsync END. LineCount={Count}", _lines.Count);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -121,13 +124,17 @@
 
     private async Task ReloadCartAsync()
     {
+        Logger.LogInformation("Cart ReloadCartAsync START");
         _lines = await CartService.GetLinesAsync();
+        Logger.LogInformation("Cart ReloadCartAsync after GetLinesAsync. LineCount={Count}", _lines.Count);
         if (_lines.Count == 0)
         {
+            Logger.LogInformation("Cart ReloadCartAsync calling RefreshFromStorageAsync");
             await CartService.RefreshFromStorageAsync();
         }
 
         await RefreshAsync();
+        Logger.LogInformation("Cart ReloadCartAsync END. FinalLineCount={Count}", _lines.Count);
     }
 
     private async Task RefreshAsync()

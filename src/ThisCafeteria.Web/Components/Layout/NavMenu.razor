@@ -3,6 +3,7 @@
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 @inject IShoppingCartService CartService
+@inject ILogger<NavMenu> Logger
 @using ThisCafeteria.Web.Services.Cart
 @using System.Security.Claims
 @implements IDisposable
@@ -273,9 +274,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Logger.LogInformation("NavMenu OnInitializedAsync START");
         CartService.Changed += OnCartChanged;
         await CartService.RefreshFromStorageAsync();
         await RefreshCartCountAsync();
+        Logger.LogInformation("NavMenu OnInitializedAsync END. CartItemCount={Count}", _cartItemCount);
     }
 
     private void OnCartChanged() => _ = InvokeAsync(RefreshCartCountAsync);

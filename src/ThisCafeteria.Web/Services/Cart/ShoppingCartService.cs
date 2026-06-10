@@ -170,6 +170,7 @@ public sealed class ShoppingCartService(
 
     public async Task RefreshFromStorageAsync(CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("Cart RefreshFromStorageAsync START. CircuitLinesCount={CircuitCount}", _circuitLines?.Count ?? 0);
         var circuitCount = _circuitLines?.Count ?? 0;
         await ReloadSessionFromStoreAsync(cancellationToken);
 
@@ -191,6 +192,7 @@ public sealed class ShoppingCartService(
             logger.LogInformation("Cart refreshed with empty storage");
         }
 
+        logger.LogInformation("Cart RefreshFromStorageAsync END. FinalCircuitLinesCount={FinalCount}", _circuitLines?.Count ?? 0);
         Changed?.Invoke();
     }
 
