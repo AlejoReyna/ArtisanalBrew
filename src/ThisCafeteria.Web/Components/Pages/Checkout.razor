@@ -449,6 +449,10 @@
         {
             var user = await UserManager.GetUserAsync(authState.User);
             _walletAddress = user?.WalletAddress;
+            if (!string.IsNullOrWhiteSpace(_walletAddress))
+            {
+                _isWalletReady = true;
+            }
         }
     }
 
@@ -591,7 +595,7 @@
 
     private async Task ConnectWalletForCheckoutAsync()
     {
-        if (_isConnectingWallet || _isWalletReady || _paymentComplete || _lines.Count == 0)
+        if (_isConnectingWallet || _paymentComplete || _lines.Count == 0)
         {
             return;
         }
@@ -644,6 +648,7 @@
         catch (Exception exception)
         {
             _walletConnectError = exception.Message;
+            _isWalletReady = false;
         }
         finally
         {
