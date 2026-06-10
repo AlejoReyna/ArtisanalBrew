@@ -172,6 +172,35 @@
     margin: 0;
 }
 
+.checkout-connect {
+    background: rgba(245, 242, 234, 0.9);
+    border: 1px solid rgba(45, 36, 33, 0.12);
+    border-radius: 8px;
+    padding: clamp(2rem, 6vw, 4rem);
+    text-align: center;
+}
+
+.checkout-connect h2 {
+    color: var(--ink);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.05;
+    margin: 0 auto 1rem;
+    max-width: 36rem;
+}
+
+.checkout-connect .lede {
+    margin: 0 auto 1.5rem;
+    max-width: 32rem;
+}
+
+.checkout-connect__error {
+    color: #9a3b2f;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    margin: 0 0 1rem;
+}
+
 .checkout-wallet-connected {
     color: var(--muted);
     font-family: 'Inter', sans-serif;
@@ -253,6 +282,51 @@
     letter-spacing: 0.12em;
     min-height: 3.25rem;
     width: 100%;
+}
+
+.checkout-payment-failure {
+    background: rgba(245, 242, 234, 0.9);
+    border: 1px solid rgba(45, 36, 33, 0.12);
+    border-radius: 8px;
+    padding: clamp(1.5rem, 3vw, 2rem);
+}
+
+.checkout-payment-failure__message {
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    line-height: 1.5;
+    margin: 0 0 1.5rem;
+}
+
+.checkout-payment-failure__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.checkout-payment-failure__try-again {
+    border-radius: 0;
+    flex: 1 1 auto;
+    letter-spacing: 0.12em;
+    min-height: 3.25rem;
+    min-width: 200px;
+    padding: 0.75rem 2rem;
+}
+
+.checkout-payment-failure__back-home {
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    transition: color 180ms ease;
+}
+
+.checkout-payment-failure__back-home:hover {
+    color: var(--ink);
 }
 
 .checkout-summary {

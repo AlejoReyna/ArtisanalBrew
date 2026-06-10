@@ -10,6 +10,7 @@
 @inject ICouponService CouponService
 @inject IOrderPricingService PricingService
 @inject IReceiptService ReceiptService
+@inject NavigationManager Navigation
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
 @using Microsoft.AspNetCore.Identity
@@ -192,6 +193,52 @@
                 </details>
             </aside>
         }
+        else if (!_isWalletReady)
+        {
+            <div class="checkout-main">
+                <section class="checkout-connect" data-animate="fade-up">
+                    <p class="eyebrow">Wallet required</p>
+                    <h2>Connect MetaMask to continue checkout</h2>
+                    <p class="lede">
+                        @if (_isAuthenticated)
+                        {
+                            <text>Approve the MetaMask connection for @ShortAddress(_walletAddress) before reviewing payment.</text>
+                        }
+                        else
+                        {
+                            <text>Sign in with MetaMask to link your wallet and complete your purchase.</text>
+                        }
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(_walletConnectError))
+                    {
+                        <p class="checkout-connect__error" role="alert">@_walletConnectError</p>
+                    }
+
+                    <button type="button"
+                            class="button button--dark"
+                            disabled="@_isConnectingWallet"
+                            @onclick="ConnectWalletForCheckoutAsync">
+                        @(_isConnectingWallet ? "Opening MetaMask…" : "Connect MetaMask")
+                    </button>
+                </section>
+            </div>
+
+            <aside class="checkout-summary" data-animate="fade-up">
+                <h2 class="checkout-summary__title">Order Summary</h2>
+                <CheckoutOrderSummary Lines="_lines"
+                                      CarouselIndex="_carouselIndex"
+                                      SubtotalUsd="_subtotalUsd"
+                                      ShippingUsd="_shippingUsd"
+                                      TaxUsd="_taxUsd"
+                                      CouponCode="_appliedCoupon?.Code"
+                                      DiscountUsd="_discountUsd"
+                                      OrderTotalUsd="_orderTotalUsd"
+                                      OnPrevious="ShowPreviousProduct"
+                                      OnNext="ShowNextProduct"
+                                      OnGoTo="GoToProduct" />
+            </aside>
+        }
         else
         {
             <div class="checkout-main">
@@ -312,6 +359,24 @@
                         @(_isPaying ? "Processing…" : "Pay with ETH")
                     </button>
                 </section>
+
+                @if (_paymentFailed)
+                {
+                    <section class="checkout-payment-failure" data-animate="fade-up">
+                        <p class="checkout-payment-failure__message">
+                            Looks like your transaction couldn't be completed, would you like try it again?
+                        </p>
+                        <div class="checkout-payment-failure__actions">
+                            <button type="button"
+                                    class="button button--dark checkout-payment-failure__try-again"
+                                    disabled="@_isPaying"
+                                    @onclick="PayAsync">
+                                @(_isPaying ? "Processing…" : "Try again")
+                            </button>
+                            <a class="checkout-payment-failure__back-home" href="home">Back home</a>
+                        </div>
+                    </section>
+                }
             </div>
 
             <aside class="checkout-summary" data-animate="fade-up">
@@ -348,10 +413,17 @@
     private int _carouselIndex;
     private bool _isPaying;
     private bool _paymentComplete;
+    private bool _paymentFailed;
+    private bool _isWalletReady;
+    private bool _isConnectingWallet;
+    private bool _isAuthenticated;
+    private bool _walletConnectAttempted;
     private string? _errorMessage;
+    private string? _walletConnectError;
     private string? _walletAddress;
     private BlockchainNetworkOptions _chain = new();
     private IJSObjectReference? _checkoutModule;
+    private IJSObjectReference? _walletAuthModule;
     private string _orderReference = string.Empty;
     private string _transactionHash = string.Empty;
     private DateTimeOffset _paidAt;
@@ -372,7 +444,8 @@
         await LoadCartAsync();
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true)
+        _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        if (_isAuthenticated)
         {
             var user = await UserManager.GetUserAsync(authState.User);
             _walletAddress = user?.WalletAddress;
@@ -384,6 +457,12 @@
         if (firstRender)
         {
             await JsRuntime.InvokeVoidAsync("queueAnimations");
+
+            if (!_paymentComplete && _lines.Count > 0 && !_walletConnectAttempted)
+            {
+                _walletConnectAttempted = true;
+                await ConnectWalletForCheckoutAsync();
+            }
         }
 
         if (_paymentComplete)
@@ -510,6 +589,81 @@
         await RefreshPricingAsync();
     }
 
+    private async Task ConnectWalletForCheckoutAsync()
+    {
+        if (_isConnectingWallet || _isWalletReady || _paymentComplete || _lines.Count == 0)
+        {
+            return;
+        }
+
+        _isConnectingWallet = true;
+        _walletConnectError = null;
+
+        try
+        {
+            if (!_isAuthenticated)
+            {
+                _walletAuthModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
+                    "import",
+                    "/js/walletAuth.js");
+
+                var loginResult = await _walletAuthModule.InvokeAsync<WalletLoginResult>(
+                    "loginWithWallet",
+                    "MetaMask");
+
+                if (!loginResult.Success)
+                {
+                    _walletConnectError = loginResult.Error ?? "MetaMask sign-in could not be completed.";
+                    return;
+                }
+
+                Navigation.NavigateTo("/checkout", forceLoad: true);
+                return;
+            }
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (string.IsNullOrWhiteSpace(user?.WalletAddress))
+            {
+                _walletConnectError = "Your account is not linked to a wallet.";
+                return;
+            }
+
+            _walletAddress = user.WalletAddress;
+            _checkoutModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import",
+                "/js/checkoutEth.js");
+
+            var connectedAddress = await _checkoutModule.InvokeAsync<string>(
+                "connectWalletForCheckout",
+                BuildCheckoutChainConfig(user.WalletAddress));
+
+            _walletAddress = connectedAddress;
+            _isWalletReady = true;
+        }
+        catch (Exception exception)
+        {
+            _walletConnectError = exception.Message;
+        }
+        finally
+        {
+            _isConnectingWallet = false;
+        }
+    }
+
+    private object BuildCheckoutChainConfig(string? expectedWalletAddress) =>
+        new
+        {
+            expectedWalletAddress,
+            chainIdHex = _chain.ChainIdHex,
+            networkName = _chain.NetworkName,
+            rpcUrl = _chain.RpcUrl,
+            currencyName = _chain.CurrencyName,
+            currencySymbol = _chain.CurrencySymbol,
+            currencyDecimals = _chain.CurrencyDecimals,
+            explorerUrl = _chain.ExplorerUrl
+        };
+
     private async Task PayAsync()
     {
         if (_isPaying || _lines.Count == 0)
@@ -596,6 +750,7 @@
         catch (Exception exception)
         {
             _errorMessage = exception.Message;
+            _paymentFailed = true;
         }
         finally
         {
@@ -697,6 +852,18 @@
         {
             await _checkoutModule.DisposeAsync();
         }
+
+        if (_walletAuthModule is not null)
+        {
+            await _walletAuthModule.DisposeAsync();
+        }
+    }
+
+    private sealed class WalletLoginResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+        public string? Address { get; set; }
     }
 
     private sealed class CheckoutEthPaymentResult

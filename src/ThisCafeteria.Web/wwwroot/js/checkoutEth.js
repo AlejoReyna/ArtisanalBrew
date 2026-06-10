@@ -1,5 +1,5 @@
-export async function payWithNativeEth(config) {
-    const provider = getMetaMaskProvider();
+export async function connectWalletForCheckout(config) {
+    const provider = await resolveMetaMaskProvider();
     if (!provider) {
         throw new Error("MetaMask is not installed.");
     }
@@ -10,12 +10,26 @@ export async function payWithNativeEth(config) {
         throw new Error("No wallet account was selected.");
     }
 
-    if (config.expectedWalletAddress &&
-        fromAddress.toLowerCase() !== config.expectedWalletAddress.toLowerCase()) {
-        throw new Error(`MetaMask is connected to ${shortAddress(fromAddress)}. Switch to ${shortAddress(config.expectedWalletAddress)} to pay for this account.`);
+    validateExpectedWallet(fromAddress, config.expectedWalletAddress);
+    await ensureConfiguredNetwork(config, provider);
+
+    return fromAddress;
+}
+
+export async function payWithNativeEth(config) {
+    const provider = await resolveMetaMaskProvider();
+    if (!provider) {
+        throw new Error("MetaMask is not installed.");
     }
 
-    await ensureConfiguredNetwork(config);
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    const fromAddress = accounts?.[0];
+    if (!fromAddress) {
+        throw new Error("No wallet account was selected.");
+    }
+
+    validateExpectedWallet(fromAddress, config.expectedWalletAddress);
+    await ensureConfiguredNetwork(config, provider);
 
     const amountWei = parseEtherToWei(config.amountEth);
     const balanceWei = BigInt(await provider.request({
@@ -47,11 +61,69 @@ export async function payWithNativeEth(config) {
     };
 }
 
-function getMetaMaskProvider() {
-    const providers = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+async function resolveMetaMaskProvider() {
+    const providers = await getAvailableProviders();
+    return findMetaMaskProvider(providers);
+}
+
+async function getAvailableProviders() {
+    const injectedProviders = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+    const announcedProviders = await getAnnouncedProviders();
+    const announcedMetaMaskProviders = announcedProviders
+        .filter(isMetaMaskAnnouncement)
+        .map(announcement => announcement.provider);
+    const otherAnnouncedProviders = announcedProviders
+        .filter(announcement => !isMetaMaskAnnouncement(announcement))
+        .map(announcement => announcement.provider);
+    const providers = [
+        ...announcedMetaMaskProviders,
+        ...injectedProviders.filter(provider => provider?._metamask),
+        ...injectedProviders.filter(isMetaMaskProvider),
+        ...otherAnnouncedProviders,
+        ...injectedProviders
+    ];
+
+    return providers.filter((provider, index) => provider && providers.indexOf(provider) === index);
+}
+
+function getAnnouncedProviders() {
+    if (typeof window === "undefined") {
+        return Promise.resolve([]);
+    }
+
+    return new Promise(resolve => {
+        const providers = [];
+        const onAnnouncement = event => {
+            if (event.detail?.provider) {
+                providers.push(event.detail);
+            }
+        };
+
+        window.addEventListener("eip6963:announceProvider", onAnnouncement);
+        window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+        window.setTimeout(() => {
+            window.removeEventListener("eip6963:announceProvider", onAnnouncement);
+            resolve(providers);
+        }, 80);
+    });
+}
+
+function findMetaMaskProvider(providers) {
     return providers.find(provider => provider?._metamask && isMetaMaskProvider(provider))
         ?? providers.find(isMetaMaskProvider)
         ?? null;
+}
+
+function isMetaMaskAnnouncement(announcement) {
+    const rdns = announcement?.info?.rdns?.toLowerCase();
+    const name = announcement?.info?.name?.toLowerCase();
+
+    return Boolean(
+        rdns === "io.metamask" ||
+        rdns?.startsWith("io.metamask.") ||
+        name === "metamask"
+    );
 }
 
 function isMetaMaskProvider(provider) {
@@ -77,16 +149,23 @@ function isKnownNonMetaMaskProvider(provider) {
     );
 }
 
-async function ensureConfiguredNetwork(config) {
-    const provider = getMetaMaskProvider();
+function validateExpectedWallet(fromAddress, expectedWalletAddress) {
+    if (expectedWalletAddress &&
+        fromAddress.toLowerCase() !== expectedWalletAddress.toLowerCase()) {
+        throw new Error(`MetaMask is connected to ${shortAddress(fromAddress)}. Switch to ${shortAddress(expectedWalletAddress)} to pay for this account.`);
+    }
+}
+
+async function ensureConfiguredNetwork(config, provider) {
+    const activeProvider = provider ?? await resolveMetaMaskProvider();
     const expectedChainId = config.chainIdHex.toLowerCase();
-    const currentChainId = await provider.request({ method: "eth_chainId" });
+    const currentChainId = await activeProvider.request({ method: "eth_chainId" });
     if (currentChainId?.toLowerCase() === expectedChainId) {
         return;
     }
 
     try {
-        await provider.request({
+        await activeProvider.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: expectedChainId }]
         });
@@ -95,7 +174,7 @@ async function ensureConfiguredNetwork(config) {
             throw error;
         }
 
-        await provider.request({
+        await activeProvider.request({
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: expectedChainId,
