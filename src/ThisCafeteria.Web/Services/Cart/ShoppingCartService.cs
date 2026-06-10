@@ -176,7 +176,7 @@ public sealed class ShoppingCartService(
 
         var sessionLines = await LoadFromSessionAsync(cancellationToken);
         var cookieLines = LoadFromCookie();
-        
+
         // Prioritize cookie over session since session doesn't persist across circuit reconnects
         var storedLines = cookieLines.Count > 0 ? cookieLines : sessionLines;
 
