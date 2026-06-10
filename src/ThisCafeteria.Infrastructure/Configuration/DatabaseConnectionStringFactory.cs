@@ -37,8 +37,7 @@ public static class DatabaseConnectionStringFactory
             Database = database,
             Username = username,
             Password = password,
-            SslMode = SslMode.Require,
-            TrustServerCertificate = true
+            SslMode = SslMode.Require
         };
 
         return builder.ConnectionString;
