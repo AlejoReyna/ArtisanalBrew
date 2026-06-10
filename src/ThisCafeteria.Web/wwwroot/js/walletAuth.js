@@ -86,8 +86,17 @@ async function getWalletProvider(walletName) {
 async function getAvailableProviders() {
     const injectedProviders = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
     const announcedProviders = await getAnnouncedProviders();
+    const announcedMetaMaskProviders = announcedProviders
+        .filter(isMetaMaskAnnouncement)
+        .map(announcement => announcement.provider);
+    const otherAnnouncedProviders = announcedProviders
+        .filter(announcement => !isMetaMaskAnnouncement(announcement))
+        .map(announcement => announcement.provider);
     const providers = [
-        ...announcedProviders.map(announcement => announcement.provider),
+        ...announcedMetaMaskProviders,
+        ...injectedProviders.filter(provider => provider?._metamask),
+        ...injectedProviders.filter(isMetaMaskProvider),
+        ...otherAnnouncedProviders,
         ...injectedProviders
     ];
 
@@ -118,17 +127,42 @@ function getAnnouncedProviders() {
 }
 
 function findMetaMaskProvider(providers) {
-    return providers.find(isMetaMaskProvider) ?? null;
+    return providers.find(provider => provider?._metamask && isMetaMaskProvider(provider))
+        ?? providers.find(isMetaMaskProvider)
+        ?? null;
+}
+
+function isMetaMaskAnnouncement(announcement) {
+    const rdns = announcement?.info?.rdns?.toLowerCase();
+    const name = announcement?.info?.name?.toLowerCase();
+
+    return Boolean(
+        rdns === "io.metamask" ||
+        rdns?.startsWith("io.metamask.") ||
+        name === "metamask"
+    );
 }
 
 function isMetaMaskProvider(provider) {
     return Boolean(
         provider?.isMetaMask &&
-        !provider.isPhantom &&
-        !provider.isCoinbaseWallet &&
-        !provider.isBraveWallet &&
-        !provider.isTrust &&
-        !provider.isTrustWallet
+        !isKnownNonMetaMaskProvider(provider)
+    );
+}
+
+function isKnownNonMetaMaskProvider(provider) {
+    return Boolean(
+        provider?.isPhantom ||
+        provider?.isCoinbaseWallet ||
+        provider?.isBraveWallet ||
+        provider?.isTrust ||
+        provider?.isTrustWallet ||
+        provider?.isRabby ||
+        provider?.isRabbyWallet ||
+        provider?.isOkxWallet ||
+        provider?.isOKExWallet ||
+        provider?.isBitKeep ||
+        provider?.isBitgetWallet
     );
 }
 

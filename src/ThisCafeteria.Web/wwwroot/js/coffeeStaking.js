@@ -58,7 +58,32 @@ function getWeb3() {
 
 function getMetaMaskProvider() {
     const providers = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
-    return providers.find(provider => provider.isMetaMask && !provider.isPhantom) ?? null;
+    return providers.find(provider => provider?._metamask && isMetaMaskProvider(provider))
+        ?? providers.find(isMetaMaskProvider)
+        ?? null;
+}
+
+function isMetaMaskProvider(provider) {
+    return Boolean(
+        provider?.isMetaMask &&
+        !isKnownNonMetaMaskProvider(provider)
+    );
+}
+
+function isKnownNonMetaMaskProvider(provider) {
+    return Boolean(
+        provider?.isPhantom ||
+        provider?.isCoinbaseWallet ||
+        provider?.isBraveWallet ||
+        provider?.isTrust ||
+        provider?.isTrustWallet ||
+        provider?.isRabby ||
+        provider?.isRabbyWallet ||
+        provider?.isOkxWallet ||
+        provider?.isOKExWallet ||
+        provider?.isBitKeep ||
+        provider?.isBitgetWallet
+    );
 }
 
 export async function connectWalletForStaking(config) {
