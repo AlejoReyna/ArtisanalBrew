@@ -185,16 +185,10 @@ public sealed class ShoppingCartService(
                 storedLines.Count,
                 sessionLines.Count > 0 ? "session" : "cookie");
         }
-        else if (_circuitLines is null)
+        else
         {
             _circuitLines = [];
             logger.LogInformation("Cart refreshed with empty storage");
-        }
-        else
-        {
-            logger.LogDebug(
-                "Cart refresh kept circuit memory (storage empty). LineCount={LineCount}",
-                circuitCount);
         }
 
         Changed?.Invoke();
