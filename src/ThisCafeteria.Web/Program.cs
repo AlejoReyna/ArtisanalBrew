@@ -38,12 +38,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
-
-// Configure Data Protection to persist keys across circuit reconnects
-var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"] ?? "/var/lib/aspnet/DataProtection-Keys";
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
-    .SetApplicationName("ThisCafeteria");
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(8);
