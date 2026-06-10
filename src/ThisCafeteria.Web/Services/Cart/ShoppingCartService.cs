@@ -176,7 +176,9 @@ public sealed class ShoppingCartService(
 
         var sessionLines = await LoadFromSessionAsync(cancellationToken);
         var cookieLines = LoadFromCookie();
-        var storedLines = sessionLines.Count >= cookieLines.Count ? sessionLines : cookieLines;
+        
+        // Prioritize cookie over session since session doesn't persist across circuit reconnects
+        var storedLines = cookieLines.Count > 0 ? cookieLines : sessionLines;
 
         if (storedLines.Count > 0)
         {
@@ -184,12 +186,20 @@ public sealed class ShoppingCartService(
             logger.LogInformation(
                 "Cart refreshed from storage. LineCount={LineCount}, Source={Source}",
                 storedLines.Count,
-                sessionLines.Count > 0 ? "session" : "cookie");
+                cookieLines.Count > 0 ? "cookie" : "session");
+        }
+        else if (_circuitLines is null)
+        {
+            // Only reset to empty if we have no existing circuit lines
+            _circuitLines = [];
+            logger.LogInformation("Cart refreshed with empty storage (no existing circuit lines)");
         }
         else
         {
-            _circuitLines = [];
-            logger.LogInformation("Cart refreshed with empty storage");
+            // Keep existing circuit lines if storage is empty but we already have data
+            logger.LogDebug(
+                "Cart refresh kept circuit memory (storage empty but circuit has data). LineCount={LineCount}",
+                circuitCount);
         }
 
         logger.LogInformation("Cart RefreshFromStorageAsync END. FinalCircuitLinesCount={FinalCount}", _circuitLines?.Count ?? 0);
