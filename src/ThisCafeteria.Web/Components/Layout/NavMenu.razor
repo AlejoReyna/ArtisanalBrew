@@ -78,10 +78,18 @@
     <Authorized>
         @if (_isUserMenuRendered)
         {
+            var walletAddress = GetWalletAddress(context.User);
+
             <div class="@UserMenuBackdropCssClass" role="presentation" @onclick="CloseUserMenuAsync"></div>
             <aside class="@UserMenuCssClass" role="dialog" aria-modal="true" aria-labelledby="user-menu-brand-title" aria-hidden="@UserMenuAriaHidden">
                 <header class="user-menu__brand">
-                    
+                    <div class="user-menu__brand-copy">
+                        <span class="label-caps">Wallet</span>
+                        <h2 id="user-menu-brand-title" class="user-menu__wallet-address" title="@walletAddress">
+                            @ShortAddress(walletAddress)
+                        </h2>
+                    </div>
+
                     <button class="user-menu__close"
                             type="button"
                             aria-label="Close account menu"
