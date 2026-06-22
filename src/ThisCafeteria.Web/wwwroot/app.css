@@ -966,6 +966,12 @@ p {
     }
 }
 
+@media (max-width: 980px) {
+    .product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 900px) {
     h1 {
         font-size: clamp(3rem, 15vw, 5rem);
@@ -978,7 +984,6 @@ p {
     .page-intro--split,
     .offering-grid,
     .journal-grid,
-    .product-grid,
     .menu-feature,
     .menu-columns,
     .story-block,
@@ -994,6 +999,12 @@ p {
 
     .hero__media {
         min-height: 26rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .product-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -2303,6 +2314,7 @@ p {
 
 .marketplace-card .image-frame {
     aspect-ratio: 1 / 1.25;
+    border-radius: 0.35rem;
     margin-bottom: 1.05rem;
 }
 
@@ -2312,7 +2324,7 @@ p {
     font-size: 0.86rem;
     font-weight: 700;
     letter-spacing: 0.1em;
-    margin: 0;
+    margin: 0.5rem 0 0.35rem;
     text-transform: uppercase;
 }
 .marketplace-card .price {

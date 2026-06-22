@@ -41,9 +41,17 @@
     }
 }
 
+.marketplace-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
 .marketplace-card__link {
     color: inherit;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     text-decoration: none;
 }
 
@@ -61,7 +69,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin-top: auto;
+    padding-top: 1rem;
 }
 
 .marketplace-card__add {
