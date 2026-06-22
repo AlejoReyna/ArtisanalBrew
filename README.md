@@ -1,4 +1,4 @@
-# This Cafeteria Doesn't Exist
+# ArtisanalBrew
 
 ASP.NET reconstruction of the original coffee storefront, prepared as a clean .NET 10 solution with Blazor, ASP.NET Identity, PostgreSQL, Entity Framework Core, Docker Compose, background processing, and AWS integration placeholders.
 
