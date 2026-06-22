@@ -184,7 +184,8 @@ jobs:
             -o ConnectTimeout=30 \
             -p "$EC2_SSH_PORT" \
             "${EC2_USER}@${EC2_HOST}" \
-            "sudo systemctl stop $REMOTE_SERVICE && \
+            "sudo systemctl stop $REMOTE_SERVICE || true && \
+             sudo mkdir -p $REMOTE_APP_DIR && \
              sudo rm -rf $REMOTE_APP_DIR/* && \
              sudo tar -xzf $REMOTE_TMP_ARCHIVE -C $REMOTE_APP_DIR && \
              sudo chmod +x $REMOTE_APP_DIR/ThisCafeteria.Web && \
