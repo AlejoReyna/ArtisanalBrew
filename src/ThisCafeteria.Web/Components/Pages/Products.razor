@@ -9,6 +9,9 @@
 @using ThisCafeteria.Domain.Enums
 @using ThisCafeteria.Web.Services.Cart
 
+@inject PersistentComponentState ApplicationState
+@implements IDisposable
+
 <PageTitle>Shop | Artisanal Brew</PageTitle>
 
 <section class="products-shop">
@@ -105,21 +108,42 @@ else
     private readonly Dictionary<string, int> _quantities = new(StringComparer.Ordinal);
     private string? _addingSlug;
     private string? _openingSlug;
+    private PersistingComponentStateSubscription _subscription;
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        _subscription = ApplicationState.RegisterOnPersisting(PersistProducts);
+
+        if (!ApplicationState.TryTakeFromJson<ProductDto[]>("products", out var products))
         {
-            _products = await ProductService.GetProductsAsync();
+            try
+            {
+                _products = await ProductService.GetProductsAsync();
+            }
+            catch (Exception exception)
+            {
+                _loadError = exception.Message;
+            }
         }
-        catch (Exception exception)
+        else
         {
-            _loadError = exception.Message;
+            _products = products!;
+            ApplicationState.TryTakeFromJson<string?>("productsLoadError", out _loadError);
         }
-        finally
-        {
-            _isLoading = false;
-        }
+
+        _isLoading = false;
+    }
+
+    private Task PersistProducts()
+    {
+        ApplicationState.PersistAsJson("products", _products);
+        ApplicationState.PersistAsJson("productsLoadError", _loadError);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _subscription.Dispose();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

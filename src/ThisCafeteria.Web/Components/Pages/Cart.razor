@@ -7,6 +7,9 @@
 @inject ILogger<Cart> Logger
 @using ThisCafeteria.Web.Services.Cart
 
+@inject PersistentComponentState ApplicationState
+@implements IDisposable
+
 <PageTitle>Cart | Artisanal Brew</PageTitle>
 
 <section class="cart-page">
@@ -91,9 +94,13 @@
     private decimal _subtotal;
     private string? _statusMessage;
 
+    private PersistingComponentStateSubscription _subscription;
+
     protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("Cart OnInitializedAsync START. ProductSlug={Slug}", ProductSlug);
+        _subscription = ApplicationState.RegisterOnPersisting(PersistCart);
+
         if (!string.IsNullOrWhiteSpace(ProductSlug))
         {
             try
@@ -110,8 +117,29 @@
             return;
         }
 
-        await ReloadCartAsync();
+        if (!ApplicationState.TryTakeFromJson<MarketplaceCartLine[]>("cartLines", out var lines))
+        {
+            await ReloadCartAsync();
+        }
+        else
+        {
+            _lines = lines!;
+            ApplicationState.TryTakeFromJson<decimal>("cartSubtotal", out _subtotal);
+        }
+
         Logger.LogInformation("Cart OnInitializedAsync END. LineCount={Count}", _lines.Count);
+    }
+
+    private Task PersistCart()
+    {
+        ApplicationState.PersistAsJson("cartLines", _lines.ToArray());
+        ApplicationState.PersistAsJson("cartSubtotal", _subtotal);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _subscription.Dispose();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

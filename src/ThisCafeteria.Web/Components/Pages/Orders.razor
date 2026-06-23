@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @inject IOrderService OrderService
 @inject IJSRuntime JS
+@inject PersistentComponentState ApplicationState
+@implements IDisposable
 
 <PageTitle>Commerce Ledger | Artisanal Brew</PageTitle>
 
@@ -98,20 +100,45 @@
     private string? _transactionLoadError;
     private bool _shouldRefreshAnimations = true;
 
+    private PersistingComponentStateSubscription _subscription;
+
     protected override async Task OnInitializedAsync()
     {
-        try
+        _subscription = ApplicationState.RegisterOnPersisting(PersistOrders);
+
+        if (!ApplicationState.TryTakeFromJson<CommerceTransactionDto[]>("orders", out var orders))
         {
-            _transactions = await OrderService.GetCommerceTransactionsAsync();
+            try
+            {
+                _transactions = await OrderService.GetCommerceTransactionsAsync();
+            }
+            catch (Exception exception)
+            {
+                _transactionLoadError = $"Commerce transactions could not be loaded: {exception.Message}";
+            }
+            finally
+            {
+                _isLoadingTransactions = false;
+            }
         }
-        catch (Exception exception)
+        else
         {
-            _transactionLoadError = $"Commerce transactions could not be loaded: {exception.Message}";
-        }
-        finally
-        {
+            _transactions = orders!;
+            ApplicationState.TryTakeFromJson<string?>("ordersError", out _transactionLoadError);
             _isLoadingTransactions = false;
         }
+    }
+
+    private Task PersistOrders()
+    {
+        ApplicationState.PersistAsJson("orders", _transactions.ToArray());
+        ApplicationState.PersistAsJson("ordersError", _transactionLoadError);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _subscription.Dispose();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

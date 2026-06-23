@@ -9,6 +9,9 @@
 @using ThisCafeteria.Web.Catalog
 @using ThisCafeteria.Web.Services.Cart
 
+@inject PersistentComponentState ApplicationState
+@implements IDisposable
+
 <PageTitle>@(_product?.Name ?? "Product") | Artisanal Brew</PageTitle>
 
 @if (_isLoading)
@@ -152,13 +155,37 @@ else
     private bool _shouldRunDetailEntry;
     private int _quantity = 1;
 
+    private PersistingComponentStateSubscription? _subscription;
+
     protected override async Task OnParametersSetAsync()
     {
-        _isLoading = true;
-        _product = await ProductService.GetProductBySlugAsync(Slug);
+        _subscription ??= ApplicationState.RegisterOnPersisting(PersistProduct);
+
+        if (!ApplicationState.TryTakeFromJson<ProductDto>("product", out var product))
+        {
+            _isLoading = true;
+            _product = await ProductService.GetProductBySlugAsync(Slug);
+            _isLoading = false;
+        }
+        else
+        {
+            _product = product;
+            _isLoading = false;
+        }
+
         _quantity = 1;
-        _isLoading = false;
         _shouldRunDetailEntry = _product is not null;
+    }
+
+    private Task PersistProduct()
+    {
+        ApplicationState.PersistAsJson("product", _product);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _subscription?.Dispose();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

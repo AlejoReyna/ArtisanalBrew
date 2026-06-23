@@ -11,6 +11,8 @@
 @inject IOrderService OrderService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject PersistentComponentState ApplicationState
+@implements IDisposable
 
 <PageTitle>My Profile | Artisanal Brew</PageTitle>
 
@@ -217,6 +219,8 @@ else if (_dashboard is not null)
     private string? _saveMessage;
     private List<string> _validationErrors = [];
 
+    private PersistingComponentStateSubscription _subscription;
+
     protected override async Task OnInitializedAsync()
     {
         var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -235,21 +239,47 @@ else if (_dashboard is not null)
             return;
         }
 
-        try
+        _subscription = ApplicationState.RegisterOnPersisting(PersistProfile);
+
+        if (!ApplicationState.TryTakeFromJson<ProfileDashboardDto>("profileDashboard", out var dashboard) ||
+            !ApplicationState.TryTakeFromJson<OrderDto[]>("profileOrders", out var orders))
         {
-            var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
-            _dashboard = await ProfileService.GetProfileDashboardAsync(userProfileId);
-            _orders = await OrderService.GetOrdersForUserAsync(userProfileId);
-            _editModel.DisplayName = _dashboard.DisplayName;
+            try
+            {
+                var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
+                _dashboard = await ProfileService.GetProfileDashboardAsync(userProfileId);
+                _orders = await OrderService.GetOrdersForUserAsync(userProfileId);
+                _editModel.DisplayName = _dashboard.DisplayName;
+            }
+            catch (Exception exception)
+            {
+                _loadError = exception.Message;
+            }
+            finally
+            {
+                _isLoading = false;
+            }
         }
-        catch (Exception exception)
+        else
         {
-            _loadError = exception.Message;
-        }
-        finally
-        {
+            _dashboard = dashboard;
+            _orders = orders!;
+            ApplicationState.TryTakeFromJson<string?>("profileError", out _loadError);
             _isLoading = false;
         }
+    }
+
+    private Task PersistProfile()
+    {
+        ApplicationState.PersistAsJson("profileDashboard", _dashboard);
+        ApplicationState.PersistAsJson("profileOrders", _orders.ToArray());
+        ApplicationState.PersistAsJson("profileError", _loadError);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _subscription.Dispose();
     }
 
     private void ShowYieldView() => _showYield = true;
