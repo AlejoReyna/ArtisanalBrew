@@ -12,6 +12,9 @@
                 <article class="journal-carousel__slide"
                          aria-label="@($"{slideNumber} of {JournalCatalog.FeaturedArticles.Count}")"
                          aria-roledescription="slide">
+                    <div class="@JournalCatalog.HeroImageClass(article.ImageKey) journal-hero__backdrop"
+                         role="img"
+                         aria-label="@article.ImageAriaLabel"></div>
                     <div class="journal-hero__copy" data-animate="fade-up">
                         <p class="journal-kicker">@article.Kicker</p>
                         <h1>@article.Title</h1>
@@ -23,9 +26,6 @@
                             </a>
                         }
                     </div>
-                    <div class="@JournalCatalog.HeroImageClass(article.ImageKey)"
-                         role="img"
-                         aria-label="@article.ImageAriaLabel"></div>
                 </article>
             }
         </div>

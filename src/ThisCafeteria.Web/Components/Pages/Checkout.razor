@@ -242,158 +242,270 @@
         }
         else
         {
-            <div class="checkout-main">
-                <ol class="checkout-stepper" aria-label="Checkout progress" data-animate="fade-up">
-                    <li class="checkout-stepper__step checkout-stepper__step--complete">
-                        <span class="checkout-stepper__icon" aria-hidden="true">1</span>
-                        <span class="checkout-stepper__label">Shipping</span>
-                    </li>
-                    <li class="checkout-stepper__divider" aria-hidden="true"></li>
-                    <li class="checkout-stepper__step checkout-stepper__step--active" aria-current="step">
-                        <span class="checkout-stepper__icon" aria-hidden="true">2</span>
-                        <span class="checkout-stepper__label">Payment</span>
-                    </li>
-                </ol>
+            @if (_step == CheckoutStep.Review)
+            {
+                <div class="checkout-main checkout-review">
+                    <header class="checkout-review__header">
+                        <button type="button" class="checkout-review__back" @onclick="BackToCart" aria-label="Back to cart">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        </button>
+                        <span class="checkout-review__header-title">Review Order</span>
+                        <span class="checkout-review__header-brand">Alchemist</span>
+                    </header>
 
-                @if (!string.IsNullOrWhiteSpace(_walletAddress))
-                {
-                    <p class="checkout-wallet-connected" data-animate="fade-up">
-                        Paying from <span>@ShortAddress(_walletAddress)</span>
-                    </p>
-                }
+                    <section class="checkout-review__section">
+                        <h2 class="checkout-review__section-title">The Selection</h2>
+                        <ul class="checkout-review__items">
+                            @foreach (var line in _lines)
+                            {
+                                <li class="checkout-review-item">
+                                    <div class="checkout-review-item__image">
+                                        @if (!string.IsNullOrWhiteSpace(line.ImageUrl))
+                                        {
+                                            <img src="@line.ImageUrl" alt="@line.Name" />
+                                        }
+                                        else
+                                        {
+                                            <div class="image-frame @line.ImageClass"></div>
+                                        }
+                                    </div>
+                                    <div class="checkout-review-item__info">
+                                        <p class="checkout-review-item__name">@line.Name</p>
+                                        <p class="checkout-review-item__detail">Artisanal Roast</p>
+                                        <span class="checkout-review-item__badge">Verified</span>
+                                    </div>
+                                    <div class="checkout-review-item__price-qty">
+                                        <p class="checkout-review-item__price">@FormatEth(line.LineTotal / EthUsdRate)</p>
+                                        <p class="checkout-review-item__qty">Qty: @line.Quantity</p>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </section>
 
-                <article class="checkout-payment-method" data-animate="fade-up">
-                    <div class="checkout-payment-method__mark">
-                        <img src="/images/eth_logo.png" alt="" aria-hidden="true" width="72" height="72" />
-                    </div>
-                    <div class="checkout-payment-method__copy">
-                        <h2>Pay with ETH on Ethereum Sepolia</h2>
-                        <p>Secure decentralized transaction</p>
-                    </div>
-                </article>
-
-                <section class="checkout-coupon" data-animate="fade-up">
-                    <label for="checkout-coupon-code">Coupon word</label>
-                    <div class="checkout-coupon__form">
-                        <input id="checkout-coupon-code"
-                               class="checkout-coupon__input"
-                               type="text"
-                               maxlength="64"
-                               placeholder="Enter coupon"
-                               @bind="_couponCode"
-                               disabled="@(_isApplyingCoupon || _isPaying || _appliedCoupon is not null)" />
-                        @if (_appliedCoupon is null)
-                        {
-                            <button type="button"
-                                    class="button button--ghost checkout-coupon__button"
-                                    disabled="@(_isApplyingCoupon || _isPaying || string.IsNullOrWhiteSpace(_couponCode))"
-                                    @onclick="ApplyCouponAsync">
-                                @(_isApplyingCoupon ? "Applying..." : "Apply")
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="button"
-                                    class="button button--ghost checkout-coupon__button"
-                                    disabled="@_isPaying"
-                                    @onclick="RemoveCoupon">
-                                Remove
-                            </button>
-                        }
-                    </div>
-                    @if (_appliedCoupon is not null)
-                    {
-                        <p class="checkout-coupon__status checkout-coupon__status--success">
-                            @_appliedCoupon.Code applied for @_appliedCoupon.DiscountPercent.ToString("0.##")% off.
-                        </p>
-                    }
-                    else if (!string.IsNullOrWhiteSpace(_couponMessage))
-                    {
-                        <p class="checkout-coupon__status checkout-coupon__status--error" role="alert">@_couponMessage</p>
-                    }
-                </section>
-
-                <section class="checkout-breakdown" data-animate="fade-up">
-                    <dl class="checkout-breakdown__rows">
-                        <div class="checkout-breakdown__row">
-                            <dt>Subtotal</dt>
-                            <dd>@FormatUsd(_subtotalUsd)</dd>
-                        </div>
-                        <div class="checkout-breakdown__row">
-                            <dt>Shipping</dt>
-                            <dd>@FormatUsd(_shippingUsd)</dd>
-                        </div>
-                        <div class="checkout-breakdown__row">
-                            <dt>Tax</dt>
-                            <dd>@FormatUsd(_taxUsd)</dd>
-                        </div>
-                        @if (_discountUsd > 0)
-                        {
-                            <div class="checkout-breakdown__row">
-                                <dt>Discount</dt>
-                                <dd>-@FormatUsd(_discountUsd)</dd>
+                    <section class="checkout-review__section">
+                        <div class="checkout-review__box">
+                            <div class="checkout-review__box-inner">
+                                <div class="checkout-review__box-header">
+                                    <span class="checkout-review__box-icon" aria-hidden="true">&#x1F69A;</span>
+                                    <h2 class="checkout-review__section-title">Shipping</h2>
+                                </div>
+                                <div class="checkout-review__box-body">
+                                    <p class="checkout-review__box-name">@(_profile?.DisplayName ?? "Guest")</p>
+                                    <p class="checkout-review__box-address">123 Roast Street, Coffee District, CA 90210</p>
+                                </div>
                             </div>
-                        }
-                        <div class="checkout-breakdown__row">
-                            <dt>Order Total</dt>
-                            <dd>@FormatUsd(_orderTotalUsd)</dd>
-                        </div>
-                        <div class="checkout-breakdown__row checkout-breakdown__row--rate">
-                            <dt>Current Rate</dt>
-                            <dd><em>1 ETH = @FormatUsd(EthUsdRate) USD</em></dd>
-                        </div>
-                        <div class="checkout-breakdown__row checkout-breakdown__row--amount">
-                            <dt>Amount to Pay</dt>
-                            <dd>@FormatEth(_ethAmount)</dd>
-                        </div>
-                    </dl>
-
-                    @if (!string.IsNullOrWhiteSpace(_errorMessage))
-                    {
-                        <p class="checkout-breakdown__error" role="alert">@_errorMessage</p>
-                    }
-
-                    <button type="button"
-                            class="button button--dark checkout-breakdown__cta"
-                            disabled="@_isPaying"
-                            @onclick="PayAsync">
-                        @(_isPaying ? "Processing…" : "Pay with ETH")
-                    </button>
-                </section>
-
-                @if (_paymentFailed)
-                {
-                    <section class="checkout-payment-failure" data-animate="fade-up">
-                        <p class="checkout-payment-failure__message">
-                            Looks like your transaction couldn't be completed, would you like try it again?
-                        </p>
-                        <div class="checkout-payment-failure__actions">
-                            <button type="button"
-                                    class="button button--dark checkout-payment-failure__try-again"
-                                    disabled="@_isPaying"
-                                    @onclick="PayAsync">
-                                @(_isPaying ? "Processing…" : "Try again")
-                            </button>
-                            <a class="checkout-payment-failure__back-home" href="home">Back home</a>
+                            <button type="button" class="checkout-review__box-action">Edit</button>
                         </div>
                     </section>
-                }
-            </div>
 
-            <aside class="checkout-summary" data-animate="fade-up">
-                <h2 class="checkout-summary__title">Order Summary</h2>
-                <CheckoutOrderSummary Lines="_lines"
-                                      CarouselIndex="_carouselIndex"
-                                      SubtotalUsd="_subtotalUsd"
-                                      ShippingUsd="_shippingUsd"
-                                      TaxUsd="_taxUsd"
-                                      CouponCode="_appliedCoupon?.Code"
-                                      DiscountUsd="_discountUsd"
-                                      OrderTotalUsd="_orderTotalUsd"
-                                      OnPrevious="ShowPreviousProduct"
-                                      OnNext="ShowNextProduct"
-                                      OnGoTo="GoToProduct" />
-            </aside>
+                    <section class="checkout-review__section">
+                        <div class="checkout-review__box checkout-review__box--wallet">
+                            <img src="/images/eth_logo.png" alt="MetaMask" class="checkout-review__box-icon-img" width="24" height="24" />
+                            <div class="checkout-review__box-body">
+                                <p class="checkout-review__box-name">@ShortAddress(_walletAddress)</p>
+                                <p class="checkout-review__box-status">Connected</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="checkout-review__section">
+                        <h2 class="checkout-review__section-title">Order Summary</h2>
+                        <dl class="checkout-review__summary">
+                            <div class="checkout-review__summary-row">
+                                <dt>Subtotal</dt>
+                                <dd>@FormatEth(_subtotalUsd / EthUsdRate)</dd>
+                            </div>
+                            <div class="checkout-review__summary-row">
+                                <dt>Network Gas Fee</dt>
+                                <dd>@FormatEth(0.0005m)</dd>
+                            </div>
+                            <div class="checkout-review__summary-row">
+                                <dt>Shipping</dt>
+                                <dd class="checkout-review__summary-free">FREE</dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <section class="checkout-review__section checkout-review__section--total">
+                        <p class="checkout-review__total-label">Total</p>
+                        <p class="checkout-review__total">@FormatEth(_ethAmount)</p>
+                    </section>
+
+                    <p class="checkout-review__disclaimer">
+                        This transaction is verified by smart contract on Ethereum Sepolia.<br />
+                        By completing this purchase, you agree to our <a href="/terms">Terms of Service</a>.
+                    </p>
+
+                    <div class="checkout-review__sticky-cta">
+                        <div class="checkout-review__sticky-cta-inner">
+                            <button type="button" class="checkout-review__cta-button" @onclick="CompletePurchaseAsync">
+                                Complete Purchase
+                                <span aria-hidden="true">&rsaquo;</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (_step == CheckoutStep.Payment)
+            {
+                <div class="checkout-main">
+                    <button type="button" class="checkout-review__back-to-review" @onclick="GoBackToReview">
+                        &larr; Back to Review
+                    </button>
+
+                    <ol class="checkout-stepper is-visible" aria-label="Checkout progress" data-animate="fade-up">
+                        <li class="checkout-stepper__step checkout-stepper__step--complete">
+                            <span class="checkout-stepper__icon" aria-hidden="true">1</span>
+                            <span class="checkout-stepper__label">Shipping</span>
+                        </li>
+                        <li class="checkout-stepper__divider" aria-hidden="true"></li>
+                        <li class="checkout-stepper__step checkout-stepper__step--active" aria-current="step">
+                            <span class="checkout-stepper__icon" aria-hidden="true">2</span>
+                            <span class="checkout-stepper__label">Payment</span>
+                        </li>
+                    </ol>
+
+                    @if (!string.IsNullOrWhiteSpace(_walletAddress))
+                    {
+                        <p class="checkout-wallet-connected is-visible" data-animate="fade-up">
+                            Paying from <span>@ShortAddress(_walletAddress)</span>
+                        </p>
+                    }
+
+                    <article class="checkout-payment-method is-visible" data-animate="fade-up">
+                        <div class="checkout-payment-method__mark">
+                            <img src="/images/eth_logo.png" alt="" aria-hidden="true" width="72" height="72" />
+                        </div>
+                        <div class="checkout-payment-method__copy">
+                            <h2>Pay with ETH on Ethereum Sepolia</h2>
+                            <p>Secure decentralized transaction</p>
+                        </div>
+                    </article>
+
+                    <section class="checkout-coupon is-visible" data-animate="fade-up">
+                        <label for="checkout-coupon-code">Coupon word</label>
+                        <div class="checkout-coupon__form">
+                            <input id="checkout-coupon-code"
+                                   class="checkout-coupon__input"
+                                   type="text"
+                                   maxlength="64"
+                                   placeholder="Enter coupon"
+                                   @bind="_couponCode"
+                                   disabled="@(_isApplyingCoupon || _isPaying || _appliedCoupon is not null)" />
+                            @if (_appliedCoupon is null)
+                            {
+                                <button type="button"
+                                        class="button button--ghost checkout-coupon__button"
+                                        disabled="@(_isApplyingCoupon || _isPaying || string.IsNullOrWhiteSpace(_couponCode))"
+                                        @onclick="ApplyCouponAsync">
+                                    @(_isApplyingCoupon ? "Applying..." : "Apply")
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="button button--ghost checkout-coupon__button"
+                                        disabled="@_isPaying"
+                                        @onclick="RemoveCoupon">
+                                    Remove
+                                </button>
+                            }
+                        </div>
+                        @if (_appliedCoupon is not null)
+                        {
+                            <p class="checkout-coupon__status checkout-coupon__status--success">
+                                @_appliedCoupon.Code applied for @_appliedCoupon.DiscountPercent.ToString("0.##")% off.
+                            </p>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(_couponMessage))
+                        {
+                            <p class="checkout-coupon__status checkout-coupon__status--error" role="alert">@_couponMessage</p>
+                        }
+                    </section>
+
+                    <section class="checkout-breakdown is-visible" data-animate="fade-up">
+                        <dl class="checkout-breakdown__rows">
+                            <div class="checkout-breakdown__row">
+                                <dt>Subtotal</dt>
+                                <dd>@FormatUsd(_subtotalUsd)</dd>
+                            </div>
+                            <div class="checkout-breakdown__row">
+                                <dt>Shipping</dt>
+                                <dd>@FormatUsd(_shippingUsd)</dd>
+                            </div>
+                            <div class="checkout-breakdown__row">
+                                <dt>Tax</dt>
+                                <dd>@FormatUsd(_taxUsd)</dd>
+                            </div>
+                            @if (_discountUsd > 0)
+                            {
+                                <div class="checkout-breakdown__row">
+                                    <dt>Discount</dt>
+                                    <dd>-@FormatUsd(_discountUsd)</dd>
+                                </div>
+                            }
+                            <div class="checkout-breakdown__row">
+                                <dt>Order Total</dt>
+                                <dd>@FormatUsd(_orderTotalUsd)</dd>
+                            </div>
+                            <div class="checkout-breakdown__row checkout-breakdown__row--rate">
+                                <dt>Current Rate</dt>
+                                <dd><em>1 ETH = @FormatUsd(EthUsdRate) USD</em></dd>
+                            </div>
+                            <div class="checkout-breakdown__row checkout-breakdown__row--amount">
+                                <dt>Amount to Pay</dt>
+                                <dd>@FormatEth(_ethAmount)</dd>
+                            </div>
+                        </dl>
+
+                        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                        {
+                            <p class="checkout-breakdown__error" role="alert">@_errorMessage</p>
+                        }
+
+                        <button type="button"
+                                class="button button--dark checkout-breakdown__cta"
+                                disabled="@_isPaying"
+                                @onclick="PayAsync">
+                            @(_isPaying ? "Processing…" : "Pay with ETH")
+                        </button>
+                    </section>
+
+                    @if (_paymentFailed)
+                    {
+                        <section class="checkout-payment-failure is-visible" data-animate="fade-up">
+                            <p class="checkout-payment-failure__message">
+                                Looks like your transaction couldn't be completed, would you like try it again?
+                            </p>
+                            <div class="checkout-payment-failure__actions">
+                                <button type="button"
+                                        class="button button--dark checkout-payment-failure__try-again"
+                                        disabled="@_isPaying"
+                                        @onclick="PayAsync">
+                                    @(_isPaying ? "Processing…" : "Try again")
+                                </button>
+                                <a class="checkout-payment-failure__back-home" href="home">Back home</a>
+                            </div>
+                        </section>
+                    }
+                </div>
+
+                <aside class="checkout-summary is-visible" data-animate="fade-up">
+                    <h2 class="checkout-summary__title">Order Summary</h2>
+                    <CheckoutOrderSummary Lines="_lines"
+                                          CarouselIndex="_carouselIndex"
+                                          SubtotalUsd="_subtotalUsd"
+                                          ShippingUsd="_shippingUsd"
+                                          TaxUsd="_taxUsd"
+                                          CouponCode="_appliedCoupon?.Code"
+                                          DiscountUsd="_discountUsd"
+                                          OrderTotalUsd="_orderTotalUsd"
+                                          OnPrevious="ShowPreviousProduct"
+                                          OnNext="ShowNextProduct"
+                                          OnGoTo="GoToProduct" />
+                </aside>
+            }
         }
     </div>
 </section>
@@ -439,6 +551,11 @@
     private bool _isApplyingCoupon;
     private string? _couponMessage;
 
+    private enum CheckoutStep { Review, Payment, Success }
+    private CheckoutStep _step = CheckoutStep.Review;
+    private ProfileDashboardDto? _profile;
+
+
     protected override async Task OnInitializedAsync()
     {
         _chain = ChainOptions.Value;
@@ -453,6 +570,13 @@
             if (!string.IsNullOrWhiteSpace(_walletAddress))
             {
                 _isWalletReady = true;
+                _step = CheckoutStep.Review;
+                try
+                {
+                    var profileId = await ProfileService.EnsureProfileLinkedAsync(user.Id);
+                    _profile = await ProfileService.GetProfileDashboardAsync(profileId);
+                }
+                catch { /* ignore profile load errors */ }
             }
         }
     }
@@ -854,6 +978,21 @@
         }
 
         return $"{address[..6]}…{address[^4..]}";
+    }
+
+    private void CompletePurchaseAsync()
+    {
+        _step = CheckoutStep.Payment;
+    }
+
+    private void GoBackToReview()
+    {
+        _step = CheckoutStep.Review;
+    }
+
+    private void BackToCart()
+    {
+        Navigation.NavigateTo("/cart");
     }
 
     public async ValueTask DisposeAsync()

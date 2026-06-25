@@ -13,75 +13,121 @@
 <PageTitle>Cart | Artisanal Brew</PageTitle>
 
 <section class="cart-page">
-    <div class="cart-page__intro" data-animate="fade-up">
-        <p class="eyebrow">Your selection</p>
-        <h1>Cart</h1>
-        @if (!string.IsNullOrWhiteSpace(_statusMessage))
-        {
-            <p class="cart-page__status">@_statusMessage</p>
-        }
-    </div>
+    @if (!string.IsNullOrWhiteSpace(_statusMessage))
+    {
+        <div class="cart-status">@_statusMessage</div>
+    }
 
     @if (_lines.Count == 0)
     {
-        <div class="cart-page__empty" data-animate="fade-up">
-            <p class="lede">Your cart is empty. Explore the shop and add something worth lingering over.</p>
-            <a class="button button--dark" href="products">Browse shop</a>
+        <div class="cart-empty">
+            <div class="cart-empty__icon">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 32h40v30c0 8.284-6.716 15-15 15H35c-8.284 0-15-6.716-15-15V32z" stroke="#d8d0c4" stroke-width="2.5"/>
+                    <path d="M15 32h50" stroke="#d8d0c4" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M25 22c0-5.523 4.477-10 10-10h10c5.523 0 10 4.477 10 10" stroke="#d8d0c4" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="32" cy="24" r="2.5" fill="#d8d0c4" opacity="0.4"/>
+                    <circle cx="48" cy="24" r="2.5" fill="#d8d0c4" opacity="0.4"/>
+                    <circle cx="40" cy="18" r="2.5" fill="#d8d0c4" opacity="0.4"/>
+                    <path d="M62 36c4.418 0 8 3.582 8 8s-3.582 8-8 8" stroke="#d8d0c4" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h2 class="cart-empty__title">Your cart is as empty as a Monday morning mug...</h2>
+            <p class="cart-empty__lede">Time to discover your next favorite roast.</p>
+            <a class="cart-empty__cta" href="products">Browse shop</a>
         </div>
     }
     else
     {
-        <div class="cart-page__layout">
-            <ul class="cart-lines" data-animate="fade-up">
+        <div class="cart-card">
+          <div class="cart-layout">
+            <div class="cart-main">
+            <header class="cart-card__header">
+                <div class="cart-card__title-group">
+                    <h1 class="cart-card__title">Your Cart</h1>
+                    <span class="cart-card__count">@_lines.Count item@(_lines.Count > 1 ? "s" : "")</span>
+                </div>
+                <button type="button" class="cart-card__clear" @onclick="ClearAsync">Clear all</button>
+            </header>
+
+            <ul class="cart-items">
                 @foreach (var line in _lines)
                 {
-                    <li class="cart-line">
-                        <a class="cart-line__media" href="@($"products/{line.Slug}")">
-                            <div class="image-frame cart-line__image @line.ImageClass"
+                    <li class="cart-item">
+                        <a class="cart-item__media" href="@($"products/{line.Slug}")">
+                            <div class="cart-item__image @line.ImageClass"
                                  style="@BackgroundImage(line.ImageUrl)"
                                  role="img"
                                  aria-label="@line.Name"></div>
                         </a>
 
-                        <div class="cart-line__details">
-                            <a class="cart-line__name" href="@($"products/{line.Slug}")">@line.Name</a>
-                            <p class="cart-line__price">@FormatPrice(line.UnitPrice)</p>
+                        <div class="cart-item__body">
+                            <div class="cart-item__top">
+                                <div class="cart-item__info">
+                                    <a class="cart-item__name" href="@($"products/{line.Slug}")">@line.Name</a>
+                                    <p class="cart-item__meta">Artisanal Roast</p>
+                                </div>
+                                <p class="cart-item__price">@FormatPrice(line.LineTotal)</p>
+                            </div>
 
-                            <div class="cart-line__quantity">
-                                <button type="button"
-                                        class="cart-line__qty-btn"
-                                        aria-label="Decrease quantity"
-                                        disabled="@(line.Quantity <= 1)"
-                                        @onclick="() => UpdateQuantityAsync(line.Slug, line.Quantity - 1)">
-                                    −
-                                </button>
-                                <span class="cart-line__qty-value" aria-live="polite">@line.Quantity</span>
-                                <button type="button"
-                                        class="cart-line__qty-btn"
-                                        aria-label="Increase quantity"
-                                        @onclick="() => UpdateQuantityAsync(line.Slug, line.Quantity + 1)">
-                                    +
+                            <div class="cart-item__bottom">
+                                <div class="cart-item__quantity">
+                                    <button type="button"
+                                            class="cart-item__qty-btn"
+                                            aria-label="Decrease quantity"
+                                            disabled="@(line.Quantity <= 1)"
+                                            @onclick="() => UpdateQuantityAsync(line.Slug, line.Quantity - 1)">
+                                        −
+                                    </button>
+                                    <span class="cart-item__qty-value" aria-live="polite">@line.Quantity</span>
+                                    <button type="button"
+                                            class="cart-item__qty-btn"
+                                            aria-label="Increase quantity"
+                                            @onclick="() => UpdateQuantityAsync(line.Slug, line.Quantity + 1)">
+                                        +
+                                    </button>
+                                </div>
+
+                                <button type="button" class="cart-item__remove" @onclick="() => RemoveAsync(line.Slug)" aria-label="Remove @line.Name">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11 3L3 11M3 3L11 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
                                 </button>
                             </div>
-                        </div>
-
-                        <div class="cart-line__summary">
-                            <p class="cart-line__total">@FormatPrice(line.LineTotal)</p>
-                            <button type="button" class="cart-line__remove" @onclick="() => RemoveAsync(line.Slug)">
-                                Remove
-                            </button>
                         </div>
                     </li>
                 }
             </ul>
 
-            <aside class="cart-summary" data-animate="fade-up">
-                <p class="cart-summary__label">Subtotal</p>
-                <p class="cart-summary__amount">@FormatPrice(_subtotal)</p>
-                <p class="cart-summary__note muted">Tax calculated at checkout.</p>
-                <a class="button button--dark cart-summary__checkout" href="checkout">Proceed to checkout</a>
-                <button type="button" class="cart-summary__clear" @onclick="ClearAsync">Clear cart</button>
+            <div class="cart-divider"></div>
+            </div>
+
+            <aside class="cart-receipt">
+                <h2 class="cart-receipt__title">Order Summary</h2>
+
+                <div class="cart-summary">
+                    <div class="cart-summary__row">
+                        <span class="cart-summary__label">Subtotal</span>
+                        <span class="cart-summary__value">@FormatPrice(_subtotal)</span>
+                    </div>
+                    <div class="cart-summary__row">
+                        <span class="cart-summary__label">Shipping</span>
+                        <span class="cart-summary__value cart-summary__value--accent">Free</span>
+                    </div>
+                    <div class="cart-summary__row cart-summary__row--total">
+                        <span class="cart-summary__label">Total</span>
+                        <span class="cart-summary__value">@FormatPrice(_subtotal)</span>
+                    </div>
+                </div>
+
+                <a class="cart-cta" href="checkout">
+                    Proceed to checkout
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
             </aside>
+          </div>
         </div>
     }
 </section>

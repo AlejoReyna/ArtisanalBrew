@@ -73,6 +73,90 @@
     </div>
 </nav>
 </header>
+        <div class="nav-drawer-backdrop @NavDrawerBackdropCssClass" role="presentation" @onclick="CloseNav"></div>
+<aside class="nav-drawer @NavDrawerCssClass" aria-label="Mobile navigation" aria-hidden="@NavDrawerAriaHidden">
+    <header class="nav-drawer__header">
+        <div class="nav-drawer__wallet">
+            <AuthorizeView>
+                <Authorized>
+                    <span class="nav-drawer__address" title="@GetWalletAddress(context.User)">
+                        @ShortAddress(GetWalletAddress(context.User))
+                    </span>
+                </Authorized>
+                <NotAuthorized>
+                    <button class="nav-drawer__connect" type="button" @onclick="OpenWalletModal">Connect Wallet</button>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+        <button class="nav-drawer__close" type="button" aria-label="Close menu" @onclick="CloseNav"></button>
+    </header>
+
+    <div class="nav-drawer__body">
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-drawer__stats">
+                    <div class="nav-drawer__stat">
+                        <span class="nav-drawer__stat-label">Staked</span>
+                        <span class="nav-drawer__stat-value">@FormatStakedBalance()</span>
+                    </div>
+                    <div class="nav-drawer__stat">
+                        <span class="nav-drawer__stat-label">Rewards</span>
+                        <span class="nav-drawer__stat-value nav-drawer__stat-value--pos">@FormatPendingRewards()</span>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        <nav class="nav-drawer__grid" aria-label="Primary sections">
+            <NavLink class="nav-drawer__tile" href="products" Match="NavLinkMatch.All" @onclick="CloseNav">
+                <span class="nav-drawer__tile-icon" aria-hidden="true">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                </span>
+                <span class="nav-drawer__tile-label">Shop</span>
+                @if (_cartItemCount > 0)
+                {
+                    <span class="nav-drawer__tile-badge">@_cartItemCount</span>
+                }
+            </NavLink>
+            <NavLink class="nav-drawer__tile" href="journal" @onclick="CloseNav">
+                <span class="nav-drawer__tile-icon" aria-hidden="true">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </span>
+                <span class="nav-drawer__tile-label">Journal</span>
+            </NavLink>
+            <NavLink class="nav-drawer__tile" href="staking" @onclick="CloseNav">
+                <span class="nav-drawer__tile-icon" aria-hidden="true">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+                <span class="nav-drawer__tile-label">Yield</span>
+            </NavLink>
+            <NavLink class="nav-drawer__tile" href="story" @onclick="CloseNav">
+                <span class="nav-drawer__tile-icon" aria-hidden="true">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </span>
+                <span class="nav-drawer__tile-label">About</span>
+            </NavLink>
+        </nav>
+    </div>
+
+    <footer class="nav-drawer__foot">
+        <AuthorizeView>
+            <Authorized>
+                <NavLink href="staking" class="nav-drawer__cta" @onclick="CloseNav">New Stake</NavLink>
+                <a href="cart" class="nav-drawer__cta nav-drawer__cta--outline" @onclick="CloseNav">
+                    Cart @if (_cartItemCount > 0) { <span>(@_cartItemCount)</span> }
+                </a>
+                <form method="post" action="/api/wallet-auth/logout" class="nav-drawer__logout">
+                    <button type="submit">Disconnect</button>
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <button class="nav-drawer__cta" type="button" @onclick="OpenWalletModal">Connect Wallet</button>
+                <a href="cart" class="nav-drawer__cta nav-drawer__cta--outline" @onclick="CloseNav">Cart</a>
+            </NotAuthorized>
+        </AuthorizeView>
+    </footer>
+</aside>
 
 <AuthorizeView>
     <Authorized>
@@ -279,6 +363,19 @@
 
     private string CartAriaLabel =>
         _cartItemCount > 0 ? $"Cart, {_cartItemCount} items" : "Cart";
+
+    private string NavDrawerBackdropCssClass =>
+        _isNavOpen ? "nav-drawer-backdrop nav-drawer-backdrop--open" : "nav-drawer-backdrop";
+
+    private string NavDrawerCssClass =>
+        _isNavOpen ? "nav-drawer nav-drawer--open" : "nav-drawer";
+
+    private string NavDrawerAriaHidden =>
+        _isNavOpen ? "false" : "true";
+
+    private static string FormatStakedBalance() => "0.0";
+
+    private static string FormatPendingRewards() => "0 COFFEE";
 
     protected override async Task OnInitializedAsync()
     {

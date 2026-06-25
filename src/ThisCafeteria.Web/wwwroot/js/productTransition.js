@@ -6,6 +6,47 @@
     const prefersReducedMotion = () =>
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const isMobileView = () => window.matchMedia('(max-width: 960px)').matches;
+
+    const wireSheetDismiss = hero => {
+        const back = hero.querySelector('.product-detail-card__back a');
+        if (!back || back.dataset.sheetWired === '1') {
+            return;
+        }
+
+        back.dataset.sheetWired = '1';
+        back.addEventListener('click', () => {
+            if (!isMobileView() || prefersReducedMotion()) {
+                return;
+            }
+
+            // Let Blazor's SPA navigation to the list proceed underneath (no
+            // preventDefault). A fixed overlay clone slides down on top so the
+            // list is revealed progressively as the sheet retreats.
+            hero.classList.remove('product-detail-card--sheet-enter');
+
+            const clone = hero.cloneNode(true);
+            clone.classList.add('product-detail-sheet-dismiss-clone');
+            clone.removeAttribute('data-product-detail');
+            document.body.appendChild(clone);
+
+            const animation = clone.animate(
+                [
+                    { transform: 'translateY(0)' },
+                    { transform: 'translateY(100%)' }
+                ],
+                {
+                    duration: 300,
+                    easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+                    fill: 'forwards'
+                });
+
+            const remove = () => clone.remove();
+            animation.finished.then(remove, remove);
+            window.setTimeout(remove, 600);
+        });
+    };
+
     const cssEscape = value => {
         if (window.CSS && typeof window.CSS.escape === 'function') {
             return window.CSS.escape(value);
@@ -91,6 +132,12 @@
             return;
         }
 
+        // On mobile the detail view grows up as a bottom sheet, so skip the
+        // desktop shared-element fly animation and navigate immediately.
+        if (isMobileView()) {
+            return;
+        }
+
         const card = document.querySelector(`[data-product-card][data-product-slug="${cssEscape(slug)}"]`);
         const image = card?.querySelector('[data-product-image]');
 
@@ -155,10 +202,21 @@
             return;
         }
 
-        const shouldAnimate = takeTransition(slug) && !prefersReducedMotion();
+        const hadTransition = takeTransition(slug);
         cleanupListTransition();
 
-        if (!shouldAnimate) {
+        if (prefersReducedMotion()) {
+            return;
+        }
+
+        // Mobile: the card grows up from the bottom via pure CSS on mount; here
+        // we only wire the back control to dismiss it downward before nav.
+        if (isMobileView()) {
+            wireSheetDismiss(hero);
+            return;
+        }
+
+        if (!hadTransition) {
             return;
         }
 
