@@ -54,7 +54,7 @@ else
         var quantity = GetQuantity(product.Slug);
         var isAdding = _addingSlug == product.Slug;
 
-        <article class="marketplace-card" data-animate="fade-up" data-product-card data-product-slug="@product.Slug">
+        <article class="marketplace-card @(_qtyExpanded.Contains(product.Slug) ? "marketplace-card--qty-expanded" : "")" data-animate="fade-up" data-product-card data-product-slug="@product.Slug">
             <a class="marketplace-card__link"
                href="@($"products/{product.Slug}")"
                @onclick:preventDefault="true"
@@ -62,19 +62,21 @@ else
                 <div class="image-frame @ImageClassFor(product.Category)" style="@BackgroundImage(product.ImageUrl)" data-product-image></div>
                 <p class="eyebrow">@SectionLabel(product.Category.ToString())</p>
                 <h3>@product.Name</h3>
-                <p class="price">@FormatPrice(product.Price)</p>
             </a>
 
-            <div class="marketplace-card__actions">
-                <ProductQuantityPicker Quantity="quantity"
-                                       QuantityChanged="@(value => SetQuantity(product.Slug, value))" />
-                <button type="button"
-                        class="button button--dark marketplace-card__add"
-                        disabled="@isAdding"
-                        aria-label="Add @product.Name to cart"
-                        @onclick="() => AddToCartAsync(product, quantity)">
-                    @(isAdding ? "Adding…" : "Add to cart")
-                </button>
+            <div class="marketplace-card__footer">
+                <p class="price">@FormatPrice(product.Price)</p>
+                <div class="marketplace-card__actions">
+                    <ProductQuantityPicker Quantity="quantity"
+                                           QuantityChanged="@(value => SetQuantity(product.Slug, value))" />
+                    <button type="button"
+                            class="button button--dark marketplace-card__add"
+                            disabled="@isAdding"
+                            aria-label="Add @product.Name to cart"
+                            @onclick="() => AddToCartAsync(product, quantity)">
+                        @(isAdding ? "Adding…" : "Add to cart")
+                    </button>
+                </div>
             </div>
         </article>
     }
@@ -106,6 +108,7 @@ else
     private const int CategoryFadeInMs = 340;
     private const int FrameDelayMs = 16;
     private readonly Dictionary<string, int> _quantities = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _qtyExpanded = new(StringComparer.Ordinal);
     private string? _addingSlug;
     private string? _openingSlug;
     private PersistingComponentStateSubscription _subscription;
@@ -168,6 +171,7 @@ else
         }
 
         selectedSection = section;
+        _qtyExpanded.Clear();
         _isTransitioning = true;
         _gridTransitionClass = "is-fading-out";
         StateHasChanged();
@@ -229,6 +233,7 @@ else
         try
         {
             await CartMutationClient.AddAsync(product.Slug, quantity);
+            _qtyExpanded.Add(product.Slug);
             var label = quantity == 1
                 ? $"{product.Name} added to cart."
                 : $"{quantity} × {product.Name} added to cart.";

@@ -10,7 +10,7 @@
 @using ThisCafeteria.Web.Services.Cart
 
 @inject PersistentComponentState ApplicationState
-@implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>@(_product?.Name ?? "Product") | Artisanal Brew</PageTitle>
 
@@ -32,115 +32,62 @@ else
 {
     var product = BuildDetail(_product);
 
-    <nav class="product-detail__back" aria-label="Breadcrumb" data-animate="fade-up">
-        <a href="products">← Shop</a>
-    </nav>
+    <section class="product-detail-card" data-product-detail="@product.Slug">
+        <div class="product-detail-card__media" data-product-detail-media>
+            <img class="product-detail-card__image"
+                 src="@(string.IsNullOrWhiteSpace(product.RegionImageSrc)
+                     ? "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=80"
+                     : product.RegionImageSrc)"
+                 alt="@product.Name product photography"
+                 data-product-detail-image
+                 loading="eager" />
 
-    <section class="product-detail-hero" data-product-detail="@product.Slug" data-animate="fade-up">
-        <div class="product-detail-hero__copy">
-            <p class="eyebrow">@product.Eyebrow</p>
-            <h1>@product.Name</h1>
-            <p class="product-detail-hero__price">@FormatPrice(product.Price)</p>
-            <p class="product-detail-hero__narrative">@product.Description</p>
+            <nav class="product-detail-card__back" aria-label="Back to shop">
+                <a href="products" title="Back to shop">←</a>
+            </nav>
+            <button type="button" class="product-detail-card__action-icon" aria-label="Share">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                    <path d="M12 15V4" />
+                    <path d="M8 7l4-4 4 4" />
+                </svg>
+            </button>
+        </div>
 
-            <div class="product-detail-hero__notes">
-                <p class="product-detail-hero__notes-label">Highlights</p>
-                <ul>
-                    @foreach (var note in product.FlavorNotes)
-                    {
-                        <li>@note</li>
-                    }
-                </ul>
+        <div class="product-detail-card__sheet">
+            <div class="product-detail-card__header">
+                <p class="product-detail-card__tag">@product.Eyebrow</p>
+                <div class="product-detail-card__title-row">
+                    <h1 class="product-detail-card__name">@product.Name</h1>
+                    <p class="product-detail-card__price">
+                        <span class="product-detail-card__price-symbol">$</span><span class="product-detail-card__price-int">@DollarsPart(product.Price)</span><span class="product-detail-card__price-frac">@CentsPart(product.Price)</span>
+                    </p>
+                </div>
             </div>
 
-            <div class="product-detail-hero__actions">
-                <ProductQuantityPicker @bind-Quantity="_quantity" />
+            <p class="product-detail-card__desc">@product.Description</p>
+
+            <p class="product-detail-card__trust">
+                <span aria-hidden="true">✓</span> Free shipping over $35 · Roasted to order
+            </p>
+
+            <div class="product-detail-card__buybar">
+                <div class="product-detail-quantity">
+                    <div class="quantity-selector">
+                        <button type="button" class="quantity-btn" @onclick="DecrementQuantity" disabled="@(_quantity <= 1)">−</button>
+                        <span class="quantity-value">@_quantity</span>
+                        <button type="button" class="quantity-btn" @onclick="IncrementQuantity">+</button>
+                    </div>
+                </div>
+
                 <button type="button"
-                        class="button button--dark product-detail-hero__cta"
+                        class="btn-add-cart"
                         disabled="@_isAdding"
                         aria-label="Add @product.Name to cart"
                         @onclick="AddToCartAsync">
-                    @(_isAdding ? "Adding…" : "Add to cart")
+                    @(_isAdding ? "Adding…" : "Add to Cart")
                 </button>
             </div>
-        </div>
-
-        <div class="product-detail-hero__media" data-product-detail-media>
-            <div class="image-frame product-detail-hero__image @product.ImageClass"
-                 style="@BackgroundImage(product.RegionImageSrc)"
-                 role="img"
-                 aria-label="@product.Name product photography"
-                 data-product-detail-image></div>
-        </div>
-    </section>
-
-    <section class="product-detail-specs" data-animate="fade-up">
-        <div class="product-detail-specs__column">
-            @if (TryGetRegion(product, out var regionLabel, out var regionValue))
-            {
-                <article class="product-detail-region @GetRegionToneClass(product)">
-                    <div class="product-detail-region__media">
-                        @if (!string.IsNullOrWhiteSpace(product.RegionImageSrc))
-                        {
-                            <img class="product-detail-region__image"
-                                 src="@product.RegionImageSrc"
-                                 alt="@regionValue landscape"
-                                 loading="lazy" />
-                        }
-                        else
-                        {
-                            <div class="product-detail-region__image product-detail-region__image--placeholder"
-                                 role="img"
-                                 aria-label="@regionValue landscape photography placeholder"></div>
-                        }
-                    </div>
-                    <div class="product-detail-region__copy">
-                        <p class="product-detail-region__label">@regionLabel</p>
-                        <p class="product-detail-region__value">@regionValue</p>
-                    </div>
-                </article>
-            }
-
-            <dl class="product-detail-specs__list">
-                @foreach (var row in GetPrimarySpecsWithoutRegion(product))
-                {
-                    <div class="product-detail-specs__row">
-                        <dt>@row.Label</dt>
-                        <dd>@row.Value</dd>
-                    </div>
-                }
-            </dl>
-        </div>
-
-        <div class="product-detail-specs__column">
-            <p class="product-detail-specs__heading">@product.RitualTitle</p>
-            <dl class="product-detail-specs__ritual">
-                <div class="product-detail-specs__row">
-                    <dt>@product.RitualMethodLabel</dt>
-                    <dd>@product.RitualMethod</dd>
-                </div>
-                <div class="product-detail-specs__row">
-                    <dt>@product.RitualRatioLabel</dt>
-                    <dd>@product.RitualRatio</dd>
-                </div>
-                <div class="product-detail-specs__row">
-                    <dt>@product.RitualTemperatureLabel</dt>
-                    <dd>@product.RitualTemperature</dd>
-                </div>
-            </dl>
-            <a class="product-detail-specs__guide" href="@product.BrewGuideHref">@product.BrewGuideLabel</a>
-        </div>
-
-        <div class="product-detail-specs__column">
-            <dl class="product-detail-specs__list product-detail-specs__list--sensory">
-                @foreach (var row in product.SensorySpecs)
-                {
-                    <div class="product-detail-specs__row">
-                        <dt>@row.Label</dt>
-                        <dd>@row.Value</dd>
-                    </div>
-                }
-            </dl>
         </div>
     </section>
 }
@@ -183,9 +130,17 @@ else
         return Task.CompletedTask;
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _subscription?.Dispose();
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.body.classList.remove('product-detail-view')");
+        }
+        catch
+        {
+            // Best-effort cleanup
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -193,12 +148,39 @@ else
         if (firstRender || _shouldRunDetailEntry)
         {
             _shouldRunDetailEntry = false;
+            await JS.InvokeVoidAsync("eval", "window.scrollTo({top:0,behavior:'instant'})");
             await JS.InvokeVoidAsync("queueAnimations");
             await JS.InvokeVoidAsync("productTransition.playDetailEntry", Slug);
+            try
+            {
+                await JS.InvokeVoidAsync("eval", "document.body.classList.add('product-detail-view')");
+            }
+            catch
+            {
+                // Best-effort
+            }
+        }
+    }
+
+    private void IncrementQuantity() => _quantity++;
+
+    private void DecrementQuantity()
+    {
+        if (_quantity > 1)
+        {
+            _quantity--;
         }
     }
 
     private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+
+    private static string DollarsPart(decimal price) => decimal.Truncate(price).ToString("#,0");
+
+    private static string CentsPart(decimal price)
+    {
+        var cents = (int)Math.Round((price - decimal.Truncate(price)) * 100, MidpointRounding.AwayFromZero);
+        return "." + cents.ToString("D2");
+    }
 
     private static bool TryGetRegion(
         MarketplaceProductDetail product,
@@ -347,7 +329,4 @@ else
             ProductCategory.CeramicsAndGoods => "image-frame--ceramics",
             _ => "image-frame--coldbrew"
         };
-
-    private static string? BackgroundImage(string? imageUrl) =>
-        string.IsNullOrWhiteSpace(imageUrl) ? null : $"background-image: url('{imageUrl}');";
 }

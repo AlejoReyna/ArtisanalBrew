@@ -19,6 +19,10 @@ main {
     padding-top: 0;
 }
 
+body.product-detail-view .public-main {
+    padding-top: 0;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
