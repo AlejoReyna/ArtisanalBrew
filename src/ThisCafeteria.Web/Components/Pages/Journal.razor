@@ -4,6 +4,13 @@
 
 <div class="journal-page">
     <section class="journal-hero journal-carousel" aria-label="Featured journal articles" aria-roledescription="carousel">
+        @foreach (var article in JournalCatalog.FeaturedArticles)
+        {
+            <div class="@JournalCatalog.HeroImageClass(article.ImageKey) journal-hero__backdrop"
+                 role="img"
+                 aria-label="@article.ImageAriaLabel"></div>
+        }
+
         <div class="journal-carousel__track">
             @for (var index = 0; index < JournalCatalog.FeaturedArticles.Count; index++)
             {
@@ -12,9 +19,6 @@
                 <article class="journal-carousel__slide"
                          aria-label="@($"{slideNumber} of {JournalCatalog.FeaturedArticles.Count}")"
                          aria-roledescription="slide">
-                    <div class="@JournalCatalog.HeroImageClass(article.ImageKey) journal-hero__backdrop"
-                         role="img"
-                         aria-label="@article.ImageAriaLabel"></div>
                     <div class="journal-hero__copy" data-animate="fade-up">
                         <p class="journal-kicker">@article.Kicker</p>
                         <h1>@article.Title</h1>

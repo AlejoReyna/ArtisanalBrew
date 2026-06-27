@@ -1103,12 +1103,8 @@ body.product-detail-view .product-detail-card__title h1 {
     opacity: 1;
 }
 
-[data-animate="fade-up"] {
-    transform: translateY(40px);
-}
 [data-animate="fade-up"].is-visible {
     opacity: 1;
-    transform: translateY(0);
 }
 
 [data-animate="blur"] {
@@ -1123,12 +1119,10 @@ body.product-detail-view .product-detail-card__title h1 {
 
 .stagger-container [data-animate] {
     opacity: 0;
-    transform: translateY(30px);
 }
 .stagger-container.is-visible [data-animate],
 .stagger-container [data-animate].is-visible {
     opacity: 1;
-    transform: translateY(0);
 }
 .stagger-container.is-visible [data-animate]:nth-child(1) { transition-delay: 0.1s; }
 .stagger-container.is-visible [data-animate]:nth-child(2) { transition-delay: 0.3s; }
@@ -1154,14 +1148,23 @@ body.product-detail-view .product-detail-card__title h1 {
 }
 
 .journal-hero.journal-carousel {
+    background: #1a1410;
     box-sizing: border-box;
     height: 100dvh;
     margin: calc(clamp(1.25rem, 3vw, 3rem) * -1) calc(50% - 50vw) clamp(5rem, 10vw, 9rem);
     max-height: 100dvh;
     overflow: hidden;
-    padding-top: calc(4.75rem + clamp(1.25rem, 3vw, 3rem));
     position: relative;
     width: 100vw;
+}
+
+.journal-hero.journal-carousel::after {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.6) 100%);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 1;
 }
 
 .journal-carousel__track {
@@ -1170,10 +1173,11 @@ body.product-detail-view .product-detail-card__title h1 {
     max-height: 100%;
     overflow: hidden;
     position: relative;
+    z-index: 2;
 }
 
 .journal-carousel__slide {
-    animation: journal-carousel-slide-next 28s infinite;
+    animation: journal-carousel-slide-text-next 28s infinite;
     align-items: end;
     box-sizing: border-box;
     display: grid;
@@ -1186,23 +1190,16 @@ body.product-detail-view .product-detail-card__title h1 {
     overflow: hidden;
     pointer-events: none;
     position: relative;
+    transform: translateX(100%);
     visibility: hidden;
-    will-change: opacity;
-}
-
-.journal-carousel__slide::after {
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.62) 100%);
-    content: "";
-    inset: 0;
-    pointer-events: none;
-    position: absolute;
-    z-index: 1;
+    will-change: transform, opacity;
 }
 
 .journal-carousel__slide:first-child {
-    animation-name: journal-carousel-slide-first;
+    animation-name: journal-carousel-slide-text-first;
     opacity: 1;
     pointer-events: auto;
+    transform: translateX(0);
     visibility: visible;
 }
 
@@ -1322,10 +1319,24 @@ body.product-detail-view .product-detail-card__title h1 {
 }
 
 .journal-hero__backdrop {
+    animation: journal-carousel-slide-next 28s infinite;
     inset: 0;
+    opacity: 0;
+    pointer-events: none;
     position: absolute;
+    visibility: hidden;
     z-index: 0;
 }
+
+.journal-hero.journal-carousel > .journal-hero__backdrop:first-child {
+    animation-name: journal-carousel-slide-first;
+    opacity: 1;
+    visibility: visible;
+}
+
+.journal-hero.journal-carousel > .journal-hero__backdrop:nth-child(2) { animation-delay: 7s; }
+.journal-hero.journal-carousel > .journal-hero__backdrop:nth-child(3) { animation-delay: 14s; }
+.journal-hero.journal-carousel > .journal-hero__backdrop:nth-child(4) { animation-delay: 21s; }
 
 .journal-hero__image--bloom {
     background-image:
@@ -1444,6 +1455,50 @@ body.product-detail-view .product-detail-card__title h1 {
     }
 }
 
+@keyframes journal-carousel-slide-text-first {
+    0%,
+    20% {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    23%,
+    100% {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-100%);
+        visibility: hidden;
+    }
+}
+
+@keyframes journal-carousel-slide-text-next {
+    0%,
+    2% {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(100%);
+        visibility: hidden;
+    }
+
+    5%,
+    20% {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    23%,
+    100% {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-100%);
+        visibility: hidden;
+    }
+}
+
 @keyframes journal-carousel-progress {
     0% {
         transform: scaleX(0);
@@ -1461,6 +1516,7 @@ body.product-detail-view .product-detail-card__title h1 {
 
 @media (prefers-reduced-motion: reduce) {
     .journal-carousel__slide,
+    .journal-hero__backdrop,
     .journal-carousel__status-bar::after {
         animation: none;
     }
@@ -1468,6 +1524,12 @@ body.product-detail-view .product-detail-card__title h1 {
     .journal-carousel__slide:first-child {
         opacity: 1;
         pointer-events: auto;
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    .journal-hero.journal-carousel > .journal-hero__backdrop:first-child {
+        opacity: 1;
         visibility: visible;
     }
 
@@ -2385,17 +2447,22 @@ body.product-detail-view .product-detail-card__title h1 {
 .category-filter li {
     padding-bottom: 0.85rem;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+    font-size: 0.95rem;
+    font-weight: 500;
     color: var(--muted);
     white-space: nowrap;
 }
 .category-filter li.active {
     color: var(--ink);
     border-bottom: 1px solid var(--ink);
+}
+
+@media (max-width: 960px) {
+    .marketplace-card:not(.marketplace-card--qty-expanded) .product-qty {
+        display: none;
+    }
 }
 
 .marketplace-card {
@@ -2428,6 +2495,29 @@ body.product-detail-view .product-detail-card__title h1 {
     font-family: 'Inter', sans-serif;
     font-size: 0.95rem;
     color: var(--muted);
+    margin: 0;
+}
+
+.marketplace-card__footer {
+    margin-top: 1rem;
+}
+
+@media (max-width: 960px) {
+    .marketplace-card__footer {
+        align-items: center;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-top: 0.75rem;
+    }
+
+    .marketplace-card__add {
+        font-size: 0.65rem;
+        letter-spacing: 0.06em;
+        min-height: 2.1rem;
+        padding: 0.45rem 0.85rem;
+        white-space: nowrap;
+    }
 }
 
 .product-transition-active {

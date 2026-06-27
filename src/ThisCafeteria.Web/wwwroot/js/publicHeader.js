@@ -25,7 +25,7 @@ window.initPublicHeader = () => {
     const themeMeta = document.querySelector('meta[name="theme-color"]');
 
     const updateHeader = () => {
-        const heroGone = hero.getBoundingClientRect().bottom <= headerHeight;
+        const heroGone = hero.getBoundingClientRect().bottom <= window.innerHeight * 0.7;
         header.classList.toggle('public-header--solid', heroGone);
         if (themeMeta) themeMeta.content = heroGone ? '#fbf9f4' : '#050505';
     };
