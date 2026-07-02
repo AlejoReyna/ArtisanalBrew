@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/.dotnet_home/
+**/TestResults/
+publish-ec2/
+*.tgz
+.git/
+.gitignore
+docs/
+*.md
