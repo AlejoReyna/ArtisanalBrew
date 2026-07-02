@@ -119,6 +119,14 @@
     transform: translateY(-1px);
 }
 
+.nav-login__address {
+    font-family: var(--crypto-mono);
+    font-size: 0.76rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
 .nav-cart {
     color: #2d2421;
     cursor: pointer;
@@ -440,6 +448,12 @@
 .wallet-modal__status {
     background: rgba(194, 164, 125, 0.12);
     color: #e9d7bc;
+}
+
+.wallet-modal__title-group {
+    display: grid;
+    gap: 0.55rem;
+    justify-items: start;
 }
 
 .wallet-modal__error {

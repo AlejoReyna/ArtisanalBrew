@@ -86,6 +86,65 @@ h1:focus {
     --font-sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     --font-display: 'Playfair Display', Georgia, serif;
     --font-sidebar-display: 'EB Garamond', 'Times New Roman', Times, serif;
+    --crypto-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+    --crypto-positive: #47614e;
+}
+
+.tabular {
+    font-variant-numeric: tabular-nums;
+}
+
+.crypto-dot {
+    background: var(--crypto-positive);
+    border-radius: 50%;
+    display: inline-block;
+    flex: none;
+    height: 8px;
+    width: 8px;
+}
+
+.crypto-dot--idle {
+    background: #b3a89c;
+}
+
+.crypto-dot--pulse {
+    animation: crypto-pulse 2.2s ease-out infinite;
+}
+
+@keyframes crypto-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(71, 97, 78, 0.45);
+    }
+
+    70% {
+        box-shadow: 0 0 0 7px rgba(71, 97, 78, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(71, 97, 78, 0);
+    }
+}
+
+@keyframes crypto-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes crypto-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .crypto-dot--pulse {
+        animation: none;
+    }
 }
 
 ::selection {
@@ -2733,16 +2792,23 @@ body.product-detail-view .product-detail-card__title h1 {
 
 .user-menu__wallet-address {
     color: var(--menu-espresso);
-    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--crypto-mono);
     font-size: clamp(1.05rem, 1.5vw, 1.22rem);
-    font-weight: 700;
-    letter-spacing: 0;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     line-height: 1.2;
     margin: 0;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.user-menu__identity {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .user-menu__close {

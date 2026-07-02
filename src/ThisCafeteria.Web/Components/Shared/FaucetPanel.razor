@@ -1,0 +1,85 @@
+<section class="faucet-panel @(Compact ? "faucet-panel--compact" : null)" aria-labelledby="faucet-panel-title">
+    <div class="faucet-panel__head">
+        <div>
+            <p class="faucet-panel__eyebrow">Testnet gas</p>
+            <h3 id="faucet-panel-title" class="faucet-panel__title">Get free Sepolia ETH</h3>
+            <p class="faucet-panel__lede">
+                Every transaction on @NetworkName needs a little test ETH for gas — it has no real-world value.
+                Grab some from a public faucet below, then come back and connect.
+            </p>
+        </div>
+        @if (OnRefreshRequested.HasDelegate)
+        {
+            <button type="button" class="faucet-panel__refresh" @onclick="OnRefreshRequested">
+                Refresh balance
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Address))
+    {
+        <div class="faucet-panel__address">
+            <AddressChip Address="@Address" Label="Your wallet" ExplorerUrl="@ExplorerUrl" />
+            <span class="faucet-panel__address-hint">Copy this address and paste it into the faucet.</span>
+        </div>
+    }
+
+    <ul class="faucet-panel__list">
+        @foreach (var faucet in Faucets)
+        {
+            <li>
+                <a class="faucet-panel__card" href="@faucet.Url" target="_blank" rel="noopener noreferrer">
+                    <span class="faucet-panel__card-head">
+                        <strong>@faucet.Name</strong>
+                        <span class="faucet-panel__card-amount tabular">@faucet.Amount</span>
+                    </span>
+                    <span class="faucet-panel__card-note">@faucet.Requirement</span>
+                    <span class="faucet-panel__card-cta">Open faucet <span aria-hidden="true">↗</span></span>
+                </a>
+            </li>
+        }
+    </ul>
+</section>
+
+@code {
+    [Parameter]
+    public string? Address { get; set; }
+
+    [Parameter]
+    public string? ExplorerUrl { get; set; }
+
+    [Parameter]
+    public string NetworkName { get; set; } = "Ethereum Sepolia";
+
+    [Parameter]
+    public bool Compact { get; set; }
+
+    [Parameter]
+    public EventCallback OnRefreshRequested { get; set; }
+
+    private static readonly FaucetLink[] Faucets =
+    [
+        new(
+            "Google Cloud Web3",
+            "https://cloud.google.com/application/web3/faucet/ethereum/sepolia",
+            "0.05 ETH / day",
+            "Google account required — no mainnet balance needed."),
+        new(
+            "Alchemy",
+            "https://www.alchemy.com/faucets/ethereum-sepolia",
+            "0.1 ETH / day",
+            "Free Alchemy account; may require a small mainnet balance."),
+        new(
+            "Chainstack",
+            "https://faucet.chainstack.com/sepolia-testnet-faucet",
+            "0.5 ETH / day",
+            "Sign up with X or GitHub."),
+        new(
+            "QuickNode",
+            "https://faucet.quicknode.com/ethereum/sepolia",
+            "0.05 ETH / drip",
+            "Requires 0.001 ETH on Ethereum mainnet."),
+    ];
+
+    private sealed record FaucetLink(string Name, string Url, string Amount, string Requirement);
+}

@@ -1,0 +1,130 @@
+.tx-stepper {
+    background: rgba(245, 242, 234, 0.75);
+    border: 1px solid rgba(44, 27, 18, 0.11);
+    border-radius: 10px;
+    display: grid;
+    gap: 0.6rem;
+    padding: 0.9rem 1rem;
+    width: 100%;
+}
+
+.tx-stepper__steps {
+    display: grid;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tx-stepper__step {
+    align-items: center;
+    color: rgba(44, 27, 18, 0.45);
+    display: flex;
+    font-size: 0.78rem;
+    font-weight: 600;
+    gap: 0.55rem;
+}
+
+.tx-stepper__step--pending {
+    color: #2c1b12;
+}
+
+.tx-stepper__step--confirmed {
+    color: var(--crypto-positive);
+}
+
+.tx-stepper__step--error {
+    color: #7a3829;
+}
+
+.tx-stepper__icon {
+    align-items: center;
+    display: inline-flex;
+    height: 1rem;
+    justify-content: center;
+    width: 1rem;
+}
+
+.tx-stepper__icon svg {
+    fill: none;
+    height: 0.85rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+    width: 0.85rem;
+}
+
+.tx-stepper__idle-dot {
+    background: rgba(44, 27, 18, 0.22);
+    border-radius: 50%;
+    height: 0.4rem;
+    width: 0.4rem;
+}
+
+.tx-stepper__spinner {
+    animation: crypto-spin 0.8s linear infinite;
+    border: 2px solid rgba(44, 27, 18, 0.18);
+    border-radius: 50%;
+    border-top-color: #2c1b12;
+    height: 0.85rem;
+    width: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tx-stepper__spinner {
+        animation-duration: 2.4s;
+    }
+}
+
+.tx-stepper__tx {
+    color: #8a4d34;
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    margin-left: auto;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.tx-stepper__tx:hover {
+    text-decoration: underline;
+}
+
+.tx-stepper__error {
+    background: #fff1ed;
+    border: 1px solid rgba(180, 79, 56, 0.28);
+    border-radius: 6px;
+    color: #7a3829;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    margin: 0;
+    overflow-wrap: anywhere;
+    padding: 0.55rem 0.7rem;
+}
+
+.tx-stepper__done {
+    color: var(--crypto-positive);
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.tx-stepper__dismiss {
+    background: transparent;
+    border: 1px solid rgba(44, 27, 18, 0.3);
+    border-radius: 999px;
+    color: #2c1b12;
+    cursor: pointer;
+    font-size: 0.62rem;
+    font-weight: 800;
+    justify-self: start;
+    letter-spacing: 0.1em;
+    padding: 0.35rem 0.85rem;
+    text-transform: uppercase;
+    transition: background 140ms ease;
+}
+
+.tx-stepper__dismiss:hover {
+    background: rgba(44, 27, 18, 0.06);
+}

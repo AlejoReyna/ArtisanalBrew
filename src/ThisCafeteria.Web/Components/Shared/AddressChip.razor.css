@@ -1,0 +1,75 @@
+.addr-chip {
+    align-items: center;
+    background: rgba(245, 242, 234, 0.7);
+    border: 1px solid rgba(44, 27, 18, 0.13);
+    border-radius: 999px;
+    color: #2c1b12;
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.28rem 0.4rem 0.28rem 0.78rem;
+    width: fit-content;
+}
+
+.addr-chip__label {
+    color: rgba(93, 83, 77, 0.85);
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.addr-chip__value {
+    font-family: var(--crypto-mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.addr-chip__copy,
+.addr-chip__explorer {
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: rgba(44, 27, 18, 0.55);
+    cursor: pointer;
+    display: inline-flex;
+    height: 1.55rem;
+    justify-content: center;
+    padding: 0;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+    width: 1.55rem;
+}
+
+.addr-chip__copy:hover,
+.addr-chip__explorer:hover {
+    background: rgba(44, 27, 18, 0.08);
+    color: #2c1b12;
+}
+
+.addr-chip__copy svg {
+    fill: none;
+    height: 0.85rem;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    width: 0.85rem;
+}
+
+.addr-chip__copy--done {
+    color: var(--crypto-positive);
+}
+
+.addr-chip__copy--done:hover {
+    background: transparent;
+    color: var(--crypto-positive);
+}
+
+.addr-chip__explorer {
+    font-size: 0.85rem;
+    line-height: 1;
+}
