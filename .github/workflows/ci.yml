@@ -65,25 +65,33 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      # ACR Tasks (az acr build) is not permitted on Azure for Students
+      # subscriptions (TasksOperationsNotAllowed), so images are built on the
+      # runner and pushed with docker instead.
+      - name: Log in to ACR
+        run: |
+          set -euo pipefail
+          az acr login --name "$ACR_NAME"
+
       - name: Build and push Web image to ACR
         run: |
           set -euo pipefail
-          az acr build \
-            --registry "$ACR_NAME" \
-            --image "thiscafeteria-web:$IMAGE_TAG" \
-            --image "thiscafeteria-web:latest" \
+          docker build \
             --file src/ThisCafeteria.Web/Dockerfile \
+            --tag "$ACR_NAME.azurecr.io/thiscafeteria-web:$IMAGE_TAG" \
+            --tag "$ACR_NAME.azurecr.io/thiscafeteria-web:latest" \
             .
+          docker push --all-tags "$ACR_NAME.azurecr.io/thiscafeteria-web"
 
       - name: Build and push Worker image to ACR
         run: |
           set -euo pipefail
-          az acr build \
-            --registry "$ACR_NAME" \
-            --image "thiscafeteria-worker:$IMAGE_TAG" \
-            --image "thiscafeteria-worker:latest" \
+          docker build \
             --file src/ThisCafeteria.Worker/Dockerfile \
+            --tag "$ACR_NAME.azurecr.io/thiscafeteria-worker:$IMAGE_TAG" \
+            --tag "$ACR_NAME.azurecr.io/thiscafeteria-worker:latest" \
             .
+          docker push --all-tags "$ACR_NAME.azurecr.io/thiscafeteria-worker"
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v5
