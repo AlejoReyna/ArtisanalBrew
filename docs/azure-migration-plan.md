@@ -183,4 +183,28 @@ Rewrote `.github/workflows/ci.yml`'s deploy job (`build-test` left unchanged): b
 
 **PR opened:** [#6](https://github.com/AlejoReyna/ArtisanalBrew/pull/6), branch `azure-container-apps-migration` → `persistent-component-state`. Not merged — left for manual review as instructed.
 
-**Not yet done:** the PR hasn't been merged, so the new deploy job hasn't actually run yet in GitHub Actions (first real end-to-end run happens after merge + next push to main, or via manual workflow dispatch). Phase 5 (data migration from the old RDS instance), Phase 6 (DNS cutover to `cafe.alexisreyna.dev` + managed cert, Route 53), Phase 7 (EC2 decommission, only after a stable soak period) — none started.
+**Not yet done (superseded below):** the PR hasn't been merged, so the new deploy job hasn't actually run yet in GitHub Actions (first real end-to-end run happens after merge + next push to main, or via manual workflow dispatch).
+
+Also caught two real bugs in `ci.yml`'s Postgres firewall commands while testing the equivalent commands manually (`--name` was being used for the server instead of `--server-name`, and `--rule-name` isn't a real flag — the rule's own name is also just `--name`) — fixed and pushed to the PR branch.
+
+## Unplanned incident found during Phase 5 — EC2 instance was impaired for 2 days
+
+While investigating why I couldn't SSH to the old EC2 instance to retrieve the RDS password, `aws ec2 describe-instance-status` showed `InstanceStatus: impaired` (`SystemStatus: ok`) with `ImpairedSince: 2026-07-01T20:10:00+00:00` — a guest-OS-level reachability failure, not an AWS hardware problem, matching the exact failure mode this repo's own `EC2_RECOVERY_PROMPT.md` was written for. Since DNS cutover to Azure hadn't happened yet, **`cafe.alexisreyna.dev` had likely been down for about 2 days without anyone noticing.**
+
+Per the recovery playbook's own guidance (reboot is the standard first fix for this symptom) and with explicit user confirmation, rebooted the instance (`aws ec2 reboot-instances`). Both status checks passed within a few minutes; SSH access was restored. This was a genuine incidental recovery of a production outage, separate from and discovered only because of the Azure migration work.
+
+## Phase 5 — Data migration (done, verified)
+
+Retrieved the old RDS credentials from `/etc/thiscafeteria/thiscafeteria.env` via SSH (now that the instance was healthy again). Temporarily opened the RDS security group (`sg-01b4988a5b538215d`) for the current IP via `aws ec2 authorize-security-group-ingress`, ran `pg_dump -Fc` against the old RDS instance, then revoked the rule immediately after.
+
+**Real production data confirmed in the old RDS** (small but genuine): 13 products, 2 users, 11 orders, 14 order items, 55 wallet-status events, 1 cart, 14 transparency records.
+
+**Restore hit two real Azure-specific obstacles, both resolved:**
+1. `pg_restore --disable-triggers` requires superuser privileges to disable system-managed FK triggers — Azure Flexible Server's admin role doesn't have full superuser, only the `azure_pg_admin` role's reduced privilege set. Worked around it using the standard managed-Postgres pattern: `SET session_replication_role = replica;` (which Azure's admin role *is* allowed to set) inside the same session as the restore, by converting the dump to a plain SQL script (`pg_restore --data-only -f restore.sql`) and prepending that `SET`, then running the whole script through one `psql -f` invocation so the setting stays in effect for every statement.
+2. The generated SQL also contained a `SET transaction_timeout = 0;` line (a newer Postgres client default) that the target server's version didn't recognize, and a duplicate-key conflict on `__EFMigrationsHistory` (expected — that table is migration bookkeeping, already correct on the target, not real data). Stripped both from the script before running it.
+
+Truncated the new database's throwaway test/seed data first (3 migration-seeded products, 1 smoke-test wallet event — not real data, safe to discard), then ran the fixed restore. **Verified: every table's row count on the new Azure Postgres now matches the old RDS exactly** (Products 13, AspNetUsers 2, Orders 11, OrderItems 14, wallet_status_events 55, Carts 1, TransparencyRecords 14, UserProfiles 2).
+
+Cleaned up both temporary access grants immediately after (Azure Postgres firewall rule, AWS RDS security group rule) — confirmed both back to their exact prior state. Deleted the local dump/restore files (contained real customer data) from the scratchpad afterward.
+
+**Not yet done:** PR #6 not merged. Phase 6 (DNS cutover to `cafe.alexisreyna.dev` in Route 53 + managed cert, full smoke test including Sepolia checkout), Phase 7 (EC2 decommission, only after a stable soak period) — not started.
