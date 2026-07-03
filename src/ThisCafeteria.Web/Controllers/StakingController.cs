@@ -7,16 +7,17 @@ using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Domain.Entities;
 using ThisCafeteria.Infrastructure.Persistence;
+using ThisCafeteria.Web.Services.Wallet;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("staking")]
-[IgnoreAntiforgeryToken]
 public sealed class StakingController(
     ICoffeeWeb3Service web3Service,
     BlockchainNetworkOptions chain,
     AppDbContext dbContext,
-    IServiceProvider serviceProvider) : Controller
+    IServiceProvider serviceProvider,
+    IWalletChallengeService challengeService) : Controller
 {
     private const string WalletSessionKey = "WalletAddress";
 
@@ -76,37 +77,159 @@ public sealed class StakingController(
     }
 
     [HttpPost("api/record-stake")]
+    [ValidateAntiForgeryToken]
     public Task<IActionResult> RecordStakeAsync(
         [FromBody] StakingTransactionRequest request,
         CancellationToken cancellationToken) =>
         RecordStakingTransactionAsync(request, StakingTransactionType.Stake, cancellationToken);
 
     [HttpPost("api/record-unstake")]
+    [ValidateAntiForgeryToken]
     public Task<IActionResult> RecordUnstakeAsync(
         [FromBody] StakingTransactionRequest request,
         CancellationToken cancellationToken) =>
         RecordStakingTransactionAsync(request, StakingTransactionType.Unstake, cancellationToken);
 
+    [HttpPost("api/record-claim")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RecordClaimAsync(
+        [FromBody] StakingClaimRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!IsStakingConfigured())
+        {
+            return BadRequest("Configure a payment token and staking pool contract before staking.");
+        }
+
+        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        {
+            return BadRequest("A valid wallet address is required.");
+        }
+
+        var (foundSessionWallet, sessionWallet) = await TryResolveCurrentWalletAsync();
+        if (!foundSessionWallet)
+        {
+            return Unauthorized("Connect or sign in with your wallet before recording staking activity.");
+        }
+
+        if (!AddressUtil.Current.AreAddressesTheSame(wallet, sessionWallet))
+        {
+            return BadRequest("The connected wallet does not match the staking session wallet.");
+        }
+
+        if (!TryNormalizeTransactionHash(request.TransactionHash, out var transactionHash))
+        {
+            return BadRequest("A valid staking transaction hash is required.");
+        }
+
+        bool transactionExists;
+        try
+        {
+            transactionExists = await StakingTransactionExistsAsync(transactionHash, cancellationToken);
+        }
+        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
+        {
+            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
+        }
+
+        if (transactionExists)
+        {
+            return Conflict("This staking transaction has already been recorded.");
+        }
+
+        var verification = await web3Service.VerifyStakingTransactionAsync(
+            transactionHash,
+            wallet,
+            expectedAmount: null,
+            StakingTransactionType.Claim,
+            cancellationToken);
+
+        if (!verification.Verified)
+        {
+            return BadRequest("Claim transaction could not be verified on-chain.");
+        }
+
+        var entry = new StakingLedgerEntry
+        {
+            WalletAddress = wallet,
+            ActionType = "claim",
+            Amount = verification.Amount,
+            TransactionHash = transactionHash,
+            ChainId = chain.ChainId,
+            NetworkName = chain.NetworkName,
+            PaymentTokenContract = chain.CoffeeCoinContract,
+            StakingPoolContract = chain.StakingPoolContract,
+            ExplorerUrl = BuildExplorerTransactionUrl(transactionHash),
+            RecordedAtUtc = DateTime.UtcNow
+        };
+
+        dbContext.StakingLedgerEntries.Add(entry);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsMissingStakingLedgerTable(exception))
+        {
+            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("This staking transaction has already been recorded.");
+        }
+        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
+        {
+            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
+        }
+
+        return Ok(new
+        {
+            success = true,
+            entry.TransactionHash,
+            entry.ActionType,
+            entry.Amount,
+            entry.ExplorerUrl
+        });
+    }
+
     [HttpPost("save-wallet-session")]
-    public IActionResult SaveWalletSession([FromBody] SaveWalletSessionRequest request)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveWalletSessionAsync([FromBody] SaveWalletSessionRequest request)
     {
         if (request.ChainId != chain.ChainId)
         {
             return BadRequest($"Connect your wallet to {chain.NetworkName} before starting an allocation.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.WalletAddress) ||
-            !AddressUtil.Current.IsValidEthereumAddressHexFormat(request.WalletAddress))
+        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
 
-        var checksum = AddressUtil.Current.ConvertToChecksumAddress(request.WalletAddress);
-        HttpContext.Session.SetString(WalletSessionKey, checksum);
+        if (!await IsWalletAlreadyAuthenticatedAsync(wallet))
+        {
+            if (string.IsNullOrWhiteSpace(request.Signature) ||
+                string.IsNullOrWhiteSpace(request.Message) ||
+                string.IsNullOrWhiteSpace(request.Nonce))
+            {
+                return Unauthorized("Sign the wallet ownership challenge before connecting for staking.");
+            }
+
+            var verificationError = challengeService.Verify(
+                wallet, request.Message, request.Nonce, request.ChainId, request.Signature, out _);
+
+            if (verificationError != WalletChallengeVerificationError.None)
+            {
+                return Unauthorized("Wallet ownership could not be verified.");
+            }
+        }
+
+        HttpContext.Session.SetString(WalletSessionKey, wallet);
         return Ok();
     }
 
     [HttpPost("clear-wallet-session")]
+    [ValidateAntiForgeryToken]
     public IActionResult ClearWalletSession()
     {
         HttpContext.Session.Remove(WalletSessionKey);
@@ -174,14 +297,14 @@ public sealed class StakingController(
             return Conflict("This staking transaction has already been recorded.");
         }
 
-        var verified = await web3Service.VerifyStakingTransactionAsync(
+        var verification = await web3Service.VerifyStakingTransactionAsync(
             transactionHash,
             wallet,
             request.Amount,
             transactionType,
             cancellationToken);
 
-        if (!verified)
+        if (!verification.Verified)
         {
             return BadRequest("Staking transaction could not be verified on-chain.");
         }
@@ -190,7 +313,7 @@ public sealed class StakingController(
         {
             WalletAddress = wallet,
             ActionType = transactionType == StakingTransactionType.Stake ? "stake" : "unstake",
-            Amount = request.Amount,
+            Amount = verification.Amount,
             TransactionHash = transactionHash,
             ChainId = chain.ChainId,
             NetworkName = chain.NetworkName,
@@ -232,6 +355,31 @@ public sealed class StakingController(
     private bool IsStakingConfigured() =>
         IsConfiguredAddress(chain.EffectivePaymentTokenContract) &&
         IsConfiguredAddress(chain.StakingPoolContract);
+
+    private async Task<bool> IsWalletAlreadyAuthenticatedAsync(string wallet)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        var claimWallet = User.FindFirst("wallet_address")?.Value ?? User.Identity?.Name;
+        if (TryNormalizeWallet(claimWallet, out var normalizedClaimWallet) &&
+            AddressUtil.Current.AreAddressesTheSame(normalizedClaimWallet, wallet))
+        {
+            return true;
+        }
+
+        var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
+        if (userManager is null)
+        {
+            return false;
+        }
+
+        var user = await userManager.GetUserAsync(User);
+        return TryNormalizeWallet(user?.WalletAddress, out var normalizedUserWallet) &&
+            AddressUtil.Current.AreAddressesTheSame(normalizedUserWallet, wallet);
+    }
 
     private async Task<(bool Found, string Wallet)> TryResolveCurrentWalletAsync()
     {
@@ -318,10 +466,19 @@ public sealed class StakingController(
         exception.Message.Contains("StakingLedgerEntries", StringComparison.OrdinalIgnoreCase) ||
         (exception.InnerException is not null && IsMissingStakingLedgerTable(exception.InnerException));
 
-    public sealed record SaveWalletSessionRequest(string WalletAddress, int ChainId);
+    public sealed record SaveWalletSessionRequest(
+        string WalletAddress,
+        int ChainId,
+        string? Signature = null,
+        string? Message = null,
+        string? Nonce = null);
 
     public sealed record StakingTransactionRequest(
         string WalletAddress,
         decimal Amount,
+        string TransactionHash);
+
+    public sealed record StakingClaimRequest(
+        string WalletAddress,
         string TransactionHash);
 }

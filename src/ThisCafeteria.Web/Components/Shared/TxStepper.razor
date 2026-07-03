@@ -71,18 +71,25 @@
         public static Model Create(string flow) => new()
         {
             Flow = flow,
-            Steps = flow == "unstake"
-                ?
+            Steps = flow switch
+            {
+                "unstake" =>
                 [
                     new Step("unstake", "Unstake CAFE"),
                     new Step("record", "Record & verify")
-                ]
-                :
+                ],
+                "claim" =>
+                [
+                    new Step("claim", "Claim COFFEE"),
+                    new Step("record", "Record & verify")
+                ],
+                _ =>
                 [
                     new Step("approve", "Approve CAFE"),
                     new Step("stake", "Stake CAFE"),
                     new Step("record", "Record & verify")
                 ]
+            }
         };
 
         public void Apply(string step, string status, string? txHash, string? message)

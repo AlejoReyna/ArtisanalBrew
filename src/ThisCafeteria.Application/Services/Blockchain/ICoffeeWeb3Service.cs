@@ -25,10 +25,10 @@ public interface ICoffeeWeb3Service
         string walletAddress,
         CancellationToken cancellationToken = default);
 
-    Task<bool> VerifyStakingTransactionAsync(
+    Task<StakingVerificationResult> VerifyStakingTransactionAsync(
         string txHash,
         string expectedWallet,
-        decimal expectedAmount,
+        decimal? expectedAmount,
         StakingTransactionType transactionType,
         CancellationToken cancellationToken = default);
 

@@ -23,6 +23,7 @@ internal static class ContractAbis
         "{'constant':true,'inputs':[{'name':'account','type':'address'}],'name':'earned','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
         "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'stake','outputs':[],'type':'function'}," +
         "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'unstake','outputs':[],'type':'function'}," +
-        "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'withdraw','outputs':[],'type':'function'}" +
+        "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'withdraw','outputs':[],'type':'function'}," +
+        "{'constant':false,'inputs':[],'name':'claimRewards','outputs':[],'type':'function'}" +
         "]";
 }

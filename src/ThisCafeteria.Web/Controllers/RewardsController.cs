@@ -11,7 +11,6 @@ using ThisCafeteria.Infrastructure.Persistence;
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("rewards")]
-[IgnoreAntiforgeryToken]
 public sealed class RewardsController(
     IRewardClaimService rewardClaimService,
     ICoffeeWeb3Service web3Service,
@@ -47,6 +46,7 @@ public sealed class RewardsController(
     }
 
     [HttpPost("api/mint-loyalty")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> MintLoyaltyAsync(
         [FromBody] MintLoyaltyRequest request,
         CancellationToken cancellationToken)
