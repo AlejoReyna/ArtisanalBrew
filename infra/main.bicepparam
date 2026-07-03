@@ -15,6 +15,17 @@ param environmentName = 'prod'
 param projectName = 'thiscafeteria'
 param postgresAdminLogin = 'thiscafeteria_admin'
 
+// IMPORTANT: main.bicep's webImage/workerImage params default to a public placeholder
+// image (see main.bicep) so the very first deploy can succeed before ACR has anything in
+// it. Once real images exist, that default becomes a footgun: any later `az deployment
+// group create` that doesn't override these params will silently reset both Container
+// Apps back to the placeholder, undoing whatever image `az containerapp update` (CI or
+// manual) had set — this actually happened once during this migration. Pin these to
+// `:latest` now that real images exist, so a routine infra-only redeploy (e.g. adding a
+// new resource) can't regress the running image.
+param webImage = 'thiscafeteriaprodacr3m7beebrmubaa.azurecr.io/thiscafeteria-web:latest'
+param workerImage = 'thiscafeteriaprodacr3m7beebrmubaa.azurecr.io/thiscafeteria-worker:latest'
+
 // Secrets: never hardcode real values here. Export these as environment variables
 // before running `az deployment sub create`, e.g.:
 //   export POSTGRES_ADMIN_PASSWORD='...'

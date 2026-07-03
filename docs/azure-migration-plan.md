@@ -208,3 +208,11 @@ Truncated the new database's throwaway test/seed data first (3 migration-seeded 
 Cleaned up both temporary access grants immediately after (Azure Postgres firewall rule, AWS RDS security group rule) — confirmed both back to their exact prior state. Deleted the local dump/restore files (contained real customer data) from the scratchpad afterward.
 
 **Not yet done:** PR #6 not merged. Phase 6 (DNS cutover to `cafe.alexisreyna.dev` in Route 53 + managed cert, full smoke test including Sepolia checkout), Phase 7 (EC2 decommission, only after a stable soak period) — not started.
+
+## Post-Phase-5 regression caught and fixed: Bicep silently reset the running image to the placeholder
+
+After finishing Phase 5, a routine health check on the live app returned `404` on `/health` (though `/` still returned `200`, since it was hitting the generic sample app's own homepage). Root cause: `main.bicep`'s `webImage`/`workerImage` params default to a public placeholder image so the very first deploy can succeed before ACR has anything pushed to it. Every subsequent `az deployment group create` I ran for unrelated infra changes during Phase 4 (adding the CI/CD identity, three redeploys total) didn't override these params, so each one silently reset both Container Apps back to the placeholder — undoing the real image that Phase 3's manual `az containerapp update` had set. The site had effectively been serving the placeholder since that last Phase 4 deployment.
+
+**Fixed in two layers:** immediately re-ran `az containerapp update` with the real `:v1` tags for both apps (confirmed `/health` back to `200 Healthy`), then fixed the underlying cause by pinning `webImage`/`workerImage` in `infra/main.bicepparam` to `:latest` (rather than leaving them at the placeholder default) now that real images exist — so a future infra-only Bicep redeploy can no longer regress the running image. `az bicep build-params` confirmed clean.
+
+**Takeaway:** a placeholder-image default that's only safe for the very first deploy is a footgun for every deploy after that — should have pinned this the moment real images existed in Phase 3, not left it to be caught by a health check regression later.
