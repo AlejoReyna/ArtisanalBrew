@@ -101,6 +101,11 @@ jobs:
       - name: Restore local tools
         run: dotnet tool restore
 
+      # dotnet ef builds the startup project; without a restore the assets
+      # files are missing on a fresh runner (NETSDK1004).
+      - name: Restore NuGet packages
+        run: dotnet restore src/ThisCafeteria.Web
+
       - name: Allow runner IP through Postgres firewall
         run: |
           set -euo pipefail
