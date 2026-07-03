@@ -28,5 +28,33 @@ services:
       postgres:
         condition: service_healthy
 
+  web:
+    build:
+      context: .
+      dockerfile: src/ThisCafeteria.Web/Dockerfile
+    container_name: this-cafeteria-web
+    env_file:
+      - .env
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/ThisCafeteria.Worker/Dockerfile
+    container_name: this-cafeteria-worker
+    env_file:
+      - .env
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:

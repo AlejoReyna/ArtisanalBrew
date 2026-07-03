@@ -1,6 +1,4 @@
-using Amazon.S3;
-using Amazon.SimpleEmailV2;
-using Amazon.SQS;
+using Azure.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +16,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAwsServices(configuration);
+        services.AddAzureServices(configuration);
 
         var connectionString = DatabaseConnectionStringFactory.Resolve(configuration);
 
@@ -36,42 +34,29 @@ public static class DependencyInjection
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IRewardClaimRepository, RewardClaimRepository>();
         services.AddScoped<IWalletStatusEventRepository, WalletStatusEventRepository>();
-        services.AddScoped<IS3StorageService, S3StorageService>();
-        services.AddScoped<IEmailSender, SesEmailSender>();
         services.Configure<CatalogOptions>(configuration.GetSection(CatalogOptions.SectionName));
         services.AddScoped<DatabaseSeeder>();
 
         return services;
     }
 
-    public static IServiceCollection AddAwsServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAzureServices(this IServiceCollection services, IConfiguration configuration)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
-        var awsSection = configuration.GetSection(AwsMessagingOptions.SectionName);
-        services.Configure<AwsMessagingOptions>(options =>
+        services.Configure<AzureOptions>(configuration.GetSection(AzureOptions.SectionName));
+
+        services.AddSingleton<TokenCredential>(serviceProvider =>
         {
-            var bound = AwsClientFactory.BindOptions(configuration, awsSection);
-            options.Region = bound.Region;
-            options.SqsQueueUrl = bound.SqsQueueUrl;
-            options.ServiceUrl = bound.ServiceUrl;
-            options.Profile = bound.Profile;
-            options.S3BucketName = bound.S3BucketName;
-            options.SesSenderEmail = bound.SesSenderEmail;
+            var azureOptions = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AzureOptions>>().Value;
+            return AzureClientFactory.CreateCredential(azureOptions.ManagedIdentity);
         });
 
-        var awsOptions = AwsClientFactory.BindOptions(configuration, awsSection);
-
-        services.AddSingleton(_ => AwsClientFactory.CreateSqsClient(awsOptions));
-        services.AddSingleton(_ => AwsClientFactory.CreateS3Client(awsOptions));
-        services.AddSingleton(_ => AwsClientFactory.CreateSesClient(awsOptions));
-
+        services.AddScoped<IS3StorageService, S3StorageService>();
+        services.AddScoped<IEmailSender, SesEmailSender>();
         services.AddScoped<ISqsMessagePublisher, SqsMessagePublisher>();
         services.AddScoped<IReceiptService, ReceiptService>();
 
         return services;
     }
-
-    public static IServiceCollection AddAwsMessaging(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddAwsServices(configuration);
 }

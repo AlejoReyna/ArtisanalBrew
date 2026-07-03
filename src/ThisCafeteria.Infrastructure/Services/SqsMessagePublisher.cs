@@ -1,57 +1,50 @@
 using System.Text.Json;
-using Amazon.SQS.Model;
+using Azure.Core;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ThisCafeteria.Infrastructure.Configuration;
 
 namespace ThisCafeteria.Infrastructure.Services;
 
+// Backs the AWS-flavored ISqsMessagePublisher contract (used by the wallet-status feature)
+// with Azure Service Bus.
 public sealed class SqsMessagePublisher(
-    IOptions<AwsMessagingOptions> options,
+    IOptions<AzureOptions> options,
+    TokenCredential credential,
     ILogger<SqsMessagePublisher> logger) : ISqsMessagePublisher
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<string?> PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken = default)
     {
-        var queueUrl = options.Value.SqsQueueUrl;
-        if (string.IsNullOrWhiteSpace(queueUrl))
+        var serviceBusOptions = options.Value.ServiceBus;
+        if (string.IsNullOrWhiteSpace(serviceBusOptions.FullyQualifiedNamespace))
         {
             logger.LogWarning(
-                "SQS status publish skipped for {MessageType}; SQS_QUEUE_URL or AWS:SqsQueueUrl is not configured.",
+                "Service Bus publish skipped for {MessageType}; Azure:ServiceBus:FullyQualifiedNamespace is not configured.",
                 typeof(TMessage).Name);
             return null;
         }
 
         try
         {
-            using var sqs = AwsClientFactory.CreateSqsClient(options.Value);
-            var request = new SendMessageRequest
+            await using var client = new ServiceBusClient(serviceBusOptions.FullyQualifiedNamespace, credential);
+            await using var sender = client.CreateSender(serviceBusOptions.WalletStatusQueueName);
+
+            var body = JsonSerializer.SerializeToUtf8Bytes(message, JsonOptions);
+            var serviceBusMessage = new ServiceBusMessage(body)
             {
-                QueueUrl = queueUrl,
-                MessageBody = JsonSerializer.Serialize(message, JsonOptions),
-                MessageAttributes =
-                {
-                    ["messageType"] = new MessageAttributeValue
-                    {
-                        DataType = "String",
-                        StringValue = typeof(TMessage).Name
-                    }
-                }
+                MessageId = Guid.NewGuid().ToString("N"),
+                ApplicationProperties = { ["messageType"] = typeof(TMessage).Name }
             };
 
-            if (queueUrl.EndsWith(".fifo", StringComparison.OrdinalIgnoreCase))
-            {
-                request.MessageGroupId = typeof(TMessage).Name;
-                request.MessageDeduplicationId = Guid.NewGuid().ToString("N");
-            }
-
-            var response = await sqs.SendMessageAsync(request, cancellationToken).ConfigureAwait(false);
+            await sender.SendMessageAsync(serviceBusMessage, cancellationToken).ConfigureAwait(false);
             logger.LogInformation(
-                "Published {MessageType} status message to SQS. MessageId={MessageId}",
+                "Published {MessageType} status message to Service Bus. MessageId={MessageId}",
                 typeof(TMessage).Name,
-                response.MessageId);
-            return response.MessageId;
+                serviceBusMessage.MessageId);
+            return serviceBusMessage.MessageId;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -61,7 +54,7 @@ public sealed class SqsMessagePublisher(
         {
             logger.LogWarning(
                 exception,
-                "SQS status publish skipped for {MessageType}; the AWS SQS client could not be created or the message could not be sent.",
+                "Service Bus publish skipped for {MessageType}; the message could not be sent.",
                 typeof(TMessage).Name);
             return null;
         }

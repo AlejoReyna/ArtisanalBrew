@@ -34,24 +34,56 @@ jobs:
       - name: Format check
         run: dotnet format --verify-no-changes --no-restore
 
-  deploy-ec2:
-    name: Deploy to EC2
+  deploy-azure:
+    name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest
     needs: build-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
+    permissions:
+      id-token: write
+      contents: read
+
     env:
-      PUBLISH_DIR: publish-ec2
-      ARCHIVE_NAME: thiscafeteria-web.tgz
-      REMOTE_APP_DIR: /opt/thiscafeteria
-      REMOTE_ENV_FILE: /etc/thiscafeteria/thiscafeteria.env
-      REMOTE_SERVICE: thiscafeteria
-      REMOTE_TMP_ARCHIVE: /tmp/thiscafeteria-web.tgz
-      EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT || '22' }}
+      RESOURCE_GROUP: thiscafeteria-prod-rg
+      ACR_NAME: thiscafeteriaprodacr3m7beebrmubaa
+      WEB_APP_NAME: thiscafeteria-prod-web
+      WORKER_APP_NAME: thiscafeteria-prod-worker
+      POSTGRES_SERVER_NAME: thiscafeteria-prod-pg-3m7beebrmubaa
+      KEY_VAULT_NAME: tc-kv-3m7beebrmubaa
+      IMAGE_TAG: ${{ github.sha }}
+      FIREWALL_RULE_NAME: github-actions-runner-temp
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CICD_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push Web image to ACR
+        run: |
+          set -euo pipefail
+          az acr build \
+            --registry "$ACR_NAME" \
+            --image "thiscafeteria-web:$IMAGE_TAG" \
+            --image "thiscafeteria-web:latest" \
+            --file src/ThisCafeteria.Web/Dockerfile \
+            .
+
+      - name: Build and push Worker image to ACR
+        run: |
+          set -euo pipefail
+          az acr build \
+            --registry "$ACR_NAME" \
+            --image "thiscafeteria-worker:$IMAGE_TAG" \
+            --image "thiscafeteria-worker:latest" \
+            --file src/ThisCafeteria.Worker/Dockerfile \
+            .
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v5
@@ -61,174 +93,72 @@ jobs:
       - name: Restore local tools
         run: dotnet tool restore
 
-      - name: Publish web app
+      - name: Allow runner IP through Postgres firewall
         run: |
-          rm -rf "$PUBLISH_DIR"
-          mkdir -p "$PUBLISH_DIR"
-          dotnet publish src/ThisCafeteria.Web/ThisCafeteria.Web.csproj \
-            --configuration Release \
-            --runtime linux-x64 \
-            --self-contained true \
-            --output "$PUBLISH_DIR"
+          set -euo pipefail
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          echo "Allowing runner IP $RUNNER_IP through the Postgres firewall temporarily"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "$RESOURCE_GROUP" \
+            --server-name "$POSTGRES_SERVER_NAME" \
+            --name "$FIREWALL_RULE_NAME" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
 
-      - name: Build migration bundle
+      - name: Run EF Core migrations
         run: |
-          dotnet ef migrations bundle \
+          set -euo pipefail
+          export ConnectionStrings__DefaultConnection=$(az keyvault secret show \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name db-connection-string \
+            --query value -o tsv)
+          dotnet ef database update \
             --project src/ThisCafeteria.Infrastructure \
             --startup-project src/ThisCafeteria.Web \
-            --configuration Release \
-            --runtime linux-x64 \
-            --self-contained \
-            --output "$PUBLISH_DIR/thiscafeteria-migrate"
+            --configuration Release
 
-      - name: Remove macOS metadata files
-        run: find "$PUBLISH_DIR" -name '._*' -delete
+      - name: Remove runner IP from Postgres firewall
+        if: always()
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "$RESOURCE_GROUP" \
+            --server-name "$POSTGRES_SERVER_NAME" \
+            --name "$FIREWALL_RULE_NAME" \
+            --yes || true
 
-      - name: Verify publish artifact dependencies
+      - name: Update Web Container App
         run: |
           set -euo pipefail
-          test -f "$PUBLISH_DIR/AWSSDK.SQS.dll"
-          test -f "$PUBLISH_DIR/AWSSDK.SimpleEmailV2.dll"
-          grep -q '"AWSSDK.SQS/4.' "$PUBLISH_DIR/ThisCafeteria.Web.deps.json"
-          grep -q '"AWSSDK.SimpleEmailV2/4.' "$PUBLISH_DIR/ThisCafeteria.Web.deps.json"
+          az containerapp update \
+            --name "$WEB_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$ACR_NAME.azurecr.io/thiscafeteria-web:$IMAGE_TAG" \
+            --output none
 
-      - name: Pack artifact
-        run: tar -czf "$ARCHIVE_NAME" -C "$PUBLISH_DIR" .
-
-      - name: Prepare SSH key
-        env:
-          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
+      - name: Update Worker Container App
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
+          az containerapp update \
+            --name "$WORKER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$ACR_NAME.azurecr.io/thiscafeteria-worker:$IMAGE_TAG" \
+            --output none
 
-          if [ -z "${EC2_SSH_PRIVATE_KEY:-}" ]; then
-            echo "EC2_SSH_PRIVATE_KEY secret is not configured." >&2
-            exit 1
-          fi
-
-          if [ -z "${EC2_HOST:-}" ]; then
-            echo "EC2_HOST secret is not configured." >&2
-            exit 1
-          fi
-
-          if [ -z "${EC2_USER:-}" ]; then
-            echo "EC2_USER secret is not configured." >&2
-            exit 1
-          fi
-
-          host="${EC2_HOST#http://}"
-          host="${host#https://}"
-          host="${host%%/*}"
-          host="${host%%:*}"
-
-          printf '%s\n' "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/thiscafeteria-ec2
-          chmod 600 ~/.ssh/thiscafeteria-ec2
-
-          if ! ssh-keygen -y -f ~/.ssh/thiscafeteria-ec2 >/dev/null 2>&1; then
-            echo "EC2_SSH_PRIVATE_KEY is not a valid OpenSSH private key." >&2
-            exit 1
-          fi
-
-          {
-            echo 'Host *'
-            echo '  StrictHostKeyChecking no'
-            echo '  UserKnownHostsFile /dev/null'
-          } >> ~/.ssh/config
-          chmod 600 ~/.ssh/config
-
-          echo "EC2_HOST=$host" >> "$GITHUB_ENV"
-
-      - name: Check EC2 SSH reachability
+      - name: Wait for Web app health
         run: |
           set -euo pipefail
-          if ! timeout 15 bash -c "cat < /dev/null > /dev/tcp/${EC2_HOST}/${EC2_SSH_PORT}" 2>/dev/null; then
-            {
-              echo "GitHub Actions cannot reach the EC2 host on TCP port ${EC2_SSH_PORT}."
-              echo
-              echo "This is a network/security-group failure, not an SSH key failure."
-              echo "Check that the EC2 instance is running, EC2_HOST is its current public IPv4/DNS name,"
-              echo "and the EC2 security group allows SSH from GitHub-hosted runners or from a self-hosted runner."
-              echo
-              echo "See docs/github-actions-ec2-deploy.md for the AWS security-group options."
-            } >&2
-            exit 1
-          fi
-
-      - name: Copy artifact to EC2
-        env:
-          EC2_USER: ${{ secrets.EC2_USER }}
-        run: |
-          set -euo pipefail
-          scp -i ~/.ssh/thiscafeteria-ec2 \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -o ConnectTimeout=30 \
-            -P "$EC2_SSH_PORT" \
-            "$ARCHIVE_NAME" \
-            "${EC2_USER}@${EC2_HOST}:$REMOTE_TMP_ARCHIVE"
-
-      - name: Install artifact, run migrations, and restart service
-        env:
-          EC2_USER: ${{ secrets.EC2_USER }}
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/thiscafeteria-ec2 \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -o ConnectTimeout=30 \
-            -p "$EC2_SSH_PORT" \
-            "${EC2_USER}@${EC2_HOST}" \
-            "sudo systemctl stop $REMOTE_SERVICE || true && \
-             sudo mkdir -p $REMOTE_APP_DIR && \
-             sudo rm -rf $REMOTE_APP_DIR/* && \
-             sudo tar -xzf $REMOTE_TMP_ARCHIVE -C $REMOTE_APP_DIR && \
-             sudo chmod +x $REMOTE_APP_DIR/ThisCafeteria.Web && \
-             sudo chmod +x $REMOTE_APP_DIR/thiscafeteria-migrate && \
-             sudo chown -R www-data:www-data $REMOTE_APP_DIR && \
-             sudo bash -c \"set -a && . $REMOTE_ENV_FILE && set +a && exec $REMOTE_APP_DIR/thiscafeteria-migrate\" && \
-             sudo systemctl start $REMOTE_SERVICE && \
-             sudo systemctl status $REMOTE_SERVICE --no-pager -l"
-
-      - name: Wait for app health on EC2
-        env:
-          EC2_USER: ${{ secrets.EC2_USER }}
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/thiscafeteria-ec2 \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -o ConnectTimeout=30 \
-            -p "$EC2_SSH_PORT" \
-            "${EC2_USER}@${EC2_HOST}" \
-            'for attempt in $(seq 1 30); do
-               if curl --fail --show-error --silent http://127.0.0.1:5000/health >/dev/null; then
-                 echo "App healthy on attempt ${attempt}"
-                 exit 0
-               fi
-               echo "App not ready (attempt ${attempt}/30), retrying in 2s..."
-               sleep 2
-             done
-             echo "App did not become healthy on EC2 within 60 seconds." >&2
-             sudo journalctl -u thiscafeteria -n 50 --no-pager >&2 || true
-             exit 1'
-
-      - name: Verify public health
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 15); do
-            if curl --fail --show-error --silent "http://${EC2_HOST}/health"; then
-              echo "Public health check passed on attempt ${attempt}"
+          WEB_FQDN=$(az containerapp show \
+            --name "$WEB_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          for attempt in $(seq 1 30); do
+            if curl --fail --show-error --silent "https://$WEB_FQDN/health" >/dev/null; then
+              echo "App healthy on attempt ${attempt}"
               exit 0
             fi
-            echo "Public health check failed (attempt ${attempt}/15), retrying in 2s..."
-            sleep 2
+            echo "App not ready (attempt ${attempt}/30), retrying in 5s..."
+            sleep 5
           done
-          echo "Public health check did not pass within 30 seconds." >&2
+          echo "App did not become healthy within 150 seconds." >&2
           exit 1
