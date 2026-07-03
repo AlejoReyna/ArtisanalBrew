@@ -1,0 +1,159 @@
+.faucet-panel {
+    background: #faf9f5;
+    border: 1px solid rgba(44, 27, 18, 0.11);
+    border-radius: 12px;
+    display: grid;
+    gap: 1.1rem;
+    padding: 1.4rem 1.5rem 1.5rem;
+    text-align: left;
+}
+
+.faucet-panel__head {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.faucet-panel__eyebrow {
+    color: rgba(44, 27, 18, 0.48);
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+}
+
+.faucet-panel__title {
+    color: #2c1b12;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    margin: 0 0 0.5rem;
+}
+
+.faucet-panel__lede {
+    color: #5d534d;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    margin: 0;
+    max-width: 40rem;
+}
+
+.faucet-panel__refresh {
+    background: transparent;
+    border: 1px solid rgba(44, 27, 18, 0.3);
+    border-radius: 999px;
+    color: #2c1b12;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0.95rem;
+    text-transform: uppercase;
+    transition: background 140ms ease, border-color 140ms ease;
+    white-space: nowrap;
+}
+
+.faucet-panel__refresh:hover {
+    background: rgba(44, 27, 18, 0.05);
+    border-color: #2c1b12;
+}
+
+.faucet-panel__address {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.faucet-panel__address-hint {
+    color: rgba(44, 27, 18, 0.55);
+    font-size: 0.78rem;
+}
+
+.faucet-panel__list {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.faucet-panel__card {
+    background: #ffffff;
+    border: 1px solid rgba(44, 27, 18, 0.12);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    height: 100%;
+    padding: 0.95rem 1.05rem 1rem;
+    text-decoration: none;
+    transition: border-color 160ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+
+.faucet-panel__card:hover {
+    border-color: rgba(71, 97, 78, 0.55);
+    box-shadow: 0 4px 20px rgba(44, 27, 18, 0.08);
+    transform: translateY(-1px);
+}
+
+.faucet-panel__card-head {
+    align-items: baseline;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.faucet-panel__card-head strong {
+    color: #2c1b12;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.faucet-panel__card-amount {
+    color: var(--crypto-positive);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.faucet-panel__card-note {
+    color: rgba(44, 27, 18, 0.55);
+    font-size: 0.76rem;
+    line-height: 1.5;
+}
+
+.faucet-panel__card-cta {
+    color: #8a4d34;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    margin-top: auto;
+    padding-top: 0.35rem;
+    text-transform: uppercase;
+}
+
+.faucet-panel--compact {
+    padding: 1.1rem 1.2rem 1.2rem;
+}
+
+.faucet-panel--compact .faucet-panel__lede {
+    font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+    .faucet-panel__head {
+        flex-direction: column;
+    }
+
+    .faucet-panel__list {
+        grid-template-columns: 1fr;
+    }
+}

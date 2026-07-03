@@ -1,0 +1,75 @@
+.stat-tile {
+    background: #faf9f5;
+    border: 1px solid rgba(44, 27, 18, 0.1);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 1rem 1.15rem;
+}
+
+.stat-tile__label {
+    color: rgba(44, 27, 18, 0.58);
+    font-family: var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.stat-tile__value {
+    color: #2c1b12;
+    font-family: var(--font-sans);
+    font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stat-tile--positive .stat-tile__value {
+    color: var(--crypto-positive);
+}
+
+.stat-tile__suffix {
+    color: rgba(44, 27, 18, 0.5);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-left: 0.15rem;
+}
+
+.stat-tile--positive .stat-tile__suffix {
+    color: rgba(71, 97, 78, 0.75);
+}
+
+.stat-tile__hint {
+    color: rgba(44, 27, 18, 0.55);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+    margin: 0;
+}
+
+.stat-tile__skeleton {
+    animation: crypto-shimmer 1.4s ease-in-out infinite;
+    background: linear-gradient(90deg, rgba(44, 27, 18, 0.07) 25%, rgba(44, 27, 18, 0.14) 50%, rgba(44, 27, 18, 0.07) 75%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    display: block;
+    height: 1.5rem;
+    width: 72%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stat-tile__skeleton {
+        animation: none;
+    }
+}

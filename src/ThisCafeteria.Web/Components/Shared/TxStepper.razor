@@ -1,0 +1,118 @@
+<div class="tx-stepper" role="status" aria-live="polite">
+    <ol class="tx-stepper__steps">
+        @foreach (var step in Flow.Steps)
+        {
+            <li class="tx-stepper__step tx-stepper__step--@step.Status">
+                <span class="tx-stepper__icon" aria-hidden="true">
+                    @if (step.Status == "pending")
+                    {
+                        <span class="tx-stepper__spinner"></span>
+                    }
+                    else if (step.Status == "confirmed")
+                    {
+                        <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                    }
+                    else if (step.Status == "error")
+                    {
+                        <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    }
+                    else
+                    {
+                        <span class="tx-stepper__idle-dot"></span>
+                    }
+                </span>
+                <span class="tx-stepper__label">@step.Label</span>
+                @if (!string.IsNullOrWhiteSpace(step.TxHash) && !string.IsNullOrWhiteSpace(ExplorerUrl))
+                {
+                    <a class="tx-stepper__tx"
+                       href="@($"{ExplorerUrl.TrimEnd('/')}/tx/{step.TxHash}")"
+                       target="_blank"
+                       rel="noopener noreferrer">View tx ↗</a>
+                }
+            </li>
+        }
+    </ol>
+    @if (!string.IsNullOrWhiteSpace(Flow.Error))
+    {
+        <p class="tx-stepper__error">@Flow.Error</p>
+    }
+    else if (Flow.Completed)
+    {
+        <p class="tx-stepper__done">Confirmed on-chain and recorded. Balances updated.</p>
+    }
+    @if (Flow.IsFinished && OnDismiss.HasDelegate)
+    {
+        <button type="button" class="tx-stepper__dismiss" @onclick="OnDismiss">Dismiss</button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Model Flow { get; set; } = default!;
+
+    [Parameter]
+    public string? ExplorerUrl { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismiss { get; set; }
+
+    public sealed class Model
+    {
+        public required string Flow { get; init; }
+
+        public required List<Step> Steps { get; init; }
+
+        public string? Error { get; set; }
+
+        public bool Completed { get; set; }
+
+        public bool IsFinished => Completed || !string.IsNullOrWhiteSpace(Error);
+
+        public static Model Create(string flow) => new()
+        {
+            Flow = flow,
+            Steps = flow == "unstake"
+                ?
+                [
+                    new Step("unstake", "Unstake CAFE"),
+                    new Step("record", "Record & verify")
+                ]
+                :
+                [
+                    new Step("approve", "Approve CAFE"),
+                    new Step("stake", "Stake CAFE"),
+                    new Step("record", "Record & verify")
+                ]
+        };
+
+        public void Apply(string step, string status, string? txHash, string? message)
+        {
+            var match = Steps.FirstOrDefault(s => s.Key == step);
+            if (match is null)
+            {
+                return;
+            }
+
+            match.Status = status;
+            if (!string.IsNullOrWhiteSpace(txHash))
+            {
+                match.TxHash = txHash;
+            }
+
+            Error = status == "error"
+                ? message ?? "Transaction failed."
+                : null;
+        }
+    }
+
+    public sealed class Step(string key, string label)
+    {
+        public string Key { get; } = key;
+
+        public string Label { get; } = label;
+
+        public string Status { get; set; } = "idle";
+
+        public string? TxHash { get; set; }
+    }
+}

@@ -1,0 +1,30 @@
+.chain-badge {
+    align-items: center;
+    background: rgba(245, 242, 234, 0.7);
+    border: 1px solid rgba(44, 27, 18, 0.13);
+    border-radius: 999px;
+    color: #5d534d;
+    display: inline-flex;
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    gap: 0.45rem;
+    letter-spacing: 0.06em;
+    padding: 0.28rem 0.72rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    width: fit-content;
+}
+
+.chain-badge--compact {
+    font-size: 0.64rem;
+    gap: 0.35rem;
+    padding: 0.22rem 0.58rem;
+}
+
+.chain-badge__id {
+    color: rgba(93, 83, 77, 0.65);
+    font-family: var(--crypto-mono);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}

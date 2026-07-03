@@ -1,0 +1,22 @@
+<span class="chain-badge @(Compact ? "chain-badge--compact" : null)">
+    <span class="crypto-dot @(Connected ? "crypto-dot--pulse" : "crypto-dot--idle")" aria-hidden="true"></span>
+    <span class="chain-badge__name">@NetworkName</span>
+    @if (!Compact && ChainId is not null)
+    {
+        <span class="chain-badge__id">· @ChainId</span>
+    }
+</span>
+
+@code {
+    [Parameter]
+    public string NetworkName { get; set; } = "Ethereum Sepolia";
+
+    [Parameter]
+    public int? ChainId { get; set; }
+
+    [Parameter]
+    public bool Connected { get; set; }
+
+    [Parameter]
+    public bool Compact { get; set; }
+}

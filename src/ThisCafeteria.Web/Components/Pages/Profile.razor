@@ -4,7 +4,9 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @using FluentValidation
 @using Microsoft.AspNetCore.Identity
+@using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Infrastructure.Identity
+@inject BlockchainNetworkOptions Chain
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IProfileService ProfileService
@@ -147,11 +149,31 @@ else if (_dashboard is not null)
                     <dl class="profile-dash__facts">
                         <div>
                             <dt>Wallet</dt>
-                            <dd>@ShortAddress(_dashboard.WalletAddress)</dd>
+                            <dd>
+                                @if (string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+                                {
+                                    <span>Not linked</span>
+                                }
+                                else
+                                {
+                                    <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@Chain.ExplorerUrl" />
+                                }
+                            </dd>
                         </div>
                         <div>
                             <dt>Network</dt>
-                            <dd>@FormatChain(_dashboard.WalletChainId)</dd>
+                            <dd>
+                                @if (_dashboard.WalletChainId is null)
+                                {
+                                    <span>Not linked</span>
+                                }
+                                else
+                                {
+                                    <ChainBadge NetworkName="@FormatChainName(_dashboard.WalletChainId.Value)"
+                                                ChainId="_dashboard.WalletChainId"
+                                                Connected="_dashboard.WalletChainId == Chain.ChainId" />
+                                }
+                            </dd>
                         </div>
                         <div>
                             <dt>Role</dt>
@@ -160,6 +182,10 @@ else if (_dashboard is not null)
                         <div>
                             <dt>Member since</dt>
                             <dd>@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</dd>
+                        </div>
+                        <div>
+                            <dt>Testnet gas</dt>
+                            <dd><a class="profile-dash__faucet-link" href="staking">Get Sepolia ETH <span aria-hidden="true">→</span></a></dd>
                         </div>
                     </dl>
                 </section>
@@ -183,19 +209,19 @@ else if (_dashboard is not null)
                                         <p>@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</p>
                                         @if (!string.IsNullOrWhiteSpace(order.PaymentTransactionHash))
                                         {
-                                            <p>
-                                                @ShortAddress(order.WalletAddress) · @order.PaymentNetworkName · @FormatEth(order.PaymentEthAmount)
+                                            <p class="profile-dash__order-tx-meta">
+                                                <span class="profile-dash__mono">@ShortAddress(order.WalletAddress)</span> · @order.PaymentNetworkName · <span class="tabular">@FormatEth(order.PaymentEthAmount)</span>
                                                 @if (!string.IsNullOrWhiteSpace(order.PaymentExplorerUrl))
                                                 {
-                                                    <a href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
-                                                        @ShortAddress(order.PaymentTransactionHash)
+                                                    <a class="profile-dash__tx-chip" href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
+                                                        @ShortAddress(order.PaymentTransactionHash) ↗
                                                     </a>
                                                 }
                                             </p>
                                         }
                                     </div>
                                     <span class="profile-dash__status">@order.Status</span>
-                                    <strong>@order.Total.ToString("C")</strong>
+                                    <strong class="tabular">@order.Total.ToString("C")</strong>
                                 </article>
                             }
                         </div>
@@ -348,8 +374,8 @@ else if (_dashboard is not null)
     private static string FormatEth(decimal? amount) =>
         amount is null ? "0 ETH" : $"{amount.Value:0.####} ETH";
 
-    private static string FormatChain(int? chainId) =>
-        chainId is null ? "Not linked" : chainId == 11155111 ? "Ethereum Sepolia (11155111)" : $"Chain {chainId}";
+    private string FormatChainName(int chainId) =>
+        chainId == Chain.ChainId ? Chain.NetworkName : $"Chain {chainId}";
 
     private sealed class ProfileEditModel
     {

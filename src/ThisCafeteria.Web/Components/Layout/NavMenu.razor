@@ -4,6 +4,13 @@
 @inject NavigationManager Navigation
 @inject IShoppingCartService CartService
 @inject ILogger<NavMenu> Logger
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject WalletDashboardState DashboardState
+@inject BlockchainNetworkOptions Chain
+@using Microsoft.AspNetCore.Components.Authorization
+@using ThisCafeteria.Application.Configuration
+@using ThisCafeteria.Application.Services.Blockchain
+@using ThisCafeteria.Web.Services.Blockchain
 @using ThisCafeteria.Web.Services.Cart
 @using System.Security.Claims
 @implements IDisposable
@@ -49,7 +56,8 @@
                             aria-label="Open account menu"
                             @onclick="ToggleUserMenu">
                         <img class="eth-mark" src="/images/eth_logo.png" alt="" aria-hidden="true" width="27" height="27" />
-                        @ShortAddress(GetWalletAddress(context.User))
+                        <span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>
+                        <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
                     </button>
                     <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
                         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -79,6 +87,7 @@
         <div class="nav-drawer__wallet">
             <AuthorizeView>
                 <Authorized>
+                    <span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>
                     <span class="nav-drawer__address" title="@GetWalletAddress(context.User)">
                         @ShortAddress(GetWalletAddress(context.User))
                     </span>
@@ -165,13 +174,14 @@
             var walletAddress = GetWalletAddress(context.User);
 
             <div class="@UserMenuBackdropCssClass" role="presentation" @onclick="CloseUserMenuAsync"></div>
-            <aside class="@UserMenuCssClass" role="dialog" aria-modal="true" aria-labelledby="user-menu-brand-title" aria-hidden="@UserMenuAriaHidden">
+            <aside class="@UserMenuCssClass" role="dialog" aria-modal="true" aria-label="Account menu" aria-hidden="@UserMenuAriaHidden">
                 <header class="user-menu__brand">
                     <div class="user-menu__brand-copy">
                         <span class="label-caps">Wallet</span>
-                        <h2 id="user-menu-brand-title" class="user-menu__wallet-address" title="@walletAddress">
-                            @ShortAddress(walletAddress)
-                        </h2>
+                        <div class="user-menu__identity">
+                            <AddressChip Address="@(walletAddress ?? string.Empty)" ExplorerUrl="@Chain.ExplorerUrl" />
+                            <ChainBadge NetworkName="@Chain.NetworkName" ChainId="Chain.ChainId" Connected="true" Compact="true" />
+                        </div>
                     </div>
 
                     <button class="user-menu__close"
@@ -245,8 +255,9 @@
                  aria-labelledby="wallet-modal-title"
                  @onclick:stopPropagation="true">
             <div class="wallet-modal__header">
-                <div>
+                <div class="wallet-modal__title-group">
                     <h2 id="wallet-modal-title">Connect a wallet</h2>
+                    <ChainBadge NetworkName="@Chain.NetworkName" ChainId="Chain.ChainId" Connected="false" Compact="true" />
                 </div>
                 <button class="wallet-modal__close"
                         type="button"
@@ -339,6 +350,8 @@
 @code {
     private bool _isNavOpen;
     private int _cartItemCount;
+    private CoffeeDashboardModel? _walletSnapshot;
+    private bool _isLoadingWalletStats;
     private IJSObjectReference? _walletModule;
     private bool _isWalletModalOpen;
     private bool _isUserMenuOpen;
@@ -373,14 +386,18 @@
     private string NavDrawerAriaHidden =>
         _isNavOpen ? "false" : "true";
 
-    private static string FormatStakedBalance() => "0.0";
+    private string FormatStakedBalance() =>
+        _walletSnapshot is null ? "—" : $"{_walletSnapshot.StakedPaymentTokenBalance:0.####} CAFE";
 
-    private static string FormatPendingRewards() => "0 COFFEE";
+    private string FormatPendingRewards() =>
+        _walletSnapshot is null ? "—" : $"{_walletSnapshot.PendingStakingRewards:0.####} COFFEE";
 
     protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("NavMenu OnInitializedAsync START");
         CartService.Changed += OnCartChanged;
+        DashboardState.Changed += OnWalletDashboardChanged;
+        _walletSnapshot = DashboardState.Snapshot;
         await CartService.RefreshFromStorageAsync();
         await RefreshCartCountAsync();
         Logger.LogInformation("NavMenu OnInitializedAsync END. CartItemCount={Count}", _cartItemCount);
@@ -394,7 +411,53 @@
         StateHasChanged();
     }
 
-    private void ToggleNav() => _isNavOpen = !_isNavOpen;
+    private void ToggleNav()
+    {
+        _isNavOpen = !_isNavOpen;
+        if (_isNavOpen)
+        {
+            _ = LoadWalletStatsAsync();
+        }
+    }
+
+    private void OnWalletDashboardChanged()
+    {
+        _walletSnapshot = DashboardState.Snapshot;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadWalletStatsAsync()
+    {
+        if (_isLoadingWalletStats)
+        {
+            return;
+        }
+
+        _isLoadingWalletStats = true;
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var wallet = GetWalletAddress(authState.User);
+            if (authState.User.Identity?.IsAuthenticated != true ||
+                string.IsNullOrWhiteSpace(wallet) ||
+                !wallet.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
+                wallet.Length != 42)
+            {
+                return;
+            }
+
+            _walletSnapshot = await DashboardState.GetOrRefreshAsync(wallet, TimeSpan.FromSeconds(60));
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Could not load wallet stats for the nav drawer.");
+        }
+        finally
+        {
+            _isLoadingWalletStats = false;
+        }
+    }
 
     private void CloseNav() => _isNavOpen = false;
 
@@ -529,6 +592,7 @@
     public void Dispose()
     {
         CartService.Changed -= OnCartChanged;
+        DashboardState.Changed -= OnWalletDashboardChanged;
     }
 
     public async ValueTask DisposeAsync()

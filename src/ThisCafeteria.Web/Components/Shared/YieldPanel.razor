@@ -21,10 +21,14 @@
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 @inject IEthUsdPriceService EthUsdPriceService
+@inject WalletDashboardState DashboardState
 
 @if (!_isConnected)
 {
     <section class="staking-connect" data-animate="fade-up">
+        <div class="staking-connect__badge">
+            <ChainBadge NetworkName="@_chain.NetworkName" ChainId="_chain.ChainId" Connected="false" />
+        </div>
         <p class="eyebrow">Wallet required</p>
         <h2>Connect your wallet to allocate Sepolia tokens and earn COFFEE.</h2>
         <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
@@ -41,6 +45,9 @@
                 <span aria-hidden="true">&larr;</span> Back to Profile
             </button>
         }
+        <div class="staking-connect__faucet">
+            <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" />
+        </div>
     </section>
 }
 else
@@ -56,26 +63,17 @@ else
 
             <section class="yield-sidebar__identity">
                 <p class="yield-sidebar__kicker">Account Overview</p>
+                <div class="yield-sidebar__wallet">
+                    <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@_chain.ExplorerUrl" />
+                </div>
                 <dl class="yield-sidebar__stats">
                     <div>
-                        <dt>Wallet Balance</dt>
-                        <dd>@FormatNativeWalletBalance()</dd>
-                    </div>
-                    <div>
-                        <dt>Payment Token Balance</dt>
-                        <dd>@FormatDashboardAmount(_dashboard.PaymentTokenBalance)</dd>
-                    </div>
-                    <div>
-                        <dt>Staked Balance</dt>
-                        <dd>@FormatDashboardAmount(_dashboard.StakedPaymentTokenBalance)</dd>
-                    </div>
-                    <div>
-                        <dt>Pending Rewards</dt>
-                        <dd>@FormatDashboardAmount(_dashboard.PendingStakingRewards, " COFFEE")</dd>
+                        <dt>Wallet Value</dt>
+                        <dd class="tabular">@FormatNativeWalletBalance()</dd>
                     </div>
                     <div>
                         <dt>COFFEE Balance</dt>
-                        <dd>@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
+                        <dd class="tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
                     </div>
                 </dl>
                 @if (_stakingConfigured)
@@ -128,7 +126,10 @@ else
                 <div class="yield-hero-text">
                     <div class="yield-title-row">
                         <h1>Token Allocations</h1>
-                        <span class="yield-title-note">@_chain.NetworkName · connected</span>
+                        <div class="yield-identity-bar">
+                            <ChainBadge NetworkName="@_chain.NetworkName" ChainId="_chain.ChainId" Connected="true" />
+                            <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@_chain.ExplorerUrl" />
+                        </div>
                     </div>
                     <div class="yield-hero-summary">
                         <p class="yield-hero-lede">Deposit your payment tokens into the brewing pool to lock in your yield. Track your active allocation, earn freshly roasted rewards, and unstake your principal at any time.</p>
@@ -140,11 +141,28 @@ else
                 </div>
             </section>
 
-            @if (_isLoading)
-            {
-                <p class="yield-sync-note">Syncing wallet balances, token allocation history, and COFFEE reward data from the chain.</p>
-            }
-            else if (!string.IsNullOrWhiteSpace(_dashboardError))
+            <section class="yield-stat-row" aria-label="Wallet and staking balances">
+                <StatTile Label="Staked"
+                          Value="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
+                          Suffix="CAFE"
+                          Loading="_isLoading" />
+                <StatTile Label="Pending Rewards"
+                          Value="@FormatAmount(_dashboard.PendingStakingRewards)"
+                          Suffix="COFFEE"
+                          Accent="StatTile.StatTileAccent.Positive"
+                          Loading="_isLoading" />
+                <StatTile Label="CAFE Balance"
+                          Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
+                          Suffix="CAFE"
+                          Loading="_isLoading" />
+                <StatTile Label="@($"{_chain.CurrencySymbol} Balance")"
+                          Value="@FormatAmount(_dashboard.NativeBalance)"
+                          Suffix="@_chain.CurrencySymbol"
+                          Hint="@NativeBalanceUsdHint()"
+                          Loading="_isLoading" />
+            </section>
+
+            @if (!string.IsNullOrWhiteSpace(_dashboardError))
             {
                 <div class="yield-error-note">
                     <p>@_dashboardError</p>
@@ -154,10 +172,30 @@ else
 
             @if (!_stakingConfigured)
             {
-                <p class="yield-config-note">
-                    Configure an Ethereum Sepolia ERC-20 payment token and staking pool contract before enabling staking and unstaking.
-                </p>
+                <div class="yield-config-card">
+                    <p class="yield-config-card__eyebrow">Staking pool not deployed</p>
+                    <p class="yield-config-card__body">
+                        Configure an Ethereum Sepolia ERC-20 payment token and staking pool contract before enabling staking and unstaking.
+                        Balances above are live reads from @_chain.NetworkName.
+                    </p>
+                </div>
             }
+
+            <details class="yield-faucet" open="@ShouldExpandFaucet">
+                <summary class="yield-faucet__summary">
+                    <span class="yield-faucet__summary-label">Need test ETH for gas?</span>
+                    @if (ShouldExpandFaucet)
+                    {
+                        <span class="yield-faucet__summary-flag">Balance low</span>
+                    }
+                    <span class="yield-faucet__summary-chevron" aria-hidden="true">▾</span>
+                </summary>
+                <FaucetPanel Address="@_dashboard.WalletAddress"
+                             NetworkName="@_chain.NetworkName"
+                             ExplorerUrl="@_chain.ExplorerUrl"
+                             Compact="true"
+                             OnRefreshRequested="LoadDashboardAsync" />
+            </details>
 
             <section class="yield-allocation-grid" aria-label="Staking actions">
 
@@ -169,16 +207,21 @@ else
                         <p class="yield-card-eyebrow">Brewing Pool Deposit</p>
                         <h2>Stake Tokens</h2>
                         <p class="yield-card-desc">Lock payment tokens into the pool to earn freshly roasted COFFEE rewards on your deposit.</p>
+                        <p class="yield-card-balance">Available <strong class="tabular">@FormatAmount(_dashboard.PaymentTokenBalance) CAFE</strong></p>
                         <div class="yield-card-footer">
                             <div class="yield-input-group">
                                 <input id="stake-amount"
-                                       class="yield-token-input"
+                                       class="yield-token-input tabular"
                                        type="number"
                                        min="0"
                                        step="0.0001"
                                        placeholder="0.0"
                                        disabled="@(!_stakingConfigured)" />
-                                <button type="button" class="yield-max-btn" disabled="@(!_stakingConfigured)">MAX</button>
+                                <button type="button"
+                                        class="yield-max-btn"
+                                        data-max="@FormatAmount(_dashboard.PaymentTokenBalance)"
+                                        data-target="stake-amount"
+                                        disabled="@(!_stakingConfigured)">MAX</button>
                             </div>
                             <button type="button"
                                     class="yield-cta-btn yield-cta-btn--dark btn-stake-token"
@@ -186,6 +229,14 @@ else
                                 Confirm Stake
                             </button>
                         </div>
+                        @if (!string.IsNullOrWhiteSpace(_stakeInputError))
+                        {
+                            <p class="yield-input-error">@_stakeInputError</p>
+                        }
+                        @if (_activeTx?.Flow == "stake")
+                        {
+                            <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                        }
                     </div>
                 </article>
 
@@ -197,17 +248,22 @@ else
                         <p class="yield-card-eyebrow">Principal Withdrawal</p>
                         <h2>Unstake Principal</h2>
                         <p class="yield-card-desc">Withdraw your staked principal back to your wallet whenever you are ready.</p>
+                        <p class="yield-card-balance">Staked <strong class="tabular">@FormatAmount(_dashboard.StakedPaymentTokenBalance) CAFE</strong></p>
                         <div class="yield-card-footer">
                             <div class="yield-input-group">
                                 <input id="unstake-amount"
-                                       class="yield-token-input"
+                                       class="yield-token-input tabular"
                                        type="number"
                                        min="0"
                                        step="0.0001"
                                        max="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
                                        placeholder="0.0"
                                        disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)" />
-                                <button type="button" class="yield-max-btn" disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">MAX</button>
+                                <button type="button"
+                                        class="yield-max-btn"
+                                        data-max="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
+                                        data-target="unstake-amount"
+                                        disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">MAX</button>
                             </div>
                             <button type="button"
                                     class="yield-cta-btn yield-cta-btn--outline btn-unstake-token"
@@ -215,6 +271,14 @@ else
                                 Unstake Now
                             </button>
                         </div>
+                        @if (!string.IsNullOrWhiteSpace(_unstakeInputError))
+                        {
+                            <p class="yield-input-error">@_unstakeInputError</p>
+                        }
+                        @if (_activeTx?.Flow == "unstake")
+                        {
+                            <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                        }
                     </div>
                 </article>
 
@@ -275,6 +339,8 @@ else
     [Parameter]
     public EventCallback OnBackToProfile { get; set; }
 
+    private const decimal LowGasThresholdEth = 0.005m;
+
     private CoffeeDashboardModel _dashboard = new();
     private IReadOnlyList<StakingLedgerItem> _stakingLedger = [];
     private BlockchainNetworkOptions _chain = new();
@@ -288,6 +354,10 @@ else
     private bool _dashboardLoadStarted;
     private bool _jsInitialized;
     private IJSObjectReference? _stakingModule;
+    private DotNetObjectReference<YieldPanel>? _selfRef;
+    private TxStepper.Model? _activeTx;
+    private string? _stakeInputError;
+    private string? _unstakeInputError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -357,6 +427,8 @@ else
             "import",
             "/js/coffeeStaking.js");
 
+        _selfRef ??= DotNetObjectReference.Create(this);
+
         await _stakingModule.InvokeVoidAsync(
             "initCoffeePurchases",
             new
@@ -374,9 +446,63 @@ else
                 currencySymbol = _chain.CurrencySymbol,
                 currencyDecimals = _chain.CurrencyDecimals,
                 explorerUrl = _chain.ExplorerUrl
-            });
+            },
+            _selfRef);
 
         _jsInitialized = true;
+    }
+
+    [JSInvokable]
+    public async Task OnTxStatusChanged(string flow, string step, string status, string? txHash, string? message)
+    {
+        if (step == "validate")
+        {
+            SetInputError(flow, message ?? "Enter a valid amount.");
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        if (flow is not ("stake" or "unstake"))
+        {
+            return;
+        }
+
+        if (_activeTx is null || _activeTx.Flow != flow || _activeTx.IsFinished)
+        {
+            _activeTx = TxStepper.Model.Create(flow);
+        }
+
+        SetInputError(flow, null);
+        _activeTx.Apply(step, status, txHash, message);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task OnTxCompleted(string flow)
+    {
+        if (_activeTx?.Flow == flow)
+        {
+            _activeTx.Completed = true;
+        }
+
+        await InvokeAsync(LoadDashboardAsync);
+    }
+
+    private void DismissTx()
+    {
+        _activeTx = null;
+    }
+
+    private void SetInputError(string flow, string? message)
+    {
+        if (flow == "unstake")
+        {
+            _unstakeInputError = message;
+        }
+        else if (flow == "stake")
+        {
+            _stakeInputError = message;
+        }
     }
 
     private async Task LoadDashboardAsync()
@@ -403,6 +529,7 @@ else
             _dashboard = await dashboardTask.WaitAsync(timeout.Token);
             _ethUsdPrice = await ethUsdPriceTask.WaitAsync(timeout.Token);
             await LoadStakingLedgerAsync(timeout.Token);
+            DashboardState.Publish(_dashboard.WalletAddress, _dashboard);
         }
         catch (OperationCanceledException)
         {
@@ -584,6 +711,20 @@ else
 
     private string FormatApr() => _isLoading ? "..." : $"+{_dashboard.CurrentApr:0.0}%";
 
+    private bool ShouldExpandFaucet =>
+        !_isLoading && string.IsNullOrWhiteSpace(_dashboardError) && _dashboard.NativeBalance < LowGasThresholdEth;
+
+    private string? NativeBalanceUsdHint()
+    {
+        if (_ethUsdPrice is null)
+        {
+            return null;
+        }
+
+        var estimatedUsd = _dashboard.NativeBalance * _ethUsdPrice.Value;
+        return $"≈ {estimatedUsd:$#,##0.00}";
+    }
+
     private string FormatNativeWalletBalance()
     {
         if (_isLoading)
@@ -618,6 +759,8 @@ else
     public async ValueTask DisposeAsync()
     {
         AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChangedAsync;
+
+        _selfRef?.Dispose();
 
         if (_stakingModule is not null)
         {

@@ -42,6 +42,47 @@ const stakingPoolAbi = [
 ];
 
 let web3Instance = null;
+let txNotifier = null;
+
+async function notify(flow, step, status, txHash = null, message = null) {
+    if (!txNotifier) {
+        console.warn(`Tx status (no notifier): ${flow}/${step} → ${status}`, message ?? "");
+        return;
+    }
+
+    try {
+        await txNotifier.invokeMethodAsync("OnTxStatusChanged", flow, step, status, txHash, message);
+    } catch (error) {
+        console.warn("Could not deliver tx status to the app.", error);
+    }
+}
+
+async function notifyCompleted(flow) {
+    if (!txNotifier) {
+        return;
+    }
+
+    try {
+        await txNotifier.invokeMethodAsync("OnTxCompleted", flow);
+    } catch (error) {
+        console.warn("Could not deliver tx completion to the app.", error);
+    }
+}
+
+function friendlyError(error, fallback) {
+    if (error?.code === 4001 || error?.innerError?.code === 4001) {
+        return "Transaction rejected in MetaMask.";
+    }
+
+    return error?.message ?? fallback;
+}
+
+function clearInput(inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = "";
+    }
+}
 
 function getWeb3() {
     const provider = getMetaMaskProvider();
@@ -112,7 +153,9 @@ export async function connectWalletForStaking(config) {
     return account;
 }
 
-export function initCoffeePurchases(config) {
+export function initCoffeePurchases(config, dotNetRef) {
+    txNotifier = dotNetRef ?? txNotifier;
+
     if (!getMetaMaskProvider()) {
         return;
     }
@@ -159,6 +202,7 @@ export function initCoffeePurchases(config) {
             target.dataset.transactionPending = "true";
             target.disabled = true;
 
+            let step = "payment";
             try {
                 await ensureConfiguredNetwork(config);
                 const accounts = await web3.eth.requestAccounts();
@@ -172,12 +216,16 @@ export function initCoffeePurchases(config) {
                 const tokenContract = new web3.eth.Contract(erc20TransferAbi, paymentTokenAddress);
                 const valueInWei = web3.utils.toWei(price, "ether");
 
-                window.alert(`Processing payment of ${price} ${paymentTokenLabel} on ${networkName}. Confirm in MetaMask...`);
+                await notify("purchase", "payment", "pending", null, `Paying ${price} ${paymentTokenLabel} on ${networkName}.`);
 
                 const paymentReceipt = await tokenContract.methods
                     .transfer(recipient, valueInWei)
                     .send({ from: activeAccount });
 
+                await notify("purchase", "payment", "confirmed", paymentReceipt.transactionHash);
+
+                step = "mint";
+                await notify("purchase", "mint", "pending");
                 const mintResult = await mintLoyaltyReward(
                     activeAccount,
                     reward,
@@ -186,14 +234,10 @@ export function initCoffeePurchases(config) {
                     allocationName
                 );
 
-                window.alert(
-                    `Payment successful. Your coffee is on the way. Minted ${mintResult.mintedAmount ?? reward} COFFEE.`
-                );
-
-                window.location.reload();
+                await notify("purchase", "mint", "confirmed", null, `Minted ${mintResult.mintedAmount ?? reward} COFFEE.`);
+                await notifyCompleted("purchase");
             } catch (error) {
-                const message = error?.message ?? "Transaction failed.";
-                window.alert(`Transaction cancelled or failed: ${message}`);
+                await notify("purchase", step, "error", null, friendlyError(error, "Transaction failed."));
             } finally {
                 delete target.dataset.transactionPending;
                 target.disabled = false;
@@ -204,6 +248,8 @@ export function initCoffeePurchases(config) {
 
 function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel, networkName) {
     const stakingPoolAddress = config.stakingPoolContract;
+
+    bindMaxButtons();
 
     if (!stakingPoolAddress || stakingPoolAddress === "0x0000000000000000000000000000000000000000") {
         console.warn("StakingPoolContract is not configured; staking is disabled.");
@@ -225,29 +271,43 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
             target.dataset.transactionPending = "true";
             target.disabled = true;
 
+            let step = "approve";
             try {
-                const amount = readTokenAmount("stake-amount", "Enter an amount to stake.");
+                let amount;
+                try {
+                    amount = readTokenAmount("stake-amount", "Enter an amount to stake.");
+                } catch (validationError) {
+                    await notify("stake", "validate", "error", null, validationError.message);
+                    return;
+                }
+
                 const activeAccount = await prepareWalletForTransaction(config, web3);
                 const amountWei = web3.utils.toWei(amount, "ether");
                 const tokenContract = new web3.eth.Contract(erc20ApproveAbi, paymentTokenAddress);
                 const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
 
-                window.alert(`Approve ${amount} ${paymentTokenLabel} for staking on ${networkName}. Confirm in MetaMask...`);
-                await tokenContract.methods
+                await notify("stake", "approve", "pending", null, `Approve ${amount} ${paymentTokenLabel} in MetaMask.`);
+                const approvalReceipt = await tokenContract.methods
                     .approve(stakingPoolAddress, amountWei)
                     .send({ from: activeAccount });
+                await notify("stake", "approve", "confirmed", approvalReceipt.transactionHash);
 
-                window.alert(`Stake ${amount} ${paymentTokenLabel}. Confirm in MetaMask...`);
+                step = "stake";
+                await notify("stake", "stake", "pending", null, `Stake ${amount} ${paymentTokenLabel} in MetaMask.`);
                 const receipt = await stakingContract.methods
                     .stake(amountWei)
                     .send({ from: activeAccount });
+                await notify("stake", "stake", "confirmed", receipt.transactionHash);
 
+                step = "record";
+                await notify("stake", "record", "pending");
                 await recordStakingTransaction("/staking/api/record-stake", activeAccount, amount, receipt.transactionHash);
-                window.alert(`Stake recorded. Transaction: ${shortAddress(receipt.transactionHash)}`);
-                window.location.reload();
+                await notify("stake", "record", "confirmed", receipt.transactionHash);
+
+                clearInput("stake-amount");
+                await notifyCompleted("stake");
             } catch (error) {
-                const message = error?.message ?? "Stake transaction failed.";
-                window.alert(`Stake cancelled or failed: ${message}`);
+                await notify("stake", step, "error", null, friendlyError(error, "Stake transaction failed."));
             } finally {
                 delete target.dataset.transactionPending;
                 target.disabled = false;
@@ -270,31 +330,64 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
             target.dataset.transactionPending = "true";
             target.disabled = true;
 
+            let step = "unstake";
             try {
-                const amount = readTokenAmount("unstake-amount", "Enter an amount to unstake.");
-                const stakedBalance = Number(config.stakedTokenBalance ?? 0);
-                if (Number(amount) > stakedBalance) {
-                    throw new Error(`You can unstake up to ${stakedBalance} ${paymentTokenLabel}.`);
+                let amount;
+                try {
+                    amount = readTokenAmount("unstake-amount", "Enter an amount to unstake.");
+
+                    const input = document.getElementById("unstake-amount");
+                    const stakedBalance = Number(input?.max || 0);
+                    if (stakedBalance > 0 && Number(amount) > stakedBalance) {
+                        throw new Error(`You can unstake up to ${stakedBalance} ${paymentTokenLabel}.`);
+                    }
+                } catch (validationError) {
+                    await notify("unstake", "validate", "error", null, validationError.message);
+                    return;
                 }
 
                 const activeAccount = await prepareWalletForTransaction(config, web3);
                 const amountWei = web3.utils.toWei(amount, "ether");
                 const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
 
-                window.alert(`Unstake ${amount} ${paymentTokenLabel}. Confirm in MetaMask...`);
+                await notify("unstake", "unstake", "pending", null, `Unstake ${amount} ${paymentTokenLabel} in MetaMask.`);
                 const receipt = await stakingContract.methods
                     .unstake(amountWei)
                     .send({ from: activeAccount });
+                await notify("unstake", "unstake", "confirmed", receipt.transactionHash);
 
+                step = "record";
+                await notify("unstake", "record", "pending");
                 await recordStakingTransaction("/staking/api/record-unstake", activeAccount, amount, receipt.transactionHash);
-                window.alert(`Unstake recorded. Transaction: ${shortAddress(receipt.transactionHash)}`);
-                window.location.reload();
+                await notify("unstake", "record", "confirmed", receipt.transactionHash);
+
+                clearInput("unstake-amount");
+                await notifyCompleted("unstake");
             } catch (error) {
-                const message = error?.message ?? "Unstake transaction failed.";
-                window.alert(`Unstake cancelled or failed: ${message}`);
+                await notify("unstake", step, "error", null, friendlyError(error, "Unstake transaction failed."));
             } finally {
                 delete target.dataset.transactionPending;
                 target.disabled = false;
+            }
+        });
+    });
+}
+
+function bindMaxButtons() {
+    document.querySelectorAll(".yield-max-btn").forEach((button) => {
+        if (button.dataset.coffeeMaxBound === "true") {
+            return;
+        }
+
+        button.dataset.coffeeMaxBound = "true";
+        button.addEventListener("click", (event) => {
+            const target = event.currentTarget;
+            const input = target.dataset.target ? document.getElementById(target.dataset.target) : null;
+            const max = target.dataset.max;
+
+            if (input && max) {
+                input.value = max;
+                input.dispatchEvent(new Event("input", { bubbles: true }));
             }
         });
     });

@@ -227,6 +227,43 @@
     overflow-wrap: anywhere;
 }
 
+.profile-dash__faucet-link {
+    color: #8a4d34;
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+}
+
+.profile-dash__faucet-link:hover {
+    text-decoration: underline;
+}
+
+.profile-dash__mono {
+    font-family: var(--crypto-mono);
+    font-size: 0.9em;
+}
+
+.profile-dash__tx-chip {
+    background: rgba(44, 27, 18, 0.05);
+    border: 1px solid rgba(44, 27, 18, 0.13);
+    border-radius: 999px;
+    color: #8a4d34;
+    display: inline-block;
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-left: 0.35rem;
+    padding: 0.12rem 0.55rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.profile-dash__tx-chip:hover {
+    border-color: rgba(138, 77, 52, 0.55);
+    color: #6d3a26;
+}
+
 /* ── Display name inline edit ── */
 
 .profile-dash__errors {
