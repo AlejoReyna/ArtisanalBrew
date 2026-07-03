@@ -100,8 +100,8 @@ jobs:
           echo "Allowing runner IP $RUNNER_IP through the Postgres firewall temporarily"
           az postgres flexible-server firewall-rule create \
             --resource-group "$RESOURCE_GROUP" \
-            --name "$POSTGRES_SERVER_NAME" \
-            --rule-name "$FIREWALL_RULE_NAME" \
+            --server-name "$POSTGRES_SERVER_NAME" \
+            --name "$FIREWALL_RULE_NAME" \
             --start-ip-address "$RUNNER_IP" \
             --end-ip-address "$RUNNER_IP" \
             --output none
@@ -123,8 +123,8 @@ jobs:
         run: |
           az postgres flexible-server firewall-rule delete \
             --resource-group "$RESOURCE_GROUP" \
-            --name "$POSTGRES_SERVER_NAME" \
-            --rule-name "$FIREWALL_RULE_NAME" \
+            --server-name "$POSTGRES_SERVER_NAME" \
+            --name "$FIREWALL_RULE_NAME" \
             --yes || true
 
       - name: Update Web Container App
