@@ -216,3 +216,21 @@ After finishing Phase 5, a routine health check on the live app returned `404` o
 **Fixed in two layers:** immediately re-ran `az containerapp update` with the real `:v1` tags for both apps (confirmed `/health` back to `200 Healthy`), then fixed the underlying cause by pinning `webImage`/`workerImage` in `infra/main.bicepparam` to `:latest` (rather than leaving them at the placeholder default) now that real images exist — so a future infra-only Bicep redeploy can no longer regress the running image. `az bicep build-params` confirmed clean.
 
 **Takeaway:** a placeholder-image default that's only safe for the very first deploy is a footgun for every deploy after that — should have pinned this the moment real images existed in Phase 3, not left it to be caught by a health check regression later.
+
+## Phase 6 — Cutover (done)
+
+**Corrected another wrong assumption from the original prompt:** DNS for `alexisreyna.dev` is managed via **GoDaddy** (`ns13/ns14.domaincontrol.com`), not AWS Route 53 as stated in the original prompt and confirmed by the user earlier — verified independently via `dig` rather than trusting the earlier answer. `cafe.alexisreyna.dev` was a plain A record pointing at the EC2 IP (`98.90.53.155`).
+
+Since I have no GoDaddy API/console access, gave the user the exact two DNS records to add themselves:
+- `TXT asuid.cafe` → the Container App's `customDomainVerificationId`
+- `CNAME cafe` → `thiscafeteria-prod-web.ashyground-75811a1d.westus.azurecontainerapps.io` (replacing the old A record)
+
+After the user added them, verified propagation via `dig` (both records resolved correctly), then:
+- `az containerapp hostname add` — attached the hostname to the Web Container App
+- `az containerapp hostname bind --validation-method CNAME` — created and bound a free managed certificate (`mc-thiscafeteria--cafe-alexisreyna-2063`), took a few minutes to issue
+
+**Verified end-to-end on the real domain:** `https://cafe.alexisreyna.dev/health` → `200 Healthy`; TLS certificate valid (`CN=cafe.alexisreyna.dev`, expires 2027-01-03); home page → `200`; `/api/wallet-status` and `/api/wallet-auth/challenge` both responding correctly (including a real Service Bus publish confirmed via the returned message ID) over the production domain.
+
+**Not automated, by design:** the full Sepolia/MetaMask checkout flow requires real wallet interaction (signing a transaction) that this agent should not and cannot perform without wallet key custody — left for the user to verify manually. Everything else on the Phase 6 smoke-test checklist (health, TLS, wallet APIs, page rendering) is confirmed working on the production domain.
+
+**Old EC2 instance is now fully out of the traffic path** — `cafe.alexisreyna.dev` resolves to Azure. The EC2 box is still running (healthy, per the earlier incident recovery) but no longer receiving production traffic. Per the original guardrail, decommissioning it (Phase 7) should wait for a stable soak period on Azure, not happen in this same session.
