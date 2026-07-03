@@ -1,10 +1,5 @@
-using Amazon.S3;
-using Amazon.S3.Model;
-using Amazon.SimpleEmailV2;
-using Amazon.SimpleEmailV2.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MimeKit;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -15,13 +10,11 @@ using ThisCafeteria.Infrastructure.Configuration;
 namespace ThisCafeteria.Infrastructure.Services;
 
 public sealed class ReceiptService(
-    AmazonS3Client s3,
-    AmazonSimpleEmailServiceV2Client ses,
-    IOptions<AwsMessagingOptions> options,
+    IS3StorageService blobStorage,
+    IEmailSender emailSender,
+    IOptions<AzureOptions> options,
     ILogger<ReceiptService> logger) : IReceiptService
 {
-    private const string ReceiptKeyPrefix = "receipts";
-
     public async Task SendReceiptAsync(OrderDetails order, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(order);
@@ -36,28 +29,26 @@ public sealed class ReceiptService(
             throw new ArgumentException("CustomerEmail is required.", nameof(order));
         }
 
-        var awsOptions = options.Value;
-        if (string.IsNullOrWhiteSpace(awsOptions.S3BucketName))
+        var azureOptions = options.Value;
+        if (string.IsNullOrWhiteSpace(azureOptions.Storage.BlobEndpoint))
         {
-            throw new InvalidOperationException("AWS:S3BucketName is not configured.");
+            throw new InvalidOperationException("Azure:Storage:BlobEndpoint is not configured.");
         }
 
-        if (string.IsNullOrWhiteSpace(awsOptions.SesSenderEmail))
+        if (string.IsNullOrWhiteSpace(azureOptions.Communication.SenderAddress))
         {
-            throw new InvalidOperationException("AWS:SesSenderEmail is not configured.");
+            throw new InvalidOperationException("Azure:Communication:SenderAddress is not configured.");
         }
 
         var pdfBytes = GenerateReceiptPdf(order);
-        var s3Key = $"{ReceiptKeyPrefix}/order-{order.OrderId}.pdf";
-        var fileName = $"receipt-order-{order.OrderId}.pdf";
+        var fileName = $"order-{order.OrderId}.pdf";
 
-        await UploadReceiptToS3Async(pdfBytes, awsOptions.S3BucketName, s3Key, cancellationToken);
-        await SendReceiptEmailAsync(order, pdfBytes, fileName, awsOptions.SesSenderEmail, cancellationToken);
+        var blobUri = await UploadReceiptToBlobAsync(pdfBytes, fileName, cancellationToken);
+        await SendReceiptEmailAsync(order, pdfBytes, fileName, cancellationToken);
 
         logger.LogInformation(
-            "Receipt generated, uploaded to s3://{Bucket}/{Key}, and emailed to {Recipient}",
-            awsOptions.S3BucketName,
-            s3Key,
+            "Receipt generated, uploaded to {BlobUri}, and emailed to {Recipient}",
+            blobUri,
             order.CustomerEmail);
     }
 
@@ -197,73 +188,34 @@ public sealed class ReceiptService(
                 .Padding(8);
     }
 
-    private async Task UploadReceiptToS3Async(
+    private async Task<string> UploadReceiptToBlobAsync(
         byte[] pdfBytes,
-        string bucketName,
-        string s3Key,
+        string fileName,
         CancellationToken cancellationToken)
     {
         await using var stream = new MemoryStream(pdfBytes);
-
-        var request = new PutObjectRequest
-        {
-            BucketName = bucketName,
-            Key = s3Key,
-            InputStream = stream,
-            ContentType = "application/pdf",
-            ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256
-        };
-
-        await s3.PutObjectAsync(request, cancellationToken);
+        return await blobStorage.UploadAsync(stream, fileName, "application/pdf", cancellationToken);
     }
 
-    private async Task SendReceiptEmailAsync(
+    private Task SendReceiptEmailAsync(
         OrderDetails order,
         byte[] pdfBytes,
         string fileName,
-        string senderEmail,
         CancellationToken cancellationToken)
     {
-        var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(senderEmail));
-        message.To.Add(MailboxAddress.Parse(order.CustomerEmail));
-        message.Subject = $"Your receipt for order {order.OrderId}";
-
-        var body = new BodyBuilder
-        {
-            TextBody = $"""
+        var email = new OutboundEmail(
+            order.CustomerEmail,
+            $"Your receipt for order {order.OrderId}",
+            $"""
             Hello {order.CustomerName},
 
             Thank you for your purchase. Your receipt for order {order.OrderId} is attached.
 
             Regards,
             This Cafeteria
-            """
-        };
+            """,
+            [new EmailAttachmentData(fileName, "application/pdf", pdfBytes)]);
 
-        body.Attachments.Add(fileName, pdfBytes, new ContentType("application", "pdf"));
-        message.Body = body.ToMessageBody();
-
-        await using var rawMessageStream = new MemoryStream();
-        await message.WriteToAsync(rawMessageStream, cancellationToken);
-        rawMessageStream.Position = 0;
-
-        var request = new SendEmailRequest
-        {
-            FromEmailAddress = senderEmail,
-            Destination = new Destination
-            {
-                ToAddresses = [order.CustomerEmail]
-            },
-            Content = new EmailContent
-            {
-                Raw = new RawMessage
-                {
-                    Data = rawMessageStream
-                }
-            }
-        };
-
-        await ses.SendEmailAsync(request, cancellationToken);
+        return emailSender.SendAsync(email, cancellationToken);
     }
 }
