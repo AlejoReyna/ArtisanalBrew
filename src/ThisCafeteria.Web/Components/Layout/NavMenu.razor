@@ -412,12 +412,17 @@
         StateHasChanged();
     }
 
-    private void ToggleNav()
+    private async Task ToggleNav()
     {
         _isNavOpen = !_isNavOpen;
         if (_isNavOpen)
         {
             _ = LoadWalletStatsAsync();
+            await JsRuntime.InvokeVoidAsync("themeColor.set", "#0c0a09");
+        }
+        else
+        {
+            await JsRuntime.InvokeVoidAsync("themeColor.restore");
         }
     }
 
@@ -460,7 +465,14 @@
         }
     }
 
-    private void CloseNav() => _isNavOpen = false;
+    private void CloseNav()
+    {
+        if (_isNavOpen)
+        {
+            _isNavOpen = false;
+            _ = JsRuntime.InvokeVoidAsync("themeColor.restore");
+        }
+    }
 
     private async Task ToggleUserMenu()
     {
@@ -516,7 +528,7 @@
 
     private void OpenWalletModal()
     {
-        _isNavOpen = false;
+        CloseNav();
         _isUserMenuOpen = false;
         _isUserMenuRendered = false;
         _isWalletModalOpen = true;

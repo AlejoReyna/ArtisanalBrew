@@ -1,3 +1,31 @@
+window.themeColor = {
+    _original: null,
+    set(color) {
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (!meta) {
+            return;
+        }
+
+        if (this._original === null) {
+            this._original = meta.getAttribute('content');
+        }
+
+        meta.setAttribute('content', color);
+    },
+    restore() {
+        if (this._original === null) {
+            return;
+        }
+
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) {
+            meta.setAttribute('content', this._original);
+        }
+
+        this._original = null;
+    }
+};
+
 window.initPublicHeader = () => {
     const hero = document.querySelector('.editorial-hero, .journal-hero');
     const header = document.querySelector('.public-header');
