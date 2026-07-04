@@ -391,8 +391,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         _chain = ChainOptions.Value;
-        _stakingConfigured = IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
-            IsConfiguredAddress(_chain.StakingPoolContract);
+        _stakingConfigured = WalletAddressRules.IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
+            WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
         await ApplyResolvedWalletAsync();
@@ -585,14 +585,14 @@ else
         {
             var fromClaim = principal.FindFirst("wallet_address")?.Value
                 ?? TryGetWalletFromPrincipalName(principal);
-            if (TryNormalizeWallet(fromClaim, out var claimWallet))
+            if (WalletAddressRules.TryNormalizeWallet(fromClaim, out var claimWallet))
             {
                 SyncWalletSession(claimWallet);
                 return claimWallet;
             }
 
             var user = await UserManager.GetUserAsync(principal);
-            if (TryNormalizeWallet(user?.WalletAddress, out var userWallet))
+            if (WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out var userWallet))
             {
                 SyncWalletSession(userWallet);
                 return userWallet;
@@ -600,7 +600,7 @@ else
         }
 
         var sessionWallet = HttpContextAccessor.HttpContext?.Session.GetString("WalletAddress");
-        return TryNormalizeWallet(sessionWallet, out var normalizedSession)
+        return WalletAddressRules.TryNormalizeWallet(sessionWallet, out var normalizedSession)
             ? normalizedSession
             : null;
     }
@@ -615,13 +615,13 @@ else
         }
 
         var claimWallet = principal.FindFirst("wallet_address")?.Value ?? TryGetWalletFromPrincipalName(principal);
-        if (TryNormalizeWallet(claimWallet, out _))
+        if (WalletAddressRules.TryNormalizeWallet(claimWallet, out _))
         {
             return true;
         }
 
         var user = await UserManager.GetUserAsync(principal);
-        return TryNormalizeWallet(user?.WalletAddress, out _);
+        return WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out _);
     }
 
     private void SyncWalletSession(string wallet)
@@ -650,18 +650,6 @@ else
     private static bool IsValidEthereumAddress(string? address) =>
         !string.IsNullOrWhiteSpace(address) &&
         AddressUtil.Current.IsValidEthereumAddressHexFormat(address);
-
-    private static bool TryNormalizeWallet(string? address, out string checksum)
-    {
-        checksum = string.Empty;
-        if (!IsValidEthereumAddress(address))
-        {
-            return false;
-        }
-
-        checksum = AddressUtil.Current.ConvertToChecksumAddress(address!);
-        return true;
-    }
 
     private async Task ConnectWalletAsync()
     {
@@ -717,37 +705,18 @@ else
             return;
         }
 
-        try
-        {
-            _stakingLedger = await dbContext.StakingLedgerEntries
-                .AsNoTracking()
-                .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
-                .OrderByDescending(entry => entry.RecordedAtUtc)
-                .Take(8)
-                .Select(entry => new StakingLedgerItem(
-                    entry.RecordedAtUtc,
-                    entry.ActionType,
-                    entry.Amount,
-                    entry.ExplorerUrl))
-                .ToListAsync(cancellationToken);
-        }
-        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            _stakingLedger = [];
-        }
+        _stakingLedger = await dbContext.StakingLedgerEntries
+            .AsNoTracking()
+            .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
+            .OrderByDescending(entry => entry.RecordedAtUtc)
+            .Take(8)
+            .Select(entry => new StakingLedgerItem(
+                entry.RecordedAtUtc,
+                entry.ActionType,
+                entry.Amount,
+                entry.ExplorerUrl))
+            .ToListAsync(cancellationToken);
     }
-
-    private static bool IsConfiguredAddress(string? address) =>
-        !string.IsNullOrWhiteSpace(address) &&
-        address.Length == 42 &&
-        address.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
-        address[2..].All(Uri.IsHexDigit) &&
-        !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsMissingStakingLedgerTable(Exception exception) =>
-        exception.Message.Contains("42P01", StringComparison.OrdinalIgnoreCase) ||
-        exception.Message.Contains("StakingLedgerEntries", StringComparison.OrdinalIgnoreCase) ||
-        (exception.InnerException is not null && IsMissingStakingLedgerTable(exception.InnerException));
 
     private static string ShortAddress(string address) =>
         string.IsNullOrWhiteSpace(address) || address.Length < 10

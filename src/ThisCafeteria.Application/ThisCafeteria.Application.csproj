@@ -5,6 +5,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.*" />
     <PackageReference Include="MediatR" Version="14.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.*" />
+    <PackageReference Include="Nethereum.Util" Version="5.*" />
   </ItemGroup>
 
   <ItemGroup>

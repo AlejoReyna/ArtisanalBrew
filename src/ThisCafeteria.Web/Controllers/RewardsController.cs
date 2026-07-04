@@ -22,7 +22,7 @@ public sealed class RewardsController(
         [FromQuery] string walletAddress,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeWallet(walletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(walletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -36,7 +36,7 @@ public sealed class RewardsController(
         [FromBody] WalletRequest request,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -51,7 +51,7 @@ public sealed class RewardsController(
         [FromBody] MintLoyaltyRequest request,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -76,7 +76,7 @@ public sealed class RewardsController(
             return BadRequest("Payment amount must be greater than zero.");
         }
 
-        if (!TryNormalizeTransactionHash(request.PaymentTransactionHash, out var paymentTransactionHash))
+        if (!WalletAddressRules.TryNormalizeTransactionHash(request.PaymentTransactionHash, out var paymentTransactionHash))
         {
             return BadRequest("A valid payment token transaction hash is required.");
         }
@@ -176,19 +176,6 @@ public sealed class RewardsController(
         return Ok(result);
     }
 
-    private static bool TryNormalizeWallet(string? address, out string checksum)
-    {
-        checksum = string.Empty;
-        if (string.IsNullOrWhiteSpace(address) ||
-            !AddressUtil.Current.IsValidEthereumAddressHexFormat(address))
-        {
-            return false;
-        }
-
-        checksum = AddressUtil.Current.ConvertToChecksumAddress(address);
-        return true;
-    }
-
     private bool TryResolveCurrentWallet(out string wallet)
     {
         wallet = string.Empty;
@@ -202,7 +189,7 @@ public sealed class RewardsController(
 
         foreach (var candidate in candidates)
         {
-            if (TryNormalizeWallet(candidate, out wallet))
+            if (WalletAddressRules.TryNormalizeWallet(candidate, out wallet))
             {
                 return true;
             }
@@ -217,21 +204,6 @@ public sealed class RewardsController(
         dbContext.RewardClaims.AnyAsync(
             claim => claim.PaymentTransactionHash == paymentTransactionHash,
             cancellationToken);
-
-    private static bool TryNormalizeTransactionHash(string? value, out string transactionHash)
-    {
-        transactionHash = string.Empty;
-        if (string.IsNullOrWhiteSpace(value) ||
-            value.Length != 66 ||
-            !value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
-            !value[2..].All(Uri.IsHexDigit))
-        {
-            return false;
-        }
-
-        transactionHash = value.ToLowerInvariant();
-        return true;
-    }
 
     private string BuildExplorerTransactionUrl(string transactionHash)
     {

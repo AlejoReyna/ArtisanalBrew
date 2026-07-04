@@ -26,12 +26,11 @@ public sealed class StakingController(
         [FromQuery] string walletAddress,
         CancellationToken cancellationToken)
     {
-        if (!AddressUtil.Current.IsValidEthereumAddressHexFormat(walletAddress))
+        if (!WalletAddressRules.TryNormalizeWallet(walletAddress, out var checksum))
         {
             return BadRequest("A valid wallet address is required.");
         }
 
-        var checksum = AddressUtil.Current.ConvertToChecksumAddress(walletAddress);
         var balance = await web3Service.GetCoffeeCoinBalanceAsync(checksum, cancellationToken);
         return Ok(new { walletAddress = checksum, balance, symbol = "COFFEE" });
     }
@@ -45,12 +44,11 @@ public sealed class StakingController(
             return Ok(new CoffeeDashboardModel());
         }
 
-        if (!AddressUtil.Current.IsValidEthereumAddressHexFormat(wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(wallet, out var checksum))
         {
             return BadRequest("A valid wallet address is required.");
         }
 
-        var checksum = AddressUtil.Current.ConvertToChecksumAddress(wallet);
         var model = await web3Service.GetDashboardDataAsync(checksum, cancellationToken);
         return Ok(model);
     }
@@ -66,12 +64,11 @@ public sealed class StakingController(
             return Ok(new CoffeeDashboardModel());
         }
 
-        if (!AddressUtil.Current.IsValidEthereumAddressHexFormat(wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(wallet, out var checksum))
         {
             return BadRequest("A valid wallet address is required.");
         }
 
-        var checksum = AddressUtil.Current.ConvertToChecksumAddress(wallet);
         var model = await web3Service.GetDashboardDataAsync(checksum, cancellationToken);
         return Ok(model);
     }
@@ -101,7 +98,7 @@ public sealed class StakingController(
             return BadRequest("Configure a payment token and staking pool contract before staking.");
         }
 
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -117,22 +114,12 @@ public sealed class StakingController(
             return BadRequest("The connected wallet does not match the staking session wallet.");
         }
 
-        if (!TryNormalizeTransactionHash(request.TransactionHash, out var transactionHash))
+        if (!WalletAddressRules.TryNormalizeTransactionHash(request.TransactionHash, out var transactionHash))
         {
             return BadRequest("A valid staking transaction hash is required.");
         }
 
-        bool transactionExists;
-        try
-        {
-            transactionExists = await StakingTransactionExistsAsync(transactionHash, cancellationToken);
-        }
-        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
-        }
-
-        if (transactionExists)
+        if (await StakingTransactionExistsAsync(transactionHash, cancellationToken))
         {
             return Conflict("This staking transaction has already been recorded.");
         }
@@ -174,17 +161,9 @@ public sealed class StakingController(
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
-        }
         catch (DbUpdateException)
         {
             return Conflict("This staking transaction has already been recorded.");
-        }
-        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
         }
 
         return Ok(new
@@ -206,7 +185,7 @@ public sealed class StakingController(
             return BadRequest($"Connect your wallet to {chain.NetworkName} before starting an allocation.");
         }
 
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -261,7 +240,7 @@ public sealed class StakingController(
             return BadRequest("Configure a payment token and staking pool contract before staking.");
         }
 
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -284,22 +263,12 @@ public sealed class StakingController(
                 : "Unstake amount must be greater than zero.");
         }
 
-        if (!TryNormalizeTransactionHash(request.TransactionHash, out var transactionHash))
+        if (!WalletAddressRules.TryNormalizeTransactionHash(request.TransactionHash, out var transactionHash))
         {
             return BadRequest("A valid staking transaction hash is required.");
         }
 
-        bool transactionExists;
-        try
-        {
-            transactionExists = await StakingTransactionExistsAsync(transactionHash, cancellationToken);
-        }
-        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
-        }
-
-        if (transactionExists)
+        if (await StakingTransactionExistsAsync(transactionHash, cancellationToken))
         {
             return Conflict("This staking transaction has already been recorded.");
         }
@@ -341,17 +310,9 @@ public sealed class StakingController(
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
-        }
         catch (DbUpdateException)
         {
             return Conflict("This staking transaction has already been recorded.");
-        }
-        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            return BadRequest("The staking ledger database migration has not been applied yet. Restart the app or apply migrations before staking.");
         }
 
         return Ok(new
@@ -389,8 +350,8 @@ public sealed class StakingController(
             : amount > 0m;
 
     private bool IsStakingConfigured() =>
-        IsConfiguredAddress(chain.EffectivePaymentTokenContract) &&
-        IsConfiguredAddress(chain.StakingPoolContract);
+        WalletAddressRules.IsConfiguredAddress(chain.EffectivePaymentTokenContract) &&
+        WalletAddressRules.IsConfiguredAddress(chain.StakingPoolContract);
 
     private async Task<bool> IsWalletAlreadyAuthenticatedAsync(string wallet)
     {
@@ -400,7 +361,7 @@ public sealed class StakingController(
         }
 
         var claimWallet = User.FindFirst("wallet_address")?.Value ?? User.Identity?.Name;
-        if (TryNormalizeWallet(claimWallet, out var normalizedClaimWallet) &&
+        if (WalletAddressRules.TryNormalizeWallet(claimWallet, out var normalizedClaimWallet) &&
             AddressUtil.Current.AreAddressesTheSame(normalizedClaimWallet, wallet))
         {
             return true;
@@ -413,7 +374,7 @@ public sealed class StakingController(
         }
 
         var user = await userManager.GetUserAsync(User);
-        return TryNormalizeWallet(user?.WalletAddress, out var normalizedUserWallet) &&
+        return WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out var normalizedUserWallet) &&
             AddressUtil.Current.AreAddressesTheSame(normalizedUserWallet, wallet);
     }
 
@@ -438,7 +399,7 @@ public sealed class StakingController(
 
         foreach (var candidate in candidates)
         {
-            if (TryNormalizeWallet(candidate, out var wallet))
+            if (WalletAddressRules.TryNormalizeWallet(candidate, out var wallet))
             {
                 return (true, wallet);
             }
@@ -461,46 +422,6 @@ public sealed class StakingController(
             ? string.Empty
             : $"{explorer.TrimEnd('/')}/tx/{transactionHash}";
     }
-
-    private static bool TryNormalizeWallet(string? address, out string checksum)
-    {
-        checksum = string.Empty;
-        if (string.IsNullOrWhiteSpace(address) ||
-            !AddressUtil.Current.IsValidEthereumAddressHexFormat(address))
-        {
-            return false;
-        }
-
-        checksum = AddressUtil.Current.ConvertToChecksumAddress(address);
-        return true;
-    }
-
-    private static bool TryNormalizeTransactionHash(string? value, out string transactionHash)
-    {
-        transactionHash = string.Empty;
-        if (string.IsNullOrWhiteSpace(value) ||
-            value.Length != 66 ||
-            !value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
-            !value[2..].All(Uri.IsHexDigit))
-        {
-            return false;
-        }
-
-        transactionHash = value.ToLowerInvariant();
-        return true;
-    }
-
-    private static bool IsConfiguredAddress(string? address) =>
-        !string.IsNullOrWhiteSpace(address) &&
-        address.Length == 42 &&
-        address.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
-        address[2..].All(Uri.IsHexDigit) &&
-        !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsMissingStakingLedgerTable(Exception exception) =>
-        exception.Message.Contains("42P01", StringComparison.OrdinalIgnoreCase) ||
-        exception.Message.Contains("StakingLedgerEntries", StringComparison.OrdinalIgnoreCase) ||
-        (exception.InnerException is not null && IsMissingStakingLedgerTable(exception.InnerException));
 
     public sealed record SaveWalletSessionRequest(
         string WalletAddress,

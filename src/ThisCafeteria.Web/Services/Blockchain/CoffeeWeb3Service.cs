@@ -47,7 +47,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
     public async Task<decimal> GetTotalCoffeeSupplyAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsValidContract(_coffeeCoinContract))
+        if (!WalletAddressRules.IsConfiguredAddress(_coffeeCoinContract))
         {
             return 0m;
         }
@@ -119,7 +119,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
                 "Set CoffeeCoinOwner:PrivateKey via User Secrets or environment variable CoffeeCoinOwner__PrivateKey.");
         }
 
-        if (!IsValidContract(_coffeeCoinContract))
+        if (!WalletAddressRules.IsConfiguredAddress(_coffeeCoinContract))
         {
             throw new InvalidOperationException("Blockchain:Network:CoffeeCoinContract is not configured.");
         }
@@ -190,8 +190,8 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         if (!IsTransactionHash(txHash) ||
             !IsValidAddress(expectedCustomer) ||
             expectedAmount <= 0m ||
-            !IsValidContract(_paymentTokenContract) ||
-            !IsValidContract(_chain.MarketplaceWallet))
+            !WalletAddressRules.IsConfiguredAddress(_paymentTokenContract) ||
+            !WalletAddressRules.IsConfiguredAddress(_chain.MarketplaceWallet))
         {
             return TransactionVerificationStatus.Failed;
         }
@@ -250,7 +250,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         string walletAddress,
         CancellationToken cancellationToken = default)
     {
-        if (!IsValidAddress(walletAddress) || !IsValidContract(_stakingPoolContract))
+        if (!IsValidAddress(walletAddress) || !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
         {
             return 0m;
         }
@@ -270,7 +270,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         string walletAddress,
         CancellationToken cancellationToken = default)
     {
-        if (!IsValidAddress(walletAddress) || !IsValidContract(_stakingPoolContract))
+        if (!IsValidAddress(walletAddress) || !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
         {
             return 0m;
         }
@@ -309,8 +309,8 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         if (!IsTransactionHash(txHash) ||
             !IsValidAddress(expectedWallet) ||
-            !IsValidContract(_stakingPoolContract) ||
-            (isClaim ? !IsValidContract(_coffeeCoinContract) : !IsValidContract(_paymentTokenContract)) ||
+            !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract) ||
+            (isClaim ? !WalletAddressRules.IsConfiguredAddress(_coffeeCoinContract) : !WalletAddressRules.IsConfiguredAddress(_paymentTokenContract)) ||
             (!isClaim && (expectedAmount is null || expectedAmount <= 0m)))
         {
             return StakingVerificationResult.Failed;
@@ -413,7 +413,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
     private async Task<string?> DetectClaimFunctionAsync(string walletAddress, CancellationToken cancellationToken)
     {
-        if (!IsValidAddress(walletAddress) || !IsValidContract(_stakingPoolContract))
+        if (!IsValidAddress(walletAddress) || !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
         {
             return null;
         }
@@ -433,7 +433,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
     private async Task<decimal?> DetectContractAprAsync(CancellationToken cancellationToken)
     {
-        if (!IsValidContract(_stakingPoolContract))
+        if (!WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
         {
             return null;
         }
@@ -503,7 +503,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         string contractAddress,
         CancellationToken cancellationToken)
     {
-        if (!IsValidContract(contractAddress))
+        if (!WalletAddressRules.IsConfiguredAddress(contractAddress))
         {
             return 0m;
         }
@@ -518,10 +518,6 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         return Web3.Convert.FromWei(balanceWei);
     }
-
-    private static bool IsValidContract(string? address) =>
-        IsValidAddress(address) &&
-        !address!.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsValidAddress(string? address) =>
         !string.IsNullOrWhiteSpace(address) &&
