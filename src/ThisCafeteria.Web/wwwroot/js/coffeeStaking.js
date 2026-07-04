@@ -21,6 +21,16 @@ const erc20ApproveAbi = [
         name: "approve",
         outputs: [{ name: "", type: "bool" }],
         type: "function"
+    },
+    {
+        constant: true,
+        inputs: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" }
+        ],
+        name: "allowance",
+        outputs: [{ name: "", type: "uint256" }],
+        type: "function"
     }
 ];
 
@@ -363,11 +373,19 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
                 const tokenContract = new web3.eth.Contract(erc20ApproveAbi, paymentTokenAddress);
                 const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
 
-                await notify("stake", "approve", "pending", null, `Approve ${amount} ${paymentTokenLabel} in MetaMask.`);
-                const approvalReceipt = await tokenContract.methods
-                    .approve(stakingPoolAddress, amountWei)
-                    .send({ from: activeAccount });
-                await notify("stake", "approve", "confirmed", approvalReceipt.transactionHash);
+                const existingAllowance = await tokenContract.methods
+                    .allowance(activeAccount, stakingPoolAddress)
+                    .call();
+
+                if (BigInt(existingAllowance) >= BigInt(amountWei)) {
+                    await notify("stake", "approve", "confirmed", null, "Existing allowance already covers this amount.");
+                } else {
+                    await notify("stake", "approve", "pending", null, `Approve ${amount} ${paymentTokenLabel} in MetaMask.`);
+                    const approvalReceipt = await tokenContract.methods
+                        .approve(stakingPoolAddress, amountWei)
+                        .send({ from: activeAccount });
+                    await notify("stake", "approve", "confirmed", approvalReceipt.transactionHash);
+                }
 
                 step = "stake";
                 await notify("stake", "stake", "pending", null, `Stake ${amount} ${paymentTokenLabel} in MetaMask.`);
