@@ -16,7 +16,7 @@ public sealed class StakingController(
     ICoffeeWeb3Service web3Service,
     BlockchainNetworkOptions chain,
     AppDbContext dbContext,
-    IServiceProvider serviceProvider,
+    UserManager<ApplicationUser> userManager,
     IWalletChallengeService challengeService) : Controller
 {
     private const string WalletSessionKey = "WalletAddress";
@@ -367,12 +367,6 @@ public sealed class StakingController(
             return true;
         }
 
-        var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
-        if (userManager is null)
-        {
-            return false;
-        }
-
         var user = await userManager.GetUserAsync(User);
         return WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out var normalizedUserWallet) &&
             AddressUtil.Current.AreAddressesTheSame(normalizedUserWallet, wallet);
@@ -387,8 +381,7 @@ public sealed class StakingController(
             HttpContext.Session.GetString(WalletSessionKey)
         };
 
-        var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
-        if (User.Identity?.IsAuthenticated == true && userManager is not null)
+        if (User.Identity?.IsAuthenticated == true)
         {
             var user = await userManager.GetUserAsync(User);
             if (!string.IsNullOrWhiteSpace(user?.WalletAddress))

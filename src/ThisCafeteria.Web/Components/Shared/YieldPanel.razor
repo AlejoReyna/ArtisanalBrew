@@ -17,7 +17,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
-@inject IServiceProvider Services
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 @inject IEthUsdPriceService EthUsdPriceService
@@ -699,12 +699,12 @@ else
     {
         _stakingLedger = [];
 
-        var dbContext = Services.GetService<AppDbContext>();
-        if (dbContext is null || string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        if (string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
         {
             return;
         }
 
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
         _stakingLedger = await dbContext.StakingLedgerEntries
             .AsNoTracking()
             .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
