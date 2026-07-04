@@ -16,10 +16,20 @@ COPY src/ThisCafeteria.Application/ src/ThisCafeteria.Application/
 COPY src/ThisCafeteria.Infrastructure/ src/ThisCafeteria.Infrastructure/
 COPY src/ThisCafeteria.Web/ src/ThisCafeteria.Web/
 
+# Publish must re-run restore now that sources are present: the Web SDK only
+# adds the implicit Microsoft.AspNetCore.App.Internal.Assets package (source of
+# _framework/blazor.web.js in .NET 10) when it can see the Razor sources, so a
+# csproj-only restore leaves it out of project.assets.json and --no-restore
+# publishes without any _framework assets. The earlier restore layer still
+# pre-warms the NuGet cache, so this second restore is a fast incremental pass.
 RUN dotnet publish src/ThisCafeteria.Web/ThisCafeteria.Web.csproj \
     --configuration Release \
-    --no-restore \
     --output /app/publish
+
+# Fail the image build loudly if the Blazor framework script is ever missing
+# again - without it the browser gets a 404, no circuit connects, and every
+# @onclick on the site is dead.
+RUN test -f /app/publish/wwwroot/_framework/blazor.web.js
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
