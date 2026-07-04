@@ -163,27 +163,6 @@
     margin: 0;
 }
 
-.product-detail-card__trust {
-    align-items: center;
-    align-self: flex-start;
-    background: rgba(45, 36, 33, 0.05);
-    border-radius: 999px;
-    color: #6b6259;
-    display: inline-flex;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    gap: 0.4rem;
-    letter-spacing: 0.015em;
-    margin: 0;
-    padding: 0.45rem 0.9rem;
-}
-
-.product-detail-card__trust span {
-    color: #c2a47d;
-    font-weight: 700;
-}
-
 /* Action bar sits just below the copy, kept clear of the screen edge */
 .product-detail-card__buybar {
     align-items: stretch;
@@ -312,12 +291,13 @@
 /* Mobile */
 @media (max-width: 960px) {
     .product-detail-card__image {
-        height: 58dvh;
+        height: 52dvh;
     }
 
     .product-detail-card__sheet {
         min-height: auto;
-        padding-bottom: max(2rem, env(safe-area-inset-bottom));
+        /* Keep the add-to-cart bar clearly above the mobile browser chrome. */
+        padding-bottom: calc(max(2rem, env(safe-area-inset-bottom)) + 4.5rem);
     }
 
     /* Bottom-sheet entry: the card grows up from the bottom on mount.

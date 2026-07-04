@@ -1,6 +1,7 @@
 @page "/products/{Slug}"
 @rendermode InteractiveServer
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 @inject IProductService ProductService
 @inject IShoppingCartService CartService
 @inject ICartMutationClient CartMutationClient
@@ -66,10 +67,6 @@ else
             </div>
 
             <p class="product-detail-card__desc">@product.Description</p>
-
-            <p class="product-detail-card__trust">
-                <span aria-hidden="true">✓</span> Free shipping over $35 · Roasted to order
-            </p>
 
             <div class="product-detail-card__buybar">
                 <div class="product-detail-quantity">
@@ -237,6 +234,10 @@ else
                 ? $"{_product.Name} added to cart."
                 : $"{_quantity} × {_product.Name} added to cart.";
             await ShowCartToastAsync(toastMessage);
+
+            // Dismiss the sheet downward and return to the product list.
+            await JS.InvokeVoidAsync("productTransition.playDetailDismiss");
+            Navigation.NavigateTo("/products");
         }
         catch (Exception exception)
         {
