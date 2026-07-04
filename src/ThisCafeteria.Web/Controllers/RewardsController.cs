@@ -86,13 +86,22 @@ public sealed class RewardsController(
             return Conflict("Esta transacción ya ha sido reclamada.");
         }
 
-        var verified = await web3Service.VerifyPaymentTransactionAsync(
+        var verificationStatus = await web3Service.VerifyPaymentTransactionAsync(
             paymentTransactionHash,
             wallet,
             request.PaymentAmount,
             cancellationToken);
 
-        if (!verified)
+        if (verificationStatus == TransactionVerificationStatus.PendingConfirmations)
+        {
+            return StatusCode(StatusCodes.Status202Accepted, new
+            {
+                success = false,
+                status = "pending_confirmations"
+            });
+        }
+
+        if (verificationStatus != TransactionVerificationStatus.Verified)
         {
             return BadRequest(
                 "Payment transaction could not be verified on-chain. It must be a successful configured ERC-20 payment token transfer from your wallet to the configured marketplace wallet for the exact coffee price.");

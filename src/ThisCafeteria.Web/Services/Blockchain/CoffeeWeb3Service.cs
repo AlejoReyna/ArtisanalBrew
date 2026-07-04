@@ -174,7 +174,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         }
     }
 
-    public async Task<bool> VerifyPaymentTransactionAsync(
+    public async Task<TransactionVerificationStatus> VerifyPaymentTransactionAsync(
         string txHash,
         string expectedCustomer,
         decimal expectedAmount,
@@ -186,7 +186,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             !IsValidContract(_paymentTokenContract) ||
             !IsValidContract(_chain.MarketplaceWallet))
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -200,7 +200,13 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             receipt.Status?.Value != BigInteger.One ||
             !AddressMatches(receipt.To, _paymentTokenContract))
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
+        }
+
+        var confirmations = await GetConfirmationsAsync(receipt, cancellationToken).ConfigureAwait(false);
+        if (confirmations < _chain.MinimumConfirmations)
+        {
+            return TransactionVerificationStatus.PendingConfirmations;
         }
 
         var transaction = await _readOnlyWeb3.Eth.Transactions
@@ -212,7 +218,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             !AddressMatches(transaction.From, expectedCustomer) ||
             !AddressMatches(transaction.To, _paymentTokenContract))
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
         }
 
         var expectedAmountWei = Web3.Convert.ToWei(expectedAmount);
@@ -220,15 +226,17 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             !AddressMatches(recipient, _chain.MarketplaceWallet) ||
             transferredAmountWei != expectedAmountWei)
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
         }
 
         var transferEvents = receipt.DecodeAllEvents<TransferEventDTO>();
-        return transferEvents.Any(transfer =>
+        var verified = transferEvents.Any(transfer =>
             AddressMatches(transfer.Log.Address, _paymentTokenContract) &&
             AddressMatches(transfer.Event.From, expectedCustomer) &&
             AddressMatches(transfer.Event.To, _chain.MarketplaceWallet) &&
             transfer.Event.Value == expectedAmountWei);
+
+        return verified ? TransactionVerificationStatus.Verified : TransactionVerificationStatus.Failed;
     }
 
     public async Task<decimal> GetStakedPaymentTokenBalanceAsync(
@@ -310,6 +318,12 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             return StakingVerificationResult.Failed;
         }
 
+        var confirmations = await GetConfirmationsAsync(receipt, cancellationToken).ConfigureAwait(false);
+        if (confirmations < _chain.MinimumConfirmations)
+        {
+            return StakingVerificationResult.Pending(confirmations, _chain.MinimumConfirmations);
+        }
+
         var transaction = await _readOnlyWeb3.Eth.Transactions
             .GetTransactionByHash
             .SendRequestAsync(txHash)
@@ -337,7 +351,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
             return claimTransfer is null
                 ? StakingVerificationResult.Failed
-                : new StakingVerificationResult(true, Web3.Convert.FromWei(claimTransfer.Event.Value));
+                : new StakingVerificationResult(TransactionVerificationStatus.Verified, Web3.Convert.FromWei(claimTransfer.Event.Value));
         }
 
         var expectedAmountWei = Web3.Convert.ToWei(expectedAmount!.Value);
@@ -364,8 +378,22 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         };
 
         return verified
-            ? new StakingVerificationResult(true, expectedAmount.Value)
+            ? new StakingVerificationResult(TransactionVerificationStatus.Verified, expectedAmount.Value)
             : StakingVerificationResult.Failed;
+    }
+
+    private async Task<int> GetConfirmationsAsync(TransactionReceipt receipt, CancellationToken cancellationToken)
+    {
+        if (receipt.BlockNumber is null)
+        {
+            return 0;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var currentBlock = await _readOnlyWeb3.Eth.Blocks.GetBlockNumber.SendRequestAsync().ConfigureAwait(false);
+        var confirmations = currentBlock.Value - receipt.BlockNumber.Value + 1;
+        return confirmations < 0 ? 0 : (int)confirmations;
     }
 
     private static readonly string[] ClaimFunctionNames = ["getReward", "claimReward"];

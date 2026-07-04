@@ -144,6 +144,11 @@ public sealed class StakingController(
             StakingTransactionType.Claim,
             cancellationToken);
 
+        if (verification.Status == TransactionVerificationStatus.PendingConfirmations)
+        {
+            return PendingConfirmationsResult(verification);
+        }
+
         if (!verification.Verified)
         {
             return BadRequest("Claim transaction could not be verified on-chain.");
@@ -304,6 +309,11 @@ public sealed class StakingController(
             transactionType,
             cancellationToken);
 
+        if (verification.Status == TransactionVerificationStatus.PendingConfirmations)
+        {
+            return PendingConfirmationsResult(verification);
+        }
+
         if (!verification.Verified)
         {
             return BadRequest("Staking transaction could not be verified on-chain.");
@@ -351,6 +361,15 @@ public sealed class StakingController(
             entry.ExplorerUrl
         });
     }
+
+    private IActionResult PendingConfirmationsResult(StakingVerificationResult verification) =>
+        StatusCode(StatusCodes.Status202Accepted, new
+        {
+            success = false,
+            status = "pending_confirmations",
+            confirmations = verification.Confirmations,
+            requiredConfirmations = verification.RequiredConfirmations
+        });
 
     private bool IsStakingConfigured() =>
         IsConfiguredAddress(chain.EffectivePaymentTokenContract) &&

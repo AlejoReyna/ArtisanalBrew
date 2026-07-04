@@ -204,6 +204,32 @@ async function postJson(url, payload, includeCsrf = false) {
     return response.json();
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function postJsonWithConfirmationRetry(url, payload, flow, step = "record", maxAttempts = 10, delayMs = 3000) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const response = await sendJson(url, payload, true);
+
+        if (response.status === 202) {
+            const pending = await response.json();
+            await notify(
+                flow,
+                step,
+                "pending",
+                null,
+                `Waiting for confirmations (${pending.confirmations}/${pending.requiredConfirmations})...`);
+            await delay(delayMs);
+            continue;
+        }
+
+        return response.json();
+    }
+
+    throw new Error("Timed out waiting for enough block confirmations. Check the transaction on the explorer and try again shortly.");
+}
+
 export function initCoffeePurchases(config, dotNetRef) {
     txNotifier = dotNetRef ?? txNotifier;
 
@@ -352,7 +378,7 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
 
                 step = "record";
                 await notify("stake", "record", "pending");
-                await recordStakingTransaction("/staking/api/record-stake", activeAccount, amount, receipt.transactionHash);
+                await recordStakingTransaction("/staking/api/record-stake", activeAccount, amount, receipt.transactionHash, "stake");
                 await notify("stake", "record", "confirmed", receipt.transactionHash);
 
                 clearInput("stake-amount");
@@ -409,7 +435,7 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
 
                 step = "record";
                 await notify("unstake", "record", "pending");
-                await recordStakingTransaction("/staking/api/record-unstake", activeAccount, amount, receipt.transactionHash);
+                await recordStakingTransaction("/staking/api/record-unstake", activeAccount, amount, receipt.transactionHash, "unstake");
                 await notify("unstake", "record", "confirmed", receipt.transactionHash);
 
                 clearInput("unstake-amount");
@@ -558,21 +584,21 @@ async function ensureConfiguredNetwork(config) {
 
 async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTransactionHash, allocationName) {
     try {
-        return await postJson("/Rewards/api/mint-loyalty", {
+        return await postJsonWithConfirmationRetry("/Rewards/api/mint-loyalty", {
             walletAddress,
             amount,
             paymentAmount,
             paymentTransactionHash,
             allocationName
-        }, true);
+        }, "purchase", "mint");
     } catch (error) {
         throw new Error(error.message || "Payment succeeded, but loyalty minting failed.");
     }
 }
 
-async function recordStakingTransaction(endpoint, walletAddress, amount, transactionHash) {
+async function recordStakingTransaction(endpoint, walletAddress, amount, transactionHash, flow) {
     try {
-        return await postJson(endpoint, { walletAddress, amount, transactionHash }, true);
+        return await postJsonWithConfirmationRetry(endpoint, { walletAddress, amount, transactionHash }, flow);
     } catch (error) {
         throw new Error(error.message || "Staking transaction succeeded, but server verification failed.");
     }
@@ -580,7 +606,7 @@ async function recordStakingTransaction(endpoint, walletAddress, amount, transac
 
 async function recordStakingClaim(walletAddress, transactionHash) {
     try {
-        return await postJson("/staking/api/record-claim", { walletAddress, transactionHash }, true);
+        return await postJsonWithConfirmationRetry("/staking/api/record-claim", { walletAddress, transactionHash }, "claim");
     } catch (error) {
         throw new Error(error.message || "Claim transaction succeeded, but server verification failed.");
     }
