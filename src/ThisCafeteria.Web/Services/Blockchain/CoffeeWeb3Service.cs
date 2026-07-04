@@ -75,6 +75,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         var pendingRewardsTask = GetPendingStakingRewardsAsync(walletAddress, cancellationToken);
         var coffeeBalanceTask = GetCoffeeCoinBalanceAsync(walletAddress, cancellationToken);
         var claimFunctionNameTask = DetectClaimFunctionAsync(walletAddress, cancellationToken);
+        var contractAprTask = DetectContractAprAsync(cancellationToken);
 
         await Task.WhenAll(
                 nativeBalanceTask,
@@ -82,10 +83,12 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
                 stakedBalanceTask,
                 pendingRewardsTask,
                 coffeeBalanceTask,
-                claimFunctionNameTask)
+                claimFunctionNameTask,
+                contractAprTask)
             .ConfigureAwait(false);
 
         var nativeWei = await nativeBalanceTask.ConfigureAwait(false);
+        var contractApr = await contractAprTask.ConfigureAwait(false);
 
         return new CoffeeDashboardModel
         {
@@ -95,7 +98,8 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             StakedPaymentTokenBalance = await stakedBalanceTask.ConfigureAwait(false),
             PendingStakingRewards = await pendingRewardsTask.ConfigureAwait(false),
             CoffeeCoinBalance = await coffeeBalanceTask.ConfigureAwait(false),
-            CurrentApr = _chain.StakingAprPercent,
+            CurrentApr = contractApr ?? _chain.StakingAprPercent,
+            AprIsContractDerived = contractApr is not null,
             ClaimFunctionName = await claimFunctionNameTask.ConfigureAwait(false)
         };
     }
@@ -415,6 +419,50 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         }
 
         return null;
+    }
+
+    private const int SecondsPerYear = 365 * 24 * 60 * 60;
+
+    private async Task<decimal?> DetectContractAprAsync(CancellationToken cancellationToken)
+    {
+        if (!IsValidContract(_stakingPoolContract))
+        {
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var contract = _readOnlyWeb3.Eth.GetContract(ContractAbis.StakingPool, _stakingPoolContract);
+
+        try
+        {
+            var aprBasisPoints = await contract.GetFunction("aprBasisPoints").CallAsync<BigInteger>().ConfigureAwait(false);
+            return (decimal)aprBasisPoints / 100m;
+        }
+        catch
+        {
+            // aprBasisPoints() is not exposed by this pool; try deriving from rewardRate() + totalSupply() instead.
+        }
+
+        try
+        {
+            var rewardRate = await contract.GetFunction("rewardRate").CallAsync<BigInteger>().ConfigureAwait(false);
+            var totalStaked = await contract.GetFunction("totalSupply").CallAsync<BigInteger>().ConfigureAwait(false);
+
+            if (rewardRate <= BigInteger.Zero || totalStaked <= BigInteger.Zero)
+            {
+                return null;
+            }
+
+            var annualRewards = Web3.Convert.FromWei(rewardRate) * SecondsPerYear;
+            var staked = Web3.Convert.FromWei(totalStaked);
+            return annualRewards / staked * 100m;
+        }
+        catch
+        {
+            // Neither reward-rate view function is exposed; fall back to the configured indicative rate.
+            return null;
+        }
     }
 
     private async Task<bool> ProbeStaticCallAsync(

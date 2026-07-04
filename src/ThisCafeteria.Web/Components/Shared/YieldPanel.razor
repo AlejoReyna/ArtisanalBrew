@@ -134,7 +134,7 @@ else
                     <div class="yield-hero-summary">
                         <p class="yield-hero-lede">Deposit your payment tokens into the brewing pool to lock in your yield. Track your active allocation, earn freshly roasted rewards, and unstake your principal at any time.</p>
                         <div class="yield-global-stat" aria-label="Configured reward rate">
-                            <span>Contract Annual Yield</span>
+                            <span>@AprLabel()</span>
                             <strong>@FormatApr()</strong>
                         </div>
                     </div>
@@ -758,6 +758,11 @@ else
         _isLoading ? "Syncing..." : $"{FormatAmount(value)}{suffix}";
 
     private string FormatApr() => _isLoading ? "..." : $"+{_dashboard.CurrentApr:0.0}%";
+
+    private string AprLabel() =>
+        _isLoading || _dashboard.AprIsContractDerived
+            ? "Contract Annual Yield"
+            : "Indicative Annual Yield (configured, not contract-enforced)";
 
     private bool ShouldExpandFaucet =>
         !_isLoading && string.IsNullOrWhiteSpace(_dashboardError) && _dashboard.NativeBalance < LowGasThresholdEth;
