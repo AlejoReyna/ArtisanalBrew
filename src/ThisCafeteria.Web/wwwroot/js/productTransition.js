@@ -8,6 +8,46 @@
 
     const isMobileView = () => window.matchMedia('(max-width: 960px)').matches;
 
+    const dismissSheet = hero => {
+        if (!hero) {
+            return;
+        }
+
+        // Let Blazor's SPA navigation to the list proceed underneath. A fixed
+        // overlay clone slides down on top so the product grid is revealed
+        // progressively as the sheet retreats.
+        hero.classList.remove('product-detail-card--sheet-enter');
+
+        const clone = hero.cloneNode(true);
+        clone.classList.add('product-detail-sheet-dismiss-clone');
+        clone.removeAttribute('data-product-detail');
+        document.body.appendChild(clone);
+
+        const animation = clone.animate(
+            [
+                { transform: 'translateY(0)' },
+                { transform: 'translateY(100%)' }
+            ],
+            {
+                duration: 300,
+                easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
+                fill: 'forwards'
+            });
+
+        const remove = () => clone.remove();
+        animation.finished.then(remove, remove);
+        window.setTimeout(remove, 600);
+    };
+
+    const playDetailDismiss = () => {
+        if (!isMobileView() || prefersReducedMotion()) {
+            return;
+        }
+
+        const hero = document.querySelector('.product-detail-card');
+        dismissSheet(hero);
+    };
+
     const wireSheetDismiss = hero => {
         const back = hero.querySelector('.product-detail-card__back a');
         if (!back || back.dataset.sheetWired === '1') {
@@ -15,36 +55,7 @@
         }
 
         back.dataset.sheetWired = '1';
-        back.addEventListener('click', () => {
-            if (!isMobileView() || prefersReducedMotion()) {
-                return;
-            }
-
-            // Let Blazor's SPA navigation to the list proceed underneath (no
-            // preventDefault). A fixed overlay clone slides down on top so the
-            // list is revealed progressively as the sheet retreats.
-            hero.classList.remove('product-detail-card--sheet-enter');
-
-            const clone = hero.cloneNode(true);
-            clone.classList.add('product-detail-sheet-dismiss-clone');
-            clone.removeAttribute('data-product-detail');
-            document.body.appendChild(clone);
-
-            const animation = clone.animate(
-                [
-                    { transform: 'translateY(0)' },
-                    { transform: 'translateY(100%)' }
-                ],
-                {
-                    duration: 300,
-                    easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
-                    fill: 'forwards'
-                });
-
-            const remove = () => clone.remove();
-            animation.finished.then(remove, remove);
-            window.setTimeout(remove, 600);
-        });
+        back.addEventListener('click', () => playDetailDismiss());
     };
 
     const cssEscape = value => {
@@ -228,6 +239,7 @@
 
     window.productTransition = {
         playFromCard,
-        playDetailEntry
+        playDetailEntry,
+        playDetailDismiss
     };
 }());
