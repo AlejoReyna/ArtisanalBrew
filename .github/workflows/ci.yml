@@ -166,12 +166,13 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --query "properties.configuration.ingress.fqdn" -o tsv)
           for attempt in $(seq 1 30); do
-            if curl --fail --show-error --silent "https://$WEB_FQDN/health" >/dev/null; then
-              echo "App healthy on attempt ${attempt}"
+            if curl --fail --show-error --silent "https://$WEB_FQDN/health" >/dev/null \
+              && curl --fail --show-error --silent "https://$WEB_FQDN/_framework/blazor.web.js" >/dev/null; then
+              echo "App healthy and serving blazor.web.js on attempt ${attempt}"
               exit 0
             fi
             echo "App not ready (attempt ${attempt}/30), retrying in 5s..."
             sleep 5
           done
-          echo "App did not become healthy within 150 seconds." >&2
+          echo "App did not become healthy (health + blazor.web.js) within 150 seconds." >&2
           exit 1
