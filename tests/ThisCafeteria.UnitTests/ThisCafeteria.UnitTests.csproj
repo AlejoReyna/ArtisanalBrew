@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FluentAssertions" Version="8.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Moq" Version="4.*" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -23,6 +24,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThisCafeteria.Domain\ThisCafeteria.Domain.csproj" />
     <ProjectReference Include="..\..\src\ThisCafeteria.Application\ThisCafeteria.Application.csproj" />
+    <ProjectReference Include="..\..\src\ThisCafeteria.Infrastructure\ThisCafeteria.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\ThisCafeteria.Web\ThisCafeteria.Web.csproj" />
   </ItemGroup>
 
 </Project>

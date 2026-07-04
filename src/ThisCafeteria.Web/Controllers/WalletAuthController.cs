@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
@@ -7,29 +6,27 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using ThisCafeteria.Application.Configuration;
-using Nethereum.Signer;
 using Nethereum.Util;
 using ThisCafeteria.Application.Repositories;
 using ThisCafeteria.Domain.Entities;
 using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Web.Models;
+using ThisCafeteria.Web.Services.Wallet;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [ApiController]
 [Route("api/wallet-auth")]
 public sealed class WalletAuthController(
-    IMemoryCache cache,
+    IWalletChallengeService challengeService,
     IOptions<BlockchainNetworkOptions> chainOptions,
     IServiceProvider serviceProvider,
     ISqsMessagePublisher statusPublisher,
     ILogger<WalletAuthController> logger) : ControllerBase
 {
-    private static readonly TimeSpan ChallengeLifetime = TimeSpan.FromMinutes(5);
     private readonly BlockchainNetworkOptions _chain = chainOptions.Value;
 
     [HttpGet("status")]
@@ -60,24 +57,8 @@ public sealed class WalletAuthController(
             return BadRequest("A valid wallet address is required.");
         }
 
-        var nonceBytes = RandomNumberGenerator.GetBytes(16);
-        var nonce = Convert.ToHexString(nonceBytes).ToLowerInvariant();
-        var issuedAt = DateTimeOffset.UtcNow;
-        var expiresAt = issuedAt.Add(ChallengeLifetime);
         var origin = $"{Request.Scheme}://{Request.Host}";
-        var message = string.Join('\n',
-            "ThisCafeteria wallet login",
-            string.Empty,
-            $"Address: {address}",
-            $"Chain ID: {_chain.ChainId.ToString(CultureInfo.InvariantCulture)}",
-            $"Network: {_chain.NetworkName}",
-            $"URI: {origin}",
-            "Version: 1",
-            $"Nonce: {nonce}",
-            $"Issued At: {issuedAt:O}",
-            $"Expiration Time: {expiresAt:O}");
-
-        cache.Set(CacheKey(nonce), new WalletChallenge(address, message, _chain.ChainId), expiresAt);
+        var challenge = challengeService.CreateChallenge(address, _chain.ChainId, _chain.NetworkName, origin);
         await TryPublishStatusAsync(
             "wallet-login.challenge-created",
             "ChallengeCreated",
@@ -85,8 +66,8 @@ public sealed class WalletAuthController(
             request.WalletName);
 
         return Ok(new WalletChallengeResponse(
-            message,
-            nonce,
+            challenge.Message,
+            challenge.Nonce,
             _chain.ChainId,
             _chain.ChainIdHex,
             _chain.NetworkName,
@@ -122,7 +103,10 @@ public sealed class WalletAuthController(
             return BadRequest("A valid wallet address is required.");
         }
 
-        if (!cache.TryGetValue<WalletChallenge>(CacheKey(request.Nonce), out var challenge) || challenge is null)
+        var verificationError = challengeService.Verify(
+            address, request.Message, request.Nonce, request.ChainId, request.Signature, out _);
+
+        if (verificationError == WalletChallengeVerificationError.Expired)
         {
             await TryPublishStatusAsync(
                 "wallet-login.failed",
@@ -133,11 +117,7 @@ public sealed class WalletAuthController(
             return BadRequest("The wallet login challenge expired. Please try again.");
         }
 
-        cache.Remove(CacheKey(request.Nonce));
-
-        if (!AddressUtil.Current.AreAddressesTheSame(address, challenge.Address) ||
-            request.Message != challenge.Message ||
-            request.ChainId != challenge.ChainId)
+        if (verificationError == WalletChallengeVerificationError.Mismatch)
         {
             await TryPublishStatusAsync(
                 "wallet-login.failed",
@@ -148,10 +128,7 @@ public sealed class WalletAuthController(
             return BadRequest("The signed wallet login challenge does not match this session.");
         }
 
-        var signer = new EthereumMessageSigner();
-        var recoveredAddress = signer.EncodeUTF8AndEcRecover(request.Message, request.Signature);
-
-        if (!AddressUtil.Current.AreAddressesTheSame(address, recoveredAddress))
+        if (verificationError == WalletChallengeVerificationError.InvalidSignature)
         {
             await TryPublishStatusAsync(
                 "wallet-login.failed",
@@ -433,8 +410,5 @@ public sealed class WalletAuthController(
         return true;
     }
 
-    private static string CacheKey(string nonce) => $"wallet-auth:{nonce}";
-
-    private sealed record WalletChallenge(string Address, string Message, int ChainId);
     private sealed record WalletStatusResult(bool Stored, bool Published, string? AwsMessageId);
 }

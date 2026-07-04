@@ -11,7 +11,6 @@ using ThisCafeteria.Infrastructure.Persistence;
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("rewards")]
-[IgnoreAntiforgeryToken]
 public sealed class RewardsController(
     IRewardClaimService rewardClaimService,
     ICoffeeWeb3Service web3Service,
@@ -23,7 +22,7 @@ public sealed class RewardsController(
         [FromQuery] string walletAddress,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeWallet(walletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(walletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -37,7 +36,7 @@ public sealed class RewardsController(
         [FromBody] WalletRequest request,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -47,11 +46,12 @@ public sealed class RewardsController(
     }
 
     [HttpPost("api/mint-loyalty")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> MintLoyaltyAsync(
         [FromBody] MintLoyaltyRequest request,
         CancellationToken cancellationToken)
     {
-        if (!TryNormalizeWallet(request.WalletAddress, out var wallet))
+        if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
         }
@@ -76,7 +76,7 @@ public sealed class RewardsController(
             return BadRequest("Payment amount must be greater than zero.");
         }
 
-        if (!TryNormalizeTransactionHash(request.PaymentTransactionHash, out var paymentTransactionHash))
+        if (!WalletAddressRules.TryNormalizeTransactionHash(request.PaymentTransactionHash, out var paymentTransactionHash))
         {
             return BadRequest("A valid payment token transaction hash is required.");
         }
@@ -86,13 +86,22 @@ public sealed class RewardsController(
             return Conflict("Esta transacción ya ha sido reclamada.");
         }
 
-        var verified = await web3Service.VerifyPaymentTransactionAsync(
+        var verificationStatus = await web3Service.VerifyPaymentTransactionAsync(
             paymentTransactionHash,
             wallet,
             request.PaymentAmount,
             cancellationToken);
 
-        if (!verified)
+        if (verificationStatus == TransactionVerificationStatus.PendingConfirmations)
+        {
+            return StatusCode(StatusCodes.Status202Accepted, new
+            {
+                success = false,
+                status = "pending_confirmations"
+            });
+        }
+
+        if (verificationStatus != TransactionVerificationStatus.Verified)
         {
             return BadRequest(
                 "Payment transaction could not be verified on-chain. It must be a successful configured ERC-20 payment token transfer from your wallet to the configured marketplace wallet for the exact coffee price.");
@@ -167,19 +176,6 @@ public sealed class RewardsController(
         return Ok(result);
     }
 
-    private static bool TryNormalizeWallet(string? address, out string checksum)
-    {
-        checksum = string.Empty;
-        if (string.IsNullOrWhiteSpace(address) ||
-            !AddressUtil.Current.IsValidEthereumAddressHexFormat(address))
-        {
-            return false;
-        }
-
-        checksum = AddressUtil.Current.ConvertToChecksumAddress(address);
-        return true;
-    }
-
     private bool TryResolveCurrentWallet(out string wallet)
     {
         wallet = string.Empty;
@@ -193,7 +189,7 @@ public sealed class RewardsController(
 
         foreach (var candidate in candidates)
         {
-            if (TryNormalizeWallet(candidate, out wallet))
+            if (WalletAddressRules.TryNormalizeWallet(candidate, out wallet))
             {
                 return true;
             }
@@ -208,21 +204,6 @@ public sealed class RewardsController(
         dbContext.RewardClaims.AnyAsync(
             claim => claim.PaymentTransactionHash == paymentTransactionHash,
             cancellationToken);
-
-    private static bool TryNormalizeTransactionHash(string? value, out string transactionHash)
-    {
-        transactionHash = string.Empty;
-        if (string.IsNullOrWhiteSpace(value) ||
-            value.Length != 66 ||
-            !value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
-            !value[2..].All(Uri.IsHexDigit))
-        {
-            return false;
-        }
-
-        transactionHash = value.ToLowerInvariant();
-        return true;
-    }
 
     private string BuildExplorerTransactionUrl(string transactionHash)
     {

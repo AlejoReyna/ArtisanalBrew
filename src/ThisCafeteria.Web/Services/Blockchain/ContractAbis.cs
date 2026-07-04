@@ -23,6 +23,11 @@ internal static class ContractAbis
         "{'constant':true,'inputs':[{'name':'account','type':'address'}],'name':'earned','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
         "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'stake','outputs':[],'type':'function'}," +
         "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'unstake','outputs':[],'type':'function'}," +
-        "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'withdraw','outputs':[],'type':'function'}" +
+        "{'constant':false,'inputs':[{'name':'amount','type':'uint256'}],'name':'withdraw','outputs':[],'type':'function'}," +
+        "{'constant':false,'inputs':[],'name':'getReward','outputs':[],'type':'function'}," +
+        "{'constant':false,'inputs':[],'name':'claimReward','outputs':[],'type':'function'}," +
+        "{'constant':true,'inputs':[],'name':'rewardRate','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
+        "{'constant':true,'inputs':[],'name':'aprBasisPoints','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
+        "{'constant':true,'inputs':[],'name':'totalSupply','outputs':[{'name':'','type':'uint256'}],'type':'function'}" +
         "]";
 }

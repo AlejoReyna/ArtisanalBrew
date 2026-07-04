@@ -21,6 +21,16 @@ const erc20ApproveAbi = [
         name: "approve",
         outputs: [{ name: "", type: "bool" }],
         type: "function"
+    },
+    {
+        constant: true,
+        inputs: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" }
+        ],
+        name: "allowance",
+        outputs: [{ name: "", type: "uint256" }],
+        type: "function"
     }
 ];
 
@@ -36,6 +46,20 @@ const stakingPoolAbi = [
         constant: false,
         inputs: [{ name: "amount", type: "uint256" }],
         name: "unstake",
+        outputs: [],
+        type: "function"
+    },
+    {
+        constant: false,
+        inputs: [],
+        name: "getReward",
+        outputs: [],
+        type: "function"
+    },
+    {
+        constant: false,
+        inputs: [],
+        name: "claimReward",
         outputs: [],
         type: "function"
     }
@@ -138,19 +162,82 @@ export async function connectWalletForStaking(config) {
     await ensureConfiguredNetwork(config);
     const chainId = Number(await web3.eth.net.getId());
 
-    const response = await fetch("/staking/save-wallet-session", {
+    const payload = { walletAddress: account, chainId };
+
+    if (!config.isWalletAuthenticated) {
+        const challenge = await postJson("/api/wallet-auth/challenge", { address: account, walletName: "MetaMask" });
+        const signature = await getMetaMaskProvider().request({
+            method: "personal_sign",
+            params: [challenge.message, account]
+        });
+
+        payload.signature = signature;
+        payload.message = challenge.message;
+        payload.nonce = challenge.nonce;
+    }
+
+    await sendJson("/staking/save-wallet-session", payload, true);
+    return account;
+}
+
+function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function sendJson(url, payload, includeCsrf = false) {
+    const headers = { "Content-Type": "application/json" };
+    if (includeCsrf) {
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+            headers["X-CSRF-TOKEN"] = csrfToken;
+        }
+    }
+
+    const response = await fetch(url, {
         method: "POST",
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: account, chainId })
+        headers,
+        body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Could not save the wallet session.");
+        throw new Error(errorText || "Request failed.");
     }
 
-    return account;
+    return response;
+}
+
+async function postJson(url, payload, includeCsrf = false) {
+    const response = await sendJson(url, payload, includeCsrf);
+    return response.json();
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function postJsonWithConfirmationRetry(url, payload, flow, step = "record", maxAttempts = 10, delayMs = 3000) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const response = await sendJson(url, payload, true);
+
+        if (response.status === 202) {
+            const pending = await response.json();
+            await notify(
+                flow,
+                step,
+                "pending",
+                null,
+                `Waiting for confirmations (${pending.confirmations}/${pending.requiredConfirmations})...`);
+            await delay(delayMs);
+            continue;
+        }
+
+        return response.json();
+    }
+
+    throw new Error("Timed out waiting for enough block confirmations. Check the transaction on the explorer and try again shortly.");
 }
 
 export function initCoffeePurchases(config, dotNetRef) {
@@ -286,11 +373,19 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
                 const tokenContract = new web3.eth.Contract(erc20ApproveAbi, paymentTokenAddress);
                 const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
 
-                await notify("stake", "approve", "pending", null, `Approve ${amount} ${paymentTokenLabel} in MetaMask.`);
-                const approvalReceipt = await tokenContract.methods
-                    .approve(stakingPoolAddress, amountWei)
-                    .send({ from: activeAccount });
-                await notify("stake", "approve", "confirmed", approvalReceipt.transactionHash);
+                const existingAllowance = await tokenContract.methods
+                    .allowance(activeAccount, stakingPoolAddress)
+                    .call();
+
+                if (BigInt(existingAllowance) >= BigInt(amountWei)) {
+                    await notify("stake", "approve", "confirmed", null, "Existing allowance already covers this amount.");
+                } else {
+                    await notify("stake", "approve", "pending", null, `Approve ${amount} ${paymentTokenLabel} in MetaMask.`);
+                    const approvalReceipt = await tokenContract.methods
+                        .approve(stakingPoolAddress, amountWei)
+                        .send({ from: activeAccount });
+                    await notify("stake", "approve", "confirmed", approvalReceipt.transactionHash);
+                }
 
                 step = "stake";
                 await notify("stake", "stake", "pending", null, `Stake ${amount} ${paymentTokenLabel} in MetaMask.`);
@@ -301,7 +396,7 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
 
                 step = "record";
                 await notify("stake", "record", "pending");
-                await recordStakingTransaction("/staking/api/record-stake", activeAccount, amount, receipt.transactionHash);
+                await recordStakingTransaction("/staking/api/record-stake", activeAccount, amount, receipt.transactionHash, "stake");
                 await notify("stake", "record", "confirmed", receipt.transactionHash);
 
                 clearInput("stake-amount");
@@ -358,13 +453,58 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
 
                 step = "record";
                 await notify("unstake", "record", "pending");
-                await recordStakingTransaction("/staking/api/record-unstake", activeAccount, amount, receipt.transactionHash);
+                await recordStakingTransaction("/staking/api/record-unstake", activeAccount, amount, receipt.transactionHash, "unstake");
                 await notify("unstake", "record", "confirmed", receipt.transactionHash);
 
                 clearInput("unstake-amount");
                 await notifyCompleted("unstake");
             } catch (error) {
                 await notify("unstake", step, "error", null, friendlyError(error, "Unstake transaction failed."));
+            } finally {
+                delete target.dataset.transactionPending;
+                target.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll(".btn-claim-token").forEach((button) => {
+        if (button.dataset.coffeeStakingBound === "true") {
+            return;
+        }
+
+        button.dataset.coffeeStakingBound = "true";
+        button.addEventListener("click", async (event) => {
+            const target = event.currentTarget;
+            if (target.dataset.transactionPending === "true") {
+                return;
+            }
+
+            const claimFunctionName = target.dataset.claimFunction;
+            if (!claimFunctionName) {
+                return;
+            }
+
+            target.dataset.transactionPending = "true";
+            target.disabled = true;
+
+            let step = "claim";
+            try {
+                const activeAccount = await prepareWalletForTransaction(config, web3);
+                const stakingContract = new web3.eth.Contract(stakingPoolAbi, stakingPoolAddress);
+
+                await notify("claim", "claim", "pending", null, "Claim COFFEE rewards in MetaMask.");
+                const receipt = await stakingContract.methods[claimFunctionName]()
+                    .send({ from: activeAccount });
+                await notify("claim", "claim", "confirmed", receipt.transactionHash);
+
+                step = "record";
+                await notify("claim", "record", "pending");
+                await recordStakingClaim(activeAccount, receipt.transactionHash);
+                await notify("claim", "record", "confirmed", receipt.transactionHash);
+
+                await notifyCompleted("claim");
+            } catch (error) {
+                await notify("claim", step, "error", null, friendlyError(error, "Claim transaction failed."));
             } finally {
                 delete target.dataset.transactionPending;
                 target.disabled = false;
@@ -461,49 +601,33 @@ async function ensureConfiguredNetwork(config) {
 }
 
 async function mintLoyaltyReward(walletAddress, amount, paymentAmount, paymentTransactionHash, allocationName) {
-    const response = await fetch("/Rewards/api/mint-loyalty", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+    try {
+        return await postJsonWithConfirmationRetry("/Rewards/api/mint-loyalty", {
             walletAddress,
             amount,
             paymentAmount,
             paymentTransactionHash,
             allocationName
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Payment succeeded, but loyalty minting failed.");
+        }, "purchase", "mint");
+    } catch (error) {
+        throw new Error(error.message || "Payment succeeded, but loyalty minting failed.");
     }
-
-    return response.json();
 }
 
-async function recordStakingTransaction(endpoint, walletAddress, amount, transactionHash) {
-    const response = await fetch(endpoint, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            walletAddress,
-            amount,
-            transactionHash
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Staking transaction succeeded, but server verification failed.");
+async function recordStakingTransaction(endpoint, walletAddress, amount, transactionHash, flow) {
+    try {
+        return await postJsonWithConfirmationRetry(endpoint, { walletAddress, amount, transactionHash }, flow);
+    } catch (error) {
+        throw new Error(error.message || "Staking transaction succeeded, but server verification failed.");
     }
+}
 
-    return response.json();
+async function recordStakingClaim(walletAddress, transactionHash) {
+    try {
+        return await postJsonWithConfirmationRetry("/staking/api/record-claim", { walletAddress, transactionHash }, "claim");
+    } catch (error) {
+        throw new Error(error.message || "Claim transaction succeeded, but server verification failed.");
+    }
 }
 
 function shortAddress(address) {

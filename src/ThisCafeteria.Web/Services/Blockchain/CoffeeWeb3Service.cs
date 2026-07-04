@@ -19,16 +19,19 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
     private readonly Web3 _readOnlyWeb3;
     private readonly BlockchainNetworkOptions _chain;
     private readonly CoffeeCoinOwnerOptions _owner;
+    private readonly ILogger<CoffeeWeb3Service> _logger;
     private readonly string _paymentTokenContract;
     private readonly string _coffeeCoinContract;
     private readonly string _stakingPoolContract;
 
     public CoffeeWeb3Service(
         IOptions<BlockchainNetworkOptions> chainOptions,
-        IOptions<CoffeeCoinOwnerOptions> ownerOptions)
+        IOptions<CoffeeCoinOwnerOptions> ownerOptions,
+        ILogger<CoffeeWeb3Service> logger)
     {
         _chain = chainOptions.Value;
         _owner = ownerOptions.Value;
+        _logger = logger;
         _readOnlyWeb3 = new Web3(_chain.RpcUrl);
         _paymentTokenContract = _chain.EffectivePaymentTokenContract;
         _coffeeCoinContract = _chain.CoffeeCoinContract;
@@ -44,7 +47,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
     public async Task<decimal> GetTotalCoffeeSupplyAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsValidContract(_coffeeCoinContract))
+        if (!WalletAddressRules.IsConfiguredAddress(_coffeeCoinContract))
         {
             return 0m;
         }
@@ -74,16 +77,21 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         var stakedBalanceTask = GetStakedPaymentTokenBalanceAsync(walletAddress, cancellationToken);
         var pendingRewardsTask = GetPendingStakingRewardsAsync(walletAddress, cancellationToken);
         var coffeeBalanceTask = GetCoffeeCoinBalanceAsync(walletAddress, cancellationToken);
+        var claimFunctionNameTask = DetectClaimFunctionAsync(walletAddress, cancellationToken);
+        var contractAprTask = DetectContractAprAsync(cancellationToken);
 
         await Task.WhenAll(
                 nativeBalanceTask,
                 paymentTokenBalanceTask,
                 stakedBalanceTask,
                 pendingRewardsTask,
-                coffeeBalanceTask)
+                coffeeBalanceTask,
+                claimFunctionNameTask,
+                contractAprTask)
             .ConfigureAwait(false);
 
         var nativeWei = await nativeBalanceTask.ConfigureAwait(false);
+        var contractApr = await contractAprTask.ConfigureAwait(false);
 
         return new CoffeeDashboardModel
         {
@@ -93,7 +101,9 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             StakedPaymentTokenBalance = await stakedBalanceTask.ConfigureAwait(false),
             PendingStakingRewards = await pendingRewardsTask.ConfigureAwait(false),
             CoffeeCoinBalance = await coffeeBalanceTask.ConfigureAwait(false),
-            CurrentApr = _chain.StakingAprPercent
+            CurrentApr = contractApr ?? _chain.StakingAprPercent,
+            AprIsContractDerived = contractApr is not null,
+            ClaimFunctionName = await claimFunctionNameTask.ConfigureAwait(false)
         };
     }
 
@@ -109,7 +119,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
                 "Set CoffeeCoinOwner:PrivateKey via User Secrets or environment variable CoffeeCoinOwner__PrivateKey.");
         }
 
-        if (!IsValidContract(_coffeeCoinContract))
+        if (!WalletAddressRules.IsConfiguredAddress(_coffeeCoinContract))
         {
             throw new InvalidOperationException("Blockchain:Network:CoffeeCoinContract is not configured.");
         }
@@ -171,7 +181,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         }
     }
 
-    public async Task<bool> VerifyPaymentTransactionAsync(
+    public async Task<TransactionVerificationStatus> VerifyPaymentTransactionAsync(
         string txHash,
         string expectedCustomer,
         decimal expectedAmount,
@@ -180,10 +190,10 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         if (!IsTransactionHash(txHash) ||
             !IsValidAddress(expectedCustomer) ||
             expectedAmount <= 0m ||
-            !IsValidContract(_paymentTokenContract) ||
-            !IsValidContract(_chain.MarketplaceWallet))
+            !WalletAddressRules.IsConfiguredAddress(_paymentTokenContract) ||
+            !WalletAddressRules.IsConfiguredAddress(_chain.MarketplaceWallet))
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -197,7 +207,13 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             receipt.Status?.Value != BigInteger.One ||
             !AddressMatches(receipt.To, _paymentTokenContract))
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
+        }
+
+        var confirmations = await GetConfirmationsAsync(receipt, cancellationToken).ConfigureAwait(false);
+        if (confirmations < _chain.MinimumConfirmations)
+        {
+            return TransactionVerificationStatus.PendingConfirmations;
         }
 
         var transaction = await _readOnlyWeb3.Eth.Transactions
@@ -209,30 +225,32 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             !AddressMatches(transaction.From, expectedCustomer) ||
             !AddressMatches(transaction.To, _paymentTokenContract))
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
         }
 
         var expectedAmountWei = Web3.Convert.ToWei(expectedAmount);
-        if (!TryDecodeErc20Transfer(transaction.Input, out var recipient, out var transferredAmountWei) ||
+        if (!StakingCalldataDecoder.TryDecodeErc20Transfer(transaction.Input, out var recipient, out var transferredAmountWei) ||
             !AddressMatches(recipient, _chain.MarketplaceWallet) ||
             transferredAmountWei != expectedAmountWei)
         {
-            return false;
+            return TransactionVerificationStatus.Failed;
         }
 
         var transferEvents = receipt.DecodeAllEvents<TransferEventDTO>();
-        return transferEvents.Any(transfer =>
+        var verified = transferEvents.Any(transfer =>
             AddressMatches(transfer.Log.Address, _paymentTokenContract) &&
             AddressMatches(transfer.Event.From, expectedCustomer) &&
             AddressMatches(transfer.Event.To, _chain.MarketplaceWallet) &&
             transfer.Event.Value == expectedAmountWei);
+
+        return verified ? TransactionVerificationStatus.Verified : TransactionVerificationStatus.Failed;
     }
 
     public async Task<decimal> GetStakedPaymentTokenBalanceAsync(
         string walletAddress,
         CancellationToken cancellationToken = default)
     {
-        if (!IsValidAddress(walletAddress) || !IsValidContract(_stakingPoolContract))
+        if (!IsValidAddress(walletAddress) || !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
         {
             return 0m;
         }
@@ -248,11 +266,11 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         return Web3.Convert.FromWei(balanceWei);
     }
 
-    public async Task<decimal> GetPendingStakingRewardsAsync(
+    public async Task<decimal?> GetPendingStakingRewardsAsync(
         string walletAddress,
         CancellationToken cancellationToken = default)
     {
-        if (!IsValidAddress(walletAddress) || !IsValidContract(_stakingPoolContract))
+        if (!IsValidAddress(walletAddress) || !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
         {
             return 0m;
         }
@@ -269,26 +287,33 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
             return Web3.Convert.FromWei(rewardsWei);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            return 0m;
+            _logger.LogWarning(
+                exception,
+                "Failed to read pending staking rewards for {WalletAddress} from {StakingPoolContract}.",
+                walletAddress,
+                _stakingPoolContract);
+            return null;
         }
     }
 
-    public async Task<bool> VerifyStakingTransactionAsync(
+    public async Task<StakingVerificationResult> VerifyStakingTransactionAsync(
         string txHash,
         string expectedWallet,
-        decimal expectedAmount,
+        decimal? expectedAmount,
         StakingTransactionType transactionType,
         CancellationToken cancellationToken = default)
     {
+        var isClaim = transactionType == StakingTransactionType.Claim;
+
         if (!IsTransactionHash(txHash) ||
             !IsValidAddress(expectedWallet) ||
-            expectedAmount <= 0m ||
-            !IsValidContract(_paymentTokenContract) ||
-            !IsValidContract(_stakingPoolContract))
+            !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract) ||
+            (isClaim ? !WalletAddressRules.IsConfiguredAddress(_coffeeCoinContract) : !WalletAddressRules.IsConfiguredAddress(_paymentTokenContract)) ||
+            (!isClaim && (expectedAmount is null || expectedAmount <= 0m)))
         {
-            return false;
+            return StakingVerificationResult.Failed;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -302,7 +327,13 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             receipt.Status?.Value != BigInteger.One ||
             !AddressMatches(receipt.To, _stakingPoolContract))
         {
-            return false;
+            return StakingVerificationResult.Failed;
+        }
+
+        var confirmations = await GetConfirmationsAsync(receipt, cancellationToken).ConfigureAwait(false);
+        if (confirmations < _chain.MinimumConfirmations)
+        {
+            return StakingVerificationResult.Pending(confirmations, _chain.MinimumConfirmations);
         }
 
         var transaction = await _readOnlyWeb3.Eth.Transactions
@@ -314,18 +345,36 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             !AddressMatches(transaction.From, expectedWallet) ||
             !AddressMatches(transaction.To, _stakingPoolContract))
         {
-            return false;
+            return StakingVerificationResult.Failed;
         }
 
-        var expectedAmountWei = Web3.Convert.ToWei(expectedAmount);
-        if (!TryDecodeStakingAmount(transaction.Input, transactionType, out var callAmountWei) ||
+        if (isClaim)
+        {
+            if (!StakingCalldataDecoder.TryDecodeClaimSelector(transaction.Input))
+            {
+                return StakingVerificationResult.Failed;
+            }
+
+            var claimTransfer = receipt.DecodeAllEvents<TransferEventDTO>()
+                .FirstOrDefault(transfer =>
+                    AddressMatches(transfer.Log.Address, _coffeeCoinContract) &&
+                    AddressMatches(transfer.Event.From, _stakingPoolContract) &&
+                    AddressMatches(transfer.Event.To, expectedWallet));
+
+            return claimTransfer is null
+                ? StakingVerificationResult.Failed
+                : new StakingVerificationResult(TransactionVerificationStatus.Verified, Web3.Convert.FromWei(claimTransfer.Event.Value));
+        }
+
+        var expectedAmountWei = Web3.Convert.ToWei(expectedAmount!.Value);
+        if (!StakingCalldataDecoder.TryDecodeStakingAmount(transaction.Input, transactionType, out var callAmountWei) ||
             callAmountWei != expectedAmountWei)
         {
-            return false;
+            return StakingVerificationResult.Failed;
         }
 
         var transferEvents = receipt.DecodeAllEvents<TransferEventDTO>();
-        return transactionType switch
+        var verified = transactionType switch
         {
             StakingTransactionType.Stake => transferEvents.Any(transfer =>
                 AddressMatches(transfer.Log.Address, _paymentTokenContract) &&
@@ -339,6 +388,110 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
                 transfer.Event.Value == expectedAmountWei),
             _ => false
         };
+
+        return verified
+            ? new StakingVerificationResult(TransactionVerificationStatus.Verified, expectedAmount.Value)
+            : StakingVerificationResult.Failed;
+    }
+
+    private async Task<int> GetConfirmationsAsync(TransactionReceipt receipt, CancellationToken cancellationToken)
+    {
+        if (receipt.BlockNumber is null)
+        {
+            return 0;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var currentBlock = await _readOnlyWeb3.Eth.Blocks.GetBlockNumber.SendRequestAsync().ConfigureAwait(false);
+        return ConfirmationCalculator.Calculate(currentBlock.Value, receipt.BlockNumber.Value);
+    }
+
+    private async Task<string?> DetectClaimFunctionAsync(string walletAddress, CancellationToken cancellationToken)
+    {
+        if (!IsValidAddress(walletAddress) || !WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
+        {
+            return null;
+        }
+
+        foreach (var functionName in StakingCalldataDecoder.ClaimFunctionNames)
+        {
+            if (await ProbeStaticCallAsync($"{functionName}()", walletAddress, cancellationToken).ConfigureAwait(false))
+            {
+                return functionName;
+            }
+        }
+
+        return null;
+    }
+
+    private const int SecondsPerYear = 365 * 24 * 60 * 60;
+
+    private async Task<decimal?> DetectContractAprAsync(CancellationToken cancellationToken)
+    {
+        if (!WalletAddressRules.IsConfiguredAddress(_stakingPoolContract))
+        {
+            return null;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var contract = _readOnlyWeb3.Eth.GetContract(ContractAbis.StakingPool, _stakingPoolContract);
+
+        try
+        {
+            var aprBasisPoints = await contract.GetFunction("aprBasisPoints").CallAsync<BigInteger>().ConfigureAwait(false);
+            return (decimal)aprBasisPoints / 100m;
+        }
+        catch
+        {
+            // aprBasisPoints() is not exposed by this pool; try deriving from rewardRate() + totalSupply() instead.
+        }
+
+        try
+        {
+            var rewardRate = await contract.GetFunction("rewardRate").CallAsync<BigInteger>().ConfigureAwait(false);
+            var totalStaked = await contract.GetFunction("totalSupply").CallAsync<BigInteger>().ConfigureAwait(false);
+
+            if (rewardRate <= BigInteger.Zero || totalStaked <= BigInteger.Zero)
+            {
+                return null;
+            }
+
+            var annualRewards = Web3.Convert.FromWei(rewardRate) * SecondsPerYear;
+            var staked = Web3.Convert.FromWei(totalStaked);
+            return annualRewards / staked * 100m;
+        }
+        catch
+        {
+            // Neither reward-rate view function is exposed; fall back to the configured indicative rate.
+            return null;
+        }
+    }
+
+    private async Task<bool> ProbeStaticCallAsync(
+        string functionSignature,
+        string fromAddress,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            var callInput = new CallInput
+            {
+                To = _stakingPoolContract,
+                From = fromAddress,
+                Data = StakingCalldataDecoder.FunctionSelector(functionSignature)
+            };
+
+            await _readOnlyWeb3.Eth.Transactions.Call.SendRequestAsync(callInput).ConfigureAwait(false);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async Task<decimal> GetErc20BalanceAsync(
@@ -346,7 +499,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         string contractAddress,
         CancellationToken cancellationToken)
     {
-        if (!IsValidContract(contractAddress))
+        if (!WalletAddressRules.IsConfiguredAddress(contractAddress))
         {
             return 0m;
         }
@@ -362,10 +515,6 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         return Web3.Convert.FromWei(balanceWei);
     }
 
-    private static bool IsValidContract(string? address) =>
-        IsValidAddress(address) &&
-        !address!.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
-
     private static bool IsValidAddress(string? address) =>
         !string.IsNullOrWhiteSpace(address) &&
         AddressUtil.Current.IsValidEthereumAddressHexFormat(address);
@@ -379,67 +528,6 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
     private static bool AddressMatches(string? actual, string expected) =>
         !string.IsNullOrWhiteSpace(actual) &&
         actual.Equals(expected, StringComparison.OrdinalIgnoreCase);
-
-    private static bool TryDecodeErc20Transfer(
-        string? input,
-        out string recipient,
-        out BigInteger amount)
-    {
-        const string transferSelector = "0xa9059cbb";
-
-        recipient = string.Empty;
-        amount = BigInteger.Zero;
-
-        if (string.IsNullOrWhiteSpace(input) ||
-            !input.StartsWith(transferSelector, StringComparison.OrdinalIgnoreCase) ||
-            input.Length < 138)
-        {
-            return false;
-        }
-
-        recipient = $"0x{input.Substring(10 + 24, 40)}";
-        amount = BigInteger.Parse($"0{input.Substring(10 + 64, 64)}", System.Globalization.NumberStyles.HexNumber);
-        return IsValidAddress(recipient);
-    }
-
-    private static bool TryDecodeStakingAmount(
-        string? input,
-        StakingTransactionType transactionType,
-        out BigInteger amount)
-    {
-        amount = BigInteger.Zero;
-
-        if (string.IsNullOrWhiteSpace(input) || input.Length < 74)
-        {
-            return false;
-        }
-
-        var stakeSelector = FunctionSelector("stake(uint256)");
-        var unstakeSelector = FunctionSelector("unstake(uint256)");
-        var withdrawSelector = FunctionSelector("withdraw(uint256)");
-        var selectorMatches = transactionType switch
-        {
-            StakingTransactionType.Stake => input.StartsWith(stakeSelector, StringComparison.OrdinalIgnoreCase),
-            StakingTransactionType.Unstake =>
-                input.StartsWith(unstakeSelector, StringComparison.OrdinalIgnoreCase) ||
-                input.StartsWith(withdrawSelector, StringComparison.OrdinalIgnoreCase),
-            _ => false
-        };
-
-        if (!selectorMatches)
-        {
-            return false;
-        }
-
-        amount = BigInteger.Parse($"0{input.Substring(10, 64)}", System.Globalization.NumberStyles.HexNumber);
-        return true;
-    }
-
-    private static string FunctionSelector(string signature)
-    {
-        var hash = Sha3Keccack.Current.CalculateHash(signature);
-        return $"0x{hash[..8]}";
-    }
 
     private static bool IsGasFundingFailure(Exception exception)
     {

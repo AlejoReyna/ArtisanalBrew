@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -15,6 +16,7 @@ using ThisCafeteria.Application.Services.Rewards;
 using ThisCafeteria.Web.Services.Blockchain;
 using ThisCafeteria.Web.Services.Rewards;
 using ThisCafeteria.Web.Services.Cart;
+using ThisCafeteria.Web.Services.Wallet;
 using ThisCafeteria.Infrastructure.Configuration;
 
 LocalDotEnvLoader.LoadIfPresent();
@@ -36,6 +38,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -57,6 +60,7 @@ builder.Services.AddSingleton(serviceProvider =>
 builder.Services.Configure<CoffeeCoinOwnerOptions>(
     builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
 builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
+builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
 builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
 {
@@ -127,6 +131,20 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+
+app.Use((context, next) =>
+{
+    var antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>();
+    var tokens = antiforgery.GetAndStoreTokens(context);
+    context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
+    {
+        HttpOnly = false,
+        SameSite = SameSiteMode.Strict,
+        Secure = context.Request.IsHttps
+    });
+
+    return next(context);
+});
 
 app.MapStaticAssets();
 app.MapControllers();

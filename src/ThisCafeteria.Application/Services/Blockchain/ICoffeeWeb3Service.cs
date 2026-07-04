@@ -11,7 +11,7 @@ public interface ICoffeeWeb3Service
     /// <summary>Mints COFFEE to <paramref name="toAddress"/> using the configured owner account. Returns the transaction hash.</summary>
     Task<string> MintCoffeeCoinAsync(string toAddress, decimal amount, CancellationToken cancellationToken = default);
 
-    Task<bool> VerifyPaymentTransactionAsync(
+    Task<TransactionVerificationStatus> VerifyPaymentTransactionAsync(
         string txHash,
         string expectedCustomer,
         decimal expectedAmount,
@@ -21,14 +21,15 @@ public interface ICoffeeWeb3Service
         string walletAddress,
         CancellationToken cancellationToken = default);
 
-    Task<decimal> GetPendingStakingRewardsAsync(
+    /// <summary>Returns null when the on-chain read fails (e.g. RPC outage) rather than a false zero.</summary>
+    Task<decimal?> GetPendingStakingRewardsAsync(
         string walletAddress,
         CancellationToken cancellationToken = default);
 
-    Task<bool> VerifyStakingTransactionAsync(
+    Task<StakingVerificationResult> VerifyStakingTransactionAsync(
         string txHash,
         string expectedWallet,
-        decimal expectedAmount,
+        decimal? expectedAmount,
         StakingTransactionType transactionType,
         CancellationToken cancellationToken = default);
 

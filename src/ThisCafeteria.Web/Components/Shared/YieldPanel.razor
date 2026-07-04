@@ -17,7 +17,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
-@inject IServiceProvider Services
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 @inject IEthUsdPriceService EthUsdPriceService
@@ -134,7 +134,7 @@ else
                     <div class="yield-hero-summary">
                         <p class="yield-hero-lede">Deposit your payment tokens into the brewing pool to lock in your yield. Track your active allocation, earn freshly roasted rewards, and unstake your principal at any time.</p>
                         <div class="yield-global-stat" aria-label="Configured reward rate">
-                            <span>Contract Annual Yield</span>
+                            <span>@AprLabel()</span>
                             <strong>@FormatApr()</strong>
                         </div>
                     </div>
@@ -147,9 +147,11 @@ else
                           Suffix="CAFE"
                           Loading="_isLoading" />
                 <StatTile Label="Pending Rewards"
-                          Value="@FormatAmount(_dashboard.PendingStakingRewards)"
-                          Suffix="COFFEE"
+                          Value="@FormatPendingRewards()"
+                          Suffix="@(_dashboard.PendingStakingRewards is null ? null : "COFFEE")"
                           Accent="StatTile.StatTileAccent.Positive"
+                          Hint="@(_dashboard.PendingStakingRewards is null ? "Rewards unavailable - RPC read failed." : null)"
+                          OnRetry="PendingRewardsRetryCallback"
                           Loading="_isLoading" />
                 <StatTile Label="CAFE Balance"
                           Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
@@ -282,6 +284,33 @@ else
                     </div>
                 </article>
 
+                @if (_dashboard.ClaimSupported)
+                {
+                    <article class="yield-asset-card">
+                        <div class="yield-card-visual yield-card-visual--espresso">
+                            <span class="yield-card-tag">Claim</span>
+                        </div>
+                        <div class="yield-card-body">
+                            <p class="yield-card-eyebrow">Reward Payout</p>
+                            <h2>Claim Rewards</h2>
+                            <p class="yield-card-desc">Send your accrued COFFEE rewards from the pool to your wallet.</p>
+                            <p class="yield-card-balance">Pending <strong class="tabular">@FormatPendingRewardsWithSuffix()</strong></p>
+                            <div class="yield-card-footer">
+                                <button type="button"
+                                        class="yield-cta-btn yield-cta-btn--dark btn-claim-token"
+                                        data-claim-function="@_dashboard.ClaimFunctionName"
+                                        disabled="@(_dashboard.PendingStakingRewards is null or <= 0m)">
+                                    Claim Rewards
+                                </button>
+                            </div>
+                            @if (_activeTx?.Flow == "claim")
+                            {
+                                <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                            }
+                        </div>
+                    </article>
+                }
+
             </section>
 
             <section class="yield-activity" aria-labelledby="yield-activity-title">
@@ -362,8 +391,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         _chain = ChainOptions.Value;
-        _stakingConfigured = IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
-            IsConfiguredAddress(_chain.StakingPoolContract);
+        _stakingConfigured = WalletAddressRules.IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
+            WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
         await ApplyResolvedWalletAsync();
@@ -462,7 +491,7 @@ else
             return;
         }
 
-        if (flow is not ("stake" or "unstake"))
+        if (flow is not ("stake" or "unstake" or "claim"))
         {
             return;
         }
@@ -556,14 +585,14 @@ else
         {
             var fromClaim = principal.FindFirst("wallet_address")?.Value
                 ?? TryGetWalletFromPrincipalName(principal);
-            if (TryNormalizeWallet(fromClaim, out var claimWallet))
+            if (WalletAddressRules.TryNormalizeWallet(fromClaim, out var claimWallet))
             {
                 SyncWalletSession(claimWallet);
                 return claimWallet;
             }
 
             var user = await UserManager.GetUserAsync(principal);
-            if (TryNormalizeWallet(user?.WalletAddress, out var userWallet))
+            if (WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out var userWallet))
             {
                 SyncWalletSession(userWallet);
                 return userWallet;
@@ -571,9 +600,28 @@ else
         }
 
         var sessionWallet = HttpContextAccessor.HttpContext?.Session.GetString("WalletAddress");
-        return TryNormalizeWallet(sessionWallet, out var normalizedSession)
+        return WalletAddressRules.TryNormalizeWallet(sessionWallet, out var normalizedSession)
             ? normalizedSession
             : null;
+    }
+
+    private async Task<bool> IsWalletAuthenticatedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+        if (principal.Identity?.IsAuthenticated != true)
+        {
+            return false;
+        }
+
+        var claimWallet = principal.FindFirst("wallet_address")?.Value ?? TryGetWalletFromPrincipalName(principal);
+        if (WalletAddressRules.TryNormalizeWallet(claimWallet, out _))
+        {
+            return true;
+        }
+
+        var user = await UserManager.GetUserAsync(principal);
+        return WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out _);
     }
 
     private void SyncWalletSession(string wallet)
@@ -603,18 +651,6 @@ else
         !string.IsNullOrWhiteSpace(address) &&
         AddressUtil.Current.IsValidEthereumAddressHexFormat(address);
 
-    private static bool TryNormalizeWallet(string? address, out string checksum)
-    {
-        checksum = string.Empty;
-        if (!IsValidEthereumAddress(address))
-        {
-            return false;
-        }
-
-        checksum = AddressUtil.Current.ConvertToChecksumAddress(address!);
-        return true;
-    }
-
     private async Task ConnectWalletAsync()
     {
         _isConnecting = true;
@@ -626,6 +662,7 @@ else
                 "import",
                 "/js/coffeeStaking.js");
 
+            var isWalletAuthenticated = await IsWalletAuthenticatedAsync();
             var wallet = await _stakingModule.InvokeAsync<string>(
                 "connectWalletForStaking",
                 new
@@ -637,7 +674,8 @@ else
                     currencyName = _chain.CurrencyName,
                     currencySymbol = _chain.CurrencySymbol,
                     currencyDecimals = _chain.CurrencyDecimals,
-                    explorerUrl = _chain.ExplorerUrl
+                    explorerUrl = _chain.ExplorerUrl,
+                    isWalletAuthenticated
                 });
             _isConnected = !string.IsNullOrWhiteSpace(wallet);
             if (_isConnected)
@@ -661,43 +699,24 @@ else
     {
         _stakingLedger = [];
 
-        var dbContext = Services.GetService<AppDbContext>();
-        if (dbContext is null || string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        if (string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
         {
             return;
         }
 
-        try
-        {
-            _stakingLedger = await dbContext.StakingLedgerEntries
-                .AsNoTracking()
-                .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
-                .OrderByDescending(entry => entry.RecordedAtUtc)
-                .Take(8)
-                .Select(entry => new StakingLedgerItem(
-                    entry.RecordedAtUtc,
-                    entry.ActionType,
-                    entry.Amount,
-                    entry.ExplorerUrl))
-                .ToListAsync(cancellationToken);
-        }
-        catch (Exception exception) when (IsMissingStakingLedgerTable(exception))
-        {
-            _stakingLedger = [];
-        }
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
+        _stakingLedger = await dbContext.StakingLedgerEntries
+            .AsNoTracking()
+            .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
+            .OrderByDescending(entry => entry.RecordedAtUtc)
+            .Take(8)
+            .Select(entry => new StakingLedgerItem(
+                entry.RecordedAtUtc,
+                entry.ActionType,
+                entry.Amount,
+                entry.ExplorerUrl))
+            .ToListAsync(cancellationToken);
     }
-
-    private static bool IsConfiguredAddress(string? address) =>
-        !string.IsNullOrWhiteSpace(address) &&
-        address.Length == 42 &&
-        address.StartsWith("0x", StringComparison.OrdinalIgnoreCase) &&
-        address[2..].All(Uri.IsHexDigit) &&
-        !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsMissingStakingLedgerTable(Exception exception) =>
-        exception.Message.Contains("42P01", StringComparison.OrdinalIgnoreCase) ||
-        exception.Message.Contains("StakingLedgerEntries", StringComparison.OrdinalIgnoreCase) ||
-        (exception.InnerException is not null && IsMissingStakingLedgerTable(exception.InnerException));
 
     private static string ShortAddress(string address) =>
         string.IsNullOrWhiteSpace(address) || address.Length < 10
@@ -709,7 +728,31 @@ else
     private string FormatDashboardAmount(decimal value, string suffix = "") =>
         _isLoading ? "Syncing..." : $"{FormatAmount(value)}{suffix}";
 
+    private string FormatPendingRewards() => _dashboard.PendingStakingRewards switch
+    {
+        _ when _isLoading => "Syncing...",
+        null => "—",
+        var value => FormatAmount(value.Value)
+    };
+
+    private string FormatPendingRewardsWithSuffix() => _dashboard.PendingStakingRewards switch
+    {
+        _ when _isLoading => "Syncing...",
+        null => "—",
+        var value => $"{FormatAmount(value.Value)} COFFEE"
+    };
+
+    private EventCallback PendingRewardsRetryCallback =>
+        _dashboard.PendingStakingRewards is null
+            ? EventCallback.Factory.Create(this, LoadDashboardAsync)
+            : default;
+
     private string FormatApr() => _isLoading ? "..." : $"+{_dashboard.CurrentApr:0.0}%";
+
+    private string AprLabel() =>
+        _isLoading || _dashboard.AprIsContractDerived
+            ? "Contract Annual Yield"
+            : "Indicative Annual Yield (configured, not contract-enforced)";
 
     private bool ShouldExpandFaucet =>
         !_isLoading && string.IsNullOrWhiteSpace(_dashboardError) && _dashboard.NativeBalance < LowGasThresholdEth;
@@ -747,9 +790,12 @@ else
         decimal Amount,
         string ExplorerUrl)
     {
-        public string DisplayName => ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase)
-            ? "Unstaked"
-            : "Staked";
+        public string DisplayName => ActionType.ToLowerInvariant() switch
+        {
+            "unstake" => "Unstaked",
+            "claim" => "Claimed",
+            _ => "Staked"
+        };
 
         public string AmountPrefix => ActionType.Equals("unstake", StringComparison.OrdinalIgnoreCase)
             ? "-"

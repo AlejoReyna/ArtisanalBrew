@@ -25,6 +25,7 @@ public sealed class BlockchainNetworkOptions
     public string CoffeeCoinContract { get; init; } = string.Empty;
     public string MarketplaceWallet { get; init; } = string.Empty;
     public decimal StakingAprPercent { get; init; } = 5.2m;
+    public int MinimumConfirmations { get; init; } = 2;
 
     public string EffectivePaymentTokenContract =>
         !string.IsNullOrWhiteSpace(PaymentTokenContract)
