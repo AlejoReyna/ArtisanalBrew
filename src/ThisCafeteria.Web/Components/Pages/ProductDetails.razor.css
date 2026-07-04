@@ -290,6 +290,17 @@
 
 /* Mobile */
 @media (max-width: 960px) {
+    .product-detail-card {
+        /* Pin the sheet to the viewport so it is not clipped by the parent
+           .content container and stays independent of header/layout shifts. */
+        height: 100dvh;
+        inset: 0;
+        min-height: 100dvh;
+        position: fixed;
+        width: 100%;
+        z-index: 100;
+    }
+
     .product-detail-card__image {
         height: 52dvh;
     }

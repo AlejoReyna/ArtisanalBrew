@@ -37,7 +37,7 @@
                 ? _products.Where(product => product.IsActive)
                 : _products.Where(product => product.IsActive && product.Category.ToString() == displayedSection));
 
-        <header class="products-shop__header" data-animate="fade-up">
+        <header class="products-shop__header products-shop__header--@displayedSection @(_headerTransitionClass)" data-animate="fade-up">
             <h1 class="products-shop__title">@((MarkupString)TitleFor(displayedSection).Replace("&", "<span class=\"products-shop__amp\">&amp;</span>"))</h1>
             <p class="products-shop__lede">@LedeFor(displayedSection)</p>
             <button type="button" class="products-shop__filter" aria-label="Filters">
@@ -139,6 +139,7 @@
     private string selectedSection = AllSection;
     private string displayedSection = AllSection;
     private string? _gridTransitionClass;
+    private string? _headerTransitionClass;
     private bool _isTransitioning;
     private bool shouldRefreshAnimations = true;
     private const int CategoryFadeOutMs = 180;
@@ -213,6 +214,7 @@
         _qtyExpanded.Clear();
         _isTransitioning = true;
         _gridTransitionClass = "is-fading-out";
+        _headerTransitionClass = "products-shop__header--growing";
         StateHasChanged();
 
         await Task.Delay(CategoryFadeOutMs);
@@ -230,6 +232,7 @@
         await Task.Delay(CategoryFadeInMs);
 
         _isTransitioning = false;
+        _headerTransitionClass = null;
     }
 
     private int GetQuantity(string slug) =>
