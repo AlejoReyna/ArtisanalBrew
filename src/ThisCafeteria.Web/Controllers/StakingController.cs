@@ -277,9 +277,11 @@ public sealed class StakingController(
             return BadRequest("The connected wallet does not match the staking session wallet.");
         }
 
-        if (!StakingAmountRules.IsValidStakeAmount(request.Amount))
+        if (!IsValidAmountForType(transactionType, request.Amount))
         {
-            return BadRequest("Staking amount must be greater than zero.");
+            return BadRequest(transactionType == StakingTransactionType.Stake
+                ? "Staking amount must be greater than zero."
+                : "Unstake amount must be greater than zero.");
         }
 
         if (!TryNormalizeTransactionHash(request.TransactionHash, out var transactionHash))
@@ -370,6 +372,21 @@ public sealed class StakingController(
             confirmations = verification.Confirmations,
             requiredConfirmations = verification.RequiredConfirmations
         });
+
+    /// <summary>
+    /// Stake amounts are validated against StakingAmountRules.IsValidStakeAmount (amount &gt; 0).
+    /// Unstake amounts deliberately are NOT checked against StakingAmountRules.IsValidUnstakeAmount's
+    /// staked-balance ceiling: by the time this endpoint runs, the unstake transaction has already been
+    /// mined, so GetStakedPaymentTokenBalanceAsync would return the POST-unstake balance. Comparing the
+    /// requested amount against that balance would reject legitimate full unstakes (post-balance can be
+    /// 0 even for a perfectly valid withdrawal). VerifyStakingTransactionAsync already proves, via the
+    /// decoded on-chain Transfer event, that the pool contract itself paid out exactly this amount -
+    /// that is the real correctness guarantee, not a second, stale balance check here.
+    /// </summary>
+    private static bool IsValidAmountForType(StakingTransactionType transactionType, decimal amount) =>
+        transactionType == StakingTransactionType.Stake
+            ? StakingAmountRules.IsValidStakeAmount(amount)
+            : amount > 0m;
 
     private bool IsStakingConfigured() =>
         IsConfiguredAddress(chain.EffectivePaymentTokenContract) &&
