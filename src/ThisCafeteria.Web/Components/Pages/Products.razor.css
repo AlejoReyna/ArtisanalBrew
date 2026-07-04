@@ -110,12 +110,47 @@
     /* animated coffee backdrop with sepia grade */
     .products-shop__header::before {
         animation: shop-banner-pan 26s ease-in-out infinite alternate;
-        background: url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80') center / cover no-repeat;
+        background: center / cover no-repeat;
         content: "";
         filter: sepia(0.85) saturate(1.15) brightness(0.55) contrast(1.05);
         inset: -10%;
         position: absolute;
+        transition: background-image 360ms ease;
         z-index: -1;
+    }
+
+    .products-shop__header--All::before {
+        background-image: url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80');
+    }
+
+    .products-shop__header--Beans::before {
+        background-image: url('https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80');
+    }
+
+    .products-shop__header--BrewingEquipment::before {
+        background-image: url('https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=80');
+    }
+
+    .products-shop__header--CeramicsAndGoods::before {
+        background-image: url('https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80');
+    }
+
+    .products-shop__header--growing {
+        animation: shop-header-grow 460ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes shop-header-grow {
+        0% {
+            padding-bottom: 2.75rem;
+        }
+
+        50% {
+            padding-bottom: 4.25rem;
+        }
+
+        100% {
+            padding-bottom: 2.75rem;
+        }
     }
 
     @keyframes shop-banner-pan {
@@ -240,7 +275,11 @@
         background: var(--shop-cream);
         border-bottom: 1px solid var(--shop-line);
         gap: 0;
-        padding: 0.9rem 0.75rem 1rem;
+        padding: 0 0 0.9rem;
+    }
+
+    .marketplace-card:hover {
+        transform: none;
     }
 
     .marketplace-card:nth-child(odd) {
@@ -275,7 +314,7 @@
     .marketplace-card .image-frame {
         aspect-ratio: 1 / 1;
         border-radius: 0;
-        margin: 0 0 0.7rem;
+        margin: 0;
         position: relative;
     }
 
@@ -302,7 +341,7 @@
     }
 
     .marketplace-card__copy {
-        padding: 0;
+        padding: 0.7rem 0.75rem 0;
     }
 
     .marketplace-card .price {
@@ -337,7 +376,7 @@
 
     .marketplace-card__footer {
         margin-top: auto;
-        padding-top: 0.65rem;
+        padding: 0.65rem 0.75rem 0;
     }
 
     .marketplace-card__actions {
