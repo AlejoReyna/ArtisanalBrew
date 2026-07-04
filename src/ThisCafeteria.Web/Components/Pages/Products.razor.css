@@ -78,10 +78,326 @@
     min-width: 0;
 }
 
-/* ── Mobile 2-column grid ── */
+/* ── Mobile product-listing-page: roastery paper edition ── */
 @media (max-width: 760px) {
+    .products-shop {
+        --shop-cream: var(--surface, #fbf9f4);
+        --shop-ink: var(--ink, #2d2421);
+        --shop-muted: var(--muted, #746a63);
+        --shop-line: var(--line, #d8d0c4);
+        --shop-accent: #b8532e;
+        --shop-tint-beans: #b8532e;
+        --shop-tint-equipment: #6f7a5e;
+        --shop-tint-ceramics: #b08d6a;
+        --shop-serif: var(--font-display, 'Playfair Display', Georgia, serif);
+
+        background-color: var(--shop-cream);
+        color: var(--shop-ink);
+        /* extra 5px closes the strip between the fixed nav (71px) and main's 76px offset */
+        margin: calc(-1.25rem - 5px) -1.25rem -1.25rem;
+        padding: 1.5rem 0 2rem;
+        position: relative;
+    }
+
+    .products-shop__header {
+        isolation: isolate;
+        margin: -1.5rem 0 0;
+        overflow: hidden;
+        padding: 3.5rem 1rem 2.75rem;
+        position: relative;
+    }
+
+    /* animated coffee backdrop with sepia grade */
+    .products-shop__header::before {
+        animation: shop-banner-pan 26s ease-in-out infinite alternate;
+        background: url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80') center / cover no-repeat;
+        content: "";
+        filter: sepia(0.85) saturate(1.15) brightness(0.55) contrast(1.05);
+        inset: -10%;
+        position: absolute;
+        z-index: -1;
+    }
+
+    @keyframes shop-banner-pan {
+        from {
+            transform: scale(1) translateX(0);
+        }
+
+        to {
+            transform: scale(1.14) translateX(-2.5%);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .products-shop__header::before {
+            animation: none;
+        }
+    }
+
+    .products-shop__title {
+        color: #fbf9f4;
+        font-family: var(--shop-serif);
+        font-size: clamp(2.5rem, 12vw, 3.6rem);
+        font-weight: 500;
+        letter-spacing: -0.035em;
+        line-height: 0.98;
+        margin: 0 0 0.7rem;
+        text-transform: none;
+    }
+
+    /* plain ampersand instead of Playfair's swash glyph */
+    .products-shop__title ::deep .products-shop__amp {
+        font-family: var(--font-sans);
+        font-size: 0.72em;
+        font-weight: 400;
+    }
+
+    .products-shop__lede {
+        color: rgba(251, 249, 244, 0.82);
+        font-family: var(--font-sans);
+        font-size: 0.9rem;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 1.5;
+        margin: 0;
+        max-width: 20rem;
+    }
+
+    .products-shop__filter {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        bottom: 0.9rem;
+        color: #fbf9f4;
+        cursor: pointer;
+        display: inline-flex;
+        gap: 0.3rem;
+        padding: 0.25rem;
+        position: absolute;
+        right: 0.9rem;
+    }
+
+    .products-shop__filter-badge {
+        align-items: center;
+        background: var(--shop-accent);
+        border-radius: 50%;
+        color: #fbf9f4;
+        display: inline-flex;
+        font-family: var(--font-sans);
+        font-size: 0.55rem;
+        font-weight: 700;
+        height: 1rem;
+        justify-content: center;
+        min-width: 1rem;
+    }
+
+    .category-filter {
+        border-bottom: 1px solid var(--shop-line);
+        display: flex;
+        gap: 1.4rem;
+        list-style: none;
+        margin: 0;
+        overflow-x: auto;
+        padding: 0 1rem;
+        scrollbar-width: none;
+        white-space: nowrap;
+    }
+
+    .category-filter::-webkit-scrollbar {
+        display: none;
+    }
+
+    .category-filter li {
+        color: var(--shop-muted);
+        cursor: pointer;
+        flex: none;
+        font-family: var(--font-sans);
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        padding: 0.7rem 0 0.8rem;
+        position: relative;
+        transition: color 160ms ease;
+    }
+
+    .category-filter li.active {
+        border-bottom: 0;
+        color: var(--shop-ink);
+        font-weight: 700;
+    }
+
+    .category-filter li:not(.active):active {
+        opacity: 0.6;
+    }
+
+    /* hairline editorial grid via borders so empty cells stay clean */
     ::deep .product-grid {
-        gap: 0.75rem;
+        gap: 0;
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .marketplace-card {
+        background: var(--shop-cream);
+        border-bottom: 1px solid var(--shop-line);
+        gap: 0;
+        padding: 0.9rem 0.75rem 1rem;
+    }
+
+    .marketplace-card:nth-child(odd) {
+        border-right: 1px solid var(--shop-line);
+    }
+
+    .marketplace-card__link {
+        display: block;
+        flex: none;
+    }
+
+    .marketplace-card__wishlist {
+        align-items: center;
+        background: rgba(251, 249, 244, 0.85);
+        border-radius: 50%;
+        color: var(--shop-ink);
+        display: flex;
+        height: 1.9rem;
+        justify-content: center;
+        position: absolute;
+        right: 0.45rem;
+        top: 0.55rem;
+        width: 1.9rem;
+        z-index: 2;
+    }
+
+    .marketplace-card__wishlist svg {
+        height: 1rem;
+        width: 1rem;
+    }
+
+    .marketplace-card .image-frame {
+        aspect-ratio: 1 / 1;
+        border-radius: 0;
+        margin: 0 0 0.7rem;
+        position: relative;
+    }
+
+    .marketplace-card .image-frame::before {
+        border-radius: inherit;
+        content: "";
+        inset: 0;
+        mix-blend-mode: multiply;
+        opacity: 0.16;
+        position: absolute;
+        z-index: 1;
+    }
+
+    .marketplace-card .image-frame--coldbrew::before {
+        background-color: var(--shop-tint-beans);
+    }
+
+    .marketplace-card .image-frame--equipment::before {
+        background-color: var(--shop-tint-equipment);
+    }
+
+    .marketplace-card .image-frame--ceramics::before {
+        background-color: var(--shop-tint-ceramics);
+    }
+
+    .marketplace-card__copy {
+        padding: 0;
+    }
+
+    .marketplace-card .price {
+        color: var(--shop-ink);
+        font-family: var(--shop-serif);
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0 0 0.2rem;
+    }
+
+    .marketplace-card h3 {
+        color: var(--shop-ink);
+        font-family: var(--shop-serif);
+        font-size: 0.95rem;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.22;
+        margin: 0 0 0.3rem;
+        text-transform: none;
+    }
+
+    .marketplace-card .eyebrow {
+        color: var(--shop-muted);
+        font-family: var(--font-sans);
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        margin: 0 0 0.45rem;
+        text-transform: uppercase;
+    }
+
+    .marketplace-card__footer {
+        margin-top: auto;
+        padding-top: 0.65rem;
+    }
+
+    .marketplace-card__actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin: 0;
+        padding: 0;
+    }
+
+    .marketplace-card ::deep .product-qty,
+    .marketplace-card--qty-expanded ::deep .product-qty {
+        display: inline-flex !important;
+        justify-content: flex-start !important;
+    }
+
+    .marketplace-card ::deep .product-qty__btn {
+        background: transparent;
+        border-color: var(--shop-line);
+        border-radius: 50%;
+        color: var(--shop-ink);
+        height: 1.7rem;
+        width: 1.7rem;
+    }
+
+    .marketplace-card ::deep .product-qty__value {
+        color: var(--shop-ink);
+        font-family: var(--shop-serif);
+        font-size: 0.85rem;
+        min-width: 1.2rem;
+    }
+
+    .marketplace-card__add {
+        flex: none;
+        background: transparent;
+        border: 1px solid var(--shop-ink);
+        border-radius: 0;
+        color: var(--shop-ink);
+        font-family: var(--font-sans);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        min-height: 2.1rem;
+        padding: 0.35rem 0.75rem;
+        text-transform: uppercase;
+        transition: background 160ms ease, color 160ms ease, transform 120ms ease;
+        width: 100%;
+    }
+
+    .marketplace-card__add:hover {
+        background: var(--shop-ink);
+        border-color: var(--shop-ink);
+        color: var(--shop-cream);
+    }
+
+    .marketplace-card__add:active {
+        transform: scale(0.98);
+    }
+
+    .marketplace-card__add:disabled {
+        opacity: 0.6;
     }
 }

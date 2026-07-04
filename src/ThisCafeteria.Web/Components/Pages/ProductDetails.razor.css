@@ -128,7 +128,7 @@
 
 .product-detail-card__price {
     color: #2d2421;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-display);
     line-height: 1;
     margin: 0;
     white-space: nowrap;
