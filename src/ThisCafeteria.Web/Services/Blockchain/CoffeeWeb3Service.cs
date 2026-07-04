@@ -19,16 +19,19 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
     private readonly Web3 _readOnlyWeb3;
     private readonly BlockchainNetworkOptions _chain;
     private readonly CoffeeCoinOwnerOptions _owner;
+    private readonly ILogger<CoffeeWeb3Service> _logger;
     private readonly string _paymentTokenContract;
     private readonly string _coffeeCoinContract;
     private readonly string _stakingPoolContract;
 
     public CoffeeWeb3Service(
         IOptions<BlockchainNetworkOptions> chainOptions,
-        IOptions<CoffeeCoinOwnerOptions> ownerOptions)
+        IOptions<CoffeeCoinOwnerOptions> ownerOptions,
+        ILogger<CoffeeWeb3Service> logger)
     {
         _chain = chainOptions.Value;
         _owner = ownerOptions.Value;
+        _logger = logger;
         _readOnlyWeb3 = new Web3(_chain.RpcUrl);
         _paymentTokenContract = _chain.EffectivePaymentTokenContract;
         _coffeeCoinContract = _chain.CoffeeCoinContract;
@@ -263,7 +266,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         return Web3.Convert.FromWei(balanceWei);
     }
 
-    public async Task<decimal> GetPendingStakingRewardsAsync(
+    public async Task<decimal?> GetPendingStakingRewardsAsync(
         string walletAddress,
         CancellationToken cancellationToken = default)
     {
@@ -284,9 +287,14 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
             return Web3.Convert.FromWei(rewardsWei);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            return 0m;
+            _logger.LogWarning(
+                exception,
+                "Failed to read pending staking rewards for {WalletAddress} from {StakingPoolContract}.",
+                walletAddress,
+                _stakingPoolContract);
+            return null;
         }
     }
 

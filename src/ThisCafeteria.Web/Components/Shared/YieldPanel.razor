@@ -147,9 +147,11 @@ else
                           Suffix="CAFE"
                           Loading="_isLoading" />
                 <StatTile Label="Pending Rewards"
-                          Value="@FormatAmount(_dashboard.PendingStakingRewards)"
-                          Suffix="COFFEE"
+                          Value="@FormatPendingRewards()"
+                          Suffix="@(_dashboard.PendingStakingRewards is null ? null : "COFFEE")"
                           Accent="StatTile.StatTileAccent.Positive"
+                          Hint="@(_dashboard.PendingStakingRewards is null ? "Rewards unavailable - RPC read failed." : null)"
+                          OnRetry="PendingRewardsRetryCallback"
                           Loading="_isLoading" />
                 <StatTile Label="CAFE Balance"
                           Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
@@ -292,12 +294,12 @@ else
                             <p class="yield-card-eyebrow">Reward Payout</p>
                             <h2>Claim Rewards</h2>
                             <p class="yield-card-desc">Send your accrued COFFEE rewards from the pool to your wallet.</p>
-                            <p class="yield-card-balance">Pending <strong class="tabular">@FormatAmount(_dashboard.PendingStakingRewards) COFFEE</strong></p>
+                            <p class="yield-card-balance">Pending <strong class="tabular">@FormatPendingRewardsWithSuffix()</strong></p>
                             <div class="yield-card-footer">
                                 <button type="button"
                                         class="yield-cta-btn yield-cta-btn--dark btn-claim-token"
                                         data-claim-function="@_dashboard.ClaimFunctionName"
-                                        disabled="@(_dashboard.PendingStakingRewards <= 0m)">
+                                        disabled="@(_dashboard.PendingStakingRewards is null or <= 0m)">
                                     Claim Rewards
                                 </button>
                             </div>
@@ -756,6 +758,25 @@ else
 
     private string FormatDashboardAmount(decimal value, string suffix = "") =>
         _isLoading ? "Syncing..." : $"{FormatAmount(value)}{suffix}";
+
+    private string FormatPendingRewards() => _dashboard.PendingStakingRewards switch
+    {
+        _ when _isLoading => "Syncing...",
+        null => "—",
+        var value => FormatAmount(value.Value)
+    };
+
+    private string FormatPendingRewardsWithSuffix() => _dashboard.PendingStakingRewards switch
+    {
+        _ when _isLoading => "Syncing...",
+        null => "—",
+        var value => $"{FormatAmount(value.Value)} COFFEE"
+    };
+
+    private EventCallback PendingRewardsRetryCallback =>
+        _dashboard.PendingStakingRewards is null
+            ? EventCallback.Factory.Create(this, LoadDashboardAsync)
+            : default;
 
     private string FormatApr() => _isLoading ? "..." : $"+{_dashboard.CurrentApr:0.0}%";
 

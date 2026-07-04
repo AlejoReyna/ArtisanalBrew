@@ -58,6 +58,18 @@
     margin: 0;
 }
 
+.stat-tile__retry {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    margin-left: 0.35rem;
+    padding: 0;
+    text-decoration: underline;
+}
+
 .stat-tile__skeleton {
     animation: crypto-shimmer 1.4s ease-in-out infinite;
     background: linear-gradient(90deg, rgba(44, 27, 18, 0.07) 25%, rgba(44, 27, 18, 0.14) 50%, rgba(44, 27, 18, 0.07) 75%);

@@ -21,7 +21,8 @@ public interface ICoffeeWeb3Service
         string walletAddress,
         CancellationToken cancellationToken = default);
 
-    Task<decimal> GetPendingStakingRewardsAsync(
+    /// <summary>Returns null when the on-chain read fails (e.g. RPC outage) rather than a false zero.</summary>
+    Task<decimal?> GetPendingStakingRewardsAsync(
         string walletAddress,
         CancellationToken cancellationToken = default);
 

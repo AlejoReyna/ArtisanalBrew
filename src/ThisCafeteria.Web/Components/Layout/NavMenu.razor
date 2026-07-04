@@ -390,7 +390,9 @@
         _walletSnapshot is null ? "—" : $"{_walletSnapshot.StakedPaymentTokenBalance:0.####} CAFE";
 
     private string FormatPendingRewards() =>
-        _walletSnapshot is null ? "—" : $"{_walletSnapshot.PendingStakingRewards:0.####} COFFEE";
+        _walletSnapshot?.PendingStakingRewards is { } pendingRewards
+            ? $"{pendingRewards:0.####} COFFEE"
+            : "—";
 
     protected override async Task OnInitializedAsync()
     {
