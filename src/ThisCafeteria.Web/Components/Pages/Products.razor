@@ -15,74 +15,111 @@
 <PageTitle>Shop | Artisanal Brew</PageTitle>
 
 <section class="products-shop">
-<ul class="category-filter" data-animate="fade-up">
-    @foreach (var section in Sections)
+    @if (_isLoading)
     {
-        <li class="@(selectedSection == section.Key ? "active" : "")"
-            @onclick="() => SetSectionAsync(section.Key)">
-            @section.Label
-        </li>
+        <section class="page-intro" data-animate="fade-up">
+            <p class="eyebrow">Shop</p>
+            <h1>Loading products.</h1>
+        </section>
     }
-</ul>
-
-@if (_isLoading)
-{
-    <section class="page-intro" data-animate="fade-up">
-        <p class="eyebrow">Shop</p>
-        <h1>Loading products.</h1>
-    </section>
-}
-else if (!string.IsNullOrWhiteSpace(_loadError))
-{
-    <section class="page-intro" data-animate="fade-up">
-        <p class="eyebrow">Shop</p>
-        <h1>Products could not be loaded.</h1>
-        <p class="lede">@_loadError</p>
-    </section>
-}
-else
-{
-    var visibleProducts = OrderProductsForDisplay(
-        displayedSection == AllSection
-            ? _products.Where(product => product.IsActive)
-            : _products.Where(product => product.IsActive && product.Category.ToString() == displayedSection));
-
-    <div class="product-grid-wrapper @GetGridWrapperClass()">
-    <div @key="displayedSection" class="product-grid stagger-container" data-stagger>
-    @foreach (var product in visibleProducts)
+    else if (!string.IsNullOrWhiteSpace(_loadError))
     {
-        var quantity = GetQuantity(product.Slug);
-        var isAdding = _addingSlug == product.Slug;
+        <section class="page-intro" data-animate="fade-up">
+            <p class="eyebrow">Shop</p>
+            <h1>Products could not be loaded.</h1>
+            <p class="lede">@_loadError</p>
+        </section>
+    }
+    else
+    {
+        var visibleProducts = OrderProductsForDisplay(
+            displayedSection == AllSection
+                ? _products.Where(product => product.IsActive)
+                : _products.Where(product => product.IsActive && product.Category.ToString() == displayedSection));
 
-        <article class="marketplace-card @(_qtyExpanded.Contains(product.Slug) ? "marketplace-card--qty-expanded" : "")" data-animate="fade-up" data-product-card data-product-slug="@product.Slug">
-            <a class="marketplace-card__link"
-               href="@($"products/{product.Slug}")"
-               @onclick:preventDefault="true"
-               @onclick="() => NavigateToProductAsync(product)">
-                <div class="image-frame @ImageClassFor(product.Category)" style="@BackgroundImage(product.ImageUrl)" data-product-image></div>
-                <p class="eyebrow">@SectionLabel(product.Category.ToString())</p>
-                <h3>@product.Name</h3>
-            </a>
+        <header class="products-shop__header" data-animate="fade-up">
+            <h1 class="products-shop__title">@((MarkupString)TitleFor(displayedSection).Replace("&", "<span class=\"products-shop__amp\">&amp;</span>"))</h1>
+            <p class="products-shop__lede">@LedeFor(displayedSection)</p>
+            <button type="button" class="products-shop__filter" aria-label="Filters">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="4" y1="21" x2="4" y2="14" />
+                    <line x1="4" y1="10" x2="4" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12" y2="3" />
+                    <line x1="20" y1="21" x2="20" y2="16" />
+                    <line x1="20" y1="12" x2="20" y2="3" />
+                    <line x1="1" y1="14" x2="7" y2="14" />
+                    <line x1="9" y1="8" x2="15" y2="8" />
+                    <line x1="17" y1="16" x2="23" y2="16" />
+                </svg>
+                @if (ActiveFilterCount > 0)
+                {
+                    <span class="products-shop__filter-badge">@ActiveFilterCount</span>
+                }
+            </button>
+        </header>
 
-            <div class="marketplace-card__footer">
-                <p class="price">@FormatPrice(product.Price)</p>
-                <div class="marketplace-card__actions">
-                    <ProductQuantityPicker Quantity="quantity"
-                                           QuantityChanged="@(value => SetQuantity(product.Slug, value))" />
-                    <button type="button"
-                            class="button button--dark marketplace-card__add"
-                            disabled="@isAdding"
-                            aria-label="Add @product.Name to cart"
-                            @onclick="() => AddToCartAsync(product, quantity)">
-                        @(isAdding ? "Adding…" : "Add to cart")
-                    </button>
-                </div>
+        <ul class="category-filter" data-animate="fade-up" aria-label="Product categories">
+            @foreach (var section in Sections)
+            {
+                <li class="@(selectedSection == section.Key ? "active" : "")"
+                    aria-selected="@(selectedSection == section.Key ? "true" : "false")"
+                    role="tab"
+                    @onclick="() => SetSectionAsync(section.Key)">
+                    @section.Label
+                </li>
+            }
+        </ul>
+
+        <div class="product-grid-wrapper @GetGridWrapperClass()">
+            <div @key="displayedSection" class="product-grid stagger-container" data-stagger>
+                @foreach (var product in visibleProducts)
+                {
+                    var quantity = GetQuantity(product.Slug);
+                    var isAdding = _addingSlug == product.Slug;
+
+                    <article class="marketplace-card @(_qtyExpanded.Contains(product.Slug) ? "marketplace-card--qty-expanded" : "")"
+                             data-animate="fade-up"
+                             data-product-card
+                             data-product-slug="@product.Slug">
+                        <a class="marketplace-card__link"
+                           href="@($"products/{product.Slug}")"
+                           @onclick:preventDefault="true"
+                           @onclick="() => NavigateToProductAsync(product)">
+                            <div class="image-frame @ImageClassFor(product.Category)"
+                                 style="@BackgroundImage(product.ImageUrl)"
+                                 data-product-image>
+                                <span class="marketplace-card__wishlist" aria-label="Save for later">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="marketplace-card__copy">
+                                <p class="price">@FormatPrice(product.Price)</p>
+                                <h3>@product.Name</h3>
+                                <p class="eyebrow">@SectionLabel(product.Category.ToString())</p>
+                            </div>
+                        </a>
+
+                        <div class="marketplace-card__footer">
+                            <div class="marketplace-card__actions">
+                                <ProductQuantityPicker Quantity="quantity"
+                                                       QuantityChanged="@(value => SetQuantity(product.Slug, value))" />
+                                <button type="button"
+                                        class="button button--dark marketplace-card__add"
+                                        disabled="@isAdding"
+                                        aria-label="Add @product.Name to cart"
+                                        @onclick="() => AddToCartAsync(product, quantity)">
+                                    @(isAdding ? "Adding…" : "Add to cart")
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                }
             </div>
-        </article>
+        </div>
     }
-    </div>
-    </div>
-}
 </section>
 
 @code {
@@ -112,6 +149,8 @@ else
     private string? _addingSlug;
     private string? _openingSlug;
     private PersistingComponentStateSubscription _subscription;
+
+    private int ActiveFilterCount => displayedSection == AllSection ? 0 : 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -278,6 +317,24 @@ else
             ProductCategory.BrewingEquipment => 1,
             ProductCategory.CeramicsAndGoods => 2,
             _ => int.MaxValue
+        };
+
+    private static string TitleFor(string section) =>
+        section switch
+        {
+            "Beans" => "Single Origin Beans",
+            "BrewingEquipment" => "Brewing Equipment",
+            "CeramicsAndGoods" => "Ceramics & Goods",
+            _ => "Coffee & Goods"
+        };
+
+    private static string LedeFor(string section) =>
+        section switch
+        {
+            "Beans" => "Single-origin lots, roasted in small batches every week.",
+            "BrewingEquipment" => "Precision tools for pour-over, espresso, and slow brews.",
+            "CeramicsAndGoods" => "Hand-thrown ceramics and goods made for the table.",
+            _ => "Small-batch roasts, brew tools, and ceramics for your daily ritual. Free shipping on every order."
         };
 
     private static string SectionLabel(string section) =>
