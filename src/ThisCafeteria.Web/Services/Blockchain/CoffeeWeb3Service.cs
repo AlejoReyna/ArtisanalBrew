@@ -229,7 +229,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         }
 
         var expectedAmountWei = Web3.Convert.ToWei(expectedAmount);
-        if (!TryDecodeErc20Transfer(transaction.Input, out var recipient, out var transferredAmountWei) ||
+        if (!StakingCalldataDecoder.TryDecodeErc20Transfer(transaction.Input, out var recipient, out var transferredAmountWei) ||
             !AddressMatches(recipient, _chain.MarketplaceWallet) ||
             transferredAmountWei != expectedAmountWei)
         {
@@ -350,7 +350,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
 
         if (isClaim)
         {
-            if (!TryDecodeClaimSelector(transaction.Input))
+            if (!StakingCalldataDecoder.TryDecodeClaimSelector(transaction.Input))
             {
                 return StakingVerificationResult.Failed;
             }
@@ -367,7 +367,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         }
 
         var expectedAmountWei = Web3.Convert.ToWei(expectedAmount!.Value);
-        if (!TryDecodeStakingAmount(transaction.Input, transactionType, out var callAmountWei) ||
+        if (!StakingCalldataDecoder.TryDecodeStakingAmount(transaction.Input, transactionType, out var callAmountWei) ||
             callAmountWei != expectedAmountWei)
         {
             return StakingVerificationResult.Failed;
@@ -404,12 +404,8 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         cancellationToken.ThrowIfCancellationRequested();
 
         var currentBlock = await _readOnlyWeb3.Eth.Blocks.GetBlockNumber.SendRequestAsync().ConfigureAwait(false);
-        var confirmations = currentBlock.Value - receipt.BlockNumber.Value + 1;
-        return confirmations < 0 ? 0 : (int)confirmations;
+        return ConfirmationCalculator.Calculate(currentBlock.Value, receipt.BlockNumber.Value);
     }
-
-    private static readonly string[] ClaimFunctionNames = ["getReward", "claimReward"];
-    private static readonly string[] ClaimFunctionSignatures = ["getReward()", "claimReward()"];
 
     private async Task<string?> DetectClaimFunctionAsync(string walletAddress, CancellationToken cancellationToken)
     {
@@ -418,7 +414,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             return null;
         }
 
-        foreach (var functionName in ClaimFunctionNames)
+        foreach (var functionName in StakingCalldataDecoder.ClaimFunctionNames)
         {
             if (await ProbeStaticCallAsync($"{functionName}()", walletAddress, cancellationToken).ConfigureAwait(false))
             {
@@ -486,7 +482,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
             {
                 To = _stakingPoolContract,
                 From = fromAddress,
-                Data = FunctionSelector(functionSignature)
+                Data = StakingCalldataDecoder.FunctionSelector(functionSignature)
             };
 
             await _readOnlyWeb3.Eth.Transactions.Call.SendRequestAsync(callInput).ConfigureAwait(false);
@@ -532,79 +528,6 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
     private static bool AddressMatches(string? actual, string expected) =>
         !string.IsNullOrWhiteSpace(actual) &&
         actual.Equals(expected, StringComparison.OrdinalIgnoreCase);
-
-    private static bool TryDecodeErc20Transfer(
-        string? input,
-        out string recipient,
-        out BigInteger amount)
-    {
-        const string transferSelector = "0xa9059cbb";
-
-        recipient = string.Empty;
-        amount = BigInteger.Zero;
-
-        if (string.IsNullOrWhiteSpace(input) ||
-            !input.StartsWith(transferSelector, StringComparison.OrdinalIgnoreCase) ||
-            input.Length < 138)
-        {
-            return false;
-        }
-
-        recipient = $"0x{input.Substring(10 + 24, 40)}";
-        amount = BigInteger.Parse($"0{input.Substring(10 + 64, 64)}", System.Globalization.NumberStyles.HexNumber);
-        return IsValidAddress(recipient);
-    }
-
-    private static bool TryDecodeStakingAmount(
-        string? input,
-        StakingTransactionType transactionType,
-        out BigInteger amount)
-    {
-        amount = BigInteger.Zero;
-
-        if (string.IsNullOrWhiteSpace(input) || input.Length < 74)
-        {
-            return false;
-        }
-
-        var stakeSelector = FunctionSelector("stake(uint256)");
-        var unstakeSelector = FunctionSelector("unstake(uint256)");
-        var withdrawSelector = FunctionSelector("withdraw(uint256)");
-        var selectorMatches = transactionType switch
-        {
-            StakingTransactionType.Stake => input.StartsWith(stakeSelector, StringComparison.OrdinalIgnoreCase),
-            StakingTransactionType.Unstake =>
-                input.StartsWith(unstakeSelector, StringComparison.OrdinalIgnoreCase) ||
-                input.StartsWith(withdrawSelector, StringComparison.OrdinalIgnoreCase),
-            _ => false
-        };
-
-        if (!selectorMatches)
-        {
-            return false;
-        }
-
-        amount = BigInteger.Parse($"0{input.Substring(10, 64)}", System.Globalization.NumberStyles.HexNumber);
-        return true;
-    }
-
-    private static bool TryDecodeClaimSelector(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input) || input.Length < 10)
-        {
-            return false;
-        }
-
-        return ClaimFunctionSignatures
-            .Select(FunctionSelector)
-            .Any(selector => input.StartsWith(selector, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static string FunctionSelector(string signature)
-    {
-        var hash = Sha3Keccack.Current.CalculateHash(signature);
-        return $"0x{hash[..8]}";
-    }
 
     private static bool IsGasFundingFailure(Exception exception)
     {
