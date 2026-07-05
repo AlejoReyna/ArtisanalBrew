@@ -14,6 +14,14 @@
 
 <PageTitle>Shop | Artisanal Brew</PageTitle>
 
+<HeadContent>
+    @* Preloaded so switching categories never has to fetch these cold — avoids a blank flash while the image downloads. *@
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=80" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80" />
+</HeadContent>
+
 <section class="products-shop">
     @if (_isLoading)
     {
@@ -37,7 +45,7 @@
                 ? _products.Where(product => product.IsActive)
                 : _products.Where(product => product.IsActive && product.Category.ToString() == displayedSection));
 
-        <header class="products-shop__header products-shop__header--@displayedSection @(_headerTransitionClass)" data-animate="fade-up">
+        <header class="products-shop__header products-shop__header--@displayedSection" data-animate="fade-up">
             <h1 class="products-shop__title">@((MarkupString)TitleFor(displayedSection).Replace("&", "<span class=\"products-shop__amp\">&amp;</span>"))</h1>
             <p class="products-shop__lede">@LedeFor(displayedSection)</p>
             <button type="button" class="products-shop__filter" aria-label="Filters">
@@ -139,7 +147,6 @@
     private string selectedSection = AllSection;
     private string displayedSection = AllSection;
     private string? _gridTransitionClass;
-    private string? _headerTransitionClass;
     private bool _isTransitioning;
     private bool shouldRefreshAnimations = true;
     private const int CategoryFadeOutMs = 180;
@@ -214,7 +221,6 @@
         _qtyExpanded.Clear();
         _isTransitioning = true;
         _gridTransitionClass = "is-fading-out";
-        _headerTransitionClass = "products-shop__header--growing";
         StateHasChanged();
 
         await Task.Delay(CategoryFadeOutMs);
@@ -232,7 +238,6 @@
         await Task.Delay(CategoryFadeInMs);
 
         _isTransitioning = false;
-        _headerTransitionClass = null;
     }
 
     private int GetQuantity(string slug) =>

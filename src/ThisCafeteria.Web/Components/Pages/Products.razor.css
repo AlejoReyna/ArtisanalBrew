@@ -115,7 +115,6 @@
         filter: sepia(0.85) saturate(1.15) brightness(0.55) contrast(1.05);
         inset: -10%;
         position: absolute;
-        transition: background-image 360ms ease;
         z-index: -1;
     }
 
@@ -133,24 +132,6 @@
 
     .products-shop__header--CeramicsAndGoods::before {
         background-image: url('https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80');
-    }
-
-    .products-shop__header--growing {
-        animation: shop-header-grow 460ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes shop-header-grow {
-        0% {
-            padding-bottom: 2.75rem;
-        }
-
-        50% {
-            padding-bottom: 4.25rem;
-        }
-
-        100% {
-            padding-bottom: 2.75rem;
-        }
     }
 
     @keyframes shop-banner-pan {
