@@ -106,7 +106,6 @@
                             <div class="marketplace-card__copy">
                                 <p class="price">@FormatPrice(product.Price)</p>
                                 <h3>@product.Name</h3>
-                                <p class="eyebrow">@SectionLabel(product.Category.ToString())</p>
                             </div>
                         </a>
 
@@ -344,9 +343,6 @@
             "CeramicsAndGoods" => "Hand-thrown ceramics and goods made for the table.",
             _ => "Small-batch roasts, brew tools, and ceramics for your daily ritual. Free shipping on every order."
         };
-
-    private static string SectionLabel(string section) =>
-        Sections.FirstOrDefault(item => item.Key == section)?.Label ?? section;
 
     private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
 

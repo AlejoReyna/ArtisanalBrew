@@ -360,8 +360,8 @@
     }
 
     .marketplace-card__actions {
-        align-items: stretch;
-        flex-direction: column;
+        align-items: center;
+        flex-wrap: nowrap;
         gap: 0.4rem;
         margin: 0;
         padding: 0;
@@ -390,7 +390,7 @@
     }
 
     .marketplace-card__add {
-        flex: none;
+        flex: 1 1 auto;
         background: var(--shop-accent);
         border: none;
         border-radius: 999px;
@@ -400,10 +400,10 @@
         font-weight: 700;
         letter-spacing: 0.12em;
         min-height: 2.6rem;
+        min-width: 0;
         padding: 0.5rem 1rem;
         text-transform: uppercase;
         transition: background 160ms ease, transform 120ms ease;
-        width: 100%;
     }
 
     .marketplace-card__add:hover {
