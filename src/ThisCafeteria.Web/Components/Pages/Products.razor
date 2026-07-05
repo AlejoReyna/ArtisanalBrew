@@ -104,8 +104,10 @@
                                 </span>
                             </div>
                             <div class="marketplace-card__copy">
-                                <p class="price">@FormatPrice(product.Price)</p>
-                                <h3>@product.Name</h3>
+                                <div class="marketplace-card__title-row">
+                                    <h3>@product.Name</h3>
+                                    <p class="price">@FormatPrice(product.Price)</p>
+                                </div>
                             </div>
                         </a>
 
