@@ -1,0 +1,286 @@
+/* =========================================================
+   RewardsBanner — Starbucks-inspired loyalty section
+   Scoped CSS (.razor.css) — use single @ for keyframes & media
+   ========================================================= */
+
+/* ---------- Section base ---------- */
+.rewards-banner {
+    position: relative;
+    overflow: hidden;
+    padding-block: clamp(5rem, 10vw, 9rem);
+    padding-inline: clamp(1rem, 3vw, 2rem);
+    text-align: center;
+    isolation: isolate;
+}
+
+/* ---------- Background ---------- */
+.rewards-banner__bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #00754A 0%, #1E3932 100%);
+    z-index: -2;
+}
+
+.rewards-banner__bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 30%, rgba(0, 117, 74, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(30, 57, 50, 0.2) 0%, transparent 50%);
+    background-size: 200% 200%;
+    animation: sb-gradient-shift 15s ease infinite;
+}
+
+/* ---------- Content ---------- */
+.rewards-banner__content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin-inline: auto;
+}
+
+.rewards-eyebrow {
+    color: #CBA258;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.rewards-headline {
+    color: #fffdf9;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.5rem, 5.5vw, 5rem);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin: 0 0 1.25rem;
+}
+
+.rewards-sub {
+    color: #D4E9E2;
+    font-size: clamp(1rem, 1.5vw, 1.15rem);
+    line-height: 1.75;
+    margin: 0 auto 2.5rem;
+    max-width: 520px;
+}
+
+/* Gold CTA pill */
+.rewards-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.25rem;
+    padding: 0.85rem 2rem;
+    background: #CBA258;
+    border: 2px solid #CBA258;
+    border-radius: 999px;
+    color: #1f1a18;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 16px rgba(203, 162, 88, 0.3);
+}
+
+.rewards-cta:hover {
+    background: #E8D5A3;
+    box-shadow: 0 8px 28px rgba(203, 162, 88, 0.4);
+    transform: translateY(-2px);
+}
+
+/* ---------- Scroll animation utilities (scoped) ---------- */
+.sb-animate {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sb-animate.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.sb-animate-delay-1 { transition-delay: 100ms; }
+.sb-animate-delay-2 { transition-delay: 200ms; }
+.sb-animate-delay-3 { transition-delay: 300ms; }
+.sb-animate-delay-4 { transition-delay: 400ms; }
+
+/* ---------- Stars ---------- */
+.rewards-stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.rewards-star {
+    position: absolute;
+    color: #CBA258;
+    opacity: 0.6;
+    filter: drop-shadow(0 0 8px rgba(203, 162, 88, 0.4));
+}
+
+.rewards-star--1 {
+    width: 32px;
+    height: 32px;
+    top: 15%;
+    left: 10%;
+    animation: sb-star-float 8s ease-in-out infinite, sb-star-spin 12s linear infinite;
+}
+
+.rewards-star--2 {
+    width: 24px;
+    height: 24px;
+    top: 25%;
+    right: 12%;
+    animation: sb-star-float 10s ease-in-out infinite 1s, sb-star-spin 15s linear infinite 0.5s;
+}
+
+.rewards-star--3 {
+    width: 40px;
+    height: 40px;
+    bottom: 20%;
+    left: 15%;
+    animation: sb-star-float 9s ease-in-out infinite 2s, sb-star-spin 10s linear infinite 1s;
+}
+
+.rewards-star--4 {
+    width: 20px;
+    height: 20px;
+    top: 60%;
+    right: 8%;
+    animation: sb-star-float 11s ease-in-out infinite 0.5s, sb-star-spin 18s linear infinite;
+}
+
+.rewards-star--5 {
+    width: 28px;
+    height: 28px;
+    top: 10%;
+    left: 50%;
+    animation: sb-star-float 7s ease-in-out infinite 1.5s, sb-star-spin 14s linear infinite 2s;
+}
+
+/* ---------- Coffee bean particles ---------- */
+.rewards-particle {
+    position: absolute;
+    border-radius: 50% 40% 50% 40%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.25;
+}
+
+.rewards-particle--1 {
+    width: 12px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    top: 20%;
+    left: 20%;
+    animation: sb-particle-float 18s ease-in-out infinite;
+}
+
+.rewards-particle--2 {
+    width: 8px;
+    height: 6px;
+    background: rgba(203, 162, 88, 0.35);
+    top: 40%;
+    right: 25%;
+    animation: sb-particle-float 22s ease-in-out infinite 3s;
+}
+
+.rewards-particle--3 {
+    width: 10px;
+    height: 7px;
+    background: rgba(212, 233, 226, 0.25);
+    bottom: 30%;
+    left: 30%;
+    animation: sb-particle-float 20s ease-in-out infinite 5s;
+}
+
+.rewards-particle--4 {
+    width: 14px;
+    height: 9px;
+    background: rgba(255, 255, 255, 0.2);
+    top: 50%;
+    left: 8%;
+    animation: sb-particle-float 16s ease-in-out infinite 2s;
+}
+
+.rewards-particle--5 {
+    width: 6px;
+    height: 5px;
+    background: rgba(203, 162, 88, 0.3);
+    bottom: 25%;
+    right: 15%;
+    animation: sb-particle-float 25s ease-in-out infinite 4s;
+}
+
+/* =========================================================
+   Keyframes
+   ========================================================= */
+
+@keyframes sb-gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes sb-star-spin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes sb-star-float {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    25% { transform: translateY(-15px) translateX(5px); }
+    50% { transform: translateY(-8px) translateX(-8px); }
+    75% { transform: translateY(-20px) translateX(3px); }
+}
+
+@keyframes sb-particle-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
+    25% { transform: translateY(-30px) rotate(15deg); opacity: 0.4; }
+    50% { transform: translateY(-15px) rotate(-10deg); opacity: 0.2; }
+    75% { transform: translateY(-40px) rotate(20deg); opacity: 0.35; }
+}
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .rewards-banner__bg::before,
+    .rewards-star,
+    .rewards-particle {
+        animation: none !important;
+        opacity: 0.3 !important;
+        transform: none !important;
+    }
+
+    .sb-animate {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
+/* =========================================================
+   Mobile
+   ========================================================= */
+
+@media (max-width: 640px) {
+    .rewards-star {
+        transform: scale(0.7);
+    }
+
+    .rewards-star--1 { left: 5%; }
+    .rewards-star--2 { right: 5%; }
+    .rewards-star--3 { left: 8%; }
+    .rewards-star--4 { right: 3%; }
+    .rewards-star--5 { display: none; }
+}
