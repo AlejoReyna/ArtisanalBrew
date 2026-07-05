@@ -402,8 +402,8 @@
         border-color: var(--shop-line);
         border-radius: 50%;
         color: var(--shop-ink);
-        height: 1.7rem;
-        width: 1.7rem;
+        height: 1.5rem;
+        width: 1.5rem;
     }
 
     .marketplace-card ::deep .product-qty__value {
@@ -420,13 +420,16 @@
         border-radius: 0.35rem;
         color: var(--shop-ink);
         font-family: var(--font-sans);
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 700;
-        letter-spacing: 0.12em;
-        min-height: 2.6rem;
+        letter-spacing: 0.02em;
+        line-height: 1.15;
+        min-height: 2.4rem;
         min-width: 0;
-        padding: 0.5rem 1rem;
+        padding: 0.4rem 0.4rem;
+        text-align: center;
         text-transform: uppercase;
+        white-space: normal;
         transition: background 160ms ease, color 160ms ease, transform 120ms ease;
     }
 
