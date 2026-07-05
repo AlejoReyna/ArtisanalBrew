@@ -415,10 +415,10 @@
 
     .marketplace-card__add {
         flex: 1 1 auto;
-        background: var(--shop-accent);
-        border: none;
-        border-radius: 999px;
-        color: var(--shop-cream);
+        background: transparent;
+        border: 1.5px solid var(--shop-ink);
+        border-radius: 0.35rem;
+        color: var(--shop-ink);
         font-family: var(--font-sans);
         font-size: 0.65rem;
         font-weight: 700;
@@ -427,11 +427,12 @@
         min-width: 0;
         padding: 0.5rem 1rem;
         text-transform: uppercase;
-        transition: background 160ms ease, transform 120ms ease;
+        transition: background 160ms ease, color 160ms ease, transform 120ms ease;
     }
 
     .marketplace-card__add:hover {
         background: var(--shop-ink);
+        color: var(--shop-cream);
     }
 
     .marketplace-card__add:active {
