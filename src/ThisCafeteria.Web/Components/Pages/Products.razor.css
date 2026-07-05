@@ -63,6 +63,25 @@
     min-width: 0;
 }
 
+.marketplace-card__title-row {
+    align-items: baseline;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.marketplace-card__title-row h3 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.marketplace-card__title-row .price {
+    flex: none;
+    white-space: nowrap;
+}
+
 /* ── Mobile product-listing-page: roastery paper edition ── */
 @media (max-width: 760px) {
     .products-shop {
@@ -255,6 +274,7 @@
         background: var(--shop-cream);
         border-bottom: 1px solid var(--shop-line);
         gap: 0;
+        min-width: 0;
         padding: 0 0 0.9rem;
     }
 
@@ -324,13 +344,17 @@
         padding: 0.7rem 0.75rem 0;
     }
 
+    .marketplace-card__title-row {
+        margin: 0 0 0.3rem;
+    }
+
     .marketplace-card .price {
         color: var(--shop-ink);
         font-family: var(--shop-serif);
         font-size: 1.1rem;
         font-weight: 700;
         letter-spacing: -0.01em;
-        margin: 0 0 0.2rem;
+        margin: 0;
     }
 
     .marketplace-card h3 {
@@ -340,7 +364,7 @@
         font-weight: 400;
         letter-spacing: 0;
         line-height: 1.22;
-        margin: 0 0 0.3rem;
+        margin: 0;
         text-transform: none;
     }
 
