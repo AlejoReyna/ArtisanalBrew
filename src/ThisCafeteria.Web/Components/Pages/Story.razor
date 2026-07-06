@@ -1,320 +1,688 @@
 @page "/story"
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
 
-<PageTitle>Our Story</PageTitle>
+<PageTitle>This Café Doesn't Exist | Artisanal Brew</PageTitle>
+
+<!-- ==================== HERO ==================== -->
+<section class="page-intro story-hero" data-recruiter-section>
+    <p class="eyebrow" data-recruiter-animate="lift">Full Disclosure</p>
+
+    <h1 class="story-hero__headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
+        <span class="mask-line"><span class="mask-line__inner">This café</span></span>
+        <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">doesn't exist.</em></span></span>
+    </h1>
+
+    <p class="lede story-hero__lede" data-recruiter-animate="lift" data-recruiter-delay="320">
+        No storefront. No beans. No baristas. What <em>is</em> real: a full commerce, staking, and settlement
+        stack, engineered as if the café were.
+    </p>
+
+    <p class="story-hero__type" data-recruiter-animate="type" data-recruiter-delay="560">
+        <span class="type-line">&gt; a fictional cafeteria &middot; real engineering</span>
+    </p>
+
+    <span class="story-hero__rule" aria-hidden="true"></span>
+</section>
+
+<!-- ==================== THE FICTION ==================== -->
+<section class="story-fiction" data-recruiter-section>
+    <div class="story-fiction__heading">
+        <p class="eyebrow" data-recruiter-animate="lift">The Fiction</p>
+        <h2 data-recruiter-animate="lift" data-recruiter-delay="120">Brewed from scratch, minus the coffee.</h2>
+    </div>
+
+    <div class="story-fiction__columns" data-recruiter-stagger>
+        <p class="lede" data-recruiter-animate="lift">
+            There is no address, no lease, no espresso machine. What exists is a production-shaped playground:
+            a real database, a real message queue, a real smart contract on a real (test) chain — orbiting an
+            imaginary counter that never actually pulls a shot.
+        </p>
+        <p class="lede" data-recruiter-animate="lift">
+            The café is the excuse. The point was to build something end-to-end and honest about what it is:
+            not a startup, not a product — a complete system, done properly, for its own sake.
+        </p>
+    </div>
+</section>
+
+<!-- ==================== THE RECIPE · HOW IT'S BUILT ==================== -->
+<section class="story-recipe" data-recruiter-section>
+    <div class="recruiter-section-heading section-heading">
+        <p class="eyebrow" data-recruiter-animate="lift">The Recipe</p>
+        <h2 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">How it's</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">built.</em></span></span>
+        </h2>
+    </div>
+
+    <div class="story-recipe__rail" data-provenance-rail>
+        <span class="story-recipe__track" aria-hidden="true"></span>
+        <span class="story-recipe__fill" aria-hidden="true"></span>
+
+        <ol class="story-recipe__stations" data-recruiter-stagger>
+            <li class="story-recipe__station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="story-recipe__node" aria-hidden="true"></span>
+                <p class="story-recipe__mono">01 &middot; DOMAIN</p>
+                <p class="story-recipe__copy">Entities and enums — the vocabulary of the café.</p>
+            </li>
+            <li class="story-recipe__station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="story-recipe__node" aria-hidden="true"></span>
+                <p class="story-recipe__mono">02 &middot; APPLICATION</p>
+                <p class="story-recipe__copy">Services, DTOs, validation — the recipes.</p>
+            </li>
+            <li class="story-recipe__station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="story-recipe__node" aria-hidden="true"></span>
+                <p class="story-recipe__mono">03 &middot; INFRASTRUCTURE</p>
+                <p class="story-recipe__copy">EF Core on PostgreSQL, plus Azure storage, messaging, and email.</p>
+            </li>
+            <li class="story-recipe__station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="story-recipe__node" aria-hidden="true"></span>
+                <p class="story-recipe__mono">04 &middot; WEB</p>
+                <p class="story-recipe__copy">Blazor Web App on .NET 10, rendered interactively — the counter.</p>
+            </li>
+            <li class="story-recipe__station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="story-recipe__node" aria-hidden="true"></span>
+                <p class="story-recipe__mono">05 &middot; WORKER</p>
+                <p class="story-recipe__copy">A background service consuming order-processing messages — the back room.</p>
+            </li>
+        </ol>
+    </div>
+
+    <p class="story-recipe__stack" data-recruiter-animate="type" data-recruiter-delay="200" data-recruiter-observe-self>
+        <span class="type-line">dotnet 10 &middot; blazor server &middot; clean architecture &middot; xunit + testcontainers</span>
+    </p>
+</section>
+
+<!-- ==================== THE YIELD · HOW STAKING WORKS ==================== -->
+<section class="story-yield" data-recruiter-section>
+    <span class="story-yield__ring" aria-hidden="true"></span>
+    <span class="story-yield__ring story-yield__ring--outer" aria-hidden="true"></span>
+
+    <div class="story-yield__content">
+        <p class="eyebrow" data-recruiter-animate="lift">The Yield</p>
+
+        <h2 class="story-yield__headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">Interest,</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">freshly ground.</em></span></span>
+        </h2>
+
+        <p class="story-yield__body" data-recruiter-animate="lift" data-recruiter-delay="300">
+            One Solidity contract, <code>CafeStakingPool</code>, runs the loyalty program on Sepolia. Stake CAFE,
+            accrue COFFEE by the second, claim whenever you like.
+        </p>
+
+        <div class="story-yield__flow" data-recruiter-stagger>
+            <div class="story-yield__step" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-yield__step-mono">stake()</p>
+                <p class="story-yield__step-copy">Tokens move into the pool, guarded against re-entrancy.</p>
+            </div>
+            <div class="story-yield__step" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-yield__step-mono">rewardPerToken()</p>
+                <p class="story-yield__step-copy">An owner-set annual rate, in basis points, accrues per second against total staked.</p>
+            </div>
+            <div class="story-yield__step" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-yield__step-mono">claimRewards()</p>
+                <p class="story-yield__step-copy">Pending COFFEE transfers out. No lock-up — unstake anytime.</p>
+            </div>
+        </div>
+
+        <div class="story-yield__stats" data-recruiter-stagger>
+            <div class="story-yield__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-yield__stat-number" data-count-to="100">0</p>
+                <p class="story-yield__stat-caption">% On-chain &middot; Sepolia</p>
+            </div>
+            <div class="story-yield__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-yield__stat-number" data-count-to="0">0</p>
+                <p class="story-yield__stat-caption">Days locked &middot; unstake anytime</p>
+            </div>
+            <div class="story-yield__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-yield__stat-number" data-count-to="1">0</p>
+                <p class="story-yield__stat-caption">Pool contract &middot; CafeStakingPool</p>
+            </div>
+        </div>
+
+        <p class="story-yield__footnote" data-recruiter-animate="lift" data-recruiter-observe-self>
+            Testnet only — the tokens are as real as the café.
+        </p>
+
+        <div class="story-yield__cta" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <a class="button story-yield__cta-button" href="staking">See the yield</a>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== THE POUR · HOW IT'S DEPLOYED ==================== -->
+<section class="story-pour" data-recruiter-section>
+    <div class="recruiter-section-heading section-heading">
+        <p class="eyebrow" data-recruiter-animate="lift">The Pour</p>
+        <h2 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">Served from</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">the cloud.</em></span></span>
+        </h2>
+    </div>
+
+    <div class="story-pour__log" aria-label="Deployment sequence">
+        <p class="story-pour__log-line" data-recruiter-animate="type" data-recruiter-delay="100">
+            <span class="type-line">$ git push origin main</span>
+        </p>
+        <p class="story-pour__log-line" data-recruiter-animate="type" data-recruiter-delay="700">
+            <span class="type-line">&rarr; github actions &middot; docker build</span>
+        </p>
+        <p class="story-pour__log-line" data-recruiter-animate="type" data-recruiter-delay="1300">
+            <span class="type-line">&rarr; push &middot; azure container registry</span>
+        </p>
+        <p class="story-pour__log-line" data-recruiter-animate="type" data-recruiter-delay="1900">
+            <span class="type-line">&rarr; deploy &middot; azure container apps</span>
+        </p>
+        <p class="story-pour__log-line story-pour__log-line--done" data-recruiter-animate="type" data-recruiter-delay="2500">
+            <span class="type-line">&check; live at cafe.alexisreyna.dev</span>
+        </p>
+    </div>
+
+    <div class="story-pour__estate" data-recruiter-stagger>
+        <div class="story-pour__card" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-pour__card-mono">Container Apps</p>
+            <p class="story-pour__card-copy">Consumption plan, running the Blazor app and the worker.</p>
+        </div>
+        <div class="story-pour__card" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-pour__card-mono">Postgres Flexible Server</p>
+            <p class="story-pour__card-copy">The system of record, via EF Core.</p>
+        </div>
+        <div class="story-pour__card" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-pour__card-mono">Service Bus</p>
+            <p class="story-pour__card-copy">Order-processing queue, consumed by the Worker.</p>
+        </div>
+        <div class="story-pour__card" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-pour__card-mono">Key Vault</p>
+            <p class="story-pour__card-copy">Secrets and connection strings, never in source.</p>
+        </div>
+        <div class="story-pour__card" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-pour__card-mono">Blob Storage</p>
+            <p class="story-pour__card-copy">Product imagery and static assets.</p>
+        </div>
+        <div class="story-pour__card" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-pour__card-mono">Communication Email</p>
+            <p class="story-pour__card-copy">Order confirmations and account emails.</p>
+        </div>
+    </div>
+
+    <p class="story-pour__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+        <span class="story-pour__stat-number" data-count-to="11">0</span>
+        <span class="story-pour__stat-caption">Bicep modules provisioning the estate</span>
+    </p>
+</section>
+
+<!-- ==================== MANIFESTO CLOSE ==================== -->
+<section class="story-manifesto" data-recruiter-section>
+    <h2 class="story-manifesto__headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
+        <span class="mask-line"><span class="mask-line__inner">Fictional coffee.</span></span>
+        <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">Real craft.</em></span></span>
+    </h2>
+
+    <div class="story-manifesto__actions" data-recruiter-animate="lift" data-recruiter-delay="360">
+        <a class="button button--dark" href="products">Shop the beans</a>
+        <a class="button button--ghost" href="https://github.com/AlejoReyna/ArtisanalBrew" target="_blank" rel="noopener noreferrer">Read the source</a>
+    </div>
+</section>
 
 <style>
-    /* Minimalist Journal Styles */
-    .narrative-text {
-        font-family: "EB Garamond", "Times New Roman", Times, serif;
-        font-size: 1.35rem;
-        line-height: 1.8;
-        color: rgba(20, 16, 12, 0.85);
+    /* ===== Hero ===== */
+    .story-hero {
+        max-width: 46rem;
+        margin-inline: auto;
+        padding-top: clamp(2rem, 5vw, 4rem);
+        position: relative;
+        text-align: center;
     }
 
-    .hero-text {
-        font-family: "EB Garamond", "Times New Roman", Times, serif;
-        font-size: 1.35rem;
-        line-height: 1.8;
-        color: rgba(255, 255, 255, 0.85);
-        max-width: 55ch;
+    .story-hero__headline {
+        font-size: clamp(2.75rem, 8vw, 5rem);
+        line-height: 0.98;
+    }
+
+    .story-hero__lede {
         margin-inline: auto;
     }
 
-    /* Override the hero background to be coffee related (different from original) */
-    .editorial-hero--about::before {
-        background-image: url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80') !important;
-        filter: saturate(0.8) contrast(1.1) !important;
+    .story-hero__type {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 0.85rem;
+        letter-spacing: 0.04em;
+        margin-top: 2rem;
     }
 
-    /* Navbar override for Story page */
-    .public-page:has(.story-intro) .public-header.public-header--solid {
-        background-color: #6B4A38 !important;
-        border-bottom-color: transparent !important;
-    }
-    .public-page:has(.story-intro) .public-header.public-header--solid .navbar-brand,
-    .public-page:has(.story-intro) .public-header.public-header--solid .nav-link,
-    .public-page:has(.story-intro) .public-header.public-header--solid .nav-cart {
-        color: #fbf9f4 !important;
-    }
-    .public-page:has(.story-intro) .public-header.public-header--solid .nav-link:hover,
-    .public-page:has(.story-intro) .public-header.public-header--solid .nav-link.active {
-        border-bottom-color: #fbf9f4 !important;
-    }
-    .public-page:has(.story-intro) .public-header.public-header--solid .nav-wallet {
-        border-color: rgba(251, 249, 244, 0.45) !important;
-        color: #fbf9f4 !important;
-    }
-    .public-page:has(.story-intro) .public-header.public-header--solid .nav-wallet.active {
-        background: #fbf9f4 !important;
-        color: #2d2421 !important;
-    }
-    .public-page:has(.story-intro) .public-header.public-header--solid .navbar-toggler {
-        background: rgba(255,255,255,0.1) !important;
-        border-color: rgba(255,255,255,0.3) !important;
-    }
-    .public-page:has(.story-intro) .public-header.public-header--solid .navbar-toggler span {
-        background: #fbf9f4 !important;
+    .story-hero__rule {
+        background: var(--line);
+        display: block;
+        height: 1px;
+        margin: clamp(3rem, 6vw, 5rem) auto 0;
+        max-width: 8rem;
+        transform: scaleX(0);
+        transition: transform 1200ms cubic-bezier(.16, 1, .3, 1);
     }
 
-    /* ===== Grid Designs ===== */
-    
-    /* Origins: Typographic Grid + Image */
-    .grid-origins {
+    .story-hero.is-in-view .story-hero__rule {
+        transform: scaleX(1);
+    }
+
+    /* ===== The Fiction ===== */
+    .story-fiction {
+        margin-inline: auto;
+        max-width: 64rem;
+    }
+
+    .story-fiction__heading {
+        margin-bottom: clamp(2rem, 5vw, 3rem);
+        max-width: 40rem;
+    }
+
+    .story-fiction__columns {
         display: grid;
-        grid-template-columns: 1fr 1.5fr;
-        gap: 4rem;
-        margin: 8rem 0;
-        align-items: start;
-    }
-    
-    .origins-title {
-        grid-column: 1 / -1;
+        gap: clamp(2rem, 5vw, 4rem);
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    .origins-image {
-        grid-column: 1 / 2;
-        background-image: url('https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');
-        background-size: cover;
-        background-position: center;
-        border-radius: 12px;
-        min-height: 400px;
+    /* ===== The Recipe ===== */
+    .story-recipe {
+        margin-inline: auto;
+        max-width: 64rem;
+    }
+
+    .story-recipe__rail {
+        margin-top: clamp(3rem, 7vw, 5rem);
         position: relative;
     }
 
-    .origins-image::after {
-        content: '';
+    .story-recipe__track,
+    .story-recipe__fill {
+        bottom: 0;
+        left: 1.35rem;
         position: absolute;
-        inset: 0;
-        border-radius: 12px;
-        background: linear-gradient(to bottom, transparent 60%, rgba(20, 16, 12, 0.2));
-        pointer-events: none;
+        top: 0;
+        width: 2px;
     }
 
-    .origins-text-container {
-        grid-column: 2 / 3;
+    .story-recipe__track {
+        background: var(--line);
+    }
+
+    .story-recipe__fill {
+        background: var(--accent);
+        transform: scaleY(0);
+        transform-origin: top;
+    }
+
+    .story-recipe__stations {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 3rem;
+        gap: clamp(2rem, 6vw, 3rem);
+        list-style: none;
+        margin: 0;
+        padding: 0;
     }
 
-    /* Sourcing: Grid Layout */
-    .grid-sourcing {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4rem;
-        margin: 8rem 0;
-        align-items: start;
+    .story-recipe__station {
+        padding-left: 3rem;
+        position: relative;
     }
 
-    .sourcing-content {
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4rem;
+    .story-recipe__node {
+        background: var(--surface);
+        border: 1.5px solid var(--line);
+        border-radius: 50%;
+        height: 12px;
+        left: calc(1.35rem - 5px);
+        position: absolute;
+        top: 0.15rem;
+        transition: background 500ms ease, border-color 500ms ease;
+        width: 12px;
     }
 
-    /* Atmosphere: Centered Split Typography Grid */
-    .grid-atmosphere {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 3rem;
-        margin: 10rem auto;
-        max-width: 900px;
+    .story-recipe__station.is-visible .story-recipe__node {
+        background: color-mix(in srgb, var(--accent) 40%, transparent);
+        border-color: var(--accent);
     }
 
-    .atmosphere-title {
-        grid-column: 1 / -1;
+    .story-recipe__mono {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 0 0 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .story-recipe__copy {
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        line-height: 1.35;
+        margin: 0;
+    }
+
+    .story-recipe__stack {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 0.8rem;
+        letter-spacing: 0.03em;
+        margin-top: clamp(2.5rem, 6vw, 4rem);
         text-align: center;
-        margin-bottom: 2rem;
     }
 
-    .atmosphere-text-1 {
-        text-align: right;
+    /* ===== The Yield (charcoal band) ===== */
+    .story-yield {
+        background: var(--charcoal);
+        box-sizing: border-box;
+        margin-inline: calc(50% - 50vw);
+        overflow: hidden;
+        padding-block: clamp(4.5rem, 12vw, 8rem);
+        padding-inline: clamp(1.25rem, 4vw, 3rem);
+        position: relative;
+        width: 100vw;
     }
 
-    .atmosphere-text-2 {
+    .story-yield__ring {
+        aspect-ratio: 1;
+        border: 1.5px solid rgba(255, 253, 249, 0.07);
+        border-radius: 50%;
+        animation: storyYieldRingSpin 90s linear infinite;
+        pointer-events: none;
+        position: absolute;
+        right: -240px;
+        top: -240px;
+        width: 480px;
+    }
+
+    .story-yield__ring--outer {
+        border-color: rgba(255, 253, 249, 0.04);
+        right: -264px;
+        top: -264px;
+        width: 528px;
+    }
+
+    @@keyframes storyYieldRingSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .story-yield__content {
+        margin-inline: auto;
+        max-width: 720px;
+        position: relative;
+        text-align: center;
+        z-index: 1;
+    }
+
+    .story-yield__headline {
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 9vw, 4rem);
+        margin: 0;
+    }
+
+    .story-yield__body {
+        color: rgba(255, 253, 249, 0.65);
+        font-family: var(--font-sans);
+        line-height: 1.7;
+        margin: 1.5rem auto 0;
+        max-width: 32rem;
+    }
+
+    .story-yield__body code {
+        background: rgba(255, 253, 249, 0.08);
+        border-radius: 4px;
+        color: var(--white);
+        font-family: var(--crypto-mono);
+        font-size: 0.9em;
+        padding: 0.1em 0.4em;
+    }
+
+    .story-yield__flow {
+        display: grid;
+        gap: 1.25rem;
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .story-yield__step {
+        background: rgba(255, 253, 249, 0.03);
+        border: 1px solid rgba(255, 253, 249, 0.12);
+        border-radius: 0.85rem;
+        padding: 1.5rem;
         text-align: left;
     }
 
-    /* ===== Story Image Backgrounds ===== */
-    .story-image {
-        background-size: cover;
-        background-position: center;
-        border-radius: 12px;
-        position: relative;
+    .story-yield__step-mono {
+        color: var(--accent);
+        font-family: var(--crypto-mono);
+        font-size: 0.85rem;
+        margin: 0 0 0.5rem;
     }
 
-    .story-image::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 12px;
-        background: linear-gradient(to bottom, transparent 60%, rgba(20, 16, 12, 0.3));
-        pointer-events: none;
+    .story-yield__step-copy {
+        color: rgba(255, 253, 249, 0.65);
+        font-family: var(--font-sans);
+        font-size: 0.9rem;
+        line-height: 1.55;
+        margin: 0;
     }
 
-    /* Transition Wide Image: Coffee pouring / latte art */
-    .story-image--wide {
-        background-image: url('https://images.unsplash.com/photo-1511920170033-f8396924c348?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
-        min-height: 520px;
+    .story-yield__stats {
+        border-top: 1px solid rgba(255, 253, 249, 0.14);
+        margin-top: clamp(2.5rem, 6vw, 4rem);
     }
 
-    .manifesto-block {
-        text-align: center;
-        margin: 10rem auto 6rem;
-        padding: 0 2rem;
+    .story-yield__stat {
+        border-bottom: 1px solid rgba(255, 253, 249, 0.14);
+        padding-block: 1.75rem;
     }
 
-    .manifesto-heading {
-        font-size: clamp(2.5rem, 6vw, 4rem);
-        max-width: 18ch;
-        margin-inline: auto;
-        line-height: 1.1;
+    .story-yield__stat-number {
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 8vw, 3.5rem);
+        line-height: 1;
+        margin: 0;
+    }
+
+    .story-yield__stat-caption {
+        color: rgba(255, 253, 249, 0.5);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 0.6rem 0 0;
+        text-transform: uppercase;
+    }
+
+    .story-yield__footnote {
+        color: rgba(255, 253, 249, 0.4);
+        font-family: var(--crypto-mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.04em;
+        margin-top: clamp(2rem, 5vw, 3rem);
+        text-transform: uppercase;
+    }
+
+    .story-yield__cta {
+        margin-top: 1.5rem;
+    }
+
+    .story-yield__cta-button {
+        background: var(--surface);
+        border: none;
         color: var(--ink);
     }
 
-    .manifesto-cta {
-        background-color: #4A3228;
-        border: 1px solid #4A3228;
-        color: #fbf9f4;
-        margin-top: 3rem;
-        transition: background-color 220ms ease, border-color 220ms ease;
+    .story-yield__cta-button:hover {
+        background: var(--white);
+        color: var(--ink);
     }
 
-    .manifesto-cta:hover {
-        background-color: #6B4A38;
-        border-color: #6B4A38;
-        color: #fbf9f4;
+    @@media (min-width: 700px) {
+        .story-yield__flow {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .story-yield__stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .story-yield__stat {
+            border-bottom: none;
+            border-right: 1px solid rgba(255, 253, 249, 0.14);
+        }
+
+        .story-yield__stat:last-child {
+            border-right: none;
+        }
+    }
+
+    /* ===== The Pour ===== */
+    .story-pour {
+        margin-inline: auto;
+        max-width: 64rem;
+    }
+
+    .story-pour__log {
+        background: var(--charcoal);
+        border-radius: 0.85rem;
+        margin-top: clamp(3rem, 7vw, 5rem);
+        padding: clamp(1.75rem, 4vw, 2.5rem);
+    }
+
+    .story-pour__log-line {
+        color: rgba(255, 253, 249, 0.55);
+        font-family: var(--crypto-mono);
+        font-size: 0.85rem;
+        letter-spacing: 0.02em;
+        margin: 0;
+        padding-block: 0.35rem;
+    }
+
+    .story-pour__log-line--done {
+        color: var(--white);
+    }
+
+    .story-pour__log-line .type-line {
+        border-right-color: rgba(255, 253, 249, 0.4);
+    }
+
+    .story-pour__estate {
+        display: grid;
+        gap: 1.25rem;
+        grid-template-columns: 1fr;
+        margin-top: clamp(3rem, 7vw, 5rem);
+    }
+
+    .story-pour__card {
+        border: 1px solid var(--line);
+        border-radius: 0.85rem;
+        padding: 1.5rem;
+    }
+
+    .story-pour__card-mono {
+        color: var(--accent);
+        font-family: var(--crypto-mono);
+        font-size: 0.8rem;
+        letter-spacing: 0.03em;
+        margin: 0 0 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .story-pour__card-copy {
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    .story-pour__stat {
+        align-items: baseline;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-top: clamp(3rem, 6vw, 4rem);
+        text-align: center;
+    }
+
+    .story-pour__stat-number {
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 5vw, 2.75rem);
+        line-height: 1;
+    }
+
+    .story-pour__stat-caption {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    @@media (min-width: 700px) {
+        .story-pour__estate {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* ===== Manifesto ===== */
+    .story-manifesto {
+        margin-inline: auto;
+        max-width: 40rem;
+        padding-block: clamp(3rem, 8vw, 6rem);
+        text-align: center;
+    }
+
+    .story-manifesto__headline {
+        font-size: clamp(2.25rem, 6vw, 3.5rem);
+        line-height: 1.05;
+    }
+
+    .story-manifesto__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2.5rem;
     }
 
     /* ===== Responsive ===== */
-    @@media (max-width: 1024px) {
-        .grid-origins {
+    @@media (max-width: 700px) {
+        .story-fiction__columns {
             grid-template-columns: 1fr;
-            gap: 3rem;
-        }
-        .origins-title, .origins-image, .origins-text-container {
-            grid-column: 1 / -1;
-        }
-        .origins-text-container {
-            grid-template-columns: 1fr;
-        }
-        
-        .grid-sourcing {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-        .sourcing-content {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-        
-        .grid-atmosphere {
-            grid-template-columns: 1fr;
-        }
-        .atmosphere-text-1, .atmosphere-text-2 {
-            text-align: center;
         }
     }
 
-    @@media (max-width: 768px) {
-        .story-image--wide {
-            min-height: 300px;
+    @@media (prefers-reduced-motion: reduce) {
+        .story-hero__rule {
+            transition: none;
+        }
+
+        .story-yield__ring {
+            animation: none;
+            display: none;
         }
     }
 </style>
 
-<!-- ==================== HERO SECTION ==================== -->
-<section class="hero editorial-hero editorial-hero--about story-intro stagger-container" data-stagger>
-    <div class="hero__content">
-        <p class="eyebrow" data-animate="fade-up" style="transition-delay: 0.1s;">Our Story</p>
-        <h1 data-animate="fade-up" style="transition-delay: 0.4s;">Proof of Brew.</h1>
-        <p class="hero-text" data-animate="fade-up" style="transition-delay: 0.8s;">
-            Born in a fluorescent-lit crypto conference hall. Served warm in a ceramic cup. 
-            A space where craft meets decentralized settlement.
-        </p>
-    </div>
-</section>
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
+        }
+    }
 
-<!-- ==================== TRANSITION IMAGE ==================== -->
-<section class="story-image story-image--wide stagger-container" data-stagger
-         role="img"
-         aria-label="Rich espresso pouring into a ceramic cup.">
-</section>
-
-<!-- ==================== ORIGINS SECTION ==================== -->
-<section class="grid-origins stagger-container" data-stagger>
-    <div class="origins-title" data-animate="fade-up" style="transition-delay: 0.1s;">
-        <p class="eyebrow">Origins</p>
-        <h2>The catalyst.</h2>
-    </div>
-    
-    <div class="origins-image" data-animate="fade-up" style="transition-delay: 0.3s;" role="img" aria-label="Coffee cup on saucer."></div>
-    
-    <div class="origins-text-container">
-        <div data-animate="fade-up" style="transition-delay: 0.5s;">
-            <p class="narrative-text">
-                Seven years of writing smart contracts for DeFi protocols had yielded brilliant, invisible code securing millions in value—but none of it was tangible. A developer craved something real. The dream was simple: a physical location where every asset was traceable on-chain, and every customer could seamlessly settle their tab in Ethereum.
-            </p>
-        </div>
-
-        <div data-animate="fade-up" style="transition-delay: 0.9s;">
-            <p class="narrative-text">
-                The reality was harder. Most commercial landlords had no idea what a wallet address even was. It took one broken espresso machine at a hackathon, and a conversation that lasted until sunrise, to finalize the vision. Together, they imagined a physical space where slow craft met fast, trustless settlement.
-            </p>
-        </div>
-    </div>
-</section>
-
-<!-- ==================== SOURCING SECTION ==================== -->
-<section class="grid-sourcing stagger-container" data-stagger>
-    <div class="sourcing-content">
-        <div class="sourcing-title" data-animate="fade-up" style="transition-delay: 0.1s;">
-            <p class="eyebrow">Sourcing</p>
-            <h2>Transparent crop.</h2>
-        </div>
-        
-        <div data-animate="fade-up" style="transition-delay: 0.5s;">
-            <p class="narrative-text">
-                Single-origin. Micro-batches. Sourced exclusively from independent farmers who share our ethos of sustainability and quality. We don't hide our supply chain behind corporate jargon; we publish it to a public ledger. Every sack of beans is logged upon arrival. The roast profiles are immutably documented. 
-            </p>
-        </div>
-
-        <div data-animate="fade-up" style="transition-delay: 0.9s;">
-            <p class="narrative-text">
-                By cutting out traditional middlemen and leveraging decentralized finance, we ensure that a larger percentage of the yield goes directly back to the hands that cultivated the soil. It is trust built through cryptography, tasted in the cup.
-            </p>
-        </div>
-    </div>
-</section>
-
-<!-- ==================== ATMOSPHERE SECTION ==================== -->
-<section class="grid-atmosphere stagger-container" data-stagger>
-    <div class="atmosphere-title" data-animate="fade-up" style="transition-delay: 0.1s;">
-        <p class="eyebrow">Atmosphere</p>
-        <h2>Brutalist comfort.</h2>
-    </div>
-    
-    <div class="atmosphere-text-1" data-animate="fade-up" style="transition-delay: 0.5s;">
-        <p class="narrative-text">
-            Exposed concrete walls meet the warmth of soft amber lighting and natural wood. There is no corporate background music here, just the quiet hum of an Ethereum node syncing in the back room and the hiss of the steam wand. 
-        </p>
-    </div>
-
-    <div class="atmosphere-text-2" data-animate="fade-up" style="transition-delay: 0.9s;">
-        <p class="narrative-text">
-            We designed the floor plan to offer generous space to breathe, read, and write code. It’s an analog sanctuary built for a digital world—a place to anchor yourself before diving back into the decentralized ether.
-        </p>
-    </div>
-</section>
-
-    <!-- ==================== THE MANIFESTO ==================== -->
-<section class="manifesto-block stagger-container" data-stagger>
-    <p class="eyebrow" data-animate="fade-up" style="transition-delay: 0.2s;">The Manifesto</p>
-    <h2 class="manifesto-heading" data-animate="fade-up" style="transition-delay: 0.6s;">
-        Decentralize everything.<br/> Except the craft.
-    </h2>
-    <a class="button manifesto-cta" data-animate="fade-up" href="products" style="transition-delay: 1.0s; display: inline-block;">
-        Shop the beans
-    </a>
-</section>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.destroy");
+        }
+        catch
+        {
+            // JS runtime may already be disconnected during navigation or prerender disposal.
+        }
+    }
+}

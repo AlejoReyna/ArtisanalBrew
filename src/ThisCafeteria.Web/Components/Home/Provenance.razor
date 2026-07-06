@@ -1,0 +1,153 @@
+<section class="section recruiter-showcase recruiter-showcase--provenance" data-recruiter-section>
+    <div class="recruiter-section-heading section-heading">
+        <p class="eyebrow" data-recruiter-animate="lift">Provenance</p>
+        <h2 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">From soil</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">to signature.</em></span></span>
+        </h2>
+    </div>
+
+    <div class="provenance-rail" data-provenance-rail>
+        <span class="provenance-rail__track" aria-hidden="true"></span>
+        <span class="provenance-rail__fill" aria-hidden="true"></span>
+
+        <ol class="provenance-stations" data-recruiter-stagger>
+            <li class="provenance-station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="provenance-station__node" aria-hidden="true"></span>
+                <p class="provenance-station__mono">01 &middot; ORIGIN</p>
+                <p class="provenance-station__copy">High-altitude lots, named farms, single harvests.</p>
+            </li>
+            <li class="provenance-station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="provenance-station__node" aria-hidden="true"></span>
+                <p class="provenance-station__mono">02 &middot; ROAST</p>
+                <p class="provenance-station__copy">Small batches, logged curve by curve.</p>
+            </li>
+            <li class="provenance-station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="provenance-station__node" aria-hidden="true"></span>
+                <p class="provenance-station__mono">03 &middot; CUP</p>
+                <p class="provenance-station__copy">Brewed by hand, timed to the second.</p>
+            </li>
+            <li class="provenance-station" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <span class="provenance-station__node" aria-hidden="true"></span>
+                <p class="provenance-station__mono">04 &middot; CHAIN</p>
+                <p class="provenance-station__copy">Sealed on Sepolia. Yours, verifiably, forever.</p>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<style>
+    .provenance-rail {
+        margin-top: clamp(3rem, 7vw, 5rem);
+        position: relative;
+    }
+
+    .provenance-rail__track,
+    .provenance-rail__fill {
+        bottom: 0;
+        left: 1.35rem;
+        position: absolute;
+        top: 0;
+        width: 2px;
+    }
+
+    .provenance-rail__track {
+        background: var(--line);
+    }
+
+    .provenance-rail__fill {
+        background: var(--accent);
+        transform: scaleY(0);
+        transform-origin: top;
+    }
+
+    .provenance-stations {
+        display: grid;
+        gap: clamp(2.5rem, 8vw, 4rem);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .provenance-station {
+        padding-left: 3rem;
+        position: relative;
+    }
+
+    .provenance-station__node {
+        background: var(--surface);
+        border: 1.5px solid var(--line);
+        border-radius: 50%;
+        height: 12px;
+        left: calc(1.35rem - 5px);
+        position: absolute;
+        top: 0.15rem;
+        transition: background 500ms ease, border-color 500ms ease;
+        width: 12px;
+    }
+
+    .provenance-station.is-visible .provenance-station__node {
+        background: color-mix(in srgb, var(--accent) 40%, transparent);
+        border-color: var(--accent);
+    }
+
+    .provenance-station__mono {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 0 0 0.6rem;
+        text-transform: uppercase;
+    }
+
+    .provenance-station__copy {
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        line-height: 1.35;
+        margin: 0;
+    }
+
+    @@media (min-width: 900px) {
+        .provenance-rail {
+            margin-inline: auto;
+            max-width: 880px;
+        }
+
+        .provenance-rail__track,
+        .provenance-rail__fill {
+            left: 50%;
+            margin-left: -1px;
+        }
+
+        .provenance-station {
+            padding-left: 0;
+            width: calc(50% - 2.5rem);
+        }
+
+        .provenance-station:nth-child(odd) {
+            margin-right: auto;
+            text-align: right;
+        }
+
+        .provenance-station:nth-child(even) {
+            margin-left: auto;
+            text-align: left;
+        }
+
+        .provenance-station:nth-child(odd) .provenance-station__node {
+            left: auto;
+            right: -2.875rem;
+        }
+
+        .provenance-station:nth-child(even) .provenance-station__node {
+            left: -2.875rem;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .provenance-station__node {
+            transition: none !important;
+        }
+    }
+</style>

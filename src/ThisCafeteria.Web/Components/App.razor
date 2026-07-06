@@ -26,6 +26,7 @@
     <script src="js/cartToast.js"></script>
     <script src="js/publicHeader.js"></script>
     <script src="js/productTransition.js"></script>
+    <script src="js/recruiterMotion.js"></script>
     <script>
         window.animationObserver = null;
 
@@ -74,12 +75,24 @@
             });
         };
 
+        window.queueRecruiterMotion = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.recruiterShowcaseMotion) {
+                        window.recruiterShowcaseMotion.init();
+                    }
+                });
+            });
+        };
+
         document.addEventListener('DOMContentLoaded', window.queueAnimations);
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
+        document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
 
         const onEnhancedLoad = () => {
             window.queueAnimations();
             window.queuePublicHeader();
+            window.queueRecruiterMotion();
         };
 
         if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
