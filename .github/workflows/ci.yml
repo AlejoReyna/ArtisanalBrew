@@ -39,6 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: true
 
     permissions:
       id-token: write
