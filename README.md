@@ -125,4 +125,4 @@ flowchart TB
     MI -. identity .- Worker
 ```
 
-**Status:** Phases 1–6 (containerize, IaC, real Azure service implementations, CI/CD via OIDC, data migration, DNS cutover) are complete and live. The old EC2/RDS/SQS/S3/SES footprint is fully out of the traffic path; decommissioning it (Phase 7) is deliberately deferred until Azure has run stably for a while.
+**Status:** Phases 1–6 (containerize, IaC, real Azure service implementations, CI/CD via OIDC, data migration, DNS cutover) are complete and live. The old EC2/RDS/SQS/S3/SES footprint is fully out of the traffic path and its artifacts have been retired from `main` — see [`docs/aws-legacy-infra.md`](docs/aws-legacy-infra.md) for what it was and the [`aws_legacy`](https://github.com/AlejoReyna/ArtisanalBrew/tree/aws_legacy) branch for the preserved pre-migration snapshot.
