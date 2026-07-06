@@ -1,0 +1,174 @@
+<section class="section stakingband-section" data-recruiter-section>
+    <span class="stakingband-ring" aria-hidden="true"></span>
+    <span class="stakingband-ring stakingband-ring--outer" aria-hidden="true"></span>
+
+    <div class="stakingband-content">
+        <p class="eyebrow stakingband-eyebrow" data-recruiter-animate="lift">The COFFEE Token</p>
+
+        <h2 class="stakingband-headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">Patience,</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">compounded.</em></span></span>
+        </h2>
+
+        <p class="stakingband-body" data-recruiter-animate="lift" data-recruiter-delay="300">
+            Stake COFFEE, earn COFFEE. Your rewards accrue on Sepolia while the next roast is still in the drum.
+        </p>
+
+        <div class="stakingband-stats" data-recruiter-stagger>
+            <div class="stakingband-stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="stakingband-stat__number" data-count-to="100">0</p>
+                <p class="stakingband-stat__caption">% On-chain &middot; Sepolia</p>
+            </div>
+            <div class="stakingband-stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="stakingband-stat__number" data-count-to="24">0</p>
+                <p class="stakingband-stat__caption">Hours a day, accruing</p>
+            </div>
+            <div class="stakingband-stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="stakingband-stat__number">0</p>
+                <p class="stakingband-stat__caption">Days locked &middot; Unstake anytime</p>
+            </div>
+        </div>
+
+        <div class="stakingband-cta" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <a class="button stakingband-cta__button" href="staking">Start staking</a>
+            <p class="stakingband-cta__note">Stake COFFEE &middot; Earn COFFEE &middot; Sealed on Sepolia</p>
+        </div>
+    </div>
+</section>
+
+<style>
+    .stakingband-section {
+        background: var(--charcoal);
+        box-sizing: border-box;
+        margin-inline: calc(50% - 50vw);
+        overflow: hidden;
+        padding-block: clamp(4.5rem, 12vw, 8rem);
+        padding-inline: clamp(1.25rem, 4vw, 3rem);
+        position: relative;
+        width: 100vw;
+    }
+
+    .stakingband-ring {
+        aspect-ratio: 1;
+        border: 1.5px solid rgba(255, 253, 249, 0.07);
+        border-radius: 50%;
+        animation: stakingbandRingSpin 90s linear infinite;
+        pointer-events: none;
+        position: absolute;
+        right: -240px;
+        top: -240px;
+        width: 480px;
+    }
+
+    .stakingband-ring--outer {
+        border-color: rgba(255, 253, 249, 0.04);
+        right: -264px;
+        top: -264px;
+        width: 528px;
+    }
+
+    @@keyframes stakingbandRingSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .stakingband-content {
+        margin-inline: auto;
+        max-width: 720px;
+        position: relative;
+        text-align: center;
+        z-index: 1;
+    }
+
+    .stakingband-eyebrow {
+        color: var(--accent);
+    }
+
+    .stakingband-headline {
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 9vw, 4rem);
+        margin: 0;
+    }
+
+    .stakingband-body {
+        color: rgba(255, 253, 249, 0.65);
+        font-family: var(--font-sans);
+        line-height: 1.7;
+        margin: 1.5rem auto 0;
+        max-width: 32rem;
+    }
+
+    .stakingband-stats {
+        border-top: 1px solid rgba(255, 253, 249, 0.14);
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .stakingband-stat {
+        border-bottom: 1px solid rgba(255, 253, 249, 0.14);
+        padding-block: 1.75rem;
+    }
+
+    .stakingband-stat__number {
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 8vw, 3.5rem);
+        line-height: 1;
+        margin: 0;
+    }
+
+    .stakingband-stat__caption {
+        color: rgba(255, 253, 249, 0.5);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 0.6rem 0 0;
+        text-transform: uppercase;
+    }
+
+    .stakingband-cta {
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .stakingband-cta__button {
+        background: var(--surface);
+        border: none;
+        color: var(--ink);
+    }
+
+    .stakingband-cta__button:hover {
+        background: var(--white);
+        color: var(--ink);
+    }
+
+    .stakingband-cta__note {
+        color: rgba(255, 253, 249, 0.45);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 1.25rem 0 0;
+        text-transform: uppercase;
+    }
+
+    @@media (min-width: 900px) {
+        .stakingband-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .stakingband-stat {
+            border-bottom: none;
+            border-right: 1px solid rgba(255, 253, 249, 0.14);
+        }
+
+        .stakingband-stat:last-child {
+            border-right: none;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .stakingband-ring {
+            animation: none;
+            display: none;
+        }
+    }
+</style>

@@ -1,116 +1,382 @@
 @page "/journal"
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
 
 <PageTitle>The Journal | Artisanal Brew</PageTitle>
 
 <div class="journal-page">
-    <section class="journal-hero journal-carousel" aria-label="Featured journal articles" aria-roledescription="carousel">
-        @foreach (var article in JournalCatalog.FeaturedArticles)
-        {
-            <div class="@JournalCatalog.HeroImageClass(article.ImageKey) journal-hero__backdrop"
-                 role="img"
-                 aria-label="@article.ImageAriaLabel"></div>
-        }
 
-        <div class="journal-carousel__track">
-            @for (var index = 0; index < JournalCatalog.FeaturedArticles.Count; index++)
-            {
-                var article = JournalCatalog.FeaturedArticles[index];
-                var slideNumber = index + 1;
-                <article class="journal-carousel__slide"
-                         aria-label="@($"{slideNumber} of {JournalCatalog.FeaturedArticles.Count}")"
-                         aria-roledescription="slide">
-                    <div class="journal-hero__copy" data-animate="fade-up">
-                        <p class="journal-kicker">@article.Kicker</p>
-                        <h1>@article.Title</h1>
-                        <p class="journal-hero__lede">@article.Summary</p>
-                        @if (JournalArticleContents.TryGetBody(article.Slug, out _))
-                        {
-                            <a class="journal-hero__read-link" href="@JournalCatalog.ArticleUrl(article.Slug)">
-                                Read Article <span aria-hidden="true">&rarr;</span>
-                            </a>
-                        }
-                    </div>
-                </article>
-            }
+    <!-- ==================== MASTHEAD ==================== -->
+    <section class="page-intro journal-masthead" data-recruiter-section>
+        <p class="eyebrow" data-recruiter-animate="lift">The Journal</p>
+
+        <h1 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">Notes from</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">the counter.</em></span></span>
+        </h1>
+
+        <p class="lede" data-recruiter-animate="lift" data-recruiter-delay="300">
+            Longer reads on bloom, origin, and the quiet science behind every cup — recorded a few times each
+            season, never rushed.
+        </p>
+
+        <div class="journal-masthead__signal" data-recruiter-animate="lift" data-recruiter-delay="440">
+            <span>@($"{JournalCatalog.HomeArticles.Count:00} field notes")</span>
+            <span>Manual brew</span>
+            <span>Slow design</span>
         </div>
 
-        <div class="journal-carousel__status" aria-hidden="true">
-            @foreach (var _ in JournalCatalog.FeaturedArticles)
-            {
-                <span class="journal-carousel__status-bar"></span>
-            }
-        </div>
+        <span class="journal-masthead__rule" aria-hidden="true"></span>
     </section>
 
-    <section class="journal-section journal-field-notes" aria-labelledby="field-notes-title">
-        <div class="journal-section__header">
-            <div>
-                <h2 id="field-notes-title">Field Notes</h2>
-                <p>Longer reads on bloom, origin, and the quiet science behind every cup.</p>
-            </div>
-        </div>
+    <!-- ==================== FIELD NOTES ==================== -->
+    <section class="section recruiter-showcase recruiter-journal-index" data-recruiter-section aria-labelledby="field-notes-title">
+        <div class="recruiter-journal-index__layout">
+            <aside class="recruiter-journal-index__masthead">
+                <p class="eyebrow" data-recruiter-animate="lift">Field Notes</p>
+                <h2 id="field-notes-title" data-recruiter-animate="reveal">Long reads, brewed slowly.</h2>
+                <p class="recruiter-kicker" data-recruiter-animate="lift">
+                    Deeper pieces on technique, origin, and the small rituals that shape a cup — the ones worth a
+                    second read.
+                </p>
+            </aside>
 
-        <div class="journal-field-notes__grid stagger-container" data-stagger>
-            @foreach (var article in JournalCatalog.HomeArticles)
-            {
-                <article class="journal-field-notes__card" data-animate="fade-up">
-                    <a class="journal-field-notes__link" href="@JournalCatalog.ArticleUrl(article.Slug)">
-                        <div class="@JournalCatalog.HeroImageClass(article.ImageKey) journal-field-notes__image"
-                             role="img"
-                             aria-label="@article.ImageAriaLabel"></div>
-                        <div class="journal-field-notes__copy">
-                            <span class="journal-badge">@article.CategoryLabel</span>
-                            <p class="journal-kicker">@article.Kicker</p>
-                            <h3>@article.Title</h3>
-                            <p>@article.Summary</p>
-                            <span class="journal-field-notes__meta">
-                                @article.ReadTime <span aria-hidden="true">&rarr;</span>
+            <div class="recruiter-journal-index__list" data-recruiter-stagger>
+                @for (var index = 0; index < JournalCatalog.HomeArticles.Count; index++)
+                {
+                    var article = JournalCatalog.HomeArticles[index];
+                    var entryNumber = (index + 1).ToString("00");
+                    var entryClass = "recruiter-journal-entry";
+                    if (article.IsFeature)
+                    {
+                        entryClass += " recruiter-journal-entry--feature";
+                    }
+                    if (article.IsDark)
+                    {
+                        entryClass += " recruiter-journal-entry--dark";
+                    }
+
+                    <article class="@entryClass" data-recruiter-animate="lift">
+                        <a class="recruiter-journal-entry__link" href="@JournalCatalog.ArticleUrl(article.Slug)" aria-label="@($"Read {article.Title}")">
+                            <div class="@JournalCatalog.HomeImageClass(article.ImageKey)" aria-hidden="true"></div>
+                            <span class="recruiter-journal-entry__content">
+                                <span class="recruiter-journal-entry__header">
+                                    <span class="recruiter-journal-entry__number">@entryNumber</span>
+                                    <span class="recruiter-journal-entry__separator" aria-hidden="true">|</span>
+                                    <span class="recruiter-journal-entry__label">@article.CategoryLabel</span>
+                                </span>
+                                <span class="recruiter-journal-entry__text-reveal">
+                                    <h3>@article.Title</h3>
+                                </span>
+                                <span class="recruiter-journal-entry__text-reveal recruiter-journal-entry__text-reveal--body">
+                                    <p>@article.Summary</p>
+                                </span>
                             </span>
-                        </div>
-                    </a>
-                </article>
-            }
+                            <span class="recruiter-journal-entry__meta">
+                                <span>@article.ReadTime</span>
+                                <span aria-hidden="true">&#8599;</span>
+                            </span>
+                        </a>
+                    </article>
+                }
+            </div>
         </div>
     </section>
 
-    <section class="journal-section journal-stories" aria-labelledby="short-stories-title">
-        <div class="journal-section__header">
-            <div>
-                <h2 id="short-stories-title">Short Stories</h2>
-                <p>Brief field notes on beans, tools, and the rituals that make a quiet cup feel complete.</p>
-            </div>
-            <a class="journal-archive-link" href="journal">View Archive</a>
+    <!-- ==================== SHORT STORIES ==================== -->
+    <section class="section journal-shortlist" data-recruiter-section aria-labelledby="short-stories-title">
+        <div class="recruiter-section-heading section-heading">
+            <p class="eyebrow" data-recruiter-animate="lift">Short Stories</p>
+            <h2 data-recruiter-animate="lift" data-recruiter-delay="120">Brief notes, quickly poured.</h2>
         </div>
 
-        <div class="journal-story-grid stagger-container" data-stagger>
+        <div class="journal-shortlist__grid" data-recruiter-stagger>
             @foreach (var article in JournalCatalog.ShortStories)
             {
-                <article class="journal-story-card" data-animate="fade-up">
-                    <div class="@JournalCatalog.StoryImageClass(article.ImageKey)"
+                <article class="journal-shortlist__card" data-recruiter-animate="lift">
+                    <div class="@JournalCatalog.StoryImageClass(article.ImageKey) journal-shortlist__image"
                          role="img"
                          aria-label="@article.ImageAriaLabel"></div>
                     <span class="journal-badge">@article.Kicker</span>
                     <h3>@article.Title</h3>
                     <p>@article.Summary</p>
-                    <a href="journal" aria-label="@($"Read more about {article.Title}")">
-                        Read More <span aria-hidden="true">&rarr;</span>
-                    </a>
                 </article>
             }
         </div>
     </section>
 
-    <section class="journal-subscribe" aria-labelledby="join-journal-title">
-        <div class="journal-subscribe__copy">
-            <h2 id="join-journal-title">Join the Journal</h2>
-            <p>Seasonal recipes, early releases, and thoughtful notes from the brew bar, sent with restraint.</p>
+    <!-- ==================== SUBSCRIBE ==================== -->
+    <section class="journal-subscribe-band" data-recruiter-section aria-labelledby="join-journal-title">
+        <span class="journal-subscribe-band__ring" aria-hidden="true"></span>
+        <span class="journal-subscribe-band__ring journal-subscribe-band__ring--outer" aria-hidden="true"></span>
+
+        <div class="journal-subscribe-band__content">
+            <p class="eyebrow" data-recruiter-animate="lift">Join the Journal</p>
+
+            <h2 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+                <span class="mask-line"><span class="mask-line__inner">Seasonal notes,</span></span>
+                <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">sent with restraint.</em></span></span>
+            </h2>
+
+            <p class="journal-subscribe-band__body" data-recruiter-animate="lift" data-recruiter-delay="300">
+                Recipes, early releases, and field notes from the brew bar — a few times each season, never more.
+            </p>
+
+            <form class="journal-subscribe-band__form" data-recruiter-animate="lift" data-recruiter-delay="440">
+                <label class="visually-hidden" for="journal-email">Email address</label>
+                <input id="journal-email" name="email" type="email" placeholder="Email address" autocomplete="email" />
+                <button type="submit">Subscribe</button>
+            </form>
+
+            <p class="journal-subscribe-band__note" data-recruiter-animate="lift" data-recruiter-observe-self>
+                We write a few times each season and treat your inbox with the same care as our coffee.
+            </p>
         </div>
-        <form class="journal-subscribe__form">
-            <label class="visually-hidden" for="journal-email">Email address</label>
-            <input id="journal-email" name="email" type="email" placeholder="EMAIL ADDRESS" autocomplete="email" />
-            <button type="submit">Subscribe</button>
-        </form>
-        <p class="journal-subscribe__note">We write a few times each season and treat your inbox with the same care as our coffee.</p>
     </section>
 
 </div>
+
+<style>
+    /* ===== Masthead ===== */
+    .journal-masthead {
+        position: relative;
+    }
+
+    .journal-masthead__signal {
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem 2rem;
+        margin-top: clamp(1.75rem, 3vw, 2.5rem);
+        padding-top: 1.2rem;
+    }
+
+    .journal-masthead__signal span {
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .journal-masthead__rule {
+        background: var(--line);
+        display: block;
+        height: 1px;
+        margin-top: clamp(2.5rem, 5vw, 3.5rem);
+        max-width: 8rem;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 1200ms cubic-bezier(.16, 1, .3, 1);
+    }
+
+    .journal-masthead.is-in-view .journal-masthead__rule {
+        transform: scaleX(1);
+    }
+
+    /* ===== Short Stories ===== */
+    .journal-shortlist {
+        margin-inline: auto;
+        max-width: 78rem;
+    }
+
+    .journal-shortlist__grid {
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .journal-shortlist__card {
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+    }
+
+    .journal-shortlist__image {
+        aspect-ratio: 1;
+        border-radius: 0.85rem;
+        filter: saturate(0.85) contrast(1.06);
+        margin-bottom: 1.1rem;
+    }
+
+    .journal-shortlist__card h3 {
+        color: var(--ink);
+        font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+        line-height: 1.2;
+        margin: 0 0 0.5rem;
+    }
+
+    .journal-shortlist__card p {
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    /* ===== Subscribe band ===== */
+    .journal-subscribe-band {
+        background: var(--charcoal);
+        box-sizing: border-box;
+        margin-inline: calc(50% - 50vw);
+        overflow: hidden;
+        padding-block: clamp(4.5rem, 12vw, 8rem);
+        padding-inline: clamp(1.25rem, 4vw, 3rem);
+        position: relative;
+        width: 100vw;
+    }
+
+    .journal-subscribe-band__ring {
+        aspect-ratio: 1;
+        border: 1.5px solid rgba(255, 253, 249, 0.07);
+        border-radius: 50%;
+        animation: journalSubscribeRingSpin 90s linear infinite;
+        pointer-events: none;
+        position: absolute;
+        right: -240px;
+        top: -240px;
+        width: 480px;
+    }
+
+    .journal-subscribe-band__ring--outer {
+        border-color: rgba(255, 253, 249, 0.04);
+        right: -264px;
+        top: -264px;
+        width: 528px;
+    }
+
+    @@keyframes journalSubscribeRingSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .journal-subscribe-band__content {
+        margin-inline: auto;
+        max-width: 36rem;
+        position: relative;
+        text-align: center;
+        z-index: 1;
+    }
+
+    .journal-subscribe-band__content h2 {
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 7vw, 3.25rem);
+        margin: 0;
+    }
+
+    .journal-subscribe-band__body {
+        color: rgba(255, 253, 249, 0.65);
+        font-family: var(--font-sans);
+        line-height: 1.7;
+        margin: 1.25rem auto 0;
+        max-width: 30rem;
+    }
+
+    .journal-subscribe-band__form {
+        display: flex;
+        margin: clamp(2rem, 5vw, 3rem) auto 0;
+        max-width: 28rem;
+    }
+
+    .journal-subscribe-band__form input {
+        background: rgba(255, 253, 249, 0.06);
+        border: 1px solid rgba(255, 253, 249, 0.18);
+        border-right: 0;
+        color: var(--white);
+        flex: 1 1 auto;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        min-height: 3.4rem;
+        min-width: 0;
+        padding: 0 1.1rem;
+    }
+
+    .journal-subscribe-band__form input::placeholder {
+        color: rgba(255, 253, 249, 0.45);
+    }
+
+    .journal-subscribe-band__form input:focus {
+        border-color: rgba(255, 253, 249, 0.4);
+        outline: none;
+    }
+
+    .journal-subscribe-band__form button {
+        background: var(--surface);
+        border: 1px solid var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        min-height: 3.4rem;
+        padding: 0 1.5rem;
+        text-transform: uppercase;
+        transition: background 180ms ease, color 180ms ease;
+    }
+
+    .journal-subscribe-band__form button:hover {
+        background: var(--white);
+    }
+
+    .journal-subscribe-band__note {
+        color: rgba(255, 253, 249, 0.42);
+        font-family: var(--crypto-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
+        margin-top: 1.5rem;
+    }
+
+    /* ===== Responsive ===== */
+    @@media (max-width: 760px) {
+        .journal-shortlist__grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .journal-subscribe-band__form {
+            display: grid;
+        }
+
+        .journal-subscribe-band__form input {
+            border-right: 1px solid rgba(255, 253, 249, 0.18);
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .journal-masthead__rule {
+            transition: none;
+        }
+
+        .journal-subscribe-band__ring {
+            animation: none;
+            display: none;
+        }
+    }
+</style>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.destroy");
+        }
+        catch
+        {
+            // JS runtime may already be disconnected during navigation or prerender disposal.
+        }
+    }
+}

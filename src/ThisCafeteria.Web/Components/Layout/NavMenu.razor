@@ -92,7 +92,7 @@
                     </span>
                 </Authorized>
                 <NotAuthorized>
-                    <button class="nav-drawer__connect" type="button" @onclick="OpenWalletModal">Connect Wallet</button>
+                    <span class="nav-drawer__wordmark">Artisanal Brew</span>
                 </NotAuthorized>
             </AuthorizeView>
         </div>
@@ -418,7 +418,7 @@
         if (_isNavOpen)
         {
             _ = LoadWalletStatsAsync();
-            await JsRuntime.InvokeVoidAsync("themeColor.set", "#0c0a09");
+            await JsRuntime.InvokeVoidAsync("themeColor.set", "#fbf9f4");
         }
         else
         {

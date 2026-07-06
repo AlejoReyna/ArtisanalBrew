@@ -1,16 +1,12 @@
 <section class="section recruiter-showcase recruiter-showcase--offerings" data-recruiter-section>
-    <div class="recruiter-orb recruiter-orb--one" aria-hidden="true"></div>
     <div class="recruiter-section-heading section-heading">
-        <p class="eyebrow" data-recruiter-animate="lift">Curated Offerings</p>
-        <h2 data-recruiter-animate="reveal">Menu highlights for the unhurried table.</h2>
-        <p class="recruiter-kicker" data-recruiter-animate="lift">
-            Minimal café language, elevated with precise motion, layered depth, and product storytelling.
-        </p>
+        <p class="eyebrow" data-recruiter-animate="lift">The Flight</p>
+        <h2 data-recruiter-animate="reveal">A short menu, poured slowly.</h2>
     </div>
 
     <div class="recruiter-offering-grid" data-recruiter-stagger>
         <article class="recruiter-offering-card recruiter-offering-card--espresso" data-recruiter-animate="card">
-            <div class="recruiter-card__index">01</div>
+            <p class="recruiter-card__index">01</p>
             <div class="recruiter-card__visual image-frame image-frame--espresso">
                 <span class="recruiter-steam recruiter-steam--a"></span>
                 <span class="recruiter-steam recruiter-steam--b"></span>
@@ -25,7 +21,7 @@
         </article>
 
         <article class="recruiter-offering-card recruiter-offering-card--featured" data-recruiter-animate="card">
-            <div class="recruiter-card__index">02</div>
+            <p class="recruiter-card__index">02</p>
             <div class="recruiter-card__visual image-frame image-frame--latte">
                 <span class="recruiter-pour-line"></span>
                 <span class="recruiter-foam-ring"></span>
@@ -39,7 +35,7 @@
         </article>
 
         <article class="recruiter-offering-card recruiter-offering-card--coldbrew" data-recruiter-animate="card">
-            <div class="recruiter-card__index">03</div>
+            <p class="recruiter-card__index">03</p>
             <div class="recruiter-card__visual image-frame image-frame--coldbrew">
                 <span class="recruiter-ice recruiter-ice--one"></span>
                 <span class="recruiter-ice recruiter-ice--two"></span>
@@ -57,52 +53,42 @@
 
 <style>
     .recruiter-offering-grid {
-        display: grid;
-        gap: clamp(1rem, 2vw, 1.5rem);
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        display: flex;
+        gap: 1rem;
         margin-top: clamp(2.5rem, 6vw, 5rem);
-        perspective: 1400px;
+        overflow-x: auto;
+        padding-inline: clamp(1.25rem, 4vw, 3rem);
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+
+    .recruiter-offering-grid::-webkit-scrollbar {
+        display: none;
     }
 
     .recruiter-offering-card {
-        background: var(--recruiter-card);
-        border: 1px solid var(--recruiter-line);
-        border-radius: clamp(1.4rem, 2vw, 2.25rem);
-        box-shadow: 0 28px 80px rgba(33, 27, 23, 0.08);
-        min-height: 560px;
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        box-shadow: 0 12px 40px rgba(33, 27, 23, 0.06);
+        flex: 0 0 78%;
+        min-height: 420px;
         overflow: hidden;
         padding: clamp(0.85rem, 1.5vw, 1.1rem);
-        position: relative;
-        transform-style: preserve-3d;
-    }
-
-    .recruiter-offering-card--featured {
-        margin-top: clamp(2rem, 5vw, 5rem);
+        scroll-snap-align: center;
     }
 
     .recruiter-card__index {
-        align-items: center;
-        backdrop-filter: blur(18px);
-        background: rgba(251, 249, 244, 0.66);
-        border: 1px solid var(--recruiter-line);
-        border-radius: 999px;
-        color: var(--recruiter-ink);
-        display: flex;
-        font-size: 0.78rem;
-        font-weight: 700;
-        height: 3rem;
-        justify-content: center;
-        letter-spacing: 0.14em;
-        position: absolute;
-        right: 1.4rem;
-        top: 1.4rem;
-        width: 3rem;
-        z-index: 3;
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 0 0 0.75rem;
     }
 
     .recruiter-card__visual {
         border-radius: clamp(1rem, 1.6vw, 1.7rem);
-        min-height: 310px;
+        min-height: 260px;
         overflow: hidden;
         position: relative;
     }
@@ -212,31 +198,47 @@
     .recruiter-ice--two { animation-delay: 0.5s; right: 28%; top: 45%; transform: rotate(-12deg); }
     .recruiter-ice--three { animation-delay: 1s; left: 48%; top: 58%; transform: rotate(32deg); }
 
+    .recruiter-offering-card[data-recruiter-animate="card"] {
+        transform: translate3d(48px, 0, 0);
+        transform-origin: center;
+    }
+
     @@media (hover: hover) {
         .recruiter-offering-card {
-            transition: box-shadow 450ms ease, transform 450ms cubic-bezier(.16, 1, .3, 1), border-color 450ms ease;
+            transition: box-shadow 450ms ease, border-color 450ms ease;
         }
 
         .recruiter-offering-card:hover {
             border-color: rgba(33, 27, 23, 0.24);
-            box-shadow: 0 36px 90px rgba(33, 27, 23, 0.13);
-            transform: translateY(-10px);
+            box-shadow: 0 16px 48px rgba(33, 27, 23, 0.08);
         }
     }
 
-    @@media (max-width: 980px) {
+    @@media (min-width: 900px) {
         .recruiter-offering-grid {
-            grid-template-columns: 1fr;
+            display: grid;
+            gap: clamp(1rem, 2vw, 1.5rem);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            overflow-x: visible;
+            padding-inline: 0;
         }
 
-        .recruiter-offering-card,
+        .recruiter-offering-card {
+            flex: initial;
+            min-height: 420px;
+            scroll-snap-align: none;
+        }
+
         .recruiter-offering-card--featured {
-            margin-top: 0;
-            min-height: auto;
+            margin-top: 3rem;
         }
 
         .recruiter-card__visual {
-            min-height: 260px;
+            min-height: 310px;
+        }
+
+        .recruiter-offering-card[data-recruiter-animate="card"] {
+            transform: translate3d(48px, 0, 0) scale(0.96);
         }
     }
 

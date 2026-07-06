@@ -1,28 +1,36 @@
-@inject IOrderService OrderService
+<section class="section ledger-section" data-recruiter-section>
+    <div class="ledger-content">
+        <p class="eyebrow" data-recruiter-animate="lift" data-recruiter-delay="0">The Protocol</p>
 
-<section class="section concept-section">
-    <div class="concept-grid">
-        <div class="concept-content">
-            <h2 class="concept-headline" data-animate="flip-up">A fully on-chain experience</h2>
-            <p class="concept-body" data-animate="fade-in">
-                Welcome to a conceptual space where artisanal coffee culture meets Web3 infrastructure.
-                While our seasonal roasts might be theoretical, the technology is very real.
-            </p>
-            <p class="concept-body" data-animate="scale-up">
-                Every transaction is recorded on the Ethereum Sepolia testnet—immutable, transparent,
-                and yours. Your digital wallet connects directly with the art of coffee roasting.
-            </p>
-            <div class="concept-cta-wrap" data-animate="blur">
-                <a class="button concept-explore-btn" href="products">Explore Roasts</a>
-            </div>
-            <div class="concept-trust-badges" data-animate="fade-up">
-                <div class="concept-trust-badge">
+        <h2 class="ledger-headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">A fully on-chain</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">experience.</em></span></span>
+        </h2>
+
+        <svg class="ledger-divider" data-recruiter-animate="draw" data-recruiter-delay="360" viewBox="0 0 800 56" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,28 L193,28 L200,21 L207,28 L200,35 L193,28 L393,28 L400,21 L407,28 L400,35 L393,28 L593,28 L600,21 L607,28 L600,35 L593,28 L800,28" stroke="var(--accent)" stroke-width="1.5" />
+        </svg>
+
+        <p class="ledger-body" data-recruiter-animate="lift" data-recruiter-delay="480">
+            Every order is sealed on Ethereum Sepolia&mdash;immutable, transparent, and yours to verify.
+            The roast is a ritual; the receipt is forever.
+        </p>
+
+        <div class="ledger-strip" data-recruiter-animate="type" data-recruiter-delay="500">
+            <span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>
+            <span class="type-line"><span class="ledger-strip__text">SEPOLIA &middot; BLOCK 0x84A2F1 &middot; HOUSE ESPRESSO &middot; 0.0031 ETH &middot; CONFIRMED</span></span>
+        </div>
+
+        <div class="ledger-cta-row" data-recruiter-animate="lift" data-recruiter-delay="500">
+            <a class="button ledger-explore-btn" href="products">Explore Roasts</a>
+            <div class="ledger-trust-badges">
+                <div class="ledger-trust-badge">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
                     <span>Immutable Transactions</span>
                 </div>
-                <div class="concept-trust-badge">
+                <div class="ledger-trust-badge">
                     <svg xmlns="http://www.w3.org/2000/svg" width="11" height="17" viewBox="0 0 11 17" fill="currentColor" aria-hidden="true">
                         <path d="M5.5 0.5L0.5 8.75l5 2.95 5-2.95L5.5 0.5z" opacity="0.82"/>
                         <path d="M0.5 9.75L5.5 16.5l5-6.75-5 2.95-5-2.95z" opacity="0.82"/>
@@ -32,84 +40,96 @@
                 </div>
             </div>
         </div>
-        <div class="concept-image-col"></div>
-        <img class="concept-intersection-img" src="images/right_col_nobg.png" alt="Artisanal Brew on-chain coffee experience" />
     </div>
 </section>
 
 <style>
-    .concept-section {
-        margin-left: calc(50% - 50vw);
-        margin-right: calc(50% - 50vw);
-        margin-top: calc(-1 * clamp(4rem, 8vw, 8rem));
-        margin-bottom: 0;
-        overflow: hidden;
-        padding: 0;
-        width: 100vw;
+    .ledger-section {
+        margin-inline: auto;
+        max-width: 820px;
+        padding-block: clamp(4.5rem, 12vw, 8rem);
+        padding-inline: clamp(1.25rem, 4vw, 3rem);
+        text-align: left;
     }
-    .concept-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        align-items: stretch;
-        gap: 0;
-        width: 100%;
-        position: relative;
+
+    .ledger-content {
+        display: flex;
+        flex-direction: column;
     }
-    .concept-content {
-        z-index: 10;
-        background: #F9F7F2;
-        padding: clamp(3.5rem, 7vw, 6rem) clamp(2rem, 4vw, 4rem) clamp(3.5rem, 7vw, 6rem) clamp(1.25rem, 3vw, 3rem);
-        position: relative;
-    }
-    .concept-content::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 100%;
-        left: -50vw;
-        background: #F9F7F2;
-    }
-    .concept-headline {
+
+    .ledger-headline {
         color: var(--charcoal);
         font-family: var(--font-display);
+        font-size: clamp(2.4rem, 10vw, 4.75rem);
         letter-spacing: -0.02em;
+        margin: 0;
     }
-    .concept-body {
-        color: var(--ink);
+
+    .ledger-divider {
+        height: 56px;
+        margin-top: clamp(2rem, 5vw, 3rem);
+        width: 100%;
+    }
+
+    .ledger-body {
+        color: var(--muted);
         font-family: var(--font-sans);
         font-size: clamp(0.95rem, 1.5vw, 1.05rem);
         line-height: 1.8;
-        margin-top: 1.25rem;
+        margin-top: clamp(2rem, 5vw, 3rem);
         max-width: 34rem;
-        opacity: 0.82;
     }
-    .concept-cta-wrap {
-        margin-top: 2.5rem;
+
+    .ledger-strip {
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        border-top: 1px solid var(--line);
+        display: flex;
+        gap: 0.75rem;
+        margin-top: clamp(2rem, 5vw, 3rem);
+        padding-block: 0.8rem;
     }
-    .concept-explore-btn {
-        background: transparent;
-        border: 1.5px solid var(--ink);
-        box-shadow: 0 4px 18px rgba(45, 36, 33, 0.1), 0 1px 4px rgba(45, 36, 33, 0.06);
-        color: var(--ink);
-        transition: background 200ms ease, color 200ms ease, box-shadow 200ms ease, transform 180ms ease;
+
+    .ledger-strip__text {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
     }
-    .concept-explore-btn:hover {
-        background: var(--ink);
-        border-color: var(--ink);
-        box-shadow: 0 8px 28px rgba(45, 36, 33, 0.16), 0 2px 6px rgba(45, 36, 33, 0.08);
-        color: var(--surface);
-        text-decoration: none;
-        transform: translateY(-1px);
-    }
-    .concept-trust-badges {
+
+    .ledger-cta-row {
         align-items: center;
         display: flex;
         flex-wrap: wrap;
         gap: 1.5rem 2rem;
-        margin-top: 2rem;
+        margin-top: clamp(2rem, 5vw, 3rem);
     }
-    .concept-trust-badge {
+
+    .ledger-explore-btn {
+        background: transparent;
+        border: 1.5px solid var(--ink);
+        color: var(--ink);
+        transition: background 200ms ease, color 200ms ease, transform 180ms ease;
+    }
+
+    .ledger-explore-btn:hover {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--surface);
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+
+    .ledger-trust-badges {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem 2rem;
+    }
+
+    .ledger-trust-badge {
         align-items: center;
         color: var(--muted);
         display: flex;
@@ -120,112 +140,15 @@
         letter-spacing: 0.06em;
         opacity: 0.78;
     }
-    .concept-trust-badge svg {
+
+    .ledger-trust-badge svg {
         color: var(--muted);
         flex-shrink: 0;
     }
-    .concept-image-col {
-        background: #000;
-        margin: 0;
-        min-height: 100dvh;
-        position: relative;
-    }
 
-    .concept-intersection-img {
-        bottom: 0;
-        height: 90%;
-        left: 67%;
-        pointer-events: none;
-        position: absolute;
-        transform: translateX(-50%);
-        width: auto;
-        max-width: none;
-        z-index: 20;
-    }
-
-    @@media (max-width: 900px) {
-        .concept-grid {
-            display: flex;
-            flex-direction: column;
-        }
-        .concept-content {
-            padding: 2.5rem 0 2rem;
-        }
-        .concept-content::before {
-            display: none;
-        }
-
-        .concept-image-col {
-            min-height: 100dvh;
+    @@media (min-width: 900px) {
+        .ledger-divider {
+            width: 70%;
         }
     }
-
-    [data-animate="slide-right"] { transform: translateX(-40px); }
-    [data-animate="slide-right"].is-visible { transform: translateX(0); }
-
-    [data-animate="slide-left"] { transform: translateX(40px); }
-    [data-animate="slide-left"].is-visible { transform: translateX(0); }
-
-    [data-animate="scale-up"] { transform: scale(0.9); }
-    [data-animate="scale-up"].is-visible { transform: scale(1); }
-
-    [data-animate="flip-up"] { transform: perspective(400px) rotateX(20deg); }
-    [data-animate="flip-up"].is-visible { transform: perspective(400px) rotateX(0deg); }
-
-    [data-animate="fade-in"] { transform: none; }
-    [data-animate="fade-in"].is-visible { transform: none; }
 </style>
-
-@code {
-    private IReadOnlyCollection<CommerceTransactionDto> _transactions = [];
-    private bool _isLoadingTransactions = true;
-    private string? _transactionLoadError;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            _transactions = await OrderService.GetCommerceTransactionsAsync();
-        }
-        catch (Exception exception)
-        {
-            _transactionLoadError = $"Commerce transactions could not be loaded: {exception.Message}";
-        }
-        finally
-        {
-            _isLoadingTransactions = false;
-        }
-    }
-
-    private static string ShortAddress(string? address)
-    {
-        if (string.IsNullOrWhiteSpace(address))
-        {
-            return "Not linked";
-        }
-
-        return address.Length >= 12 ? $"{address[..6]}...{address[^4..]}" : address;
-    }
-
-    private static string FormatNetwork(string? networkName, int? chainId)
-    {
-        if (!string.IsNullOrWhiteSpace(networkName))
-        {
-            return networkName;
-        }
-
-        return chainId is null ? "Not recorded" : $"Chain {chainId}";
-    }
-
-    private static string FormatEth(decimal? amount) =>
-        amount is null ? "Not recorded" : $"{amount.Value:0.####} ETH";
-
-    private static string FormatItemCount(int itemCount) =>
-        itemCount == 1 ? "1 item" : $"{itemCount} items";
-
-    private static string FormatPaidAt(DateTime? paidAtUtc) =>
-        paidAtUtc is null ? "Pending" : FormatDate(paidAtUtc.Value);
-
-    private static string FormatDate(DateTime date) =>
-        date.ToLocalTime().ToString("MMM d, yyyy h:mm tt");
-}
