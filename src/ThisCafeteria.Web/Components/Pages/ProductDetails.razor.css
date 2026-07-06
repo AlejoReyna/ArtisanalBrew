@@ -163,6 +163,26 @@
     margin: 0;
 }
 
+.product-detail-card__highlights {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+}
+
+.product-detail-card__highlight {
+    color: #2d2421;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.product-detail-card__highlight-divider {
+    color: #a89c8f;
+}
+
 /* Action bar sits just below the copy, kept clear of the screen edge */
 .product-detail-card__buybar {
     align-items: stretch;

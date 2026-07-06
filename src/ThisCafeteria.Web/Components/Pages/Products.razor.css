@@ -1,42 +1,27 @@
 .product-grid-wrapper {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    transform-origin: center top;
-    filter: blur(0);
-    will-change: opacity, transform, filter;
+    will-change: opacity;
 }
 
 .product-grid-wrapper.is-fading-out {
     opacity: 0;
-    transform: translateY(8px) scale(0.992);
-    filter: blur(2px);
     pointer-events: none;
-    transition:
-        opacity 180ms ease,
-        transform 180ms cubic-bezier(0.4, 0, 0.2, 1),
-        filter 180ms ease;
+    transition: opacity 180ms ease;
 }
 
 .product-grid-wrapper.is-fading-in {
     opacity: 0;
-    transform: translateY(12px) scale(0.994);
-    filter: blur(2px);
     pointer-events: none;
 }
 
 .product-grid-wrapper:not(.is-fading-out) {
-    transition:
-        opacity 340ms cubic-bezier(0.16, 1, 0.3, 1),
-        transform 340ms cubic-bezier(0.16, 1, 0.3, 1),
-        filter 260ms ease;
+    transition: opacity 340ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
     .product-grid-wrapper,
     .product-grid-wrapper.is-fading-out,
     .product-grid-wrapper.is-fading-in {
-        filter: none;
-        transform: none;
         transition: none;
     }
 }
@@ -78,6 +63,25 @@
     min-width: 0;
 }
 
+.marketplace-card__title-row {
+    align-items: baseline;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.marketplace-card__title-row h3 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.marketplace-card__title-row .price {
+    flex: none;
+    white-space: nowrap;
+}
+
 /* ── Mobile product-listing-page: roastery paper edition ── */
 @media (max-width: 760px) {
     .products-shop {
@@ -93,15 +97,20 @@
 
         background-color: var(--shop-cream);
         color: var(--shop-ink);
-        /* extra 5px closes the strip between the fixed nav (71px) and main's 76px offset */
-        margin: calc(-1.25rem - 5px) -1.25rem -1.25rem;
+        /* pulls the banner flush against the shortened mobile nav, closing the leftover whitespace above it */
+        margin: calc(-1.25rem - 36.5px) -1.25rem -1.25rem;
         padding: 1.5rem 0 2rem;
         position: relative;
     }
 
     .products-shop__header {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
         isolation: isolate;
+        justify-content: center;
         margin: -1.5rem 0 0;
+        min-height: 12.5rem;
         overflow: hidden;
         padding: 3.5rem 1rem 2.75rem;
         position: relative;
@@ -115,7 +124,6 @@
         filter: sepia(0.85) saturate(1.15) brightness(0.55) contrast(1.05);
         inset: -10%;
         position: absolute;
-        transition: background-image 360ms ease;
         z-index: -1;
     }
 
@@ -133,24 +141,6 @@
 
     .products-shop__header--CeramicsAndGoods::before {
         background-image: url('https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80');
-    }
-
-    .products-shop__header--growing {
-        animation: shop-header-grow 460ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes shop-header-grow {
-        0% {
-            padding-bottom: 2.75rem;
-        }
-
-        50% {
-            padding-bottom: 4.25rem;
-        }
-
-        100% {
-            padding-bottom: 2.75rem;
-        }
     }
 
     @keyframes shop-banner-pan {
@@ -177,7 +167,15 @@
         letter-spacing: -0.035em;
         line-height: 0.98;
         margin: 0 0 0.7rem;
+        text-align: center;
         text-transform: none;
+        white-space: nowrap;
+    }
+
+    /* longer category names need a smaller cap so they stay on one line */
+    .products-shop__header--Beans .products-shop__title,
+    .products-shop__header--BrewingEquipment .products-shop__title {
+        font-size: clamp(1.9rem, 9vw, 3.6rem);
     }
 
     /* plain ampersand instead of Playfair's swash glyph */
@@ -190,12 +188,13 @@
     .products-shop__lede {
         color: rgba(251, 249, 244, 0.82);
         font-family: var(--font-sans);
-        font-size: 0.9rem;
+        font-size: 0.78rem;
         font-style: normal;
         font-weight: 400;
         line-height: 1.5;
-        margin: 0;
+        margin: 0 auto;
         max-width: 20rem;
+        text-align: center;
     }
 
     .products-shop__filter {
@@ -275,6 +274,7 @@
         background: var(--shop-cream);
         border-bottom: 1px solid var(--shop-line);
         gap: 0;
+        min-width: 0;
         padding: 0 0 0.9rem;
     }
 
@@ -344,13 +344,17 @@
         padding: 0.7rem 0.75rem 0;
     }
 
+    .marketplace-card__title-row {
+        margin: 0 0 0.3rem;
+    }
+
     .marketplace-card .price {
         color: var(--shop-ink);
         font-family: var(--shop-serif);
         font-size: 1.1rem;
         font-weight: 700;
         letter-spacing: -0.01em;
-        margin: 0 0 0.2rem;
+        margin: 0;
     }
 
     .marketplace-card h3 {
@@ -360,7 +364,7 @@
         font-weight: 400;
         letter-spacing: 0;
         line-height: 1.22;
-        margin: 0 0 0.3rem;
+        margin: 0;
         text-transform: none;
     }
 
@@ -380,8 +384,8 @@
     }
 
     .marketplace-card__actions {
-        align-items: stretch;
-        flex-direction: column;
+        align-items: center;
+        flex-wrap: nowrap;
         gap: 0.4rem;
         margin: 0;
         padding: 0;
@@ -398,8 +402,8 @@
         border-color: var(--shop-line);
         border-radius: 50%;
         color: var(--shop-ink);
-        height: 1.7rem;
-        width: 1.7rem;
+        height: 1.5rem;
+        width: 1.5rem;
     }
 
     .marketplace-card ::deep .product-qty__value {
@@ -410,30 +414,32 @@
     }
 
     .marketplace-card__add {
-        flex: none;
+        flex: 1 1 auto;
         background: transparent;
-        border: 1px solid var(--shop-ink);
-        border-radius: 0;
+        border: 1.5px solid var(--shop-ink);
+        border-radius: 0.35rem;
         color: var(--shop-ink);
         font-family: var(--font-sans);
         font-size: 0.6rem;
-        font-weight: 600;
-        letter-spacing: 0.14em;
-        min-height: 2.1rem;
-        padding: 0.35rem 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        line-height: 1.15;
+        min-height: 2.4rem;
+        min-width: 0;
+        padding: 0.4rem 0.4rem;
+        text-align: center;
         text-transform: uppercase;
+        white-space: normal;
         transition: background 160ms ease, color 160ms ease, transform 120ms ease;
-        width: 100%;
     }
 
     .marketplace-card__add:hover {
         background: var(--shop-ink);
-        border-color: var(--shop-ink);
         color: var(--shop-cream);
     }
 
     .marketplace-card__add:active {
-        transform: scale(0.98);
+        transform: scale(0.97);
     }
 
     .marketplace-card__add:disabled {

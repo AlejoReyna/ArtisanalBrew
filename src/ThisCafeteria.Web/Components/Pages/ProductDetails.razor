@@ -68,6 +68,17 @@ else
 
             <p class="product-detail-card__desc">@product.Description</p>
 
+            <div class="product-detail-card__highlights">
+                @for (var i = 0; i < product.FlavorNotes.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        <span class="product-detail-card__highlight-divider" aria-hidden="true">|</span>
+                    }
+                    <span class="product-detail-card__highlight">@product.FlavorNotes[i]</span>
+                }
+            </div>
+
             <div class="product-detail-card__buybar">
                 <div class="product-detail-quantity">
                     <div class="quantity-selector">
@@ -299,20 +310,14 @@ else
             product.ImageUrl);
     }
 
-    private static IReadOnlyList<string> HighlightsFor(ProductDto product)
-    {
-        var trimmed = product.Description.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
+    private static IReadOnlyList<string> HighlightsFor(ProductDto product) =>
+        product.Category switch
         {
-            return [SectionLabel(product.Category), "Marketplace item", "Ready for checkout"];
-        }
-
-        return trimmed
-            .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Take(3)
-            .DefaultIfEmpty(trimmed)
-            .ToArray();
-    }
+            ProductCategory.Beans => ["100% Arabica", "Grown organically", "Small-batch roasted"],
+            ProductCategory.BrewingEquipment => ["Precision engineered", "Built to last", "Café-grade quality"],
+            ProductCategory.CeramicsAndGoods => ["Hand-thrown", "Small-batch made", "Built for daily use"],
+            _ => ["100% Arabica", "Grown organically", "Small-batch roasted"]
+        };
 
     private static string SectionLabel(ProductCategory category) =>
         category switch

@@ -526,7 +526,11 @@
 
 @media (max-width: 760px) {
     .site-nav {
-        min-height: 4.35rem;
+        min-height: 2.42rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.1rem;
     }
 
     .nav-links {
@@ -535,6 +539,13 @@
 
     .navbar-toggler {
         display: flex;
+        gap: 0.22rem;
+        height: 1.87rem;
+        width: 1.87rem;
+    }
+
+    .navbar-toggler span {
+        width: 0.94rem;
     }
 
     .site-nav:has(.nav-drawer--open) .navbar-brand {
@@ -546,7 +557,7 @@
     }
 
     .site-nav:has(.nav-drawer--open) .navbar-toggler span:nth-child(1) {
-        transform: translateY(0.29rem) rotate(45deg);
+        transform: translateY(0.23rem) rotate(45deg);
     }
 
     .site-nav:has(.nav-drawer--open) .navbar-toggler span:nth-child(2) {
@@ -554,7 +565,7 @@
     }
 
     .site-nav:has(.nav-drawer--open) .navbar-toggler span:nth-child(3) {
-        transform: translateY(-0.29rem) rotate(-45deg);
+        transform: translateY(-0.23rem) rotate(-45deg);
     }
 
     .nav-drawer-backdrop {
