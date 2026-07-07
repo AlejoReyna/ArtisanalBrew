@@ -38,7 +38,15 @@
                                 <strong>@faucet.Name</strong>
                             </span>
                         </span>
-                        <span class="faucet-panel__card-amount tabular">@faucet.Amount</span>
+                        <span class="faucet-panel__card-amount tabular">
+                            <span class="faucet-panel__eth-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L5.5 12.5L12 15.5L18.5 12.5L12 2Z" fill="currentColor"/>
+                                    <path d="M12 15.5L5.5 12.5L12 22L18.5 12.5L12 15.5Z" fill="currentColor" opacity="0.7"/>
+                                </svg>
+                            </span>
+                            @faucet.Amount
+                        </span>
                     </span>
                     <span class="faucet-panel__card-note">@faucet.Requirement</span>
                     <span class="faucet-panel__card-cta">

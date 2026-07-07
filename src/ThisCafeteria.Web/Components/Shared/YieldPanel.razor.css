@@ -432,7 +432,7 @@
 }
 
 .staking-connect__faucet ::deep .faucet-panel {
-    align-content: start;
+    align-content: center;
     border-radius: 0;
     border-bottom: 0;
     border-top: 0;
