@@ -166,16 +166,29 @@
 }
 
 .faucet-panel__card-amount {
-    background: rgba(71, 97, 78, 0.09);
-    border: 1px solid rgba(71, 97, 78, 0.16);
-    border-radius: 999px;
-    color: #47614e;
+    align-items: center;
+    color: #627eea;
+    display: inline-flex;
     font-family: var(--crypto-mono);
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     font-weight: 700;
+    gap: 0.35rem;
     line-height: 1;
-    padding: 0.38rem 0.55rem;
     white-space: nowrap;
+}
+
+.faucet-panel__eth-icon {
+    color: #627eea;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 0.95rem;
+    width: 0.95rem;
+}
+
+.faucet-panel__eth-icon svg {
+    display: block;
+    height: 100%;
+    width: 100%;
 }
 
 .faucet-panel__card-note {
