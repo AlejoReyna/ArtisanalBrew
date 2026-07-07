@@ -61,9 +61,6 @@ else
 
             <section class="yield-sidebar__identity">
                 <p class="yield-sidebar__kicker">Account Overview</p>
-                <div class="yield-sidebar__wallet">
-                    <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@_chain.ExplorerUrl" />
-                </div>
                 <dl class="yield-sidebar__stats">
                     <div>
                         <dt>Wallet Value</dt>
@@ -124,42 +121,32 @@ else
                 <div class="yield-hero-text">
                     <div class="yield-title-row">
                         <h1>Token Allocations</h1>
-                        <div class="yield-identity-bar">
-                            <ChainBadge NetworkName="@_chain.NetworkName" ChainId="_chain.ChainId" Connected="true" />
-                            <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@_chain.ExplorerUrl" />
-                        </div>
-                    </div>
-                    <div class="yield-hero-summary">
-                        <p class="yield-hero-lede">Deposit your payment tokens into the brewing pool to lock in your yield. Track your active allocation, earn freshly roasted rewards, and unstake your principal at any time.</p>
-                        <div class="yield-global-stat" aria-label="Configured reward rate">
-                            <span>@AprLabel()</span>
-                            <strong>@FormatApr()</strong>
-                        </div>
+                        <span class="yield-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
                     </div>
                 </div>
-            </section>
 
-            <section class="yield-stat-row" aria-label="Wallet and staking balances">
-                <StatTile Label="Staked"
-                          Value="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
-                          Suffix="CAFE"
-                          Loading="_isLoading" />
-                <StatTile Label="Pending Rewards"
-                          Value="@FormatPendingRewards()"
-                          Suffix="@(_dashboard.PendingStakingRewards is null ? null : "COFFEE")"
-                          Accent="StatTile.StatTileAccent.Positive"
-                          Hint="@(_dashboard.PendingStakingRewards is null ? "Rewards unavailable - RPC read failed." : null)"
-                          OnRetry="PendingRewardsRetryCallback"
-                          Loading="_isLoading" />
-                <StatTile Label="CAFE Balance"
-                          Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
-                          Suffix="CAFE"
-                          Loading="_isLoading" />
-                <StatTile Label="@($"{_chain.CurrencySymbol} Balance")"
-                          Value="@FormatAmount(_dashboard.NativeBalance)"
-                          Suffix="@_chain.CurrencySymbol"
-                          Hint="@NativeBalanceUsdHint()"
-                          Loading="_isLoading" />
+                <div class="yield-stat-row" aria-label="Wallet and staking balances">
+                    <StatTile Label="Staked"
+                              Value="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
+                              Suffix="CAFE"
+                              Loading="_isLoading" />
+                    <StatTile Label="Pending Rewards"
+                              Value="@FormatPendingRewards()"
+                              Suffix="@(_dashboard.PendingStakingRewards is null ? null : "COFFEE")"
+                              Accent="StatTile.StatTileAccent.Positive"
+                              Hint="@(_dashboard.PendingStakingRewards is null ? "Rewards unavailable - RPC read failed." : null)"
+                              OnRetry="PendingRewardsRetryCallback"
+                              Loading="_isLoading" />
+                    <StatTile Label="CAFE Balance"
+                              Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
+                              Suffix="CAFE"
+                              Loading="_isLoading" />
+                    <StatTile Label="@($"{_chain.CurrencySymbol} Balance")"
+                              Value="@FormatAmount(_dashboard.NativeBalance)"
+                              Suffix="@_chain.CurrencySymbol"
+                              Hint="@NativeBalanceUsdHint()"
+                              Loading="_isLoading" />
+                </div>
             </section>
 
             @if (!string.IsNullOrWhiteSpace(_dashboardError))

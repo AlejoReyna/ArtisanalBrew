@@ -206,12 +206,46 @@ p {
     }
 }
 
+.yield-page {
+    /* Dark roast wing — the staking/allocation dashboard inverts the café's
+       cream ground to a roasted near-black, so crossing into /staking or
+       /profile reads as entering the on-chain side of the product. */
+    --yield-cream: #100D0B;
+    --yield-espresso: #F4EFE6;
+    --yield-sand: #100D0B;
+    --yield-sand-hover: #2A211B;
+    --yield-line: rgba(244, 239, 230, 0.1);
+    --yield-muted: rgba(244, 239, 230, 0.58);
+
+    --stake-bg: #171310;
+    --stake-bg-deep: #100D0B;
+    --stake-surface: #1F1915;
+    --stake-surface-2: #2A211B;
+    --stake-line: rgba(244, 239, 230, 0.1);
+    --stake-line-strong: rgba(244, 239, 230, 0.18);
+    --stake-ink: #F4EFE6;
+    --stake-muted: rgba(244, 239, 230, 0.58);
+    --stake-faint: rgba(244, 239, 230, 0.4);
+    --stake-green: #8FB99B;
+    --stake-green-dim: rgba(143, 185, 155, 0.14);
+    --stake-copper: #C89B6A;
+    --stake-copper-dim: rgba(200, 155, 106, 0.14);
+    --stake-amber: #E5C078;
+    --stake-amber-dim: rgba(229, 192, 120, 0.12);
+    --stake-clay: #E59880;
+    --stake-clay-dim: rgba(229, 152, 128, 0.12);
+
+    /* Lift the shared brand-green token so text/spinner states relying on
+       --crypto-positive stay legible against the roast ground. */
+    --crypto-positive: #8FB99B;
+}
+
 .yield-dashboard {
     --yield-header-offset: 4.75rem;
     --yield-column-gutter: clamp(1.25rem, 2.6vw, 2.5rem);
     --yield-sidebar-content-width: 20.5rem;
     align-items: stretch;
-    background: #FAF9F5;
+    background: var(--stake-bg);
     column-gap: 0;
     display: grid;
     grid-template-columns:
@@ -223,12 +257,6 @@ p {
 }
 
 .yield-sidebar {
-    --yield-cream: #FAF9F5;
-    --yield-espresso: #2C1B12;
-    --yield-sand: #EFE9DF;
-    --yield-sand-hover: #E3DBCD;
-    --yield-line: rgba(44, 27, 18, 0.1);
-    --yield-muted: rgba(44, 27, 18, 0.58);
     background: var(--yield-sand);
     border-right: 1px solid var(--yield-line);
     display: flex;
@@ -325,7 +353,7 @@ p {
 }
 
 .yield-sidebar__link::before {
-    background: var(--yield-espresso);
+    background: var(--stake-copper, var(--yield-espresso));
     border-radius: 0 2px 2px 0;
     bottom: 0.55rem;
     content: "";
@@ -352,9 +380,9 @@ p {
 }
 
 .yield-sidebar__label {
-    font-family: var(--font-sidebar-display);
-    font-size: 1.05rem;
-    font-weight: 400;
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
     letter-spacing: 0.01em;
     line-height: 1.25;
 }
@@ -411,7 +439,7 @@ p {
 }
 
 .yield-sidebar__new-stake:hover {
-    background: #3d281c;
+    background: var(--stake-green, #3d281c);
     color: var(--yield-cream);
     transform: translateY(-1px);
 }
@@ -577,6 +605,70 @@ body.product-detail-view .product-detail-card__title h1 {
 .public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-toggler span,
 .public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-toggler span {
     background: #fff;
+}
+
+/* Staking/profile wing — nav goes dark-roast to match the rest of the page,
+   in both the transparent (scrolled-to-top) and solid header states. */
+.yield-page .public-header,
+.yield-page .public-header.public-header--solid {
+    background-color: rgba(23, 19, 16, 0.86);
+    backdrop-filter: blur(18px);
+    border-bottom-color: rgba(244, 239, 230, 0.12);
+}
+
+.yield-page .public-header .navbar-brand {
+    color: #F4EFE6;
+}
+
+.yield-page .public-header .nav-link {
+    color: rgba(244, 239, 230, 0.72);
+}
+
+.yield-page .public-header .nav-link:hover,
+.yield-page .public-header .nav-link.active {
+    border-bottom-color: #F4EFE6;
+    color: #F4EFE6;
+}
+
+.yield-page .public-header .nav-cart {
+    color: #F4EFE6;
+}
+
+.yield-page .public-header .nav-wallet {
+    border-color: rgba(244, 239, 230, 0.35);
+    color: #F4EFE6;
+}
+
+.yield-page .public-header .nav-wallet.active {
+    background: #F4EFE6;
+    color: #171310;
+}
+
+.yield-page .public-header .nav-login {
+    border-color: rgba(244, 239, 230, 0.35);
+}
+
+.yield-page .public-header .navbar-toggler {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(244, 239, 230, 0.3);
+}
+
+.yield-page .public-header .navbar-toggler span {
+    background: #F4EFE6;
+}
+
+/* Connect-wallet CTA: flip from the site-wide dark-on-cream button to a
+   cream-on-dark fill so it stays the brightest object on the page. */
+.yield-page .staking-connect__content .button--dark {
+    background: var(--stake-ink);
+    border-color: var(--stake-ink);
+    color: var(--stake-bg);
+}
+
+.yield-page .staking-connect__content .button--dark:hover {
+    background: var(--stake-green);
+    border-color: var(--stake-green);
+    color: var(--stake-bg);
 }
 
 /* Homepage nav never goes solid — keep the transparent/dark hero look for

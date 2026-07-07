@@ -1,9 +1,9 @@
 .chain-badge {
     align-items: center;
-    background: rgba(245, 242, 234, 0.7);
-    border: 1px solid rgba(44, 27, 18, 0.13);
+    background: var(--stake-surface, rgba(245, 242, 234, 0.7));
+    border: 1px solid var(--stake-line-strong, rgba(44, 27, 18, 0.13));
     border-radius: 999px;
-    color: #5d534d;
+    color: var(--stake-muted, #5d534d);
     display: inline-flex;
     font-family: var(--font-sans);
     font-size: 0.7rem;
@@ -23,7 +23,7 @@
 }
 
 .chain-badge__id {
-    color: rgba(93, 83, 77, 0.65);
+    color: var(--stake-faint, rgba(93, 83, 77, 0.65));
     font-family: var(--crypto-mono);
     font-weight: 500;
     letter-spacing: 0.02em;

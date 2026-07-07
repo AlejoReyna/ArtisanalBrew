@@ -1,8 +1,8 @@
 /* ── Loading / error shell ── */
 
 .staking-connect {
-    background: rgba(245, 242, 234, 0.9);
-    border: 1px solid rgba(45, 36, 33, 0.12);
+    background: #1F1915;
+    border: 1px solid rgba(244, 239, 230, 0.13);
     border-radius: 8px;
     margin: clamp(1.25rem, 3vw, 3rem);
     padding: clamp(2rem, 6vw, 5rem);
@@ -10,7 +10,7 @@
 }
 
 .staking-connect h2 {
-    color: #2C1B12;
+    color: #F4EFE6;
     font-family: var(--font-sidebar-display);
     font-size: clamp(2.4rem, 6vw, 4.5rem);
     font-weight: 400;
@@ -27,14 +27,14 @@
 /* ── Main content ── */
 
 .profile-dash__main {
-    --dash-cream: #FAF9F5;
-    --dash-espresso: #2C1B12;
-    --dash-sand: #EFE9DF;
-    --dash-sand-deep: #E7E0D3;
-    --dash-sand-hover: #E3DBCD;
-    --dash-card: #FFFFFF;
-    --dash-line: rgba(44, 27, 18, 0.1);
-    --dash-muted: rgba(44, 27, 18, 0.58);
+    --dash-cream: #100D0B;
+    --dash-espresso: #F4EFE6;
+    --dash-sand: #100D0B;
+    --dash-sand-deep: #171310;
+    --dash-sand-hover: #2A211B;
+    --dash-card: #1F1915;
+    --dash-line: rgba(244, 239, 230, 0.1);
+    --dash-muted: rgba(244, 239, 230, 0.58);
     --dash-header-offset: 4.75rem;
     --dash-gutter: clamp(1.25rem, 2.6vw, 2.5rem);
     display: grid;
@@ -48,7 +48,7 @@
 }
 
 .profile-dash__hero {
-    border-bottom: 1px solid rgba(44, 27, 18, 0.14);
+    border-bottom: 1px solid rgba(244, 239, 230, 0.14);
     display: grid;
     gap: 0.8rem;
     padding-bottom: clamp(1.4rem, 3vw, 2.2rem);
@@ -108,7 +108,7 @@
 .profile-dash__name-input {
     background: transparent;
     border: 0;
-    border-bottom: 1px solid rgba(44, 27, 18, 0.22);
+    border-bottom: 1px solid rgba(244, 239, 230, 0.26);
     color: var(--dash-espresso);
     font-family: var(--font-sidebar-display);
     font-size: clamp(2.6rem, 5vw, 4.25rem);
@@ -130,7 +130,7 @@
 .profile-dash__save-icon-btn {
     align-items: center;
     background: transparent;
-    border: 1px solid rgba(44, 27, 18, 0.16);
+    border: 1px solid rgba(244, 239, 230, 0.2);
     border-radius: 999px;
     color: var(--dash-muted);
     cursor: pointer;
@@ -146,7 +146,7 @@
 
 .profile-dash__edit-btn:hover,
 .profile-dash__save-icon-btn:hover:not(:disabled) {
-    border-color: rgba(44, 27, 18, 0.32);
+    border-color: rgba(244, 239, 230, 0.4);
     color: var(--dash-espresso);
     transform: translateY(-1px);
 }
@@ -157,7 +157,7 @@
 }
 
 .profile-dash__lede {
-    color: #4d443f;
+    color: rgba(244, 239, 230, 0.72);
     font-size: clamp(0.98rem, 1.5vw, 1.12rem);
     line-height: 1.7;
     margin: 0;
@@ -228,7 +228,7 @@
 }
 
 .profile-dash__faucet-link {
-    color: #8a4d34;
+    color: #C89B6A;
     font-size: 0.86rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -245,10 +245,10 @@
 }
 
 .profile-dash__tx-chip {
-    background: rgba(44, 27, 18, 0.05);
-    border: 1px solid rgba(44, 27, 18, 0.13);
+    background: rgba(244, 239, 230, 0.05);
+    border: 1px solid rgba(244, 239, 230, 0.13);
     border-radius: 999px;
-    color: #8a4d34;
+    color: #C89B6A;
     display: inline-block;
     font-family: var(--crypto-mono);
     font-size: 0.72rem;
@@ -260,21 +260,21 @@
 }
 
 .profile-dash__tx-chip:hover {
-    border-color: rgba(138, 77, 52, 0.55);
-    color: #6d3a26;
+    border-color: rgba(200, 155, 106, 0.55);
+    color: #DDB483;
 }
 
 /* ── Display name inline edit ── */
 
 .profile-dash__errors {
-    color: #7a3829;
+    color: #E59880;
     font-size: 0.82rem;
     margin: 0.25rem 0 0;
     padding-left: 1.1rem;
 }
 
 .profile-dash__save-message {
-    color: #3f5b45;
+    color: #8FB99B;
     font-size: 0.85rem;
     margin: 0.25rem 0 0;
 }
@@ -286,7 +286,7 @@
     background: var(--dash-cream);
     border: 1px solid var(--dash-line);
     border-radius: 8px;
-    color: #5d534d;
+    color: rgba(244, 239, 230, 0.6);
     font-size: 0.9rem;
     margin: 0;
     padding: 0.85rem 1rem;
@@ -322,7 +322,7 @@
 }
 
 .profile-dash__order a {
-    color: #8a4d34;
+    color: #C89B6A;
     text-decoration: none;
 }
 
@@ -344,10 +344,10 @@
 }
 
 .profile-dash__status {
-    background: rgba(44, 27, 18, 0.05);
-    border: 1px solid rgba(44, 27, 18, 0.13);
+    background: rgba(244, 239, 230, 0.05);
+    border: 1px solid rgba(244, 239, 230, 0.13);
     border-radius: 4px;
-    color: #5d534d;
+    color: rgba(244, 239, 230, 0.6);
     font-family: var(--font-sans);
     font-size: 0.6rem;
     font-weight: 700;
