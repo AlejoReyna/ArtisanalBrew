@@ -1,14 +1,41 @@
-<section class="hero editorial-hero editorial-hero--coffee">
-    <div class="hero__media" aria-hidden="true"></div>
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@@100..900&display=swap');
+
+    .font-Outfit {
+        font-family: 'Outfit', sans-serif !important;
+    }
+
+    .hero-credit {
+        position: absolute;
+        bottom: clamp(1rem, 2vw, 1.5rem);
+        right: clamp(1rem, 2vw, 2rem);
+        font-family: var(--font-sans);
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-decoration: none;
+        opacity: 0.6;
+        transition: opacity 200ms ease;
+        z-index: 2;
+    }
+
+    .hero-credit:hover {
+        opacity: 1;
+        text-decoration: underline;
+    }
+</style>
+
+<section class="hero editorial-hero editorial-hero--coffee" id="hero-section">
+    <video class="hero-video" autoplay muted loop playsinline aria-hidden="true">
+        <source src="/images/bg_video.mp4" type="video/mp4">
+    </video>
+    <canvas class="hero-canvas" id="hero-webgl-canvas" aria-hidden="true"></canvas>
     <div class="hero__content">
-        <p class="eyebrow" data-animate="fade-up">Est. 2024</p>
         <h1 data-animate="blur">A sanctuary for the <span class="headline-italic">patient brewer.</span></h1>
-        <p class="lede" data-animate="fade-up">
+        <p class="lede font-Outfit" data-animate="fade-up">
             Embrace the slow living movement with seasonal coffee, manual brewing, and pastry made for lingering.
         </p>
-        <div class="hero__actions" data-animate="fade-up">
-            <a class="button button--dark" href="products">Explore the menu</a>
-            <a class="button button--ghost" href="story">Our story</a>
-        </div>
     </div>
+    <a href="https://www.pexels.com/@@pavel-danilyuk/" target="_blank" rel="noopener noreferrer" class="hero-credit">
+        Video by Pavel Danilyuk
+    </a>
 </section>

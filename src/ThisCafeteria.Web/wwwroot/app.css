@@ -579,6 +579,78 @@ body.product-detail-view .product-detail-card__title h1 {
     background: #fff;
 }
 
+/* Homepage nav never goes solid — keep the transparent/dark hero look for
+   the whole page, not just while the hero is in view. */
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid {
+    background-color: transparent;
+    backdrop-filter: none;
+    border-bottom: none;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-brand {
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link {
+    color: rgba(251, 249, 244, 0.78);
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link:hover,
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link.active {
+    border-bottom-color: #fbf9f4;
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-cart {
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-wallet {
+    border-color: rgba(251, 249, 244, 0.45);
+    color: #fbf9f4;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-wallet.active {
+    background: #fbf9f4;
+    color: #2d2421;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-toggler {
+    background: rgba(0, 0, 0, 0.28);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-toggler span {
+    background: #fff;
+}
+
+/* Floating glass-pill nav — homepage hero only, matches the "Orbit" reference composition */
+.public-page:has(.editorial-hero--coffee) .public-header .site-nav {
+    min-height: 3.4rem;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header .nav-links {
+    background: rgba(20, 16, 13, 0.55);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(251, 249, 244, 0.14);
+    border-radius: 999px;
+    padding: 0.3rem 0.3rem 0.3rem 1.35rem;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header .nav-login {
+    padding: 0.3rem 0.7rem 0.3rem 0.4rem;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header .eth-mark {
+    height: 1.4rem;
+    width: 1.4rem;
+}
+
+.public-page:has(.editorial-hero--coffee) .public-header .nav-login::after {
+    left: 2.35rem;
+}
+
 .eyebrow {
     color: var(--accent);
     font-size: 0.75rem;
@@ -592,6 +664,10 @@ body.product-detail-view .product-detail-card__title h1 {
     color: var(--ink);
     font-size: clamp(1.05rem, 2vw, 1.35rem);
     max-width: 46rem;
+}
+
+.font-Outfit {
+    font-family: Outfit, sans-serif !important;
 }
 
 .muted {
@@ -634,7 +710,36 @@ body.product-detail-view .product-detail-card__title h1 {
     align-self: end;
     max-width: 60rem;
     position: relative;
+    z-index: 2;
+}
+
+/* Span the full hero width (not just the grid's narrow left track) so the
+   headline wraps to two lines instead of three. */
+.editorial-hero--coffee .hero__content {
+    grid-column: 1 / -1;
+    max-width: min(68vw, 72rem);
+}
+
+.hero-canvas {
+    display: block;
+    height: 100%;
+    inset: 0;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
     z-index: 1;
+}
+
+.hero-video {
+    display: block;
+    height: 100%;
+    inset: 0;
+    object-fit: cover;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    z-index: 0;
 }
 
 .editorial-hero .hero__content h1 {
@@ -687,8 +792,19 @@ body.product-detail-view .product-detail-card__title h1 {
         rgba(0, 0, 0, 0.4);
 }
 
+.editorial-hero--coffee {
+    margin-bottom: clamp(1rem, 3vw, 2rem);
+    padding-bottom: 0;
+}
+
 .editorial-hero--coffee::before {
-    background-image: url("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1600&q=80");
+    display: none;
+}
+
+.editorial-hero--coffee::after {
+    animation: none;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.52) 100%);
+    clip-path: none;
 }
 
 .editorial-hero--about::before {
@@ -3034,3 +3150,4 @@ body.product-detail-view .product-detail-card__title h1 {
         transition: none !important;
     }
 }
+

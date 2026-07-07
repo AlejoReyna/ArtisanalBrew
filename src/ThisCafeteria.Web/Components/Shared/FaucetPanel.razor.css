@@ -85,42 +85,96 @@
 }
 
 .faucet-panel__card {
-    background: #ffffff;
-    border: 1px solid rgba(44, 27, 18, 0.12);
-    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+    border: 1px solid rgba(44, 27, 18, 0.11);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.48rem;
     height: 100%;
-    padding: 0.95rem 1.05rem 1rem;
+    padding: 0.9rem 1rem 0.95rem;
+    position: relative;
     text-decoration: none;
-    transition: border-color 160ms ease, box-shadow 200ms ease, transform 120ms ease;
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+
+.faucet-panel__card::before {
+    background: #47614e;
+    border-radius: 999px;
+    content: "";
+    height: calc(100% - 1.35rem);
+    left: 0.55rem;
+    opacity: 0.22;
+    position: absolute;
+    top: 0.675rem;
+    width: 2px;
 }
 
 .faucet-panel__card:hover {
-    border-color: rgba(71, 97, 78, 0.55);
-    box-shadow: 0 4px 20px rgba(44, 27, 18, 0.08);
+    background: #ffffff;
+    border-color: rgba(71, 97, 78, 0.5);
+    box-shadow: 0 8px 24px rgba(44, 27, 18, 0.08);
     transform: translateY(-1px);
 }
 
 .faucet-panel__card-head {
-    align-items: baseline;
+    align-items: flex-start;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     justify-content: space-between;
+}
+
+.faucet-panel__brand {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.faucet-panel__logo {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid rgba(44, 27, 18, 0.1);
+    border-radius: 7px;
+    box-shadow: 0 1px 8px rgba(44, 27, 18, 0.06);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+}
+
+.faucet-panel__logo img {
+    display: block;
+    height: 1.3rem;
+    object-fit: contain;
+    width: 1.3rem;
+}
+
+.faucet-panel__brand-copy {
+    display: grid;
+    min-width: 0;
 }
 
 .faucet-panel__card-head strong {
     color: #2c1b12;
     font-size: 0.92rem;
     font-weight: 700;
+    line-height: 1.05;
+    min-width: 0;
 }
 
 .faucet-panel__card-amount {
-    color: var(--crypto-positive);
+    background: rgba(71, 97, 78, 0.09);
+    border: 1px solid rgba(71, 97, 78, 0.16);
+    border-radius: 999px;
+    color: #47614e;
     font-family: var(--crypto-mono);
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0.38rem 0.55rem;
     white-space: nowrap;
 }
 
@@ -131,13 +185,28 @@
 }
 
 .faucet-panel__card-cta {
+    align-items: center;
     color: #8a4d34;
+    display: flex;
     font-size: 0.66rem;
     font-weight: 800;
+    gap: 0.35rem;
+    justify-content: space-between;
     letter-spacing: 0.1em;
     margin-top: auto;
-    padding-top: 0.35rem;
+    padding-top: 0.1rem;
     text-transform: uppercase;
+}
+
+.faucet-panel__card-cta span {
+    align-items: center;
+    border: 1px solid rgba(138, 77, 52, 0.22);
+    border-radius: 999px;
+    display: inline-flex;
+    height: 1.75rem;
+    justify-content: center;
+    margin-left: auto;
+    width: 1.75rem;
 }
 
 .faucet-panel--compact {

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artisanal Brew — 3D WebGL Experience Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --surface: #fbf9f4; --ink: #2d2421; --accent: #8d6f55;
+            --muted: #746a63; --line: #d8d0c4; --charcoal: #1f1a18; --white: #fffdf9;
+            --font-sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --font-display: 'Playfair Display', Georgia, serif;
+            --crypto-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: #fbf9f4; color: var(--ink); font-family: var(--font-sans); }
+
+        /* 3D Viewport */
+        .home-webgl-viewport { background: transparent; perspective: 1200px; perspective-origin: 50% 50%; position: relative; }
+        .home-webgl-canvas { display: block; height: 100vh; height: 100dvh; left: 0; position: fixed; top: 0; width: 100vw; z-index: 0; }
+        .home-webgl-content { position: relative; transform-style: preserve-3d; z-index: 1; }
+
+        /* Depth layers */
+        .home-webgl-content .editorial-hero        { transform: translateZ(80px); }
+        .home-webgl-content .ledger-section        { transform: translateZ(40px); }
+        .home-webgl-content .recruiter-showcase--offerings { transform: translateZ(100px); }
+        .home-webgl-content .recruiter-showcase--provenance { transform: translateZ(60px); }
+        .home-webgl-content .stakingband-section   { transform: translateZ(20px); }
+        .home-webgl-content .journal-preview       { transform: translateZ(50px); }
+
+        /* Transparent backgrounds */
+        .home-webgl-content .editorial-hero,
+        .home-webgl-content .ledger-section,
+        .home-webgl-content .recruiter-showcase,
+        .home-webgl-content .stakingband-section,
+        .home-webgl-content .journal-preview { background: transparent !important; }
+
+        .home-webgl-content .recruiter-offering-card { background: var(--white); }
+
+        /* Hide CSS rings — WebGL renders 3D torus */
+        .stakingband-ring, .stakingband-ring--outer { display: none !important; }
+
+        /* ── Hero ── */
+        .editorial-hero {
+            box-sizing: border-box; display: grid; gap: clamp(2rem, 5vw, 5rem);
+            grid-template-columns: minmax(0, 1fr); isolation: isolate;
+            min-height: 100vh; min-height: 100dvh; overflow: hidden;
+            padding: calc(4.75rem + clamp(1.25rem, 3vw, 3rem)) clamp(1.25rem, 3vw, 3rem) clamp(1.25rem, 3vw, 3rem);
+            position: relative; width: 100vw; background: transparent !important;
+        }
+        .editorial-hero::after {
+            animation: hero-reveal 1.8s 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+            clip-path: inset(0 0 42% 0); content: ""; inset: 0;
+            pointer-events: none; position: absolute; z-index: 0;
+            background: linear-gradient(180deg, rgba(31,26,24,0.25) 0%, rgba(31,26,24,0.55) 100%);
+        }
+        @keyframes hero-reveal { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0% 0); } }
+
+        .hero__content { align-self: end; max-width: 60rem; position: relative; z-index: 1; }
+        .editorial-hero .hero__content h1 {
+            color: #fbf9f4; font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6.5vw, 5.25rem); line-height: 0.95;
+            text-shadow: 0 2px 20px rgba(31,26,24,0.45), 0 1px 4px rgba(31,26,24,0.35);
+        }
+        .editorial-hero .hero__content .lede {
+            color: #fbf9f4; font-family: "Times New Roman", Times, serif;
+            font-size: clamp(1.05rem, 1.8vw, 1.3rem); line-height: 1.65;
+            text-shadow: 0 2px 20px rgba(31,26,24,0.45), 0 1px 4px rgba(31,26,24,0.35);
+        }
+        .editorial-hero .hero__content .eyebrow {
+            color: rgba(251,249,244,0.72);
+            text-shadow: 0 1px 8px rgba(31,26,24,0.4);
+        }
+        .headline-italic { font-style: italic; }
+        .hero__actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+        .button {
+            align-items: center; border: 1px solid var(--ink); border-radius: 999px;
+            display: inline-flex; font-size: 0.85rem; font-weight: 600;
+            justify-content: center; letter-spacing: 0.08em; min-height: 3rem;
+            padding: 0.75rem 1.35rem; text-decoration: none; text-transform: uppercase;
+        }
+        .button--dark { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+        .button--ghost { background: transparent; border-color: rgba(251,249,244,0.85); color: #fbf9f4; }
+
+        /* ── Concept ── */
+        .ledger-section {
+            margin-inline: auto; max-width: 820px;
+            padding-block: clamp(4.5rem, 12vw, 8rem);
+            padding-inline: clamp(1.25rem, 4vw, 3rem);
+            text-align: left; position: relative; background: transparent !important;
+        }
+        .ledger-headline {
+            color: var(--charcoal); font-family: var(--font-display);
+            font-size: clamp(2.4rem, 10vw, 4.75rem); letter-spacing: -0.02em; margin: 0;
+            text-shadow: 0 1px 10px rgba(251, 249, 244, 0.35);
+        }
+        .ledger-body {
+            color: var(--muted); font-family: var(--font-sans);
+            font-size: clamp(0.95rem, 1.5vw, 1.05rem); line-height: 1.8;
+            margin-top: clamp(2rem, 5vw, 3rem); max-width: 34rem;
+            text-shadow: 0 1px 6px rgba(251, 249, 244, 0.25);
+        }
+        .ledger-strip {
+            align-items: center; border-bottom: 1px solid var(--line);
+            border-top: 1px solid var(--line); display: flex; gap: 0.75rem;
+            margin-top: clamp(2rem, 5vw, 3rem); padding-block: 0.8rem;
+        }
+        .ledger-strip__text {
+            color: var(--muted); font-family: var(--crypto-mono); font-size: 11px;
+            letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+        }
+        .crypto-dot { background: #47614e; border-radius: 50%; display: inline-block; height: 8px; width: 8px; }
+        .crypto-dot--pulse { animation: pulse 2.2s ease-out infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(71,97,78,0.45); }
+            70% { box-shadow: 0 0 0 7px rgba(71,97,78,0); }
+            100% { box-shadow: 0 0 0 0 rgba(71,97,78,0); }
+        }
+
+        /* ── Offerings ── */
+        .recruiter-showcase {
+            padding-block: clamp(4rem, 10vw, 8rem);
+            padding-inline: clamp(1.25rem, 4vw, 3rem); background: transparent !important;
+        }
+        .section-heading { max-width: 58rem; }
+        .eyebrow {
+            color: var(--accent); font-size: 0.75rem; font-weight: 600;
+            letter-spacing: 0.18em; margin-bottom: 1rem; text-transform: uppercase;
+        }
+        .recruiter-offering-grid {
+            display: grid; gap: clamp(1rem, 2vw, 1.5rem);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: clamp(2.5rem, 6vw, 5rem);
+        }
+        .recruiter-offering-card {
+            background: var(--white); border: 1px solid var(--line); border-radius: 1rem;
+            box-shadow: 0 12px 40px rgba(33,27,23,0.06); min-height: 420px;
+            overflow: hidden; padding: clamp(0.85rem, 1.5vw, 1.1rem);
+        }
+        .recruiter-card__visual {
+            border-radius: clamp(1rem, 1.6vw, 1.7rem); min-height: 200px;
+            background: var(--line); position: relative;
+        }
+        .recruiter-card__content { padding: 1.25rem 0.5rem 0.5rem; }
+        .recruiter-card__content h3 {
+            color: var(--ink); font-family: var(--font-display); font-size: 1.5rem; margin: 0.5rem 0;
+        }
+        .recruiter-card__content p { color: var(--muted); line-height: 1.6; }
+        .recruiter-card__meta {
+            border-top: 1px solid var(--line); color: var(--muted); display: block;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+            margin-top: 1rem; padding-top: 0.75rem; text-transform: uppercase;
+        }
+
+        /* ── Provenance ── */
+        .provenance-rail { margin-top: clamp(3rem, 7vw, 5rem); position: relative; }
+        .provenance-stations {
+            display: grid; gap: clamp(2.5rem, 8vw, 4rem);
+            list-style: none; margin: 0; padding: 0;
+        }
+        .provenance-station { padding-left: 3rem; position: relative; }
+        .provenance-station__node {
+            background: var(--surface); border: 1.5px solid var(--line);
+            border-radius: 50%; height: 12px; left: 0; position: absolute;
+            top: 0.15rem; width: 12px;
+        }
+        .provenance-station__mono {
+            color: var(--muted); font-family: var(--crypto-mono); font-size: 11px;
+            letter-spacing: 0.08em; margin: 0 0 0.6rem; text-transform: uppercase;
+        }
+        .provenance-station__copy {
+            color: var(--ink); font-family: var(--font-display); font-size: 1.25rem;
+            line-height: 1.35; margin: 0;
+            text-shadow: 0 1px 10px rgba(251, 249, 244, 0.35);
+        }
+
+        /* ── Staking ── */
+        .stakingband-section {
+            box-sizing: border-box; margin-inline: calc(50% - 50vw);
+            overflow: hidden; padding-block: clamp(4.5rem, 12vw, 8rem);
+            padding-inline: clamp(1.25rem, 4vw, 3rem);
+            position: relative; width: 100vw; background: transparent !important;
+        }
+        .stakingband-content {
+            margin-inline: auto; max-width: 720px;
+            position: relative; text-align: center; z-index: 1;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+        }
+        .stakingband-headline {
+            color: var(--white); font-family: var(--font-display);
+            font-size: clamp(2.2rem, 9vw, 4rem); margin: 0;
+        }
+        .stakingband-body {
+            color: rgba(255,253,249,0.65); line-height: 1.7;
+            margin: 1.5rem auto 0; max-width: 32rem;
+        }
+        .stakingband-stats {
+            border-top: 1px solid rgba(255,253,249,0.14);
+            margin-top: clamp(2.5rem, 6vw, 4rem);
+            display: grid; grid-template-columns: repeat(3, 1fr);
+        }
+        .stakingband-stat {
+            border-right: 1px solid rgba(255,253,249,0.14); padding-block: 1.75rem;
+        }
+        .stakingband-stat:last-child { border-right: none; }
+        .stakingband-stat__number {
+            color: var(--white); font-family: var(--font-display);
+            font-size: clamp(2.5rem, 8vw, 3.5rem); line-height: 1; margin: 0;
+        }
+        .stakingband-stat__caption {
+            color: rgba(255,253,249,0.5); font-family: var(--crypto-mono);
+            font-size: 11px; letter-spacing: 0.08em; margin: 0.6rem 0 0; text-transform: uppercase;
+        }
+
+        /* ── Journal ── */
+        .journal-preview { background: transparent !important; }
+        .recruiter-journal-index__layout {
+            display: grid; gap: clamp(2rem, 5vw, 4rem);
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+            padding-inline: clamp(1.25rem, 4vw, 3rem);
+        }
+        .recruiter-journal-index__masthead h2 {
+            font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem);
+            text-shadow: 0 1px 10px rgba(251, 249, 244, 0.35);
+        }
+        .recruiter-kicker {
+            color: var(--muted); line-height: 1.7; margin-top: 1rem;
+            text-shadow: 0 1px 6px rgba(251, 249, 244, 0.25);
+        }
+        .recruiter-journal-entry { border-bottom: 1px solid var(--line); padding-block: 1.5rem; }
+        .recruiter-journal-entry__link {
+            align-items: center; color: var(--ink); display: grid;
+            gap: 1.5rem; grid-template-columns: auto 1fr auto;
+            text-decoration: none;
+        }
+        .recruiter-journal-entry__number {
+            color: var(--muted); font-family: var(--crypto-mono); font-size: 0.75rem;
+        }
+        .recruiter-journal-entry__text-reveal h3 {
+            font-family: var(--font-display); font-size: 1.35rem; margin: 0;
+        }
+        .recruiter-journal-entry__text-reveal p {
+            color: var(--muted); line-height: 1.6; margin: 0.25rem 0 0;
+            text-shadow: 0 1px 6px rgba(251, 249, 244, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="home-webgl-viewport">
+        <canvas id="home-webgl-canvas" class="home-webgl-canvas" aria-hidden="true"></canvas>
+
+        <div class="home-webgl-content">
+            <!-- HERO -->
+            <section class="hero editorial-hero editorial-hero--coffee" data-webgl-zone="hero">
+                <div class="hero__content">
+                    <p class="eyebrow">Est. 2024</p>
+                    <h1>A sanctuary for the <span class="headline-italic">patient brewer.</span></h1>
+                    <p class="lede">
+                        Embrace the slow living movement with seasonal coffee, manual brewing, and pastry made for lingering.
+                    </p>
+                    <div class="hero__actions">
+                        <a class="button button--dark" href="#">Explore the menu</a>
+                        <a class="button button--ghost" href="#">Our story</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONCEPT -->
+            <section class="section ledger-section" data-webgl-zone="concept">
+                <h2 class="ledger-headline">A fully on-chain <em class="headline-italic">experience.</em></h2>
+                <p class="ledger-body">
+                    Every order is sealed on Ethereum Sepolia&mdash;immutable, transparent, and yours to verify.
+                    The roast is a ritual; the receipt is forever.
+                </p>
+                <div class="ledger-strip">
+                    <span class="crypto-dot crypto-dot--pulse"></span>
+                    <span class="ledger-strip__text">SEPOLIA &middot; BLOCK 0x84A2F1 &middot; HOUSE ESPRESSO &middot; 0.0031 ETH &middot; CONFIRMED</span>
+                </div>
+            </section>
+
+            <!-- OFFERINGS -->
+            <section class="section recruiter-showcase recruiter-showcase--offerings" data-webgl-zone="offerings">
+                <div class="section-heading">
+                    <p class="eyebrow">The Flight</p>
+                    <h2>A short menu, poured slowly.</h2>
+                </div>
+                <div class="recruiter-offering-grid">
+                    <article class="recruiter-offering-card">
+                        <div class="recruiter-card__visual"></div>
+                        <div class="recruiter-card__content">
+                            <p class="eyebrow">Espresso</p>
+                            <h3>House Espresso</h3>
+                            <p>A bright double shot with chocolate notes and a satin finish.</p>
+                            <span class="recruiter-card__meta">Chocolate &middot; Satin &middot; Bright</span>
+                        </div>
+                    </article>
+                    <article class="recruiter-offering-card">
+                        <div class="recruiter-card__visual"></div>
+                        <div class="recruiter-card__content">
+                            <p class="eyebrow">Latte</p>
+                            <h3>Vanilla Cloud Latte</h3>
+                            <p>Steamed milk, espresso, and a quiet vanilla finish.</p>
+                            <span class="recruiter-card__meta">Vanilla &middot; Cloud &middot; Soft</span>
+                        </div>
+                    </article>
+                    <article class="recruiter-offering-card">
+                        <div class="recruiter-card__visual"></div>
+                        <div class="recruiter-card__content">
+                            <p class="eyebrow">Cold Brew</p>
+                            <h3>Midnight Cold Brew</h3>
+                            <p>Slow-steeped and polished with a deep roasted profile.</p>
+                            <span class="recruiter-card__meta">Slow &middot; Roasted &middot; Deep</span>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- PROVENANCE -->
+            <section class="section recruiter-showcase recruiter-showcase--provenance" data-webgl-zone="provenance">
+                <div class="section-heading">
+                    <p class="eyebrow">Provenance</p>
+                    <h2>From soil <em class="headline-italic">to signature.</em></h2>
+                </div>
+                <div class="provenance-rail">
+                    <ol class="provenance-stations">
+                        <li class="provenance-station">
+                            <span class="provenance-station__node"></span>
+                            <p class="provenance-station__mono">01 &middot; ORIGIN</p>
+                            <p class="provenance-station__copy">High-altitude lots, named farms, single harvests.</p>
+                        </li>
+                        <li class="provenance-station">
+                            <span class="provenance-station__node"></span>
+                            <p class="provenance-station__mono">02 &middot; ROAST</p>
+                            <p class="provenance-station__copy">Small batches, logged curve by curve.</p>
+                        </li>
+                        <li class="provenance-station">
+                            <span class="provenance-station__node"></span>
+                            <p class="provenance-station__mono">03 &middot; CUP</p>
+                            <p class="provenance-station__copy">Brewed by hand, timed to the second.</p>
+                        </li>
+                        <li class="provenance-station">
+                            <span class="provenance-station__node"></span>
+                            <p class="provenance-station__mono">04 &middot; CHAIN</p>
+                            <p class="provenance-station__copy">Sealed on Sepolia. Yours, verifiably, forever.</p>
+                        </li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- STAKING -->
+            <section class="section stakingband-section" data-webgl-zone="staking">
+                <div class="stakingband-content">
+                    <p class="eyebrow">The COFFEE Token</p>
+                    <h2 class="stakingband-headline">Patience, <em class="headline-italic">compounded.</em></h2>
+                    <p class="stakingband-body">
+                        Stake COFFEE, earn COFFEE. Your rewards accrue on Sepolia while the next roast is still in the drum.
+                    </p>
+                    <div class="stakingband-stats">
+                        <div class="stakingband-stat">
+                            <p class="stakingband-stat__number">100</p>
+                            <p class="stakingband-stat__caption">% On-chain &middot; Sepolia</p>
+                        </div>
+                        <div class="stakingband-stat">
+                            <p class="stakingband-stat__number">24</p>
+                            <p class="stakingband-stat__caption">Hours a day, accruing</p>
+                        </div>
+                        <div class="stakingband-stat">
+                            <p class="stakingband-stat__number">0</p>
+                            <p class="stakingband-stat__caption">Days locked &middot; Unstake anytime</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- JOURNAL -->
+            <section class="section recruiter-showcase journal-preview" data-webgl-zone="journal">
+                <div class="recruiter-journal-index__layout">
+                    <aside class="recruiter-journal-index__masthead">
+                        <p class="eyebrow">Journal</p>
+                        <h2>Notes from the counter.</h2>
+                        <p class="recruiter-kicker">
+                            A quieter editorial system: structured like a tasting archive,
+                            animated like a product interface, and paced for readers who linger.
+                        </p>
+                    </aside>
+                    <div class="recruiter-journal-index__list">
+                        <article class="recruiter-journal-entry">
+                            <a class="recruiter-journal-entry__link" href="#">
+                                <span class="recruiter-journal-entry__number">01</span>
+                                <span class="recruiter-journal-entry__text-reveal">
+                                    <h3>The Art of the Pour Over</h3>
+                                    <p>Why patience in brewing translates to patience in life.</p>
+                                </span>
+                                <span>5 min &middot; ↗</span>
+                            </a>
+                        </article>
+                        <article class="recruiter-journal-entry">
+                            <a class="recruiter-journal-entry__link" href="#">
+                                <span class="recruiter-journal-entry__number">02</span>
+                                <span class="recruiter-journal-entry__text-reveal">
+                                    <h3>On-Chain Receipts</h3>
+                                    <p>How we seal every roast on Ethereum Sepolia.</p>
+                                </span>
+                                <span>8 min &middot; ↗</span>
+                            </a>
+                        </article>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="src/ThisCafeteria.Web/wwwroot/js/heroWebGL.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.heroWebGL) {
+                window.heroWebGL.init('home-webgl-canvas');
+            }
+        });
+    </script>
+</body>
+</html>

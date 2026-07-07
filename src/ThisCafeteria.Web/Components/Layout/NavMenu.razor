@@ -41,7 +41,7 @@
             Yield
         </NavLink>
 
-        <NavLink class="nav-link" href="story" @onclick="CloseNav">
+        <NavLink class="nav-link nav-link--about" href="story" @onclick="CloseNav">
             About
         </NavLink>
 
@@ -72,7 +72,7 @@
                             aria-haspopup="dialog"
                             @onclick="OpenWalletModal">
                         <img class="eth-mark" src="/images/eth_logo.png" alt="" aria-hidden="true" width="27" height="27" />
-                        Login
+                        <span class="nav-login__label">Login</span>
                     </button>
                 </NotAuthorized>
             </AuthorizeView>
