@@ -48,6 +48,21 @@
         <header class="products-shop__header products-shop__header--@displayedSection" data-animate="fade-up">
             <h1 class="products-shop__title">@((MarkupString)TitleFor(displayedSection).Replace("&", "<span class=\"products-shop__amp\">&amp;</span>"))</h1>
             <p class="products-shop__lede">@LedeFor(displayedSection)</p>
+            <div class="products-shop__testnet">
+                <span class="products-shop__testnet-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 1.5 5.25 12.4 12 16.4l6.75-4L12 1.5Z" />
+                        <path d="M5.25 13.8 12 22.5l6.75-8.7L12 17.8l-6.75-4Z" />
+                    </svg>
+                    Sepolia testnet
+                </span>
+                <p class="products-shop__testnet-copy">
+                    No real crypto needed — checkout runs on free Sepolia test ETH. Grab some from the
+                    <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener noreferrer">Google Cloud</a>,
+                    <a href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" rel="noopener noreferrer">Alchemy</a> or
+                    <a href="https://faucet.chainstack.com/sepolia-testnet-faucet" target="_blank" rel="noopener noreferrer">Chainstack</a> faucet.
+                </p>
+            </div>
             <button type="button" class="products-shop__filter" aria-label="Filters">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <line x1="4" y1="21" x2="4" y2="14" />
