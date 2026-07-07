@@ -114,16 +114,40 @@
             });
         };
 
+        // Some mobile browsers (notably iOS Safari under Low Power Mode, or when
+        // the <video> wasn't fully buffered the instant the autoplay attribute was
+        // evaluated) silently ignore attribute-only autoplay. A muted video is always
+        // allowed to be started via script, so retry play() explicitly and again
+        // whenever the tab regains visibility.
+        window.queueHeroVideo = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const video = document.querySelector('.hero-video');
+                    if (video && video.paused) {
+                        video.play().catch(() => {});
+                    }
+                });
+            });
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                window.queueHeroVideo();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', window.queueAnimations);
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
         document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
+        document.addEventListener('DOMContentLoaded', window.queueHeroVideo);
 
         const onEnhancedLoad = () => {
             window.queueAnimations();
             window.queuePublicHeader();
             window.queueRecruiterMotion();
             window.queueHeroWebGL();
+            window.queueHeroVideo();
         };
 
         if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
