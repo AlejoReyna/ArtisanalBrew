@@ -794,7 +794,8 @@ body.product-detail-view .product-detail-card__title h1 {
 
 .editorial-hero--coffee {
     margin-bottom: clamp(1rem, 3vw, 2rem);
-    padding-bottom: 0;
+    /* nudges the bottom-anchored hero content up off the true viewport edge */
+    padding-bottom: 15px;
 }
 
 .editorial-hero--coffee::before {
