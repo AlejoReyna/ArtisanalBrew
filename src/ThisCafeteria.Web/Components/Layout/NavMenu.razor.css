@@ -175,12 +175,34 @@
     z-index: 1;
 }
 
-.nav-login__address {
+.nav-login__text-stack {
+    display: grid;
+    position: relative;
+    z-index: 1;
+}
+
+.nav-login__address,
+.nav-login__chain {
     font-family: var(--crypto-mono);
     font-size: 0.76rem;
     font-weight: 500;
+    grid-area: 1 / 1;
     letter-spacing: 0.02em;
     text-transform: none;
+    transition: opacity 180ms ease;
+    white-space: nowrap;
+}
+
+.nav-login__chain {
+    opacity: 0;
+}
+
+.nav-login:hover .nav-login__address {
+    opacity: 0;
+}
+
+.nav-login:hover .nav-login__chain {
+    opacity: 1;
 }
 
 .nav-cart {

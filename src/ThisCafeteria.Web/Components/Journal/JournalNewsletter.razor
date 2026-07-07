@@ -1,15 +1,18 @@
 @using ThisCafeteria.Web.Catalog
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+<div class="journal-newsletter__progress" aria-hidden="true">
+    <div class="journal-newsletter__progress-bar"></div>
+</div>
 
 <article class="journal-newsletter">
     <section class="journal-newsletter__cover" aria-label="Article header">
-        <div class="journal-newsletter__stamp" aria-hidden="true">
-            <span class="journal-newsletter__stamp-inner">AB</span>
-        </div>
+        <a class="journal-newsletter__back" href="journal">
+            <span aria-hidden="true">&larr;</span> Back to the Journal
+        </a>
 
         <div class="journal-newsletter__cover-copy" data-animate="fade-up">
-            <a class="journal-newsletter__back" href="journal">
-                <span aria-hidden="true">&larr;</span> Back to the Journal
-            </a>
             <p class="journal-newsletter__brand">Artisanal Brew Journal</p>
             <p class="journal-kicker">@Article.Kicker</p>
             <h1>@Article.Title</h1>
@@ -124,4 +127,24 @@
 
     [Parameter]
     public IReadOnlyList<JournalArticle> RelatedArticles { get; set; } = Array.Empty<JournalArticle>();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("journalProgress.init");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("journalProgress.destroy");
+        }
+        catch
+        {
+            // JS runtime may already be disconnected during navigation or prerender disposal.
+        }
+    }
 }

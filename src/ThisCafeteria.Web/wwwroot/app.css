@@ -1551,106 +1551,109 @@ body.product-detail-view .product-detail-card__title h1 {
     width: 100%;
 }
 
+.journal-newsletter__progress {
+    background: transparent;
+    height: 3px;
+    left: 0;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 60;
+}
+
+.journal-newsletter__progress-bar {
+    background: #c19a6b;
+    height: 100%;
+    transition: width 80ms linear;
+    width: 0%;
+}
+
 .journal-newsletter__cover {
-    background:
-        radial-gradient(circle at top right, rgba(141, 111, 85, 0.06), transparent 42%),
-        linear-gradient(180deg, var(--white) 0%, var(--surface) 100%);
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    isolation: isolate;
+    justify-content: flex-end;
     margin-inline: calc(50% - 50vw);
-    max-height: 100dvh;
-    min-height: 100dvh;
-    overflow: hidden;
-    padding-top: 4.75rem;
+    min-height: 50dvh;
+    padding-bottom: clamp(2.5rem, 6vw, 4rem);
     position: relative;
     width: 100vw;
 }
 
-.journal-newsletter__stamp {
-    align-items: center;
-    background: rgba(141, 111, 85, 0.12);
-    border: 2px dashed rgba(141, 111, 85, 0.45);
-    border-radius: 50%;
-    display: flex;
-    height: 4.5rem;
-    justify-content: center;
+.journal-newsletter__cover::after {
+    background:
+        linear-gradient(180deg, rgba(31, 26, 24, 0.14) 0%, rgba(31, 26, 24, 0.26) 55%, rgba(31, 26, 24, 0.8) 100%);
+    content: "";
+    inset: 0;
+    pointer-events: none;
     position: absolute;
-    right: clamp(1.25rem, 4vw, 3rem);
-    top: calc(4.75rem + clamp(1rem, 3vw, 2rem));
-    width: 4.5rem;
-    z-index: 2;
-}
-
-.journal-newsletter__stamp-inner {
-    color: var(--accent);
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    transform: rotate(-12deg);
+    z-index: -1;
 }
 
 .journal-newsletter__cover-copy {
-    align-content: center;
     box-sizing: border-box;
     display: grid;
-    flex: 1 1 0;
     justify-items: center;
     margin-inline: auto;
     max-width: 68rem;
-    min-height: 0;
-    padding-block: clamp(0.75rem, 2vw, 1.5rem);
     padding-inline: clamp(1.25rem, 4vw, 3rem);
     text-align: center;
     width: 100%;
 }
 
 .journal-newsletter__back {
-    color: var(--muted);
+    color: rgba(255, 253, 249, 0.92);
     display: inline-block;
     font-size: 0.72rem;
     font-weight: 700;
+    left: clamp(1.25rem, 4vw, 3rem);
     letter-spacing: 0.14em;
-    margin-bottom: 1.5rem;
+    position: absolute;
     text-decoration: none;
     text-transform: uppercase;
+    top: 1.25rem;
     transition: color 200ms ease;
+    z-index: 1;
 }
 
 .journal-newsletter__back:hover {
-    color: var(--ink);
+    color: var(--white);
 }
 
 .journal-newsletter__brand {
-    color: var(--accent);
+    color: rgba(255, 253, 249, 0.85);
     font-family: var(--font-display);
     font-size: clamp(1rem, 2vw, 1.25rem);
     font-weight: 600;
     letter-spacing: 0.04em;
-    margin: 0 0 1rem;
+    margin: 0 0 0.6rem;
+}
+
+.journal-newsletter__cover-copy .journal-kicker {
+    color: rgba(255, 253, 249, 0.62);
+    margin-bottom: 0.6rem;
 }
 
 .journal-newsletter__cover-copy h1 {
-    color: var(--ink);
-    font-size: clamp(2.25rem, 5.5vw, 5.5rem);
-    line-height: 0.95;
+    color: var(--white);
+    font-size: clamp(1.85rem, 4vw, 3.75rem);
+    line-height: 1;
     margin: 0;
 }
 
 .journal-newsletter__lede {
-    color: var(--muted);
+    color: rgba(255, 253, 249, 0.82);
     font-family: var(--font-display);
-    font-size: clamp(1.1rem, 2vw, 1.55rem);
+    font-size: clamp(1rem, 1.5vw, 1.25rem);
     font-style: italic;
-    line-height: 1.65;
-    margin: 1.35rem auto 0;
+    line-height: 1.55;
+    margin: 0.9rem auto 0;
     max-width: 48rem;
 }
 
 .journal-newsletter__meta {
-    color: var(--muted);
+    color: rgba(255, 253, 249, 0.65);
     display: flex;
     flex-wrap: wrap;
     font-size: 0.76rem;
@@ -1658,20 +1661,17 @@ body.product-detail-view .product-detail-card__title h1 {
     gap: 0.55rem;
     justify-content: center;
     letter-spacing: 0.1em;
-    margin-top: 1.25rem;
+    margin-top: 0.9rem;
     text-transform: uppercase;
 }
 
 .journal-newsletter__cover-image {
-    aspect-ratio: auto;
     background-position: center 46%;
     background-size: cover;
-    border-radius: 0;
-    filter: saturate(0.82) contrast(1.1);
-    flex: 1 1 0;
-    margin: 0;
-    min-height: 0;
-    width: 100%;
+    filter: saturate(0.82) contrast(1.08);
+    inset: 0;
+    position: absolute;
+    z-index: -2;
 }
 
 .journal-newsletter__scroll {
@@ -1944,16 +1944,16 @@ body.product-detail-view .product-detail-card__title h1 {
     }
 
     .journal-newsletter__cover-copy h1 {
-        font-size: clamp(2rem, 8vw, 3.25rem);
+        font-size: clamp(1.75rem, 7vw, 2.75rem);
     }
 }
 
 .journal-footer {
     align-items: center;
-    background: var(--surface);
-    border-top: 1px solid var(--line);
+    background: var(--charcoal);
+    border-top: 1px solid rgba(255, 253, 249, 0.12);
     box-sizing: border-box;
-    color: var(--ink);
+    color: var(--white);
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -1966,7 +1966,7 @@ body.product-detail-view .product-detail-card__title h1 {
 
 .journal-footer a,
 .journal-footer__logo {
-    color: var(--ink);
+    color: var(--white);
 }
 
 .journal-footer__logo {
@@ -1984,7 +1984,7 @@ body.product-detail-view .product-detail-card__title h1 {
 
 .journal-footer__icons a {
     align-items: center;
-    color: var(--muted);
+    color: rgba(255, 253, 249, 0.65);
     display: inline-flex;
     height: 44px;
     justify-content: center;
@@ -1993,11 +1993,11 @@ body.product-detail-view .product-detail-card__title h1 {
 }
 
 .journal-footer__icons a:hover {
-    color: var(--ink);
+    color: var(--white);
 }
 
 .journal-footer__copyright {
-    color: var(--muted);
+    color: rgba(255, 253, 249, 0.5);
     font-size: 0.72rem;
 }
 

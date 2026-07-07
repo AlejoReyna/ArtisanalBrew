@@ -2,7 +2,7 @@ namespace ThisCafeteria.Web.Catalog;
 
 public static class JournalArticleContents
 {
-    public const string AuthorName = "Alexis Reyna";
+    public const string AuthorName = "Claude Code";
 
     private static readonly IReadOnlyDictionary<string, JournalArticleBody> Bodies =
         new Dictionary<string, JournalArticleBody>(StringComparer.OrdinalIgnoreCase)
