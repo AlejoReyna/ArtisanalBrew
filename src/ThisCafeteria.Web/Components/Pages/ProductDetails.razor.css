@@ -368,15 +368,91 @@
     z-index: 1000;
 }
 
-/* Desktop */
+/* Desktop: full-viewport split view — image left, info sheet right */
 @media (min-width: 961px) {
     .product-detail-card {
-        max-width: 480px;
-        margin: 0 auto;
+        flex-direction: row;
+        height: 100dvh;
+        inset: 0;
+        min-height: 100dvh;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        z-index: 100;
+    }
+
+    .product-detail-card__media {
+        flex: 1 1 58%;
+        height: 100dvh;
+        min-width: 0;
     }
 
     .product-detail-card__image {
-        height: 50dvh;
+        height: 100%;
+        width: 100%;
+    }
+
+    .product-detail-card__back a,
+    .product-detail-card__action-icon {
+        height: 2.75rem;
+        top: 1.5rem;
+        width: 2.75rem;
+    }
+
+    .product-detail-card__back a {
+        left: 1.5rem;
+    }
+
+    .product-detail-card__action-icon {
+        right: 1.5rem;
+    }
+
+    .product-detail-card__sheet {
+        align-items: center;
+        border-left: 1px solid rgba(45, 36, 33, 0.08);
+        border-radius: 0;
+        flex: 1 1 42%;
+        gap: 1.4rem;
+        justify-content: center;
+        margin-top: 0;
+        min-width: 0;
+        overflow-y: auto;
+        padding: clamp(2.5rem, 5vw, 4.5rem) clamp(2rem, 4vw, 4rem);
+    }
+
+    .product-detail-card__sheet > * {
+        max-width: 30rem;
+        width: 100%;
+    }
+
+    .product-detail-card__tag {
+        font-size: 0.72rem;
+    }
+
+    .product-detail-card__name {
+        font-size: clamp(2.2rem, 3.2vw, 3rem);
+    }
+
+    .product-detail-card__price-int {
+        font-size: 2.2rem;
+    }
+
+    .product-detail-card__price-symbol,
+    .product-detail-card__price-frac {
+        font-size: 1.05rem;
+    }
+
+    .product-detail-card__desc {
+        font-size: 1rem;
+    }
+
+    .product-detail-card__highlight {
+        font-size: 0.78rem;
+    }
+
+    .product-detail-card__buybar {
+        margin-top: 0.75rem;
+        padding-top: 1.75rem;
     }
 }
 

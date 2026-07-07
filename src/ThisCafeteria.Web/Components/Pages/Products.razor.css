@@ -82,19 +82,209 @@
     white-space: nowrap;
 }
 
+/* ── Roastery paper shop: shared tokens + banner (all viewports) ── */
+.products-shop {
+    --shop-cream: var(--surface, #fbf9f4);
+    --shop-ink: var(--ink, #2d2421);
+    --shop-muted: var(--muted, #746a63);
+    --shop-line: var(--line, #d8d0c4);
+    --shop-accent: #b8532e;
+    --shop-tint-beans: #b8532e;
+    --shop-tint-equipment: #6f7a5e;
+    --shop-tint-ceramics: #b08d6a;
+    --shop-serif: var(--font-display, 'Playfair Display', Georgia, serif);
+}
+
+.products-shop__header {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+    justify-content: center;
+    min-height: 12.5rem;
+    overflow: hidden;
+    padding: 3.5rem 1rem 2.75rem;
+    position: relative;
+}
+
+/* animated coffee backdrop with sepia grade */
+.products-shop__header::before {
+    animation: shop-banner-pan 26s ease-in-out infinite alternate;
+    background: center / cover no-repeat;
+    content: "";
+    filter: sepia(0.85) saturate(1.15) brightness(0.55) contrast(1.05);
+    inset: -10%;
+    position: absolute;
+    z-index: -1;
+}
+
+.products-shop__header--All::before {
+    background-image: url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80');
+}
+
+.products-shop__header--Beans::before {
+    background-image: url('https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80');
+}
+
+.products-shop__header--BrewingEquipment::before {
+    background-image: url('https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=80');
+}
+
+.products-shop__header--CeramicsAndGoods::before {
+    background-image: url('https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80');
+}
+
+@keyframes shop-banner-pan {
+    from {
+        transform: scale(1) translateX(0);
+    }
+
+    to {
+        transform: scale(1.14) translateX(-2.5%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .products-shop__header::before {
+        animation: none;
+    }
+}
+
+.products-shop__title {
+    color: #fbf9f4;
+    font-family: var(--shop-serif);
+    font-size: clamp(2.5rem, 12vw, 3.6rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+    margin: 0 0 0.7rem;
+    text-align: center;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+/* plain ampersand instead of Playfair's swash glyph */
+.products-shop__title ::deep .products-shop__amp {
+    font-family: var(--font-sans);
+    font-size: 0.72em;
+    font-weight: 400;
+}
+
+.products-shop__lede {
+    color: rgba(251, 249, 244, 0.82);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 0 auto;
+    max-width: 20rem;
+    text-align: center;
+}
+
+/* frosted testnet notice: no real crypto here, only faucet ETH */
+.products-shop__testnet {
+    align-items: center;
+    backdrop-filter: blur(8px);
+    background: rgba(20, 14, 11, 0.52);
+    border: 1px solid rgba(251, 249, 244, 0.16);
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin: 1.15rem auto 0;
+    max-width: 24rem;
+    padding: 0.7rem 1rem 0.8rem;
+}
+
+.products-shop__testnet-badge {
+    align-items: center;
+    background: #627ee9;
+    border-radius: 999px;
+    color: #fbf9f4;
+    display: inline-flex;
+    font-family: var(--font-sans);
+    font-size: 0.58rem;
+    font-weight: 700;
+    gap: 0.32rem;
+    letter-spacing: 0.14em;
+    padding: 0.28rem 0.7rem;
+    text-transform: uppercase;
+}
+
+.products-shop__testnet-copy {
+    color: rgba(251, 249, 244, 0.85);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 400;
+    line-height: 1.55;
+    margin: 0;
+    text-align: center;
+}
+
+.products-shop__testnet-copy a {
+    color: #ecc79c;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 160ms ease;
+}
+
+.products-shop__testnet-copy a:hover {
+    color: #fbf9f4;
+}
+
+.products-shop__filter {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    bottom: 0.9rem;
+    color: #fbf9f4;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 0.3rem;
+    padding: 0.25rem;
+    position: absolute;
+    right: 0.9rem;
+}
+
+.products-shop__filter-badge {
+    align-items: center;
+    background: var(--shop-accent);
+    border-radius: 50%;
+    color: #fbf9f4;
+    display: inline-flex;
+    font-family: var(--font-sans);
+    font-size: 0.55rem;
+    font-weight: 700;
+    height: 1rem;
+    justify-content: center;
+    min-width: 1rem;
+}
+
+.marketplace-card__wishlist {
+    align-items: center;
+    background: rgba(251, 249, 244, 0.85);
+    border-radius: 50%;
+    color: var(--shop-ink);
+    display: flex;
+    height: 1.9rem;
+    justify-content: center;
+    position: absolute;
+    right: 0.45rem;
+    top: 0.55rem;
+    width: 1.9rem;
+    z-index: 2;
+}
+
+.marketplace-card__wishlist svg {
+    height: 1rem;
+    width: 1rem;
+}
+
 /* ── Mobile product-listing-page: roastery paper edition ── */
 @media (max-width: 760px) {
     .products-shop {
-        --shop-cream: var(--surface, #fbf9f4);
-        --shop-ink: var(--ink, #2d2421);
-        --shop-muted: var(--muted, #746a63);
-        --shop-line: var(--line, #d8d0c4);
-        --shop-accent: #b8532e;
-        --shop-tint-beans: #b8532e;
-        --shop-tint-equipment: #6f7a5e;
-        --shop-tint-ceramics: #b08d6a;
-        --shop-serif: var(--font-display, 'Playfair Display', Georgia, serif);
-
         background-color: var(--shop-cream);
         color: var(--shop-ink);
         /* pulls the banner flush against the shortened mobile nav, closing the leftover whitespace above it */
@@ -104,125 +294,13 @@
     }
 
     .products-shop__header {
-        align-items: center;
-        display: flex;
-        flex-direction: column;
-        isolation: isolate;
-        justify-content: center;
         margin: -1.5rem 0 0;
-        min-height: 12.5rem;
-        overflow: hidden;
-        padding: 3.5rem 1rem 2.75rem;
-        position: relative;
-    }
-
-    /* animated coffee backdrop with sepia grade */
-    .products-shop__header::before {
-        animation: shop-banner-pan 26s ease-in-out infinite alternate;
-        background: center / cover no-repeat;
-        content: "";
-        filter: sepia(0.85) saturate(1.15) brightness(0.55) contrast(1.05);
-        inset: -10%;
-        position: absolute;
-        z-index: -1;
-    }
-
-    .products-shop__header--All::before {
-        background-image: url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80');
-    }
-
-    .products-shop__header--Beans::before {
-        background-image: url('https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80');
-    }
-
-    .products-shop__header--BrewingEquipment::before {
-        background-image: url('https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=80');
-    }
-
-    .products-shop__header--CeramicsAndGoods::before {
-        background-image: url('https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80');
-    }
-
-    @keyframes shop-banner-pan {
-        from {
-            transform: scale(1) translateX(0);
-        }
-
-        to {
-            transform: scale(1.14) translateX(-2.5%);
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .products-shop__header::before {
-            animation: none;
-        }
-    }
-
-    .products-shop__title {
-        color: #fbf9f4;
-        font-family: var(--shop-serif);
-        font-size: clamp(2.5rem, 12vw, 3.6rem);
-        font-weight: 500;
-        letter-spacing: -0.035em;
-        line-height: 0.98;
-        margin: 0 0 0.7rem;
-        text-align: center;
-        text-transform: none;
-        white-space: nowrap;
     }
 
     /* longer category names need a smaller cap so they stay on one line */
     .products-shop__header--Beans .products-shop__title,
     .products-shop__header--BrewingEquipment .products-shop__title {
         font-size: clamp(1.9rem, 9vw, 3.6rem);
-    }
-
-    /* plain ampersand instead of Playfair's swash glyph */
-    .products-shop__title ::deep .products-shop__amp {
-        font-family: var(--font-sans);
-        font-size: 0.72em;
-        font-weight: 400;
-    }
-
-    .products-shop__lede {
-        color: rgba(251, 249, 244, 0.82);
-        font-family: var(--font-sans);
-        font-size: 0.78rem;
-        font-style: normal;
-        font-weight: 400;
-        line-height: 1.5;
-        margin: 0 auto;
-        max-width: 20rem;
-        text-align: center;
-    }
-
-    .products-shop__filter {
-        align-items: center;
-        background: transparent;
-        border: 0;
-        bottom: 0.9rem;
-        color: #fbf9f4;
-        cursor: pointer;
-        display: inline-flex;
-        gap: 0.3rem;
-        padding: 0.25rem;
-        position: absolute;
-        right: 0.9rem;
-    }
-
-    .products-shop__filter-badge {
-        align-items: center;
-        background: var(--shop-accent);
-        border-radius: 50%;
-        color: #fbf9f4;
-        display: inline-flex;
-        font-family: var(--font-sans);
-        font-size: 0.55rem;
-        font-weight: 700;
-        height: 1rem;
-        justify-content: center;
-        min-width: 1rem;
     }
 
     .category-filter {
@@ -289,26 +367,6 @@
     .marketplace-card__link {
         display: block;
         flex: none;
-    }
-
-    .marketplace-card__wishlist {
-        align-items: center;
-        background: rgba(251, 249, 244, 0.85);
-        border-radius: 50%;
-        color: var(--shop-ink);
-        display: flex;
-        height: 1.9rem;
-        justify-content: center;
-        position: absolute;
-        right: 0.45rem;
-        top: 0.55rem;
-        width: 1.9rem;
-        z-index: 2;
-    }
-
-    .marketplace-card__wishlist svg {
-        height: 1rem;
-        width: 1rem;
     }
 
     .marketplace-card .image-frame {
@@ -444,5 +502,97 @@
 
     .marketplace-card__add:disabled {
         opacity: 0.6;
+    }
+}
+
+/* ── Desktop product-listing-page ── */
+@media (min-width: 761px) {
+    .products-shop__header {
+        border-radius: 0;
+        /* flush against the nav and content edges, same treatment as mobile —
+           frees up vertical room for the grid instead of floating in a card */
+        margin: calc(-1 * clamp(1.25rem, 3vw, 3rem)) calc(-1 * clamp(1.25rem, 3vw, 3rem)) 1.75rem;
+        min-height: clamp(16rem, 32dvh, 21rem);
+        padding: 4.5rem 2rem 3.5rem;
+    }
+
+    .products-shop__title {
+        font-size: clamp(3rem, 5vw, 4.25rem);
+        margin-bottom: 0.85rem;
+    }
+
+    .products-shop__lede {
+        font-size: 0.92rem;
+        max-width: 30rem;
+    }
+
+    .products-shop__testnet {
+        flex-direction: row;
+        gap: 0.85rem;
+        margin-top: 1.5rem;
+        max-width: 42rem;
+        padding: 0.7rem 1.15rem;
+        text-align: left;
+    }
+
+    .products-shop__testnet-badge {
+        flex: none;
+    }
+
+    .products-shop__testnet-copy {
+        text-align: left;
+    }
+
+    .products-shop__filter {
+        bottom: 1.25rem;
+        right: 1.25rem;
+    }
+
+    .category-filter {
+        margin-bottom: 2.5rem;
+    }
+
+    /* harmonize desktop cards with the mobile roastery look */
+    .marketplace-card .image-frame {
+        border-radius: 0.6rem;
+        margin-bottom: 0.95rem;
+        position: relative;
+    }
+
+    .marketplace-card h3 {
+        color: var(--shop-ink);
+        font-family: var(--shop-serif);
+        font-size: 1.08rem;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.25;
+        margin: 0;
+        text-transform: none;
+    }
+
+    .marketplace-card .price {
+        color: var(--shop-ink);
+        font-family: var(--shop-serif);
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0;
+    }
+
+    .marketplace-card__wishlist {
+        height: 2.2rem;
+        right: 0.7rem;
+        top: 0.7rem;
+        width: 2.2rem;
+    }
+
+    .marketplace-card__footer {
+        margin-top: auto;
+    }
+}
+
+@media (min-width: 1200px) {
+    ::deep .product-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
