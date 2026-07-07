@@ -519,9 +519,11 @@
         margin-bottom: 2.5rem;
     }
 
-    /* full-bleed grid: cancel .content's side gutter so cards run edge to edge */
+    /* full-bleed grid: break out of .content's max-width + side gutter entirely,
+       same viewport-relative technique as .editorial-hero, so cards run edge
+       to edge of the viewport instead of just edge to edge of the 1440px cap */
     .product-grid-wrapper {
-        margin-inline: calc(-1 * clamp(1.25rem, 3vw, 3rem));
+        margin-inline: calc(50% - 50vw);
     }
 
     /* harmonize desktop cards with the mobile roastery look */
