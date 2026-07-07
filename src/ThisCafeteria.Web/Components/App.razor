@@ -61,15 +61,22 @@
             window.animationObserver = observer;
 
             const animatedElements = document.querySelectorAll(
-                '[data-animate]:not(.is-visible), [data-stagger]:not(.is-visible), .comfy-animate:not(.is-visible), .comfy-animate-image:not(.is-visible)'
+                '[data-animate]:not(.is-visible):not(#hero-section *), [data-stagger]:not(.is-visible), .comfy-animate:not(.is-visible), .comfy-animate-image:not(.is-visible)'
             );
 
             animatedElements.forEach(el => observer.observe(el));
         };
 
+        window.revealHero = () => {
+            document.querySelectorAll('#hero-section [data-animate]').forEach(el => el.classList.add('is-visible'));
+        };
+
         window.queueAnimations = () => {
             requestAnimationFrame(() => {
-                requestAnimationFrame(window.initAnimations);
+                requestAnimationFrame(() => {
+                    window.initAnimations();
+                    window.revealHero();
+                });
             });
         };
 

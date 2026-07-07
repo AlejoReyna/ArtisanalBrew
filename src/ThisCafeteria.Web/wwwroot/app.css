@@ -625,8 +625,9 @@ body.product-detail-view .product-detail-card__title h1 {
 }
 
 /* Floating glass-pill nav — homepage hero only, matches the "Orbit" reference composition */
+/* 20% taller than the base pill (3.4rem -> 4.08rem), scaled uniformly */
 .public-page:has(.editorial-hero--coffee) .public-header .site-nav {
-    min-height: 3.4rem;
+    min-height: 4.08rem;
 }
 
 .public-page:has(.editorial-hero--coffee) .public-header .nav-links {
@@ -635,20 +636,20 @@ body.product-detail-view .product-detail-card__title h1 {
     -webkit-backdrop-filter: blur(18px);
     border: 1px solid rgba(251, 249, 244, 0.14);
     border-radius: 999px;
-    padding: 0.3rem 0.3rem 0.3rem 1.35rem;
+    padding: 0.36rem 0.36rem 0.36rem 1.62rem;
 }
 
 .public-page:has(.editorial-hero--coffee) .public-header .nav-login {
-    padding: 0.3rem 0.7rem 0.3rem 0.4rem;
+    padding: 0.36rem 0.84rem 0.36rem 0.48rem;
 }
 
 .public-page:has(.editorial-hero--coffee) .public-header .eth-mark {
-    height: 1.4rem;
-    width: 1.4rem;
+    height: 1.68rem;
+    width: 1.68rem;
 }
 
 .public-page:has(.editorial-hero--coffee) .public-header .nav-login::after {
-    left: 2.35rem;
+    left: 2.82rem;
 }
 
 .eyebrow {
@@ -794,7 +795,8 @@ body.product-detail-view .product-detail-card__title h1 {
 
 .editorial-hero--coffee {
     margin-bottom: clamp(1rem, 3vw, 2rem);
-    padding-bottom: 0;
+    /* nudges the bottom-anchored hero content up off the true viewport edge */
+    padding-bottom: 15px;
 }
 
 .editorial-hero--coffee::before {

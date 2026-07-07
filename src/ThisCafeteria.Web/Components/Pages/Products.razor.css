@@ -234,34 +234,6 @@
     color: #fbf9f4;
 }
 
-.products-shop__filter {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    bottom: 0.9rem;
-    color: #fbf9f4;
-    cursor: pointer;
-    display: inline-flex;
-    gap: 0.3rem;
-    padding: 0.25rem;
-    position: absolute;
-    right: 0.9rem;
-}
-
-.products-shop__filter-badge {
-    align-items: center;
-    background: var(--shop-accent);
-    border-radius: 50%;
-    color: #fbf9f4;
-    display: inline-flex;
-    font-family: var(--font-sans);
-    font-size: 0.55rem;
-    font-weight: 700;
-    height: 1rem;
-    justify-content: center;
-    min-width: 1rem;
-}
-
 .marketplace-card__wishlist {
     align-items: center;
     background: rgba(251, 249, 244, 0.85);
@@ -543,13 +515,13 @@
         text-align: left;
     }
 
-    .products-shop__filter {
-        bottom: 1.25rem;
-        right: 1.25rem;
-    }
-
     .category-filter {
         margin-bottom: 2.5rem;
+    }
+
+    /* full-bleed grid: cancel .content's side gutter so cards run edge to edge */
+    .product-grid-wrapper {
+        margin-inline: calc(-1 * clamp(1.25rem, 3vw, 3rem));
     }
 
     /* harmonize desktop cards with the mobile roastery look */
