@@ -54,6 +54,13 @@ window.initPublicHeader = () => {
         header?.classList.add('public-header--solid');
         const fallbackMeta = document.querySelector('meta[name="theme-color"]');
         if (fallbackMeta) fallbackMeta.content = '#fbf9f4';
+
+        const staleBrand = document.querySelector('.navbar-brand');
+        if (staleBrand) {
+            staleBrand.style.removeProperty('color');
+            staleBrand.classList.remove('navbar-brand--jump-to-hero', 'navbar-brand--jump-to-concept');
+        }
+
         return;
     }
 

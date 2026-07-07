@@ -55,8 +55,10 @@
                             aria-label="Open account menu"
                             @onclick="ToggleUserMenu">
                         <img class="eth-mark" src="/images/eth_logo.png" alt="" aria-hidden="true" width="27" height="27" />
-                        <span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>
-                        <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
+                        <span class="nav-login__text-stack">
+                            <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
+                            <span class="nav-login__chain" aria-hidden="true">ETH Sepolia</span>
+                        </span>
                     </button>
                     <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
                         <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -179,7 +181,6 @@
                         <span class="label-caps">Wallet</span>
                         <div class="user-menu__identity">
                             <AddressChip Address="@(walletAddress ?? string.Empty)" ExplorerUrl="@Chain.ExplorerUrl" />
-                            <ChainBadge NetworkName="@Chain.NetworkName" ChainId="Chain.ChainId" Connected="true" Compact="true" />
                         </div>
                     </div>
 
@@ -398,6 +399,7 @@
         Logger.LogInformation("NavMenu OnInitializedAsync START");
         CartService.Changed += OnCartChanged;
         DashboardState.Changed += OnWalletDashboardChanged;
+        Navigation.LocationChanged += OnLocationChanged;
         _walletSnapshot = DashboardState.Snapshot;
         await CartService.RefreshFromStorageAsync();
         await RefreshCartCountAsync();
@@ -405,6 +407,14 @@
     }
 
     private void OnCartChanged() => _ = InvokeAsync(RefreshCartCountAsync);
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        // Blazor Server's interactive routing swaps @Body without a page reload or an
+        // "enhancedload" event, so the header's hero/scroll JS (bound once on first load)
+        // never reruns and can leave stale inline styles (e.g. navbar-brand color) behind.
+        _ = InvokeAsync(async () => await JsRuntime.InvokeVoidAsync("queuePublicHeader"));
+    }
 
     private async Task RefreshCartCountAsync()
     {
@@ -606,6 +616,7 @@
     {
         CartService.Changed -= OnCartChanged;
         DashboardState.Changed -= OnWalletDashboardChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 
     public async ValueTask DisposeAsync()

@@ -6,80 +6,88 @@
 
 <div class="journal-page">
 
-    <!-- ==================== MASTHEAD ==================== -->
-    <section class="page-intro journal-masthead" data-recruiter-section>
-        <p class="eyebrow" data-recruiter-animate="lift">The Journal</p>
+    <!-- ==================== HERO ==================== -->
+    <section class="journal-hero journal-hero-screen" data-recruiter-section>
+        <h1 class="visually-hidden">The Journal — notes from the counter</h1>
 
-        <h1 data-recruiter-animate="mask-line" data-recruiter-delay="120">
-            <span class="mask-line"><span class="mask-line__inner">Notes from</span></span>
-            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">the counter.</em></span></span>
-        </h1>
+        @for (var index = 0; index < JournalCatalog.FeaturedArticles.Count; index++)
+        {
+            var slide = JournalCatalog.FeaturedArticles[index];
+            <div class="journal-hero-screen__slide journal-thumb journal-thumb--@slide.ImageKey"
+                 style="animation-delay: @(index * HeroSlideSeconds)s"
+                 aria-hidden="true"></div>
+        }
 
-        <p class="lede" data-recruiter-animate="lift" data-recruiter-delay="300">
-            Longer reads on bloom, origin, and the quiet science behind every cup — recorded a few times each
-            season, never rushed.
-        </p>
+        <div class="journal-hero-screen__scrim" aria-hidden="true"></div>
 
-        <div class="journal-masthead__signal" data-recruiter-animate="lift" data-recruiter-delay="440">
-            <span>@($"{JournalCatalog.HomeArticles.Count:00} field notes")</span>
-            <span>Manual brew</span>
-            <span>Slow design</span>
-        </div>
+        <div class="journal-hero-screen__content">
+            <p class="eyebrow" data-recruiter-animate="lift">The Journal</p>
 
-        <span class="journal-masthead__rule" aria-hidden="true"></span>
-    </section>
-
-    <!-- ==================== FIELD NOTES ==================== -->
-    <section class="section recruiter-showcase recruiter-journal-index" data-recruiter-section aria-labelledby="field-notes-title">
-        <div class="recruiter-journal-index__layout">
-            <aside class="recruiter-journal-index__masthead">
-                <p class="eyebrow" data-recruiter-animate="lift">Field Notes</p>
-                <h2 id="field-notes-title" data-recruiter-animate="reveal">Long reads, brewed slowly.</h2>
-                <p class="recruiter-kicker" data-recruiter-animate="lift">
-                    Deeper pieces on technique, origin, and the small rituals that shape a cup — the ones worth a
-                    second read.
-                </p>
-            </aside>
-
-            <div class="recruiter-journal-index__list" data-recruiter-stagger>
-                @for (var index = 0; index < JournalCatalog.HomeArticles.Count; index++)
+            <div class="journal-hero-screen__captions" data-recruiter-animate="lift" data-recruiter-delay="160">
+                @for (var index = 0; index < JournalCatalog.FeaturedArticles.Count; index++)
                 {
-                    var article = JournalCatalog.HomeArticles[index];
-                    var entryNumber = (index + 1).ToString("00");
-                    var entryClass = "recruiter-journal-entry";
-                    if (article.IsFeature)
-                    {
-                        entryClass += " recruiter-journal-entry--feature";
-                    }
-                    if (article.IsDark)
-                    {
-                        entryClass += " recruiter-journal-entry--dark";
-                    }
-
-                    <article class="@entryClass" data-recruiter-animate="lift">
-                        <a class="recruiter-journal-entry__link" href="@JournalCatalog.ArticleUrl(article.Slug)" aria-label="@($"Read {article.Title}")">
-                            <div class="@JournalCatalog.HomeImageClass(article.ImageKey)" aria-hidden="true"></div>
-                            <span class="recruiter-journal-entry__content">
-                                <span class="recruiter-journal-entry__header">
-                                    <span class="recruiter-journal-entry__number">@entryNumber</span>
-                                    <span class="recruiter-journal-entry__separator" aria-hidden="true">|</span>
-                                    <span class="recruiter-journal-entry__label">@article.CategoryLabel</span>
-                                </span>
-                                <span class="recruiter-journal-entry__text-reveal">
-                                    <h3>@article.Title</h3>
-                                </span>
-                                <span class="recruiter-journal-entry__text-reveal recruiter-journal-entry__text-reveal--body">
-                                    <p>@article.Summary</p>
-                                </span>
-                            </span>
-                            <span class="recruiter-journal-entry__meta">
-                                <span>@article.ReadTime</span>
-                                <span aria-hidden="true">&#8599;</span>
-                            </span>
-                        </a>
-                    </article>
+                    var article = JournalCatalog.FeaturedArticles[index];
+                    <a class="journal-hero-screen__caption"
+                       style="animation-delay: @(index * HeroSlideSeconds)s"
+                       href="@JournalCatalog.ArticleUrl(article.Slug)">
+                        <span class="journal-hero-screen__kicker">@article.CategoryLabel · @article.ReadTime</span>
+                        <h2>@article.Title</h2>
+                        <p>@article.Summary</p>
+                        <span class="journal-hero-screen__cta">Read the note <span aria-hidden="true">&#8599;</span></span>
+                    </a>
                 }
             </div>
+        </div>
+    </section>
+
+    <!-- ==================== FRONT PAGE ==================== -->
+    <section class="section journal-news" data-recruiter-section aria-labelledby="journal-news-title">
+        <h2 id="journal-news-title" class="visually-hidden">Latest from the Journal</h2>
+
+        @{
+            var featureArticle = JournalCatalog.FeaturedArticles[0];
+            var leadArticle = JournalCatalog.FeaturedArticles[1];
+            var secondaryArticles = JournalCatalog.FeaturedArticles.Skip(2).Take(2).ToList();
+        }
+
+        <div class="journal-news__grid" data-recruiter-stagger>
+            <a class="journal-news__story journal-news__story--feature"
+               href="@JournalCatalog.ArticleUrl(featureArticle.Slug)"
+               data-recruiter-animate="lift"
+               aria-label="@($"Read {featureArticle.Title}")">
+                <span class="journal-news__image journal-news__image--feature journal-thumb journal-thumb--@featureArticle.ImageKey"
+                      role="img" aria-label="@featureArticle.ImageAriaLabel"></span>
+                <h3>@featureArticle.Title</h3>
+                <p>@featureArticle.Summary</p>
+                <span class="journal-news__meta">@featureArticle.ReadTime</span>
+            </a>
+
+            <a class="journal-news__story journal-news__story--lead"
+               href="@JournalCatalog.ArticleUrl(leadArticle.Slug)"
+               data-recruiter-animate="lift"
+               aria-label="@($"Read {leadArticle.Title}")">
+                <span class="journal-news__lead-text">
+                    <h3>@leadArticle.Title</h3>
+                    <p>@leadArticle.Summary</p>
+                    <span class="journal-news__meta">@leadArticle.ReadTime</span>
+                </span>
+                <span class="journal-news__image journal-thumb journal-thumb--@leadArticle.ImageKey"
+                      role="img" aria-label="@leadArticle.ImageAriaLabel"></span>
+            </a>
+
+            @foreach (var article in secondaryArticles)
+            {
+                <a class="journal-news__story journal-news__story--card"
+                   href="@JournalCatalog.ArticleUrl(article.Slug)"
+                   data-recruiter-animate="lift"
+                   aria-label="@($"Read {article.Title}")">
+                    <span class="journal-news__image journal-thumb journal-thumb--@article.ImageKey"
+                          role="img" aria-label="@article.ImageAriaLabel"></span>
+                    <h3>@article.Title</h3>
+                    <p>@article.Summary</p>
+                    <span class="journal-news__meta">@article.ReadTime</span>
+                </a>
+            }
         </div>
     </section>
 
@@ -137,41 +145,260 @@
 </div>
 
 <style>
-    /* ===== Masthead ===== */
-    .journal-masthead {
-        position: relative;
-    }
-
-    .journal-masthead__signal {
-        border-top: 1px solid var(--line);
+    /* ===== Hero ===== */
+    .journal-hero-screen {
+        box-sizing: border-box;
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.85rem 2rem;
-        margin-top: clamp(1.75rem, 3vw, 2.5rem);
-        padding-top: 1.2rem;
+        flex-direction: column;
+        justify-content: flex-end;
+        isolation: isolate;
+        /* .content:has(.journal-page) already zeroes the container's top padding */
+        margin: 0 calc(50% - 50vw) clamp(4rem, 8vw, 8rem);
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow: hidden;
+        padding: calc(4.75rem + clamp(1.25rem, 3vw, 3rem)) clamp(1.25rem, 4vw, 3rem) clamp(2.5rem, 6vw, 4.5rem);
+        position: relative;
+        width: 100vw;
     }
 
-    .journal-masthead__signal span {
-        color: var(--muted);
-        font-size: 0.76rem;
-        font-weight: 800;
+    .journal-hero-screen__slide {
+        animation: journalHeroSlide 28s linear infinite;
+        filter: saturate(0.82) contrast(1.08);
+        inset: 0;
+        opacity: 0;
+        position: absolute;
+        z-index: -2;
+    }
+
+    @@keyframes journalHeroSlide {
+        0% { opacity: 0; }
+        3.5% { opacity: 1; }
+        25% { opacity: 1; }
+        28.5% { opacity: 0; }
+        100% { opacity: 0; }
+    }
+
+    .journal-hero-screen__scrim {
+        background:
+            linear-gradient(180deg, rgba(31, 26, 24, 0.35) 0%, rgba(31, 26, 24, 0.42) 55%, rgba(31, 26, 24, 0.82) 100%);
+        inset: 0;
+        position: absolute;
+        z-index: -1;
+    }
+
+    .journal-hero-screen__content {
+        margin-inline: auto;
+        max-width: 78rem;
+        width: 100%;
+    }
+
+    .journal-hero-screen__content .eyebrow {
+        color: rgba(255, 253, 249, 0.72);
+    }
+
+    .journal-hero-screen__captions {
+        display: grid;
+        margin-top: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .journal-hero-screen__caption {
+        animation: journalHeroCaption 28s linear infinite;
+        display: flex;
+        flex-direction: column;
+        grid-area: 1 / 1;
+        max-width: 42rem;
+        opacity: 0;
+        text-decoration: none;
+        visibility: hidden;
+    }
+
+    @@keyframes journalHeroCaption {
+        0% { opacity: 0; transform: translateY(0.9rem); visibility: visible; }
+        3.5% { opacity: 1; transform: translateY(0); }
+        25% { opacity: 1; transform: translateY(0); visibility: visible; }
+        28.5% { opacity: 0; transform: translateY(0); visibility: hidden; }
+        100% { opacity: 0; visibility: hidden; }
+    }
+
+    .journal-hero-screen__kicker {
+        color: rgba(255, 253, 249, 0.6);
+        font-family: var(--crypto-mono);
+        font-size: 0.72rem;
         letter-spacing: 0.14em;
+        margin-bottom: 1.1rem;
         text-transform: uppercase;
     }
 
-    .journal-masthead__rule {
-        background: var(--line);
-        display: block;
-        height: 1px;
-        margin-top: clamp(2.5rem, 5vw, 3.5rem);
-        max-width: 8rem;
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 1200ms cubic-bezier(.16, 1, .3, 1);
+    .journal-hero-screen__caption h2 {
+        color: var(--white);
+        font-family: var(--font-display);
+        font-size: clamp(2.4rem, 6.5vw, 4.75rem);
+        line-height: 1.04;
+        margin: 0;
     }
 
-    .journal-masthead.is-in-view .journal-masthead__rule {
-        transform: scaleX(1);
+    .journal-hero-screen__caption p {
+        color: rgba(255, 253, 249, 0.78);
+        font-family: var(--font-sans);
+        font-size: clamp(1rem, 1.4vw, 1.1rem);
+        line-height: 1.65;
+        margin: 1.1rem 0 0;
+        max-width: 34rem;
+    }
+
+    .journal-hero-screen__cta {
+        border-bottom: 1px solid rgba(255, 253, 249, 0.45);
+        align-self: flex-start;
+        color: var(--white);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        margin-top: clamp(1.5rem, 3vw, 2.25rem);
+        padding-bottom: 0.35rem;
+        text-transform: uppercase;
+        transition: border-color 180ms ease;
+    }
+
+    .journal-hero-screen__caption:hover .journal-hero-screen__cta {
+        border-color: var(--white);
+    }
+
+    /* ===== Front page grid ===== */
+    .journal-news {
+        background: var(--charcoal);
+        box-sizing: border-box;
+        margin-inline: calc(50% - 50vw);
+        padding-block: clamp(3rem, 7vw, 5.5rem);
+        padding-inline: clamp(1.25rem, 4vw, 3rem);
+        width: 100vw;
+    }
+
+    .journal-news__grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: auto 1fr;
+        margin-inline: auto;
+        max-width: 78rem;
+    }
+
+    .journal-news__story {
+        color: var(--white);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        text-decoration: none;
+    }
+
+    .journal-news__story h3 {
+        color: var(--white);
+        font-family: var(--font-sans);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+        margin: 0 0 0.65rem;
+        transition: color 180ms ease;
+    }
+
+    .journal-news__story p {
+        color: rgba(255, 253, 249, 0.6);
+        font-family: var(--font-sans);
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .journal-news__story:hover h3 {
+        color: rgba(255, 253, 249, 0.75);
+    }
+
+    .journal-news__meta {
+        color: rgba(255, 253, 249, 0.38);
+        font-family: var(--crypto-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        margin-top: 0.9rem;
+        text-transform: uppercase;
+    }
+
+    .journal-news__image {
+        aspect-ratio: 3 / 2;
+        border-radius: 0.4rem;
+        display: block;
+        filter: saturate(0.85) contrast(1.06);
+        overflow: hidden;
+    }
+
+    .journal-news__image--feature {
+        aspect-ratio: 4 / 3;
+    }
+
+    .journal-news__story--feature {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        padding-right: clamp(1.5rem, 3vw, 2.75rem);
+    }
+
+    .journal-news__story--feature .journal-news__image {
+        margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    }
+
+    .journal-news__story--feature h3 {
+        font-size: clamp(1.9rem, 3.4vw, 2.7rem);
+        margin-bottom: 0.9rem;
+    }
+
+    .journal-news__story--feature p {
+        font-size: 1.05rem;
+        max-width: 32rem;
+    }
+
+    .journal-news__story--lead {
+        border-left: 1px solid rgba(255, 253, 249, 0.14);
+        column-gap: clamp(1.5rem, 3vw, 2.75rem);
+        display: grid;
+        grid-column: 2 / span 2;
+        grid-row: 1;
+        grid-template-columns: 1fr 1fr;
+        padding-bottom: clamp(1.75rem, 3.5vw, 2.75rem);
+    }
+
+    .journal-news__lead-text {
+        display: flex;
+        flex-direction: column;
+        padding-left: clamp(1.5rem, 3vw, 2.75rem);
+    }
+
+    .journal-news__story--lead h3 {
+        font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+    }
+
+    .journal-news__story--card {
+        border-left: 1px solid rgba(255, 253, 249, 0.14);
+        border-top: 1px solid rgba(255, 253, 249, 0.14);
+        grid-row: 2;
+        padding-left: clamp(1.5rem, 3vw, 2.75rem);
+        padding-right: clamp(1.5rem, 3vw, 2.75rem);
+        padding-top: clamp(1.75rem, 3.5vw, 2.75rem);
+    }
+
+    .journal-news__story--card:last-child {
+        padding-right: 0;
+    }
+
+    .journal-news__story--card .journal-news__image {
+        margin-bottom: 1.1rem;
+    }
+
+    .journal-news__story--card h3 {
+        font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    }
+
+    .journal-news__story--card p {
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        overflow: hidden;
     }
 
     /* ===== Short Stories ===== */
@@ -331,6 +558,40 @@
     }
 
     /* ===== Responsive ===== */
+    @@media (max-width: 900px) {
+        .journal-news__grid {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(1.75rem, 5vw, 2.5rem);
+        }
+
+        .journal-news__story--feature,
+        .journal-news__story--card {
+            border-left: none;
+            padding-inline: 0;
+        }
+
+        .journal-news__story--lead {
+            border-left: none;
+            grid-template-columns: 1fr;
+            padding-bottom: 0;
+        }
+
+        .journal-news__lead-text {
+            order: 2;
+            padding-left: 0;
+        }
+
+        .journal-news__story--lead .journal-news__image {
+            margin-bottom: 1.1rem;
+            order: 1;
+        }
+
+        .journal-news__story--card {
+            padding-top: clamp(1.75rem, 5vw, 2.5rem);
+        }
+    }
+
     @@media (max-width: 760px) {
         .journal-shortlist__grid {
             grid-template-columns: 1fr;
@@ -348,8 +609,15 @@
     }
 
     @@media (prefers-reduced-motion: reduce) {
-        .journal-masthead__rule {
-            transition: none;
+        .journal-hero-screen__slide,
+        .journal-hero-screen__caption {
+            animation: none;
+        }
+
+        .journal-hero-screen__slide:first-of-type,
+        .journal-hero-screen__caption:first-of-type {
+            opacity: 1;
+            visibility: visible;
         }
 
         .journal-subscribe-band__ring {
@@ -360,6 +628,9 @@
 </style>
 
 @code {
+    // Must equal the journalHeroSlide/journalHeroCaption 28s cycle divided by FeaturedArticles.Count.
+    private const int HeroSlideSeconds = 7;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
