@@ -1,6 +1,7 @@
 window.recruiterShowcaseMotion = window.recruiterShowcaseMotion || {
     instances: [],
     provenanceCleanup: null,
+    originsCleanup: null,
     init() {
         this.destroy();
 
@@ -165,6 +166,51 @@ window.recruiterShowcaseMotion = window.recruiterShowcaseMotion || {
                 window.removeEventListener('resize', onScroll);
             };
         }
+
+        // Origins showcase: a tall scroller with a sticky viewport. Scroll progress
+        // through the scroller's height selects which origin (info + bag image) is
+        // shown, so the user has to scroll past every stop before the section releases
+        // into the next one.
+        const originsScroller = document.querySelector('[data-origins-scroller]');
+        if (originsScroller) {
+            const items = Array.from(originsScroller.querySelectorAll('[data-origin-index]'));
+            const stopCount = new Set(items.map((el) => el.dataset.originIndex)).size || 1;
+            let activeIndex = -1;
+            let ticking = false;
+
+            const setActive = (index) => {
+                if (index === activeIndex) return;
+                activeIndex = index;
+                items.forEach((el) => {
+                    el.classList.toggle('is-active', Number(el.dataset.originIndex) === index);
+                });
+            };
+
+            const updateOrigins = () => {
+                ticking = false;
+                const rect = originsScroller.getBoundingClientRect();
+                const scrollable = rect.height - window.innerHeight;
+                const progress = scrollable > 0 ? -rect.top / scrollable : 0;
+                const clamped = Math.min(Math.max(progress, 0), 1);
+                const index = Math.min(stopCount - 1, Math.floor(clamped * stopCount));
+                setActive(Math.max(index, 0));
+            };
+
+            const onOriginsScroll = () => {
+                if (ticking) return;
+                ticking = true;
+                window.requestAnimationFrame(updateOrigins);
+            };
+
+            window.addEventListener('scroll', onOriginsScroll, { passive: true });
+            window.addEventListener('resize', onOriginsScroll);
+            updateOrigins();
+
+            this.originsCleanup = () => {
+                window.removeEventListener('scroll', onOriginsScroll);
+                window.removeEventListener('resize', onOriginsScroll);
+            };
+        }
     },
     destroy() {
         this.instances.forEach((observer) => observer.disconnect());
@@ -172,6 +218,10 @@ window.recruiterShowcaseMotion = window.recruiterShowcaseMotion || {
         if (this.provenanceCleanup) {
             this.provenanceCleanup();
             this.provenanceCleanup = null;
+        }
+        if (this.originsCleanup) {
+            this.originsCleanup();
+            this.originsCleanup = null;
         }
     }
 };

@@ -14,6 +14,13 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["ThisCafeteria.Web.styles.css"]" />
     <ImportMap />
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
     <link rel="icon" type="image/svg+xml" href="images/green_bean.svg" />
     <HeadOutlet />
 </head>
@@ -27,6 +34,7 @@
     <script src="js/publicHeader.js"></script>
     <script src="js/productTransition.js"></script>
     <script src="js/recruiterMotion.js"></script>
+    <script src="js/heroWebGL.js"></script>
     <script>
         window.animationObserver = null;
 
@@ -85,14 +93,29 @@
             });
         };
 
+        window.queueHeroWebGL = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (!window.heroWebGL) return;
+                    if (document.getElementById('hero-webgl-canvas')) {
+                        window.heroWebGL.init('hero-webgl-canvas');
+                    } else {
+                        window.heroWebGL.destroyAll();
+                    }
+                });
+            });
+        };
+
         document.addEventListener('DOMContentLoaded', window.queueAnimations);
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
+        document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
 
         const onEnhancedLoad = () => {
             window.queueAnimations();
             window.queuePublicHeader();
             window.queueRecruiterMotion();
+            window.queueHeroWebGL();
         };
 
         if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {

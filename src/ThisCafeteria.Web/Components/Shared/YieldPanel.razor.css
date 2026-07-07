@@ -8,27 +8,129 @@
 }
 
 .staking-connect {
-    background: rgba(245, 242, 234, 0.9);
-    border: 1px solid rgba(45, 36, 33, 0.12);
-    border-radius: 8px;
-    margin: clamp(1.25rem, 3vw, 3rem);
-    padding: clamp(2rem, 6vw, 5rem);
-    text-align: center;
+    background:
+        linear-gradient(90deg, rgba(71, 97, 78, 0.045) 0 1px, transparent 1px 100%),
+        linear-gradient(180deg, rgba(71, 97, 78, 0.035) 0 1px, transparent 1px 100%),
+        rgba(245, 242, 234, 0.9);
+    background-size: 4rem 4rem, 4rem 4rem, auto;
+    display: grid;
+    grid-template-columns: minmax(0, 53%) minmax(26rem, 47%);
+    gap: clamp(1rem, 2vw, 2rem);
+    min-height: calc(100vh - 4.75rem);
+    padding: 0 0 0 clamp(1.25rem, 3vw, 3rem);
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.staking-connect__content {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+    padding: clamp(1rem, 2vh, 1.5rem) clamp(0.5rem, 2vw, 1.5rem) clamp(1rem, 2vh, 1.5rem) 0;
+    position: relative;
+    text-align: left;
+}
+
+.staking-connect__content::before {
+    background: linear-gradient(180deg, rgba(71, 97, 78, 0), rgba(71, 97, 78, 0.5), rgba(71, 97, 78, 0));
+    content: "";
+    height: min(26rem, 68%);
+    left: 0;
+    opacity: 0.38;
+    position: absolute;
+    top: 16%;
+    width: 1px;
+}
+
+.staking-connect__module {
+    display: grid;
+    gap: clamp(1rem, 2.2vh, 1.55rem);
+    max-width: 48rem;
+    padding-left: clamp(1.2rem, 2.4vw, 2.2rem);
+    position: relative;
+    width: min(100%, 48rem);
+}
+
+.staking-connect__module::before {
+    background: #47614e;
+    border-radius: 999px;
+    box-shadow: 0 0 0 5px rgba(71, 97, 78, 0.12);
+    content: "";
+    height: 0.5rem;
+    left: -0.25rem;
+    position: absolute;
+    top: 0.45rem;
+    width: 0.5rem;
+}
+
+.staking-connect__meta {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.staking-connect__meta span {
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(44, 27, 18, 0.1);
+    border-radius: 999px;
+    color: rgba(44, 27, 18, 0.56);
+    font-family: var(--crypto-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    padding: 0.42rem 0.62rem;
+    text-transform: uppercase;
 }
 
 .staking-connect h1,
 .staking-connect h2 {
     color: #2d2421;
     font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(2.6rem, 7vw, 5.7rem);
-    line-height: 0.95;
-    margin: 0 auto 1.25rem;
-    max-width: 58rem;
+    font-size: clamp(2.45rem, 4.85vw, 4.55rem);
+    line-height: 0.96;
+    margin: 0;
+    max-width: 47rem;
 }
 
 .staking-connect .lede {
-    margin-left: auto;
-    margin-right: auto;
+    color: rgba(44, 27, 18, 0.76);
+    font-size: clamp(1rem, 1.75vw, 1.22rem);
+    line-height: 1.68;
+    margin: 0;
+    max-width: 43rem;
+}
+
+.staking-connect__content .button {
+    align-items: center;
+    border-radius: 999px;
+    box-shadow: 0 14px 28px rgba(44, 27, 18, 0.1);
+    display: inline-flex;
+    justify-content: center;
+    margin-left: clamp(1.2rem, 2.4vw, 2.2rem);
+    margin-top: clamp(1.25rem, 3vh, 2.25rem);
+    max-width: 34rem;
+    min-height: 3.9rem;
+    position: relative;
+    transition: box-shadow 180ms ease, transform 160ms ease;
+    width: calc(100% - clamp(1.2rem, 2.4vw, 2.2rem));
+}
+
+.staking-connect__content .button:hover:not(:disabled) {
+    box-shadow: 0 18px 34px rgba(44, 27, 18, 0.14);
+    transform: translateY(-1px);
+}
+
+.staking-connect__content .button::after {
+    content: "→";
+    font-size: 1rem;
+    position: absolute;
+    right: 1.45rem;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .yield-back {
@@ -321,8 +423,68 @@
 /* ── Faucet ── */
 
 .staking-connect__faucet {
-    margin: 2.25rem auto 0;
-    max-width: 52rem;
+    align-items: center;
+    align-self: stretch;
+    display: flex;
+    margin: 0;
+    max-width: none;
+    min-height: 0;
+}
+
+.staking-connect__faucet ::deep .faucet-panel {
+    align-content: start;
+    border-radius: 0;
+    border-bottom: 0;
+    border-top: 0;
+    gap: clamp(0.7rem, 1.25vh, 0.95rem);
+    height: 100%;
+    min-height: 0;
+    padding: clamp(1.1rem, 2.6vh, 2rem) clamp(1.25rem, 2vw, 2rem) clamp(0.45rem, 1vh, 0.85rem);
+    width: 100%;
+}
+
+.staking-connect__faucet ::deep .faucet-panel__list {
+    gap: clamp(0.65rem, 1.4vh, 0.9rem);
+    grid-template-columns: 1fr;
+    margin-top: clamp(0.25rem, 0.8vh, 0.55rem);
+}
+
+.staking-connect__faucet ::deep .faucet-panel__eyebrow {
+    display: none;
+}
+
+.staking-connect__faucet ::deep .faucet-panel__title {
+    font-size: clamp(1.45rem, 3.2vh, 1.95rem);
+    margin-bottom: clamp(0.35rem, 0.8vh, 0.5rem);
+}
+
+.staking-connect__faucet ::deep .faucet-panel__lede {
+    font-size: clamp(0.78rem, 1.55vh, 0.95rem);
+    line-height: 1.42;
+}
+
+.staking-connect__faucet ::deep .faucet-panel__card {
+    gap: clamp(0.25rem, 0.5vh, 0.4rem);
+    padding: clamp(0.58rem, 1.05vh, 0.82rem) clamp(0.85rem, 1.5vw, 1rem) clamp(0.62rem, 1.15vh, 0.86rem);
+}
+
+.staking-connect__faucet ::deep .faucet-panel__logo {
+    height: clamp(1.6rem, 3.4vh, 2rem);
+    width: clamp(1.6rem, 3.4vh, 2rem);
+}
+
+.staking-connect__faucet ::deep .faucet-panel__logo img {
+    height: clamp(1rem, 2.3vh, 1.3rem);
+    width: clamp(1rem, 2.3vh, 1.3rem);
+}
+
+.staking-connect__faucet ::deep .faucet-panel__card-note {
+    font-size: clamp(0.68rem, 1.35vh, 0.76rem);
+    line-height: 1.28;
+}
+
+.staking-connect__faucet ::deep .faucet-panel__card-cta {
+    padding-top: clamp(0.1rem, 0.5vh, 0.25rem);
 }
 
 .yield-faucet {
@@ -765,6 +927,23 @@
 
     .yield-allocation-grid {
         grid-template-columns: 1fr;
+    }
+
+    .staking-connect {
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding: clamp(1.5rem, 3vw, 2rem);
+        overflow: visible;
+    }
+
+    .staking-connect__faucet {
+        margin-top: 2rem;
+    }
+
+    .staking-connect__faucet ::deep .faucet-panel {
+        border: 1px solid rgba(44, 27, 18, 0.11);
+        border-radius: 12px;
+        height: auto;
     }
 }
 

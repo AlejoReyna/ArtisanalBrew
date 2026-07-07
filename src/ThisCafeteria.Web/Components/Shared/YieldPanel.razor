@@ -26,25 +26,23 @@
 @if (!_isConnected)
 {
     <section class="staking-connect" data-animate="fade-up">
-        <div class="staking-connect__badge">
-            <ChainBadge NetworkName="@_chain.NetworkName" ChainId="_chain.ChainId" Connected="false" />
-        </div>
-        <p class="eyebrow">Wallet required</p>
-        <h2>Connect your wallet to allocate Sepolia tokens and earn COFFEE.</h2>
-        <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
-        @if (!string.IsNullOrWhiteSpace(_connectError))
-        {
-            <p class="text-danger">@_connectError</p>
-        }
-        <button type="button" class="button button--dark" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-            @(_isConnecting ? "Connecting..." : "Connect MetaMask")
-        </button>
-        @if (OnBackToProfile.HasDelegate)
-        {
-            <button type="button" class="yield-back yield-back--center" @onclick="OnBackToProfile">
-                <span aria-hidden="true">&larr;</span> Back to Profile
+        <div class="staking-connect__content">
+            <h2>Connect your wallet to allocate Sepolia tokens and earn COFFEE.</h2>
+            <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
+            @if (!string.IsNullOrWhiteSpace(_connectError))
+            {
+                <p class="text-danger">@_connectError</p>
+            }
+            <button type="button" class="button button--dark" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                @(_isConnecting ? "Connecting..." : "Connect MetaMask")
             </button>
-        }
+            @if (OnBackToProfile.HasDelegate)
+            {
+                <button type="button" class="yield-back yield-back--center" @onclick="OnBackToProfile">
+                    <span aria-hidden="true">&larr;</span> Back to Profile
+                </button>
+            }
+        </div>
         <div class="staking-connect__faucet">
             <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" />
         </div>

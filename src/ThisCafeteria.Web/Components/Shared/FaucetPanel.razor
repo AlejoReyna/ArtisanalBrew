@@ -30,11 +30,20 @@
             <li>
                 <a class="faucet-panel__card" href="@faucet.Url" target="_blank" rel="noopener noreferrer">
                     <span class="faucet-panel__card-head">
-                        <strong>@faucet.Name</strong>
+                        <span class="faucet-panel__brand">
+                            <span class="faucet-panel__logo">
+                                <img src="@faucet.LogoUrl" alt="" loading="lazy" />
+                            </span>
+                            <span class="faucet-panel__brand-copy">
+                                <strong>@faucet.Name</strong>
+                            </span>
+                        </span>
                         <span class="faucet-panel__card-amount tabular">@faucet.Amount</span>
                     </span>
                     <span class="faucet-panel__card-note">@faucet.Requirement</span>
-                    <span class="faucet-panel__card-cta">Open faucet <span aria-hidden="true">↗</span></span>
+                    <span class="faucet-panel__card-cta">
+                        <span aria-hidden="true">↗</span>
+                    </span>
                 </a>
             </li>
         }
@@ -62,24 +71,28 @@
         new(
             "Google Cloud Web3",
             "https://cloud.google.com/application/web3/faucet/ethereum/sepolia",
+            "https://www.google.com/s2/favicons?domain=cloud.google.com&sz=64",
             "0.05 ETH / day",
             "Google account required — no mainnet balance needed."),
         new(
             "Alchemy",
             "https://www.alchemy.com/faucets/ethereum-sepolia",
+            "https://www.google.com/s2/favicons?domain=alchemy.com&sz=64",
             "0.1 ETH / day",
             "Free Alchemy account; may require a small mainnet balance."),
         new(
             "Chainstack",
             "https://faucet.chainstack.com/sepolia-testnet-faucet",
+            "https://www.google.com/s2/favicons?domain=chainstack.com&sz=64",
             "0.5 ETH / day",
             "Sign up with X or GitHub."),
         new(
             "QuickNode",
             "https://faucet.quicknode.com/ethereum/sepolia",
+            "https://www.google.com/s2/favicons?domain=quicknode.com&sz=64",
             "0.05 ETH / drip",
             "Requires 0.001 ETH on Ethereum mainnet."),
     ];
 
-    private sealed record FaucetLink(string Name, string Url, string Amount, string Requirement);
+    private sealed record FaucetLink(string Name, string Url, string LogoUrl, string Amount, string Requirement);
 }
