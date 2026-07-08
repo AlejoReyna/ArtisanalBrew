@@ -3,7 +3,7 @@ using Azure.Identity;
 
 namespace ThisCafeteria.Infrastructure.Configuration;
 
-internal static class AzureClientFactory
+public static class AzureClientFactory
 {
     // DefaultAzureCredential tries ManagedIdentityCredential first (using the configured
     // client ID when the Container App's user-assigned identity would otherwise be

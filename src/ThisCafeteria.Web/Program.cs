@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -39,6 +40,22 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
+
+var azureOptions = builder.Configuration.GetSection(AzureOptions.SectionName).Get<AzureOptions>() ?? new AzureOptions();
+if (!string.IsNullOrWhiteSpace(azureOptions.Storage.BlobEndpoint))
+{
+    // Container Apps runs multiple replicas with no shared filesystem. Without a shared key
+    // ring, each replica encrypts session/antiforgery cookies with its own in-memory keys, so
+    // any request the load balancer routes to a different replica (or after any replica
+    // restarts) fails to decrypt them — surfacing to users as a Blazor circuit crash.
+    var dataProtectionCredential = AzureClientFactory.CreateCredential(azureOptions.ManagedIdentity);
+    var keysBlobUri = new Uri($"{azureOptions.Storage.BlobEndpoint.TrimEnd('/')}/dataprotection-keys/keys.xml");
+
+    builder.Services.AddDataProtection()
+        .SetApplicationName("ThisCafeteria")
+        .PersistKeysToAzureBlobStorage(keysBlobUri, dataProtectionCredential);
+}
+
 builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
