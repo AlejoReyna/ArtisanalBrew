@@ -87,4 +87,23 @@ public sealed class UserProfileRepository(AppDbContext dbContext) : IUserProfile
             .AsNoTracking()
             .CountAsync(order => order.UserProfileId == userProfileId, cancellationToken);
     }
+
+    public async Task DeleteProfileCascadeAsync(Guid userProfileId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        // Order -> UserProfile is DeleteBehavior.Restrict (financial records shouldn't vanish via an
+        // unrelated cascade), so orders must be deleted explicitly first. That delete does cascade to
+        // OrderItems, Receipt, TransparencyRecords and CouponRedemption, which are all keyed off Order.
+        await dbContext.Orders
+            .Where(order => order.UserProfileId == userProfileId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        // Cart -> UserProfile is DeleteBehavior.Cascade, so this takes the cart and its items with it.
+        await dbContext.UserProfiles
+            .Where(profile => profile.Id == userProfileId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+    }
 }

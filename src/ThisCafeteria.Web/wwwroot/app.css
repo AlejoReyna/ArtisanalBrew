@@ -2526,6 +2526,30 @@ body.product-detail-view .product-detail-card__title h1 {
     color: var(--menu-espresso);
 }
 
+.user-menu__delete-account {
+    margin: 0;
+}
+
+.user-menu__delete-account button {
+    background: transparent;
+    border: 0;
+    color: rgba(178, 59, 47, 0.72);
+    cursor: pointer;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    padding: 0.25rem 0;
+    text-align: left;
+    text-transform: uppercase;
+    transition: color 160ms ease;
+    width: 100%;
+}
+
+.user-menu__delete-account button:hover {
+    color: #b23b2f;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .user-menu-backdrop,
     .user-menu,
@@ -2536,7 +2560,8 @@ body.product-detail-view .product-detail-card__title h1 {
     .user-menu__row,
     .user-menu__goto,
     .user-menu__new-stake,
-    .user-menu__logout button {
+    .user-menu__logout button,
+    .user-menu__delete-account button {
         transition: none;
     }
 

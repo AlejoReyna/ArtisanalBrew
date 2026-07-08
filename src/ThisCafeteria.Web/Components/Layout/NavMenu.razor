@@ -7,9 +7,14 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject WalletDashboardState DashboardState
 @inject BlockchainNetworkOptions Chain
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IProfileService ProfileService
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Application.Services.Blockchain
+@using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Web.Services.Blockchain
 @using ThisCafeteria.Web.Services.Cart
 @using System.Security.Claims
@@ -159,6 +164,9 @@
                 <form method="post" action="/api/wallet-auth/logout" class="nav-drawer__logout">
                     <button type="submit">Disconnect</button>
                 </form>
+                <div class="nav-drawer__delete-account">
+                    <button type="button" @onclick="OpenDeleteAccountModal">Delete Account</button>
+                </div>
             </Authorized>
             <NotAuthorized>
                 <button class="nav-drawer__cta" type="button" @onclick="OpenWalletModal">Connect Wallet</button>
@@ -240,11 +248,63 @@
                     <form method="post" action="/api/wallet-auth/logout" class="user-menu__logout">
                         <button type="submit">Log out</button>
                     </form>
+                    <div class="user-menu__delete-account">
+                        <button type="button" @onclick="OpenDeleteAccountModal">Delete Account</button>
+                    </div>
                 </div>
             </aside>
         }
     </Authorized>
 </AuthorizeView>
+
+@if (_isDeleteAccountModalOpen)
+{
+    <div class="wallet-modal" role="presentation" @onclick="CloseDeleteAccountModal">
+        <section class="wallet-modal__panel"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="delete-account-modal-title"
+                 @onclick:stopPropagation="true">
+            <div class="wallet-modal__header">
+                <div class="wallet-modal__title-group">
+                    <h2 id="delete-account-modal-title">Delete your account?</h2>
+                </div>
+                <button class="wallet-modal__close"
+                        type="button"
+                        aria-label="Close"
+                        disabled="@_isDeletingAccount"
+                        @onclick="CloseDeleteAccountModal">
+                    ×
+                </button>
+            </div>
+
+            <p class="wallet-modal__note">
+                This permanently deletes your profile, cart, and order history from the database. This
+                cannot be undone.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(_deleteAccountError))
+            {
+                <p class="wallet-modal__error">@_deleteAccountError</p>
+            }
+
+            <div class="delete-account-modal__actions">
+                <button type="button"
+                        class="delete-account-modal__cancel"
+                        disabled="@_isDeletingAccount"
+                        @onclick="CloseDeleteAccountModal">
+                    Cancel
+                </button>
+                <button type="button"
+                        class="delete-account-modal__confirm"
+                        disabled="@_isDeletingAccount"
+                        @onclick="ConfirmDeleteAccountAsync">
+                    @(_isDeletingAccount ? "Deleting..." : "Delete my account")
+                </button>
+            </div>
+        </section>
+    </div>
+}
 
 @if (_isWalletModalOpen)
 {
@@ -360,6 +420,9 @@
     private bool _isConnecting;
     private string? _statusMessage;
     private string? _errorMessage;
+    private bool _isDeleteAccountModalOpen;
+    private bool _isDeletingAccount;
+    private string? _deleteAccountError;
     private const int UserMenuTransitionMilliseconds = 360;
 
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
@@ -593,6 +656,75 @@
         finally
         {
             _isConnecting = false;
+        }
+    }
+
+    private void OpenDeleteAccountModal()
+    {
+        _isNavOpen = false;
+        _isUserMenuOpen = false;
+        _isUserMenuRendered = false;
+        _isDeleteAccountModalOpen = true;
+        _deleteAccountError = null;
+    }
+
+    private void CloseDeleteAccountModal()
+    {
+        if (_isDeletingAccount)
+        {
+            return;
+        }
+
+        _isDeleteAccountModalOpen = false;
+        _deleteAccountError = null;
+    }
+
+    private async Task ConfirmDeleteAccountAsync()
+    {
+        _isDeletingAccount = true;
+        _deleteAccountError = null;
+        StateHasChanged();
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var applicationUserId = UserManager.GetUserId(authState.User);
+            if (string.IsNullOrWhiteSpace(applicationUserId))
+            {
+                _deleteAccountError = "Your session has expired. Please log in again.";
+                return;
+            }
+
+            var applicationUser = await UserManager.FindByIdAsync(applicationUserId);
+            if (applicationUser is null)
+            {
+                _deleteAccountError = "Your session has expired. Please log in again.";
+                return;
+            }
+
+            if (applicationUser.UserProfileId is { } userProfileId)
+            {
+                await ProfileService.DeleteAccountAsync(userProfileId);
+            }
+
+            var deleteResult = await UserManager.DeleteAsync(applicationUser);
+            if (!deleteResult.Succeeded)
+            {
+                _deleteAccountError = string.Join(" ", deleteResult.Errors.Select(error => error.Description));
+                return;
+            }
+
+            await SignInManager.SignOutAsync();
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Could not delete the authenticated user's account.");
+            _deleteAccountError = "Something went wrong deleting your account. Please try again.";
+        }
+        finally
+        {
+            _isDeletingAccount = false;
         }
     }
 

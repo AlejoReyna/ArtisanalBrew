@@ -104,6 +104,11 @@ public sealed class ProfileService(
             profile.Role.ToString());
     }
 
+    public async Task DeleteAccountAsync(Guid userProfileId, CancellationToken cancellationToken = default)
+    {
+        await userProfileRepository.DeleteProfileCascadeAsync(userProfileId, cancellationToken);
+    }
+
     private static string CreateSyntheticEmail(string walletAddress)
     {
         var localPart = walletAddress.Trim().ToLowerInvariant();

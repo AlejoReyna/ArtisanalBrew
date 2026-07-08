@@ -10,4 +10,5 @@ public interface IProfileService
         Guid userProfileId,
         UpdateUserProfileRequest request,
         CancellationToken cancellationToken = default);
+    Task DeleteAccountAsync(Guid userProfileId, CancellationToken cancellationToken = default);
 }
