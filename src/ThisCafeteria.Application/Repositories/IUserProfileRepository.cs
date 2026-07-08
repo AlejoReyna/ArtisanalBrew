@@ -23,6 +23,8 @@ public interface IUserProfileRepository
     Task UpdateAsync(UserProfile profile, CancellationToken cancellationToken = default);
 
     Task<int> CountOrdersAsync(Guid userProfileId, CancellationToken cancellationToken = default);
+
+    Task DeleteProfileCascadeAsync(Guid userProfileId, CancellationToken cancellationToken = default);
 }
 
 public sealed record ApplicationUserProfileSnapshot(
