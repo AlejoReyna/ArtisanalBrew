@@ -584,7 +584,7 @@
                 _step = CheckoutStep.Payment;
                 try
                 {
-                    var profileId = await ProfileService.EnsureProfileLinkedAsync(user.Id);
+                    var profileId = await ProfileService.EnsureProfileLinkedAsync(user!.Id);
                     _profile = await ProfileService.GetProfileDashboardAsync(profileId);
                 }
                 catch { /* ignore profile load errors */ }

@@ -246,6 +246,61 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         return verified ? TransactionVerificationStatus.Verified : TransactionVerificationStatus.Failed;
     }
 
+    public async Task<StakingVerificationResult> VerifyNativeEthPaymentAsync(
+        string txHash,
+        string expectedWallet,
+        decimal expectedAmountEth,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsTransactionHash(txHash) ||
+            !IsValidAddress(expectedWallet) ||
+            expectedAmountEth <= 0m ||
+            !WalletAddressRules.IsConfiguredAddress(_chain.MarketplaceWallet))
+        {
+            return StakingVerificationResult.Failed;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var receipt = await _readOnlyWeb3.Eth.Transactions
+            .GetTransactionReceipt
+            .SendRequestAsync(txHash)
+            .ConfigureAwait(false);
+
+        if (receipt is null ||
+            receipt.Status?.Value != BigInteger.One ||
+            !AddressMatches(receipt.To, _chain.MarketplaceWallet))
+        {
+            return StakingVerificationResult.Failed;
+        }
+
+        var confirmations = await GetConfirmationsAsync(receipt, cancellationToken).ConfigureAwait(false);
+        if (confirmations < _chain.MinimumConfirmations)
+        {
+            return StakingVerificationResult.Pending(confirmations, _chain.MinimumConfirmations);
+        }
+
+        var transaction = await _readOnlyWeb3.Eth.Transactions
+            .GetTransactionByHash
+            .SendRequestAsync(txHash)
+            .ConfigureAwait(false);
+
+        var expectedAmountWei = Web3.Convert.ToWei(expectedAmountEth);
+        if (transaction is null ||
+            !AddressMatches(transaction.From, expectedWallet) ||
+            !AddressMatches(transaction.To, _chain.MarketplaceWallet) ||
+            transaction.Value?.Value != expectedAmountWei)
+        {
+            return StakingVerificationResult.Failed;
+        }
+
+        return new StakingVerificationResult(
+            TransactionVerificationStatus.Verified,
+            expectedAmountEth,
+            confirmations,
+            _chain.MinimumConfirmations);
+    }
+
     public async Task<decimal> GetStakedPaymentTokenBalanceAsync(
         string walletAddress,
         CancellationToken cancellationToken = default)
