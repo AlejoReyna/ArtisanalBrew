@@ -17,6 +17,13 @@ public interface ICoffeeWeb3Service
         decimal expectedAmount,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Verifies a native ETH transfer (checkout payment) to the marketplace wallet, tracking block confirmations.</summary>
+    Task<StakingVerificationResult> VerifyNativeEthPaymentAsync(
+        string txHash,
+        string expectedWallet,
+        decimal expectedAmountEth,
+        CancellationToken cancellationToken = default);
+
     Task<decimal> GetStakedPaymentTokenBalanceAsync(
         string walletAddress,
         CancellationToken cancellationToken = default);
