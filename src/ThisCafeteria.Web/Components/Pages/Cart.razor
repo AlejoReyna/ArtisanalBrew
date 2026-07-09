@@ -219,19 +219,19 @@
 
     private async Task UpdateQuantityAsync(string slug, int quantity)
     {
-        await CartService.SetQuantityAsync(slug, quantity);
+        await CartMutationClient.SetQuantityAsync(slug, quantity);
         await RefreshAsync();
     }
 
     private async Task RemoveAsync(string slug)
     {
-        await CartService.RemoveAsync(slug);
+        await CartMutationClient.RemoveAsync(slug);
         await RefreshAsync();
     }
 
     private async Task ClearAsync()
     {
-        await CartService.ClearAsync();
+        await CartMutationClient.ClearAsync();
         await RefreshAsync();
     }
 
