@@ -23,6 +23,7 @@ public sealed class BlockchainNetworkOptions
     public string AnkrBNBContract { get; init; } = string.Empty;
     public string StakingPoolContract { get; init; } = string.Empty;
     public string CoffeeCoinContract { get; init; } = string.Empty;
+    public string CafeFaucetContract { get; init; } = string.Empty;
     public string MarketplaceWallet { get; init; } = string.Empty;
     public decimal StakingAprPercent { get; init; } = 5.2m;
     public int MinimumConfirmations { get; init; } = 2;

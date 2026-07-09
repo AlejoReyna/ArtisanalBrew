@@ -17,6 +17,15 @@ internal static class ContractAbis
     public const string Erc20TotalSupply =
         "[{'constant':true,'inputs':[],'name':'totalSupply','outputs':[{'name':'','type':'uint256'}],'type':'function'}]";
 
+    public const string CafeFaucet =
+        "[" +
+        "{'constant':false,'inputs':[],'name':'claim','outputs':[],'type':'function'}," +
+        "{'constant':true,'inputs':[],'name':'claimAmount','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
+        "{'constant':true,'inputs':[],'name':'cooldownSeconds','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
+        "{'constant':true,'inputs':[{'name':'account','type':'address'}],'name':'nextClaimAt','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
+        "{'constant':true,'inputs':[{'name':'account','type':'address'}],'name':'canClaim','outputs':[{'name':'','type':'bool'}],'type':'function'}" +
+        "]";
+
     public const string StakingPool =
         "[" +
         "{'constant':true,'inputs':[{'name':'account','type':'address'}],'name':'balanceOf','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +

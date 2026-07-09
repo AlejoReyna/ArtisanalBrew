@@ -34,6 +34,16 @@ const erc20ApproveAbi = [
     }
 ];
 
+const cafeFaucetAbi = [
+    {
+        constant: false,
+        inputs: [],
+        name: "claim",
+        outputs: [],
+        type: "function"
+    }
+];
+
 const stakingPoolAbi = [
     {
         constant: false,
@@ -264,6 +274,7 @@ export function initCoffeePurchases(config, dotNetRef) {
     }
 
     bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel, networkName);
+    bindFaucetActions(config, web3);
 
     document.querySelectorAll(".btn-buy-token").forEach((button) => {
         if (button.dataset.coffeeStakingBound === "true") {
@@ -505,6 +516,51 @@ function bindStakingActions(config, web3, paymentTokenAddress, paymentTokenLabel
                 await notifyCompleted("claim");
             } catch (error) {
                 await notify("claim", step, "error", null, friendlyError(error, "Claim transaction failed."));
+            } finally {
+                delete target.dataset.transactionPending;
+                target.disabled = false;
+            }
+        });
+    });
+}
+
+function bindFaucetActions(config, web3) {
+    const cafeFaucetAddress = config.cafeFaucetContract;
+
+    if (!cafeFaucetAddress || cafeFaucetAddress === "0x0000000000000000000000000000000000000000") {
+        console.warn("CafeFaucetContract is not configured; the CAFE faucet is disabled.");
+        return;
+    }
+
+    document.querySelectorAll(".btn-claim-cafe-faucet").forEach((button) => {
+        if (button.dataset.coffeeStakingBound === "true") {
+            return;
+        }
+
+        button.dataset.coffeeStakingBound = "true";
+        button.addEventListener("click", async (event) => {
+            const target = event.currentTarget;
+            if (target.dataset.transactionPending === "true") {
+                return;
+            }
+
+            target.dataset.transactionPending = "true";
+            target.disabled = true;
+
+            let step = "claim";
+            try {
+                const activeAccount = await prepareWalletForTransaction(config, web3);
+                const faucetContract = new web3.eth.Contract(cafeFaucetAbi, cafeFaucetAddress);
+
+                await notify("cafe-faucet", "claim", "pending", null, "Claim test CAFE in MetaMask.");
+                const receipt = await faucetContract.methods
+                    .claim()
+                    .send({ from: activeAccount });
+                await notify("cafe-faucet", "claim", "confirmed", receipt.transactionHash);
+
+                await notifyCompleted("cafe-faucet");
+            } catch (error) {
+                await notify("cafe-faucet", step, "error", null, friendlyError(error, "Claim transaction failed."));
             } finally {
                 delete target.dataset.transactionPending;
                 target.disabled = false;

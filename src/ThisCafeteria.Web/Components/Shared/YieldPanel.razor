@@ -168,6 +168,26 @@ else
                 </div>
             }
 
+            @if (_cafeFaucetConfigured)
+            {
+                <section class="yield-faucet-cafe" aria-label="Test CAFE faucet">
+                    <div class="yield-faucet-cafe__body">
+                        <p class="yield-faucet-cafe__eyebrow">Need test CAFE?</p>
+                        <h2 class="yield-faucet-cafe__title">Claim @FormatAmount(_faucetStatus.ClaimAmount) CAFE</h2>
+                        <p class="yield-faucet-cafe__desc">@FaucetStatusLabel()</p>
+                    </div>
+                    <button type="button"
+                            class="yield-cta-btn yield-cta-btn--dark btn-claim-cafe-faucet"
+                            disabled="@(!_faucetStatus.CanClaim)">
+                        Claim CAFE
+                    </button>
+                    @if (_activeTx?.Flow == "cafe-faucet")
+                    {
+                        <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                    }
+                </section>
+            }
+
             <details class="yield-faucet" open="@ShouldExpandFaucet">
                 <summary class="yield-faucet__summary">
                     <span class="yield-faucet__summary-label">Need test ETH for gas?</span>
@@ -362,6 +382,8 @@ else
     private bool _isConnected;
     private bool _isConnecting;
     private bool _stakingConfigured;
+    private bool _cafeFaucetConfigured;
+    private CafeFaucetStatus _faucetStatus = new();
     private string? _connectError;
     private string? _dashboardError;
     private decimal? _ethUsdPrice;
@@ -378,6 +400,7 @@ else
         _chain = ChainOptions.Value;
         _stakingConfigured = WalletAddressRules.IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
             WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
+        _cafeFaucetConfigured = WalletAddressRules.IsConfiguredAddress(_chain.CafeFaucetContract);
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
         await ApplyResolvedWalletAsync();
@@ -432,7 +455,7 @@ else
             return;
         }
 
-        if (!_isConnected || !_stakingConfigured || _jsInitialized)
+        if (!_isConnected || (!_stakingConfigured && !_cafeFaucetConfigured) || _jsInitialized)
         {
             return;
         }
@@ -450,6 +473,7 @@ else
                 marketplaceWallet = _chain.MarketplaceWallet,
                 paymentTokenContract = _chain.EffectivePaymentTokenContract,
                 stakingPoolContract = _chain.StakingPoolContract,
+                cafeFaucetContract = _chain.CafeFaucetContract,
                 expectedWalletAddress = _dashboard.WalletAddress,
                 stakedTokenBalance = _dashboard.StakedPaymentTokenBalance,
                 chainId = _chain.ChainId,
@@ -476,7 +500,7 @@ else
             return;
         }
 
-        if (flow is not ("stake" or "unstake" or "claim"))
+        if (flow is not ("stake" or "unstake" or "claim" or "cafe-faucet"))
         {
             return;
         }
@@ -539,9 +563,13 @@ else
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             var dashboardTask = Web3Service.GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token);
             var ethUsdPriceTask = EthUsdPriceService.GetEthUsdPriceAsync(timeout.Token);
+            var faucetStatusTask = _cafeFaucetConfigured
+                ? Web3Service.GetCafeFaucetStatusAsync(_dashboard.WalletAddress, timeout.Token)
+                : Task.FromResult(new CafeFaucetStatus());
 
             _dashboard = await dashboardTask.WaitAsync(timeout.Token);
             _ethUsdPrice = await ethUsdPriceTask.WaitAsync(timeout.Token);
+            _faucetStatus = await faucetStatusTask.WaitAsync(timeout.Token);
             await LoadStakingLedgerAsync(timeout.Token);
             DashboardState.Publish(_dashboard.WalletAddress, _dashboard);
         }
@@ -738,6 +766,44 @@ else
         _isLoading || _dashboard.AprIsContractDerived
             ? "Contract Annual Yield"
             : "Indicative Annual Yield (configured, not contract-enforced)";
+
+    private string FaucetStatusLabel()
+    {
+        if (_isLoading)
+        {
+            return "Syncing...";
+        }
+
+        if (!_faucetStatus.IsConfigured)
+        {
+            return "Faucet not deployed yet.";
+        }
+
+        if (_faucetStatus.FaucetBalance < _faucetStatus.ClaimAmount)
+        {
+            return "Faucet is empty right now. Check back later.";
+        }
+
+        if (_faucetStatus.CanClaim)
+        {
+            return "Available now — claim straight to your wallet.";
+        }
+
+        if (_faucetStatus.NextClaimAtUtc is { } nextClaimAtUtc)
+        {
+            var remaining = nextClaimAtUtc - DateTime.UtcNow;
+            return remaining <= TimeSpan.Zero
+                ? "Available now — claim straight to your wallet."
+                : $"Next claim in {FormatRemaining(remaining)}.";
+        }
+
+        return "Not available right now.";
+    }
+
+    private static string FormatRemaining(TimeSpan remaining) =>
+        remaining.TotalHours >= 1
+            ? $"{(int)remaining.TotalHours}h {remaining.Minutes}m"
+            : $"{Math.Max(1, (int)remaining.TotalMinutes)}m";
 
     private bool ShouldExpandFaucet =>
         !_isLoading && string.IsNullOrWhiteSpace(_dashboardError) && _dashboard.NativeBalance < LowGasThresholdEth;
