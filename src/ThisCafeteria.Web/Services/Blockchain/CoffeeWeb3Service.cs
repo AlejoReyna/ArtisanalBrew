@@ -23,6 +23,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
     private readonly string _paymentTokenContract;
     private readonly string _coffeeCoinContract;
     private readonly string _stakingPoolContract;
+    private readonly string _cafeFaucetContract;
 
     public CoffeeWeb3Service(
         IOptions<BlockchainNetworkOptions> chainOptions,
@@ -36,6 +37,7 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
         _paymentTokenContract = _chain.EffectivePaymentTokenContract;
         _coffeeCoinContract = _chain.CoffeeCoinContract;
         _stakingPoolContract = _chain.StakingPoolContract;
+        _cafeFaucetContract = _chain.CafeFaucetContract;
     }
 
     public bool IsMintingConfigured => _owner.IsConfigured;
@@ -295,6 +297,67 @@ public sealed class CoffeeWeb3Service : ICoffeeWeb3Service
                 walletAddress,
                 _stakingPoolContract);
             return null;
+        }
+    }
+
+    public async Task<CafeFaucetStatus> GetCafeFaucetStatusAsync(
+        string walletAddress,
+        CancellationToken cancellationToken = default)
+    {
+        if (!WalletAddressRules.IsConfiguredAddress(_cafeFaucetContract) ||
+            !WalletAddressRules.IsConfiguredAddress(_paymentTokenContract))
+        {
+            return new CafeFaucetStatus { IsConfigured = false };
+        }
+
+        if (!IsValidAddress(walletAddress))
+        {
+            return new CafeFaucetStatus { IsConfigured = true };
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            var contract = _readOnlyWeb3.Eth.GetContract(ContractAbis.CafeFaucet, _cafeFaucetContract);
+
+            var claimAmountWeiTask = contract.GetFunction("claimAmount").CallAsync<BigInteger>();
+            var cooldownSecondsTask = contract.GetFunction("cooldownSeconds").CallAsync<BigInteger>();
+            var nextClaimAtTask = contract.GetFunction("nextClaimAt").CallAsync<BigInteger>(walletAddress);
+            var canClaimTask = contract.GetFunction("canClaim").CallAsync<bool>(walletAddress);
+            var faucetBalanceTask = GetErc20BalanceAsync(_cafeFaucetContract, _paymentTokenContract, cancellationToken);
+
+            await Task.WhenAll(
+                    claimAmountWeiTask,
+                    cooldownSecondsTask,
+                    nextClaimAtTask,
+                    canClaimTask,
+                    faucetBalanceTask)
+                .ConfigureAwait(false);
+
+            var nextClaimAtUnix = await nextClaimAtTask.ConfigureAwait(false);
+
+            return new CafeFaucetStatus
+            {
+                IsConfigured = true,
+                ClaimAmount = Web3.Convert.FromWei(await claimAmountWeiTask.ConfigureAwait(false)),
+                CooldownSeconds = (int)await cooldownSecondsTask.ConfigureAwait(false),
+                NextClaimAtUtc = nextClaimAtUnix > BigInteger.Zero
+                    ? DateTimeOffset.FromUnixTimeSeconds((long)nextClaimAtUnix).UtcDateTime
+                    : null,
+                CanClaim = await canClaimTask.ConfigureAwait(false),
+                FaucetBalance = await faucetBalanceTask.ConfigureAwait(false)
+            };
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Failed to read CafeFaucet status for {WalletAddress} from {CafeFaucetContract}.",
+                walletAddress,
+                _cafeFaucetContract);
+
+            return new CafeFaucetStatus { IsConfigured = true, CanClaim = false };
         }
     }
 

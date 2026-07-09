@@ -33,5 +33,10 @@ public interface ICoffeeWeb3Service
         StakingTransactionType transactionType,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Reads live claim amount, cooldown, and eligibility from the configured CafeFaucet contract.</summary>
+    Task<CafeFaucetStatus> GetCafeFaucetStatusAsync(
+        string walletAddress,
+        CancellationToken cancellationToken = default);
+
     bool IsMintingConfigured { get; }
 }

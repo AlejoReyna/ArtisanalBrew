@@ -305,6 +305,45 @@
     margin: 0;
 }
 
+.yield-faucet-cafe {
+    align-items: center;
+    background: rgba(229, 192, 120, 0.1);
+    border: 1px solid rgba(229, 192, 120, 0.3);
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: 0;
+    padding: 1rem 1.2rem;
+}
+
+.yield-faucet-cafe__body {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.yield-faucet-cafe__eyebrow {
+    color: #E5C078;
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.yield-faucet-cafe__title {
+    color: #F4EFE6;
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.yield-faucet-cafe__desc {
+    color: rgba(244, 239, 230, 0.72);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
 .yield-hero-lede {
     color: rgba(244, 239, 230, 0.72);
     font-size: clamp(0.98rem, 1.5vw, 1.15rem);
