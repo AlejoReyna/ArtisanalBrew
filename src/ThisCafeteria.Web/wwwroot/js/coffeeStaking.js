@@ -118,8 +118,8 @@ function clearInput(inputId) {
     }
 }
 
-function getWeb3() {
-    const provider = getMetaMaskProvider();
+async function getWeb3() {
+    const provider = await resolveMetaMaskProvider();
     if (!provider) {
         throw new Error("MetaMask is not installed.");
     }
@@ -131,11 +131,69 @@ function getWeb3() {
     return web3Instance;
 }
 
-function getMetaMaskProvider() {
-    const providers = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+async function resolveMetaMaskProvider() {
+    const providers = await getAvailableProviders();
+    return findMetaMaskProvider(providers);
+}
+
+async function getAvailableProviders() {
+    const injectedProviders = window.ethereum?.providers ?? (window.ethereum ? [window.ethereum] : []);
+    const announcedProviders = await getAnnouncedProviders();
+    const announcedMetaMaskProviders = announcedProviders
+        .filter(isMetaMaskAnnouncement)
+        .map(announcement => announcement.provider);
+    const otherAnnouncedProviders = announcedProviders
+        .filter(announcement => !isMetaMaskAnnouncement(announcement))
+        .map(announcement => announcement.provider);
+    const providers = [
+        ...announcedMetaMaskProviders,
+        ...injectedProviders.filter(provider => provider?._metamask),
+        ...injectedProviders.filter(isMetaMaskProvider),
+        ...otherAnnouncedProviders,
+        ...injectedProviders
+    ];
+
+    return providers.filter((provider, index) => provider && providers.indexOf(provider) === index);
+}
+
+function getAnnouncedProviders() {
+    if (typeof window === "undefined") {
+        return Promise.resolve([]);
+    }
+
+    return new Promise(resolve => {
+        const providers = [];
+        const onAnnouncement = event => {
+            if (event.detail?.provider) {
+                providers.push(event.detail);
+            }
+        };
+
+        window.addEventListener("eip6963:announceProvider", onAnnouncement);
+        window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+        window.setTimeout(() => {
+            window.removeEventListener("eip6963:announceProvider", onAnnouncement);
+            resolve(providers);
+        }, 80);
+    });
+}
+
+function findMetaMaskProvider(providers) {
     return providers.find(provider => provider?._metamask && isMetaMaskProvider(provider))
         ?? providers.find(isMetaMaskProvider)
         ?? null;
+}
+
+function isMetaMaskAnnouncement(announcement) {
+    const rdns = announcement?.info?.rdns?.toLowerCase();
+    const name = announcement?.info?.name?.toLowerCase();
+
+    return Boolean(
+        rdns === "io.metamask" ||
+        rdns?.startsWith("io.metamask.") ||
+        name === "metamask"
+    );
 }
 
 function isMetaMaskProvider(provider) {
@@ -162,21 +220,26 @@ function isKnownNonMetaMaskProvider(provider) {
 }
 
 export async function connectWalletForStaking(config) {
-    const web3 = getWeb3();
+    const provider = await resolveMetaMaskProvider();
+    if (!provider) {
+        throw new Error("MetaMask is not installed.");
+    }
+
+    const web3 = await getWeb3();
     const accounts = await web3.eth.requestAccounts();
     const account = accounts[0];
     if (!account) {
         throw new Error("No MetaMask account was selected.");
     }
 
-    await ensureConfiguredNetwork(config);
+    await ensureConfiguredNetwork(config, provider);
     const chainId = Number(await web3.eth.net.getId());
 
     const payload = { walletAddress: account, chainId };
 
     if (!config.isWalletAuthenticated) {
         const challenge = await postJson("/api/wallet-auth/challenge", { address: account, walletName: "MetaMask" });
-        const signature = await getMetaMaskProvider().request({
+        const signature = await provider.request({
             method: "personal_sign",
             params: [challenge.message, account]
         });
@@ -250,14 +313,14 @@ async function postJsonWithConfirmationRetry(url, payload, flow, step = "record"
     throw new Error("Timed out waiting for enough block confirmations. Check the transaction on the explorer and try again shortly.");
 }
 
-export function initCoffeePurchases(config, dotNetRef) {
+export async function initCoffeePurchases(config, dotNetRef) {
     txNotifier = dotNetRef ?? txNotifier;
 
-    if (!getMetaMaskProvider()) {
+    if (!(await resolveMetaMaskProvider())) {
         return;
     }
 
-    const web3 = getWeb3();
+    const web3 = await getWeb3();
     const recipient = config.marketplaceWallet;
     const paymentTokenAddress = config.paymentTokenContract;
     const networkName = config.networkName ?? "Ethereum Sepolia";
@@ -617,20 +680,24 @@ function readTokenAmount(inputId, missingMessage) {
     return amount;
 }
 
-async function ensureConfiguredNetwork(config) {
+async function ensureConfiguredNetwork(config, provider) {
     if (!config) {
         return;
     }
 
-    const provider = getMetaMaskProvider();
+    const activeProvider = provider ?? await resolveMetaMaskProvider();
+    if (!activeProvider) {
+        throw new Error("MetaMask is not installed.");
+    }
+
     const chainIdHex = config.chainIdHex;
-    const currentChainId = await provider.request({ method: "eth_chainId" });
+    const currentChainId = await activeProvider.request({ method: "eth_chainId" });
     if (currentChainId?.toLowerCase() === chainIdHex?.toLowerCase()) {
         return;
     }
 
     try {
-        await provider.request({
+        await activeProvider.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: chainIdHex }]
         });
@@ -639,7 +706,7 @@ async function ensureConfiguredNetwork(config) {
             throw error;
         }
 
-        await provider.request({
+        await activeProvider.request({
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: chainIdHex,
