@@ -34,7 +34,7 @@
                 <p class="text-danger">@_connectError</p>
             }
             <button type="button" class="button button--dark" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                @(_isConnecting ? "Connecting..." : "Connect MetaMask")
+                @(_isConnecting ? "Connecting..." : "Connect wallet")
             </button>
             @if (OnBackToProfile.HasDelegate)
             {
