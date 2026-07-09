@@ -757,7 +757,15 @@
 
         if (_walletModule is not null)
         {
-            await _walletModule.DisposeAsync();
+            try
+            {
+                await _walletModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit is already gone (e.g. a forceLoad navigation), so there's
+                // no connection left to send the JS dispose call over.
+            }
         }
 
         _userMenuTransitionCancellation?.Cancel();
