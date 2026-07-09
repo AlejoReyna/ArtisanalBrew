@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject IJSRuntime JsRuntime
 @inject IShoppingCartService CartService
+@inject ICartMutationClient CartMutationClient
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
@@ -877,7 +878,7 @@
             _receiptSent = false;
             _receiptError = null;
 
-            await CartService.ClearAsync();
+            await CartMutationClient.ClearAsync();
 
             _paymentComplete = true;
         }

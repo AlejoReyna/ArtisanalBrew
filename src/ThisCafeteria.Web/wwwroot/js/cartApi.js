@@ -8,6 +8,41 @@ export async function addItem(slug, quantity = 1) {
         body: JSON.stringify({ slug, quantity })
     });
 
+    return parseCartResponse(response);
+}
+
+export async function setQuantity(slug, quantity) {
+    const response = await fetch(`/api/cart/items/${encodeURIComponent(slug)}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ quantity })
+    });
+
+    return parseCartResponse(response);
+}
+
+export async function removeItem(slug) {
+    const response = await fetch(`/api/cart/items/${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+        credentials: "include"
+    });
+
+    return parseCartResponse(response);
+}
+
+export async function clearCart() {
+    const response = await fetch("/api/cart", {
+        method: "DELETE",
+        credentials: "include"
+    });
+
+    return parseCartResponse(response);
+}
+
+async function parseCartResponse(response) {
     if (!response.ok) {
         const body = await response.text();
         throw new Error(body || "Cart could not be updated.");
