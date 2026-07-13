@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Options;
 using Serilog;
 using ThisCafeteria.Application;
@@ -18,6 +19,7 @@ using ThisCafeteria.Web.Services.Blockchain;
 using ThisCafeteria.Web.Services.Rewards;
 using ThisCafeteria.Web.Services.Cart;
 using ThisCafeteria.Web.Services.Wallet;
+using ThisCafeteria.Web.Middleware;
 using ThisCafeteria.Infrastructure.Configuration;
 
 LocalDotEnvLoader.LoadIfPresent();
@@ -39,6 +41,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/javascript", "application/json", "text/css", "text/html" });
+});
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
 var azureOptions = builder.Configuration.GetSection(AzureOptions.SectionName).Get<AzureOptions>() ?? new AzureOptions();
@@ -90,6 +98,14 @@ builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<IMigrationReadiness, MigrationReadiness>();
+builder.Services.AddHostedService<MigrationHostedService>(provider =>
+    new MigrationHostedService(
+        provider.GetRequiredService<IServiceProvider>(),
+        provider.GetRequiredService<IConfiguration>(),
+        provider.GetRequiredService<IMigrationReadiness>(),
+        provider.GetRequiredService<ILogger<MigrationHostedService>>(),
+        hasDatabase));
 
 if (hasDatabase)
 {
@@ -143,6 +159,8 @@ else
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+app.UseResponseCompression();
+app.UseMiddleware<MigrationBlockingMiddleware>();
 
 app.UseSession();
 app.UseAuthentication();
@@ -168,12 +186,6 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-if (hasDatabase)
-{
-    await AdminIdentitySeeder.SeedAsync(app.Services, app.Configuration);
-    await SeedDatabaseAsync(app.Services);
-}
 
 ValidateMarketplaceCatalog(app.Services);
 
@@ -216,13 +228,6 @@ static void ValidateMarketplaceCatalog(IServiceProvider services)
     {
         logger.LogError(exception, "Marketplace catalog validation failed at startup");
     }
-}
-
-static async Task SeedDatabaseAsync(IServiceProvider services)
-{
-    using var scope = services.CreateScope();
-    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-    await seeder.SeedAsync();
 }
 
 public partial class Program;

@@ -193,7 +193,7 @@ module webApp 'modules/containerApp.bicep' = {
     targetPort: 8080
     cpu: '0.5'
     memory: '1Gi'
-    minReplicas: 0
+    minReplicas: 1
     maxReplicas: 2
     keyVaultUri: keyVault.outputs.uri
     plainEnvVars: concat(sharedPlainEnvVars, additionalWebEnvVars)
