@@ -265,7 +265,7 @@
                                     <div class="checkout-review-item__image">
                                         @if (!string.IsNullOrWhiteSpace(line.ImageUrl))
                                         {
-                                            <img src="@line.ImageUrl" alt="@line.Name" />
+                                            <img src="@line.ImageUrl" alt="@line.Name" loading="lazy" decoding="async" />
                                         }
                                         else
                                         {
