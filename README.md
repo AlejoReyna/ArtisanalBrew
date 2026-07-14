@@ -1,6 +1,6 @@
 # ArtisanalBrew
 
-ASP.NET reconstruction of the original coffee storefront, prepared as a clean .NET 10 solution with Blazor, ASP.NET Identity, PostgreSQL, Entity Framework Core, Docker, and a fully containerized Azure deployment (Container Apps, Postgres Flexible Server, Blob Storage, Service Bus, Key Vault, Communication Services Email).
+ASP.NET reconstruction of [thisCafeteriaDoesntExist](https://github.com/AlejoReyna/thisCafeteriaDoesntExist), the original first version and idea of the coffee storefront, prepared as a clean .NET 10 solution with Blazor, ASP.NET Identity, PostgreSQL, Entity Framework Core, Docker, and a fully containerized Azure deployment (Container Apps, Postgres Flexible Server, Blob Storage, Service Bus, Key Vault, Communication Services Email).
 
 ## Live Demo
 
@@ -26,7 +26,7 @@ ASP.NET reconstruction of the original coffee storefront, prepared as a clean .N
 - `src/ThisCafeteria.Worker`: background service that consumes order-processing messages from Azure Service Bus.
 - `tests`: unit and integration test projects.
 
-This project is the ASP.NET evolution of the original first version and idea: [AlejoReyna/thisCafeteriaDoesntExist](https://github.com/AlejoReyna/thisCafeteriaDoesntExist). The legacy Next.js app remains untouched at `/Users/alexis/TCDE/thisCafeteriaDoesntExist`.
+
 
 ## Run Locally
 
