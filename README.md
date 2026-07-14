@@ -26,7 +26,7 @@ ASP.NET reconstruction of the original coffee storefront, prepared as a clean .N
 - `src/ThisCafeteria.Worker`: background service that consumes order-processing messages from Azure Service Bus.
 - `tests`: unit and integration test projects.
 
-The legacy Next.js app remains untouched at `/Users/alexis/TCDE/thisCafeteriaDoesntExist`.
+This project is the ASP.NET evolution of the original first version and idea: [AlejoReyna/thisCafeteriaDoesntExist](https://github.com/AlejoReyna/thisCafeteriaDoesntExist). The legacy Next.js app remains untouched at `/Users/alexis/TCDE/thisCafeteriaDoesntExist`.
 
 ## Run Locally
 
