@@ -1,6 +1,6 @@
 # ArtisanalBrew
 
-ASP.NET reconstruction of [thisCafeteriaDoesntExist](https://github.com/AlejoReyna/thisCafeteriaDoesntExist), the original first version and idea of the coffee storefront, prepared as a clean .NET 10 solution with Blazor, ASP.NET Identity, PostgreSQL, Entity Framework Core, Docker, and a fully containerized Azure deployment (Container Apps, Postgres Flexible Server, Blob Storage, Service Bus, Key Vault, Communication Services Email).
+**ArtisanalBrew** is an ASP.NET reconstruction of [thisCafeteriaDoesntExist](https://github.com/AlejoReyna/thisCafeteriaDoesntExist), the original first version and idea of the coffee storefront. It is prepared as a clean .NET 10 solution with Blazor, ASP.NET Identity, PostgreSQL, Entity Framework Core, Docker, and a fully containerized Azure deployment (Container Apps, Postgres Flexible Server, Blob Storage, Service Bus, Key Vault, Communication Services Email).
 
 ## Live Demo
 
