@@ -2,11 +2,24 @@ namespace ThisCafeteria.Infrastructure.Persistence;
 
 public sealed class MigrationReadiness : IMigrationReadiness
 {
-    private readonly TaskCompletionSource _completionSource = new();
+    private int _isReady;
+    private Exception? _failure;
 
-    public bool IsReady => _completionSource.Task.IsCompleted;
+    public bool IsReady => Volatile.Read(ref _isReady) == 1;
 
-    public Task ReadyTask => _completionSource.Task;
+    public Exception? Failure => Volatile.Read(ref _failure);
 
-    public void MarkReady() => _completionSource.TrySetResult();
+    public void MarkReady()
+    {
+        Volatile.Write(ref _failure, null);
+        Volatile.Write(ref _isReady, 1);
+    }
+
+    public void MarkFailed(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+
+        Volatile.Write(ref _isReady, 0);
+        Volatile.Write(ref _failure, exception);
+    }
 }

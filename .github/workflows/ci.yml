@@ -150,6 +150,8 @@ jobs:
             --name "$WEB_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --image "$ACR_NAME.azurecr.io/thiscafeteria-web:$IMAGE_TAG" \
+            --min-replicas 1 \
+            --max-replicas 2 \
             --output none
 
       - name: Update Worker Container App
@@ -159,6 +161,8 @@ jobs:
             --name "$WORKER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --image "$ACR_NAME.azurecr.io/thiscafeteria-worker:$IMAGE_TAG" \
+            --min-replicas 1 \
+            --max-replicas 1 \
             --output none
 
       - name: Wait for Web app health
@@ -169,7 +173,7 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --query "properties.configuration.ingress.fqdn" -o tsv)
           for attempt in $(seq 1 30); do
-            if curl --fail --show-error --silent "https://$WEB_FQDN/health" >/dev/null \
+            if curl --fail --show-error --silent "https://$WEB_FQDN/health/ready" >/dev/null \
               && curl --fail --show-error --silent "https://$WEB_FQDN/_framework/blazor.web.js" >/dev/null; then
               echo "App healthy and serving blazor.web.js on attempt ${attempt}"
               exit 0
