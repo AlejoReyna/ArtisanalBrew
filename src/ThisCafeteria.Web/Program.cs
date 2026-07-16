@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Serilog;
 using ThisCafeteria.Application;
@@ -19,7 +21,7 @@ using ThisCafeteria.Web.Services.Blockchain;
 using ThisCafeteria.Web.Services.Rewards;
 using ThisCafeteria.Web.Services.Cart;
 using ThisCafeteria.Web.Services.Wallet;
-using ThisCafeteria.Web.Middleware;
+using ThisCafeteria.Web.HealthChecks;
 using ThisCafeteria.Infrastructure.Configuration;
 
 LocalDotEnvLoader.LoadIfPresent();
@@ -45,7 +47,9 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
+    .AddCheck<MigrationReadinessHealthCheck>("database-initialization", tags: ["ready"]);
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -165,7 +169,6 @@ else
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseResponseCompression();
-app.UseMiddleware<MigrationBlockingMiddleware>();
 
 app.UseSession();
 app.UseAuthentication();
@@ -174,6 +177,11 @@ app.UseAntiforgery();
 
 app.Use((context, next) =>
 {
+    if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+    {
+        return next(context);
+    }
+
     var antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>();
     var tokens = antiforgery.GetAndStoreTokens(context);
     context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
@@ -188,7 +196,19 @@ app.Use((context, next) =>
 
 app.MapStaticAssets();
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready")
+});
+// Keep the original endpoint as a backwards-compatible readiness check.
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready")
+});
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

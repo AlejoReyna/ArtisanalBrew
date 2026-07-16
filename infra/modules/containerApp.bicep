@@ -96,6 +96,47 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             memory: memory
           }
           env: concat(plainEnvVars, secretEnv)
+          probes: enableIngress ? [
+            {
+              type: 'Startup'
+              httpGet: {
+                path: '/health/live'
+                port: targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 1
+              timeoutSeconds: 3
+              failureThreshold: 120
+              successThreshold: 1
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/health/live'
+                port: targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 30
+              timeoutSeconds: 5
+              failureThreshold: 3
+              successThreshold: 1
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/health/ready'
+                port: targetPort
+                scheme: 'HTTP'
+              }
+              initialDelaySeconds: 1
+              periodSeconds: 5
+              timeoutSeconds: 5
+              failureThreshold: 48
+              successThreshold: 1
+            }
+          ] : []
         }
       ]
       scale: {

@@ -44,8 +44,6 @@ public sealed class DatabaseSeeder(AppDbContext dbContext, IOptions<CatalogOptio
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        await dbContext.Database.MigrateAsync(cancellationToken);
-
         if (catalogOptions.Value.SeedProductsOnStartup)
         {
             await SeedCatalogProductsAsync(cancellationToken);
