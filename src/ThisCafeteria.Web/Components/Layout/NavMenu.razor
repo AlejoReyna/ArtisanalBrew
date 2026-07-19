@@ -48,6 +48,10 @@
             Yield
         </NavLink>
 
+        <NavLink class="nav-link" href="procurement-lab" @onclick="CloseNav">
+            Lab
+        </NavLink>
+
         <NavLink class="nav-link nav-link--about" href="story" @onclick="CloseNav">
             About
         </NavLink>
@@ -96,6 +100,7 @@
         <div class="nav-drawer__wallet">
             <AuthorizeView>
                 <Authorized>
+                    <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="20" height="20" style="margin-right: 4px;" />
                     <span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>
                     <span class="nav-drawer__address" title="@GetWalletAddress(context.User)">
                         @ShortAddress(GetWalletAddress(context.User))
@@ -110,7 +115,7 @@
     </header>
 
     <div class="nav-drawer__body">
-        <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+        <ChainSelector CssClass="nav-drawer__chain-selector" OnChainChanged="HandleChainChangedAsync" />
         <AuthorizeView>
             <Authorized>
                 <div class="nav-drawer__stats">
@@ -148,6 +153,12 @@
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
                 </span>
                 <span class="nav-drawer__tile-label">Yield</span>
+            </NavLink>
+            <NavLink class="nav-drawer__tile" href="procurement-lab" @onclick="CloseNav">
+                <span class="nav-drawer__tile-icon" aria-hidden="true">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                </span>
+                <span class="nav-drawer__tile-label">Lab</span>
             </NavLink>
             <NavLink class="nav-drawer__tile" href="story" @onclick="CloseNav">
                 <span class="nav-drawer__tile-icon" aria-hidden="true">

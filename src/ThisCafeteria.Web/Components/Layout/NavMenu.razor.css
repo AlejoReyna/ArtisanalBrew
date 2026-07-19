@@ -810,6 +810,35 @@
         padding: 0.5rem clamp(1.25rem, 4vw, 2.5rem) 1.5rem;
     }
 
+    ::deep .nav-drawer__chain-selector {
+        display: block;
+        margin-bottom: 1.5rem;
+    }
+
+    ::deep .nav-drawer__chain-selector .chain-selector__control::after {
+        color: rgba(45, 36, 33, 0.6);
+    }
+
+    ::deep .nav-drawer__chain-selector .chain-selector__dropdown {
+        position: static;
+        margin-top: 0.5rem;
+        box-shadow: none;
+        border: 1px solid rgba(45, 36, 33, 0.08);
+        background: rgba(45, 36, 33, 0.035);
+    }
+    
+    ::deep .nav-drawer__chain-selector .chain-selector__option {
+        color: #2d2421;
+    }
+    
+    ::deep .nav-drawer__chain-selector .chain-selector__option:hover {
+        background: rgba(45, 36, 33, 0.06);
+    }
+
+    ::deep .nav-drawer__chain-selector .chain-selector__option.selected {
+        background: rgba(141, 111, 85, 0.15);
+    }
+
     .nav-drawer__stats {
         display: grid;
         gap: 0.75rem;

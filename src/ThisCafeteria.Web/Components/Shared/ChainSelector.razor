@@ -5,7 +5,7 @@
 @inject IJSRuntime JsRuntime
 @implements IDisposable
 
-<div class="chain-selector @(Compact ? "chain-selector--compact" : string.Empty)" @onfocusout="CloseDropdown">
+<div class="chain-selector @(Compact ? "chain-selector--compact" : string.Empty) @CssClass" @onfocusout="CloseDropdown">
     <button type="button" class="chain-selector__control" @onclick="ToggleDropdown" aria-label="Active blockchain network">
         @if (SelectedChainAccessor.SelectedChain != null)
         {
@@ -37,6 +37,7 @@
 
 @code {
     [Parameter] public bool Compact { get; set; }
+    [Parameter] public string? CssClass { get; set; }
     [Parameter] public EventCallback<ChainDefinition> OnChainChanged { get; set; }
 
     private bool _isOpen;
