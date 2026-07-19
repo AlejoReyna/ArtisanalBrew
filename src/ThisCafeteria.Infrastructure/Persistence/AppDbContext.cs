@@ -21,13 +21,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<StakingLedgerEntry> StakingLedgerEntries => Set<StakingLedgerEntry>();
     public DbSet<StakingReconciliationCheckpoint> StakingReconciliationCheckpoints => Set<StakingReconciliationCheckpoint>();
     public DbSet<WalletStatusEvent> WalletStatusEvents => Set<WalletStatusEvent>();
+    public DbSet<WalletIdentity> WalletIdentities => Set<WalletIdentity>();
+    public DbSet<WalletAuthChallenge> WalletAuthChallenges => Set<WalletAuthChallenge>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         builder.Entity<ApplicationUser>(entity =>
         {
-            entity.Property(user => user.WalletAddress).HasMaxLength(42);
+            entity.Property(user => user.WalletAddress).HasMaxLength(128);
             entity.HasIndex(user => user.WalletAddress)
                 .IsUnique()
                 .HasFilter("\"WalletAddress\" IS NOT NULL");

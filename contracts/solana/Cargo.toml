@@ -1,0 +1,11 @@
+[workspace]
+members = ["programs/cafe-liquid-staking"]
+resolver = "2"
+
+[workspace.dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = { version = "0.31.1", features = ["token_2022"] }
+solana-program = "2.2.1"
+
+[profile.release]
+overflow-checks = true

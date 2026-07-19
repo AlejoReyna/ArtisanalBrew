@@ -17,7 +17,7 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -624,55 +624,129 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ActionType")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(36, 18)
                         .HasColumnType("numeric(36,18)");
 
+                    b.Property<decimal>("AssetAmount")
+                        .HasPrecision(36, 18)
+                        .HasColumnType("numeric(36,18)");
+
+                    b.Property<string>("AssetIdentifier")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<long>("BlockOrSlot")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("ChainId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("ExplorerUrl")
                         .IsRequired()
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
+                    b.Property<string>("Family")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<string>("NetworkName")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)");
 
+                    b.Property<DateTime?>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OperationIndex")
+                        .HasColumnType("integer");
+
                     b.Property<string>("PaymentTokenContract")
                         .IsRequired()
-                        .HasMaxLength(42)
-                        .HasColumnType("character varying(42)");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("RawAssetAmount")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("RawRewardAmount")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("RawShareAmount")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("ReceiptIdentifier")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime>("RecordedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal>("RewardAmount")
+                        .HasPrecision(36, 18)
+                        .HasColumnType("numeric(36,18)");
+
+                    b.Property<string>("RewardIdentifier")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<decimal>("ShareAmount")
+                        .HasPrecision(36, 18)
+                        .HasColumnType("numeric(36,18)");
+
                     b.Property<string>("StakingPoolContract")
                         .IsRequired()
-                        .HasMaxLength(42)
-                        .HasColumnType("character varying(42)");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<string>("TransactionHash")
                         .IsRequired()
-                        .HasMaxLength(66)
-                        .HasColumnType("character varying(66)");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("VaultOrProgramIdentifier")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("VerificationState")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<bool>("Verified")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("WalletAddress")
                         .IsRequired()
-                        .HasMaxLength(42)
-                        .HasColumnType("character varying(42)");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TransactionHash")
-                        .IsUnique();
-
                     b.HasIndex("WalletAddress", "RecordedAtUtc");
+
+                    b.HasIndex("ChainKey", "TransactionHash", "OperationIndex")
+                        .IsUnique();
 
                     b.ToTable("StakingLedgerEntries");
                 });
@@ -683,20 +757,48 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("CursorType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Family")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<long>("LastScannedBlock")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("LastScannedSignature")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<long>("LastScannedSlot")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SourceIdentifier")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<string>("StakingPoolContract")
                         .IsRequired()
-                        .HasMaxLength(42)
-                        .HasColumnType("character varying(42)");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StakingPoolContract")
+                    b.HasIndex("ChainKey", "SourceIdentifier")
                         .IsUnique();
 
                     b.ToTable("StakingReconciliationCheckpoints");
@@ -810,6 +912,105 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.ToTable("UserProfiles");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.WalletAuthChallenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("ConsumedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("IssuedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MessageHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("NonceHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("PublicKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("VerificationAttempts")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NonceHash")
+                        .IsUnique();
+
+                    b.HasIndex("ExpiresAtUtc", "ConsumedAtUtc");
+
+                    b.HasIndex("PublicKey", "ChainKey");
+
+                    b.ToTable("WalletAuthChallenges");
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.WalletIdentity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DisplayAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Family")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("NormalizedAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<DateTimeOffset>("VerifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WalletProvider")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Family", "NormalizedAddress")
+                        .IsUnique();
+
+                    b.ToTable("WalletIdentities");
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.WalletStatusEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -917,8 +1118,8 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("WalletAddress")
-                        .HasMaxLength(42)
-                        .HasColumnType("character varying(42)");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
                     b.Property<int?>("WalletChainId")
                         .HasColumnType("integer");
@@ -1101,6 +1302,15 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.WalletIdentity", b =>
+                {
+                    b.HasOne("ThisCafeteria.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany("WalletIdentities")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.Cart", b =>
                 {
                     b.Navigation("Items");
@@ -1129,6 +1339,11 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.Navigation("CouponRedemptions");
 
                     b.Navigation("Orders");
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Infrastructure.Identity.ApplicationUser", b =>
+                {
+                    b.Navigation("WalletIdentities");
                 });
 #pragma warning restore 612, 618
         }

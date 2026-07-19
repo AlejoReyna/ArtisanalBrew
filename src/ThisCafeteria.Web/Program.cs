@@ -28,6 +28,15 @@ LocalDotEnvLoader.LoadIfPresent();
 
 var builder = WebApplication.CreateBuilder(args);
 var hasDatabase = !string.IsNullOrWhiteSpace(DatabaseConnectionStringFactory.Resolve(builder.Configuration));
+var blockchainOptions = builder.Configuration.GetSection(BlockchainOptions.SectionName).Get<BlockchainOptions>() ?? BlockchainOptions.CreateDefaults();
+if (blockchainOptions.Chains.Count == 0)
+{
+    blockchainOptions = BlockchainOptions.CreateDefaults();
+}
+blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
+    blockchainOptions,
+    builder.Configuration["Blockchain:LocalEvmManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST"),
+    builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST"));
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
@@ -82,6 +91,9 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton(blockchainOptions);
+builder.Services.AddSingleton<IChainRegistry>(new ChainRegistry(blockchainOptions));
+builder.Services.AddScoped<ISelectedChainAccessor, SelectedChainAccessor>();
 var blockchainNetworkSection = builder.Configuration.GetSection(BlockchainNetworkOptions.SectionName);
 if (!blockchainNetworkSection.Exists())
 {
@@ -94,7 +106,11 @@ builder.Services.AddSingleton(serviceProvider =>
 builder.Services.Configure<CoffeeCoinOwnerOptions>(
     builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
 builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
+builder.Services.AddScoped<EvmLiquidStakingGateway>();
+builder.Services.AddScoped<SolanaLiquidStakingGateway>();
+builder.Services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
+builder.Services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
 builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
 {

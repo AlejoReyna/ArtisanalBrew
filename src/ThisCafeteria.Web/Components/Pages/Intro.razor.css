@@ -1,0 +1,177 @@
+.intro-stage {
+    --bg: #050403;
+    --ink: #f5efe4;
+    --ink-dim: rgba(245, 239, 228, 0.56);
+    --accent: #c9a063;
+    --glow: rgba(201, 160, 99, 0.24);
+    --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-caption: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 2000;
+}
+
+.intro-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.045;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.intro-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 46%, transparent 0%, transparent 38%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.intro-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(60vw, 640px);
+    height: min(60vw, 640px);
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, var(--glow) 0%, transparent 68%);
+    filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    animation: introGlowIn 2.2s ease-out forwards, introGlowBreathe 5.5s ease-in-out 2.2s infinite;
+}
+
+.intro-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 6vw;
+    text-align: center;
+}
+
+.intro-title {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.32em;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 7vw, 5.2rem);
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    text-wrap: balance;
+}
+
+.intro-word {
+    display: inline-flex;
+}
+
+.intro-letter {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(0.5em) scale(0.94);
+    filter: blur(7px);
+    animation: introLetterIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(0.35s + var(--i) * 55ms);
+}
+
+.intro-rule {
+    --rule-width: 72px;
+    margin-top: 1.6rem;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: introRuleIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) 2s forwards;
+}
+
+.intro-tagline {
+    margin: 1.1rem 0 0;
+    font-family: var(--font-caption);
+    font-size: clamp(0.66rem, 1.1vw, 0.78rem);
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    opacity: 0;
+    transform: translateY(6px);
+    animation: introTagIn 1s ease-out 2.55s forwards;
+}
+
+.intro-replay-zone {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 18vh;
+    min-height: 96px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 26px;
+    pointer-events: auto;
+}
+
+.intro-replay-hint {
+    margin: 0;
+    font-family: var(--font-caption);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(245, 239, 228, 0.3);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.intro-replay-zone:hover .intro-replay-hint {
+    opacity: 1;
+}
+
+@keyframes introGlowIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes introGlowBreathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes introLetterIn {
+    60% { filter: blur(0); }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes introRuleIn {
+    to { width: var(--rule-width); }
+}
+
+@keyframes introTagIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .intro-glow, .intro-letter, .intro-rule, .intro-tagline {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+    }
+    .intro-rule { width: var(--rule-width) !important; }
+}

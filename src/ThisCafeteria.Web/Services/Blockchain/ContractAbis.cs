@@ -39,4 +39,17 @@ internal static class ContractAbis
         "{'constant':true,'inputs':[],'name':'aprBasisPoints','outputs':[{'name':'','type':'uint256'}],'type':'function'}," +
         "{'constant':true,'inputs':[],'name':'totalSupply','outputs':[{'name':'','type':'uint256'}],'type':'function'}" +
         "]";
+
+    public const string LiquidVault = "[" +
+        "{'inputs':[{'name':'assets','type':'uint256'},{'name':'receiver','type':'address'}],'name':'deposit','outputs':[{'name':'shares','type':'uint256'}],'stateMutability':'nonpayable','type':'function'}," +
+        "{'inputs':[{'name':'shares','type':'uint256'},{'name':'receiver','type':'address'},{'name':'owner','type':'address'}],'name':'redeem','outputs':[{'name':'assets','type':'uint256'}],'stateMutability':'nonpayable','type':'function'}," +
+        "{'inputs':[{'name':'assets','type':'uint256'}],'name':'previewDeposit','outputs':[{'name':'shares','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[{'name':'shares','type':'uint256'}],'name':'previewRedeem','outputs':[{'name':'assets','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[{'name':'account','type':'address'}],'name':'earned','outputs':[{'name':'','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[],'name':'totalAssets','outputs':[{'name':'','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[],'name':'totalSupply','outputs':[{'name':'','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[],'name':'rewardRate','outputs':[{'name':'','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[],'name':'periodFinish','outputs':[{'name':'','type':'uint256'}],'stateMutability':'view','type':'function'}," +
+        "{'inputs':[],'name':'claimRewards','outputs':[{'name':'reward','type':'uint256'}],'stateMutability':'nonpayable','type':'function'}" +
+        "]";
 }

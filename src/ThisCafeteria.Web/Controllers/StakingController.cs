@@ -144,13 +144,22 @@ public sealed class StakingController(
         var entry = new StakingLedgerEntry
         {
             WalletAddress = wallet,
+            ChainKey = "ethereum-sepolia",
+            Family = "Evm",
             ActionType = "claim",
             Amount = verification.Amount,
+            RewardAmount = verification.Amount,
+            RawRewardAmount = ToRaw(verification.Amount),
             TransactionHash = transactionHash,
+            OperationIndex = 0,
             ChainId = chain.ChainId,
             NetworkName = chain.NetworkName,
             PaymentTokenContract = chain.CoffeeCoinContract,
             StakingPoolContract = chain.StakingPoolContract,
+            RewardIdentifier = chain.CoffeeCoinContract,
+            VaultOrProgramIdentifier = chain.StakingPoolContract,
+            Verified = true,
+            VerificationState = "verified",
             ExplorerUrl = BuildExplorerTransactionUrl(transactionHash),
             RecordedAtUtc = DateTime.UtcNow
         };
@@ -293,13 +302,24 @@ public sealed class StakingController(
         var entry = new StakingLedgerEntry
         {
             WalletAddress = wallet,
+            ChainKey = "ethereum-sepolia",
+            Family = "Evm",
             ActionType = transactionType == StakingTransactionType.Stake ? "stake" : "unstake",
             Amount = verification.Amount,
+            AssetAmount = verification.Amount,
+            ShareAmount = verification.Amount,
+            RawAssetAmount = ToRaw(verification.Amount),
+            RawShareAmount = ToRaw(verification.Amount),
             TransactionHash = transactionHash,
+            OperationIndex = 0,
             ChainId = chain.ChainId,
             NetworkName = chain.NetworkName,
             PaymentTokenContract = chain.EffectivePaymentTokenContract,
             StakingPoolContract = chain.StakingPoolContract,
+            AssetIdentifier = chain.EffectivePaymentTokenContract,
+            VaultOrProgramIdentifier = chain.StakingPoolContract,
+            Verified = true,
+            VerificationState = "verified",
             ExplorerUrl = BuildExplorerTransactionUrl(transactionHash),
             RecordedAtUtc = DateTime.UtcNow
         };
@@ -415,6 +435,8 @@ public sealed class StakingController(
             ? string.Empty
             : $"{explorer.TrimEnd('/')}/tx/{transactionHash}";
     }
+
+    private static string ToRaw(decimal amount) => decimal.Truncate(amount * 1_000_000_000_000_000_000m).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
 
     public sealed record SaveWalletSessionRequest(
         string WalletAddress,

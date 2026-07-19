@@ -1,0 +1,25 @@
+{
+  "name": "artisanalbrew-liquid-staking-evm",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:ephemeral": "hardhat run scripts/deploy.ts --network hardhat",
+    "deploy:local:node": "hardhat node --chain-id 31337",
+    "export:abi": "tsx scripts/export-abi.ts"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "5.0.0",
+    "@types/node": "22.15.21",
+    "chai": "5.2.0",
+    "hardhat": "3.8.0",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3",
+    "viem": "2.47.6"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.4.0"
+  }
+}

@@ -47,7 +47,7 @@ public static class LocalDotEnvLoader
                 value = value[1..^1];
             }
 
-            if (!string.IsNullOrEmpty(key))
+            if (!string.IsNullOrEmpty(key) && Environment.GetEnvironmentVariable(key) is null)
             {
                 Environment.SetEnvironmentVariable(key, value);
             }

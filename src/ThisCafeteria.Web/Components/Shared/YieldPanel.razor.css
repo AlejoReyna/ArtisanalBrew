@@ -953,3 +953,21 @@
         justify-self: end;
     }
 }
+ .yield-liquid-summary {
+    align-items: start;
+    background: #1f1915;
+    border: 1px solid rgba(143,185,155,.32);
+    border-radius: 12px;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 1.3fr);
+    padding: 1.25rem 1.4rem;
+}
+.yield-liquid-summary h2 { color: #f4efe6; font-family: "Playfair Display", Georgia, serif; font-weight: 500; margin: .2rem 0 .45rem; }
+.yield-liquid-summary__stats { display: grid; gap: .65rem; grid-template-columns: repeat(2,minmax(0,1fr)); margin: 0; }
+.yield-liquid-summary__stats div { background: rgba(143,185,155,.08); border-radius: 8px; padding: .7rem .8rem; }
+.yield-liquid-summary__stats dt { color: rgba(244,239,230,.55); font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.yield-liquid-summary__stats dd { color: #f4efe6; font-family: var(--crypto-mono); margin: .3rem 0 0; }
+.yield-liquid-summary__actions { align-items: center; display: flex; flex-wrap: wrap; gap: .55rem; grid-column: 1 / -1; }
+.yield-liquid-summary__actions .yield-token-input { border: 1px solid rgba(244,239,230,.18); border-radius: 999px; min-width: 9rem; padding: .7rem .85rem; }
+@media (max-width: 800px) { .yield-liquid-summary { grid-template-columns: 1fr; } }

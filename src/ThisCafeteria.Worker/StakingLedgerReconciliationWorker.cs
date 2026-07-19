@@ -66,8 +66,9 @@ public sealed class StakingLedgerReconciliationWorker(
         var latestBlock = (long)(await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync().ConfigureAwait(false)).Value;
         var safeLatestBlock = latestBlock - chain.MinimumConfirmations;
 
+        const string chainKey = "ethereum-sepolia";
         var checkpoint = await dbContext.StakingReconciliationCheckpoints
-            .FirstOrDefaultAsync(c => c.StakingPoolContract == chain.StakingPoolContract, cancellationToken)
+            .FirstOrDefaultAsync(c => c.ChainKey == chainKey && c.SourceIdentifier == chain.StakingPoolContract, cancellationToken)
             .ConfigureAwait(false);
 
         long fromBlock;
@@ -77,6 +78,10 @@ public sealed class StakingLedgerReconciliationWorker(
             checkpoint = new StakingReconciliationCheckpoint
             {
                 StakingPoolContract = chain.StakingPoolContract,
+                ChainKey = chainKey,
+                Family = "Evm",
+                SourceIdentifier = chain.StakingPoolContract,
+                CursorType = "block",
                 LastScannedBlock = fromBlock - 1
             };
             dbContext.StakingReconciliationCheckpoints.Add(checkpoint);
@@ -95,6 +100,7 @@ public sealed class StakingLedgerReconciliationWorker(
 
         var blockTimestamps = new Dictionary<ulong, DateTime>();
         var insertedCount = 0;
+        await using var projectionTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
         if (IsValidContract(chain.EffectivePaymentTokenContract))
         {
@@ -158,6 +164,7 @@ public sealed class StakingLedgerReconciliationWorker(
         checkpoint.LastScannedBlock = toBlock;
         checkpoint.UpdatedAtUtc = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await projectionTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         if (insertedCount > 0)
         {
@@ -203,8 +210,9 @@ public sealed class StakingLedgerReconciliationWorker(
             return 0;
         }
 
+        var operationIndex = checked((int)(transfer.Log.LogIndex?.Value ?? 0));
         var alreadyRecorded = await dbContext.StakingLedgerEntries
-            .AnyAsync(entry => entry.TransactionHash == transactionHash, cancellationToken)
+            .AnyAsync(entry => entry.ChainKey == "ethereum-sepolia" && entry.TransactionHash == transactionHash.ToLowerInvariant() && entry.OperationIndex == operationIndex, cancellationToken)
             .ConfigureAwait(false);
 
         if (alreadyRecorded)
@@ -218,9 +226,14 @@ public sealed class StakingLedgerReconciliationWorker(
         var entry = new StakingLedgerEntry
         {
             WalletAddress = wallet,
+            ChainKey = "ethereum-sepolia",
+            Family = "Evm",
             ActionType = actionType,
             Amount = Web3.Convert.FromWei(transfer.Event.Value),
+            AssetAmount = Web3.Convert.FromWei(transfer.Event.Value),
+            RawAssetAmount = transfer.Event.Value.ToString(),
             TransactionHash = transactionHash.ToLowerInvariant(),
+            OperationIndex = operationIndex,
             ChainId = chain.ChainId,
             NetworkName = chain.NetworkName,
             PaymentTokenContract = tokenContract,
@@ -231,17 +244,7 @@ public sealed class StakingLedgerReconciliationWorker(
 
         dbContext.StakingLedgerEntries.Add(entry);
 
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return 1;
-        }
-        catch (DbUpdateException)
-        {
-            // Another writer (the web app's own record endpoint) beat the reconciliation pass to it.
-            dbContext.Entry(entry).State = EntityState.Detached;
-            return 0;
-        }
+        return 1;
     }
 
     private static async Task<DateTime> GetBlockTimestampAsync(
