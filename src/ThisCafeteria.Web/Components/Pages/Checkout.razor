@@ -11,6 +11,7 @@
 @inject ICouponService CouponService
 @inject IOrderPricingService PricingService
 @inject IReceiptService ReceiptService
+@inject ICoffeeWeb3Service Web3Service
 @inject NavigationManager Navigation
 @inject ILogger<Checkout> Logger
 @using System.ComponentModel.DataAnnotations
@@ -19,6 +20,7 @@
 @using Microsoft.Extensions.Options
 @using ThisCafeteria.Application.DTOs
 @using ThisCafeteria.Application.Services
+@using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Web.Services.Cart
@@ -200,15 +202,15 @@
             <div class="checkout-main">
                 <section class="checkout-connect" data-animate="fade-up">
                     <p class="eyebrow">Wallet required</p>
-                    <h2>Connect MetaMask to continue checkout</h2>
+                    <h2>Connect your wallet to continue checkout</h2>
                     <p class="lede">
                         @if (_isAuthenticated)
                         {
-                            <text>Approve the MetaMask connection for @ShortAddress(_walletAddress) before reviewing payment.</text>
+                            <text>Approve the wallet connection for @ShortAddress(_walletAddress) before reviewing payment.</text>
                         }
                         else
                         {
-                            <text>Sign in with MetaMask to link your wallet and complete your purchase.</text>
+                            <text>Sign in with your wallet to link your account and complete your purchase.</text>
                         }
                     </p>
 
@@ -221,7 +223,7 @@
                             class="button button--dark"
                             disabled="@_isConnectingWallet"
                             @onclick="ConnectWalletForCheckoutAsync">
-                        @(_isConnectingWallet ? "Opening MetaMask…" : "Connect MetaMask")
+                        @(_isConnectingWallet ? "Opening wallet…" : "Connect wallet")
                     </button>
                 </section>
             </div>
@@ -471,6 +473,11 @@
                                 @onclick="PayAsync">
                             @(_isPaying ? "Processing…" : "Pay with ETH")
                         </button>
+
+                        @if (_txFlow is not null)
+                        {
+                            <TxStepper Flow="_txFlow" ExplorerUrl="@_chain.ExplorerUrl" />
+                        }
                     </section>
 
                     @if (_paymentFailed)
@@ -513,6 +520,8 @@
 
 @code {
     private const decimal EthUsdRate = 3750.00m;
+    private const int MaxConfirmationAttempts = 10;
+    private const int ConfirmationPollDelayMs = 3000;
 
     private IReadOnlyList<MarketplaceCartLine> _lines = [];
     private IReadOnlyList<MarketplaceCartLine> _paidLines = [];
@@ -551,6 +560,7 @@
     private CouponDto? _appliedCoupon;
     private bool _isApplyingCoupon;
     private string? _couponMessage;
+    private TxStepper.Model? _txFlow;
 
     private enum CheckoutStep { Review, Payment, Success }
     private CheckoutStep _step = CheckoutStep.Review;
@@ -571,10 +581,10 @@
             if (!string.IsNullOrWhiteSpace(_walletAddress))
             {
                 _isWalletReady = true;
-                _step = CheckoutStep.Review;
+                _step = CheckoutStep.Payment;
                 try
                 {
-                    var profileId = await ProfileService.EnsureProfileLinkedAsync(user.Id);
+                    var profileId = await ProfileService.EnsureProfileLinkedAsync(user!.Id);
                     _profile = await ProfileService.GetProfileDashboardAsync(profileId);
                 }
                 catch { /* ignore profile load errors */ }
@@ -808,6 +818,8 @@
 
         _isPaying = true;
         _errorMessage = null;
+        _paymentFailed = false;
+        _txFlow = null;
 
         try
         {
@@ -852,6 +864,15 @@
                     explorerUrl = _chain.ExplorerUrl
                 });
 
+            _txFlow = TxStepper.Model.Create("checkout");
+            _txFlow.Apply("pay", "confirmed", payment.TransactionHash, null);
+            StateHasChanged();
+
+            await WaitForPaymentConfirmationAsync(payment.TransactionHash, payment.FromAddress);
+
+            _txFlow.Apply("record", "pending", null, "Saving your order…");
+            StateHasChanged();
+
             var order = await OrderService.CreateOrderAsync(
                 new CreateOrderRequest(
                     userProfileId,
@@ -864,6 +885,9 @@
                     BuildExplorerTransactionUrl(payment.TransactionHash),
                     DateTime.UtcNow,
                     _appliedCoupon?.Code));
+
+            _txFlow.Apply("record", "confirmed", null, null);
+            _txFlow.Completed = true;
 
             _paidUsdAmount = _orderTotalUsd;
             _paidEthAmount = _ethAmount;
@@ -891,6 +915,47 @@
         {
             _isPaying = false;
         }
+    }
+
+    private async Task WaitForPaymentConfirmationAsync(string transactionHash, string fromAddress)
+    {
+        _txFlow!.Apply("confirm", "pending", transactionHash, "Waiting for confirmations…");
+        StateHasChanged();
+
+        for (var attempt = 1; attempt <= MaxConfirmationAttempts; attempt++)
+        {
+            var result = await Web3Service.VerifyNativeEthPaymentAsync(transactionHash, fromAddress, _ethAmount);
+
+            if (result.Status == TransactionVerificationStatus.Verified)
+            {
+                _txFlow.Apply("confirm", "confirmed", transactionHash, null);
+                StateHasChanged();
+                return;
+            }
+
+            if (result.Status == TransactionVerificationStatus.Failed)
+            {
+                const string message = "This payment could not be verified on-chain. Check the transaction on the explorer, or try again.";
+                _txFlow.Apply("confirm", "error", transactionHash, message);
+                throw new InvalidOperationException(message);
+            }
+
+            _txFlow.Apply(
+                "confirm",
+                "pending",
+                transactionHash,
+                $"Waiting for confirmations ({result.Confirmations}/{result.RequiredConfirmations})…");
+            StateHasChanged();
+
+            if (attempt < MaxConfirmationAttempts)
+            {
+                await Task.Delay(ConfirmationPollDelayMs);
+            }
+        }
+
+        const string timeoutMessage = "Timed out waiting for enough block confirmations. Check the transaction on the explorer and try again shortly.";
+        _txFlow.Apply("confirm", "error", transactionHash, timeoutMessage);
+        throw new InvalidOperationException(timeoutMessage);
     }
 
     private async Task SendReceiptAsync()

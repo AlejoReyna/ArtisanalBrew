@@ -48,7 +48,12 @@ builder.Host.UseSerilog((context, loggerConfiguration) =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddControllers();
+// AddControllersWithViews (not bare AddControllers) is required: [ValidateAntiForgeryToken]
+// resolves ValidateAntiforgeryTokenAuthorizationFilter from DI, which is only registered by
+// the MVC "views" feature set. With bare AddControllers, every [ValidateAntiForgeryToken]
+// action (stake, unstake, claim, wallet session, coupon) 500s with "No service for type
+// ValidateAntiforgeryTokenAuthorizationFilter has been registered".
+builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks()
