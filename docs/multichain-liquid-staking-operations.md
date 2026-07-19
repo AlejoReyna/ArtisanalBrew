@@ -22,6 +22,37 @@ The deployment script refuses non-local networks unless
 Sepolia CAFE and COFFEE can be supplied with `CAFE_ADDRESS` and
 `COFFEE_ADDRESS`; the script never replaces those legacy tokens.
 
+## BSC Testnet EVM
+
+BSC Testnet uses chain ID `97` and the `bscTestnet` Hardhat target. The deployer
+must hold tBNB and its private key is supplied only through the local shell
+environment; it must never be committed or pasted into chat:
+
+```sh
+cd contracts/evm
+export BSC_TESTNET_RPC_URL='https://97.rpc.thirdweb.com'
+export BSC_DEPLOYER_PRIVATE_KEY='0x...'
+export CONFIRM_PUBLIC_DEPLOYMENT=I_UNDERSTAND_THIS_BROADCASTS
+export PUBLIC_RPC_URL="$BSC_TESTNET_RPC_URL"
+npm run build
+npm run test
+npm run deploy:bsc-testnet
+```
+
+The command deploys fresh CAFE, COFFEE, liquid-vault, and faucet contracts and
+writes `contracts/evm/deployments/bsc-testnet.json`. Review the addresses and
+run the deposit → reward funding → claim → redeem smoke flow before enabling
+the chain in the application. Load the reviewed manifest into both Web and
+Worker with:
+
+```sh
+export ARTISANALBREW_EVM_MANIFEST="$PWD/deployments/bsc-testnet.json"
+```
+
+The application loader accepts only chain ID 97 for a `bsc-testnet` manifest,
+so an incomplete or mismatched deployment remains disabled rather than being
+advertised by the selectors.
+
 ## Local Solana
 
 Install the versions pinned in `contracts/solana/Anchor.toml`, start a local

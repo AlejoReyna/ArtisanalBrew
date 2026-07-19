@@ -12,6 +12,12 @@ export default defineConfig({
   },
   networks: {
     hardhat: { type: "edr-simulated", chainId: 31337 },
-    localhost: { type: "http", url: "http://127.0.0.1:8545", chainId: 31337 }
+    localhost: { type: "http", url: "http://127.0.0.1:8545", chainId: 31337 },
+    bscTestnet: {
+      type: "http",
+      url: process.env.BSC_TESTNET_RPC_URL ?? "https://97.rpc.thirdweb.com",
+      chainId: 97,
+      accounts: process.env.BSC_DEPLOYER_PRIVATE_KEY ? [process.env.BSC_DEPLOYER_PRIVATE_KEY] : []
+    }
   }
 });

@@ -7,6 +7,7 @@
     "test": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:ephemeral": "hardhat run scripts/deploy.ts --network hardhat",
+    "deploy:bsc-testnet": "hardhat run scripts/deploy.ts --network bscTestnet",
     "deploy:local:node": "hardhat node --chain-id 31337",
     "export:abi": "tsx scripts/export-abi.ts"
   },
