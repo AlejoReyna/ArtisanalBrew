@@ -18,7 +18,7 @@ public sealed record WalletChallenge(string Message, string Nonce, DateTimeOffse
 
 public interface IWalletChallengeService
 {
-    WalletChallenge CreateChallenge(string address, int chainId, string networkName, string origin);
+    WalletChallenge CreateChallenge(string address, int chainId, string networkName, string origin, string chainKey = "ethereum-sepolia", string family = "Evm");
 
     WalletChallengeVerificationError Verify(
         string address,
@@ -26,14 +26,16 @@ public interface IWalletChallengeService
         string nonce,
         int chainId,
         string signature,
-        out string recoveredAddress);
+        out string recoveredAddress,
+        string chainKey = "ethereum-sepolia",
+        string family = "Evm");
 }
 
 public sealed class WalletChallengeService(IMemoryCache cache) : IWalletChallengeService
 {
     private static readonly TimeSpan ChallengeLifetime = TimeSpan.FromMinutes(5);
 
-    public WalletChallenge CreateChallenge(string address, int chainId, string networkName, string origin)
+    public WalletChallenge CreateChallenge(string address, int chainId, string networkName, string origin, string chainKey = "ethereum-sepolia", string family = "Evm")
     {
         var nonceBytes = RandomNumberGenerator.GetBytes(16);
         var nonce = Convert.ToHexString(nonceBytes).ToLowerInvariant();
@@ -44,6 +46,8 @@ public sealed class WalletChallengeService(IMemoryCache cache) : IWalletChalleng
             string.Empty,
             $"Address: {address}",
             $"Chain ID: {chainId.ToString(CultureInfo.InvariantCulture)}",
+            $"Chain Key: {chainKey}",
+            $"Family: {family}",
             $"Network: {networkName}",
             $"URI: {origin}",
             "Version: 1",
@@ -51,7 +55,7 @@ public sealed class WalletChallengeService(IMemoryCache cache) : IWalletChalleng
             $"Issued At: {issuedAt:O}",
             $"Expiration Time: {expiresAt:O}");
 
-        cache.Set(CacheKey(nonce), new CachedChallenge(address, message, chainId), expiresAt);
+        cache.Set(CacheKey(nonce), new CachedChallenge(address, message, chainId, chainKey, family), expiresAt);
         return new WalletChallenge(message, nonce, issuedAt, expiresAt);
     }
 
@@ -61,7 +65,9 @@ public sealed class WalletChallengeService(IMemoryCache cache) : IWalletChalleng
         string nonce,
         int chainId,
         string signature,
-        out string recoveredAddress)
+        out string recoveredAddress,
+        string chainKey = "ethereum-sepolia",
+        string family = "Evm")
     {
         recoveredAddress = string.Empty;
 
@@ -74,7 +80,9 @@ public sealed class WalletChallengeService(IMemoryCache cache) : IWalletChalleng
 
         if (!AddressUtil.Current.AreAddressesTheSame(address, challenge.Address) ||
             message != challenge.Message ||
-            chainId != challenge.ChainId)
+            chainId != challenge.ChainId ||
+            !string.Equals(chainKey, challenge.ChainKey, StringComparison.Ordinal) ||
+            !string.Equals(family, challenge.Family, StringComparison.Ordinal))
         {
             return WalletChallengeVerificationError.Mismatch;
         }
@@ -89,5 +97,5 @@ public sealed class WalletChallengeService(IMemoryCache cache) : IWalletChalleng
 
     private static string CacheKey(string nonce) => $"wallet-auth:{nonce}";
 
-    private sealed record CachedChallenge(string Address, string Message, int ChainId);
+    private sealed record CachedChallenge(string Address, string Message, int ChainId, string ChainKey, string Family);
 }

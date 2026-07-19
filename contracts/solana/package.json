@@ -1,0 +1,17 @@
+{
+  "name": "cafe-liquid-staking-solana-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "mocha --exit --timeout 120000 --require tsx test/*.ts",
+    "test:browser": "mocha --exit --timeout 10000 --require tsx test/wallet-standard-login.ts test/liquid-staking-browser.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.31.1",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.98.4",
+    "chai": "5.2.0",
+    "mocha": "11.7.1",
+    "tsx": "4.19.4"
+  }
+}

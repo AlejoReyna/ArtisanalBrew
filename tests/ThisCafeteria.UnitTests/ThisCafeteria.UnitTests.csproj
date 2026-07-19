@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +27,7 @@
     <ProjectReference Include="..\..\src\ThisCafeteria.Application\ThisCafeteria.Application.csproj" />
     <ProjectReference Include="..\..\src\ThisCafeteria.Infrastructure\ThisCafeteria.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ThisCafeteria.Web\ThisCafeteria.Web.csproj" />
+    <ProjectReference Include="..\..\src\ThisCafeteria.Worker\ThisCafeteria.Worker.csproj" />
   </ItemGroup>
 
 </Project>

@@ -13,10 +13,13 @@
 @using Nethereum.Util
 @using ThisCafeteria.Web.Services.Blockchain
 @inject ICoffeeWeb3Service Web3Service
+@inject ILiquidStakingGateway LiquidGateway
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
+@inject IChainRegistry ChainRegistry
+@inject ISelectedChainAccessor SelectedChainAccessor
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
@@ -26,15 +29,16 @@
 @if (!_isConnected)
 {
     <section class="staking-connect" data-animate="fade-up">
+        <ChainSelector OnChainChanged="HandleChainChangedAsync" />
         <div class="staking-connect__content">
-            <h2>Connect your wallet to allocate Sepolia tokens and earn COFFEE.</h2>
+            <h2>Connect your wallet to deposit CAFE, receive stCAFE, and earn COFFEE.</h2>
             <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
             @if (!string.IsNullOrWhiteSpace(_connectError))
             {
                 <p class="text-danger">@_connectError</p>
             }
             <button type="button" class="button button--dark" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                @(_isConnecting ? "Connecting..." : "Connect MetaMask")
+                @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
             </button>
             @if (OnBackToProfile.HasDelegate)
             {
@@ -60,6 +64,7 @@ else
             }
 
             <section class="yield-sidebar__identity">
+                <ChainSelector OnChainChanged="HandleChainChangedAsync" />
                 <p class="yield-sidebar__kicker">Account Overview</p>
                 <dl class="yield-sidebar__stats">
                     <div>
@@ -71,9 +76,9 @@ else
                         <dd class="tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
                     </div>
                 </dl>
-                @if (_stakingConfigured)
+                @if (_liquidDashboard.IsConfigured)
                 {
-                    <p class="yield-sidebar__status">Staking enabled</p>
+                    <p class="yield-sidebar__status">Liquid staking enabled</p>
                 }
             </section>
 
@@ -110,7 +115,7 @@ else
             </nav>
 
             <div class="yield-sidebar__foot">
-                <a class="yield-sidebar__new-stake" href="#stake-amount">New Stake</a>
+                <a class="yield-sidebar__new-stake" href="#liquid-staking-title">Deposit CAFE</a>
                 
             </div>
         </aside>
@@ -120,15 +125,15 @@ else
             <section class="yield-hero">
                 <div class="yield-hero-text">
                     <div class="yield-title-row">
-                        <h1>Token Allocations</h1>
+                        <h1>Liquid staking</h1>
                         <span class="yield-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
                     </div>
                 </div>
 
                 <div class="yield-stat-row" aria-label="Wallet and staking balances">
-                    <StatTile Label="Staked"
-                              Value="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
-                              Suffix="CAFE"
+                    <StatTile Label="stCAFE"
+                              Value="@FormatAmount(_liquidDashboard.StCafeBalance)"
+                              Suffix="stCAFE"
                               Loading="_isLoading" />
                     <StatTile Label="Pending Rewards"
                               Value="@FormatPendingRewards()"
@@ -157,13 +162,47 @@ else
                 </div>
             }
 
-            @if (!_stakingConfigured)
+            <section class="yield-liquid-summary" aria-labelledby="liquid-staking-title">
+                <div>
+                    <p class="yield-card-eyebrow">Liquid staking · @SelectedChain.DisplayName</p>
+                    <h2 id="liquid-staking-title">CAFE → stCAFE</h2>
+                    @if (!string.IsNullOrWhiteSpace(_liquidDashboard.UnavailableReason))
+                    {
+                        <p class="yield-config-card__body">@_liquidDashboard.UnavailableReason</p>
+                    }
+                    else
+                    {
+                        <p class="yield-hero-lede">Transferable stCAFE tracks your CAFE position. Rewards are separately funded in COFFEE.</p>
+                    }
+                </div>
+                <dl class="yield-liquid-summary__stats">
+                    <div><dt>CAFE</dt><dd>@FormatAmount(_liquidDashboard.CafeBalance)</dd></div>
+                    <div><dt>stCAFE</dt><dd>@FormatAmount(_liquidDashboard.StCafeBalance)</dd></div>
+                    <div><dt>Redeemable</dt><dd>@FormatAmount(_liquidDashboard.RedeemableCafe)</dd></div>
+                    <div><dt>Pending COFFEE</dt><dd>@FormatAmount(_liquidDashboard.PendingCoffee)</dd></div>
+                </dl>
+                @if (_liquidDashboard.IsConfigured)
+                {
+                    <div class="yield-liquid-summary__actions">
+                        <input id="liquid-deposit-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="CAFE to deposit" />
+                        <button type="button" class="yield-cta-btn yield-cta-btn--dark btn-liquid-deposit">Deposit CAFE</button>
+                        <input id="liquid-redeem-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="stCAFE to redeem" />
+                        <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-redeem">Redeem</button>
+                        <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">Claim COFFEE</button>
+                    </div>
+                }
+            </section>
+
+            @if (!_liquidDashboard.IsConfigured)
             {
                 <div class="yield-config-card">
-                    <p class="yield-config-card__eyebrow">Staking pool not deployed</p>
+                    <p class="yield-config-card__eyebrow">Liquid vault unavailable</p>
                     <p class="yield-config-card__body">
-                        Configure an Ethereum Sepolia ERC-20 payment token and staking pool contract before enabling staking and unstaking.
-                        Balances above are live reads from @_chain.NetworkName.
+                        New legacy deposits are disabled. This chain does not have a configured liquid vault yet.
+                        @if (SelectedChain.Capabilities.LegacyExit)
+                        {
+                            <span>Exit the legacy Sepolia position first, then deposit CAFE into the liquid vault when it is deployed.</span>
+                        }
                     </p>
                 </div>
             }
@@ -204,7 +243,9 @@ else
                              OnRefreshRequested="LoadDashboardAsync" />
             </details>
 
-            <section class="yield-allocation-grid" aria-label="Staking actions">
+            @if (_stakingConfigured || _legacyExitConfigured)
+            {
+            <section class="yield-allocation-grid" aria-label="Legacy staking actions">
 
                 <article class="yield-asset-card">
                     <div class="yield-card-visual yield-card-visual--espresso">
@@ -265,16 +306,16 @@ else
                                        step="0.0001"
                                        max="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
                                        placeholder="0.0"
-                                       disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)" />
+                                       disabled="@(!_legacyExitConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)" />
                                 <button type="button"
                                         class="yield-max-btn"
                                         data-max="@FormatAmount(_dashboard.StakedPaymentTokenBalance)"
                                         data-target="unstake-amount"
-                                        disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">MAX</button>
+                                        disabled="@(!_legacyExitConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">MAX</button>
                             </div>
                             <button type="button"
                                     class="yield-cta-btn yield-cta-btn--outline btn-unstake-token"
-                                    disabled="@(!_stakingConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">
+                                    disabled="@(!_legacyExitConfigured || _dashboard.StakedPaymentTokenBalance <= 0m)">
                                 Unstake Now
                             </button>
                         </div>
@@ -317,6 +358,7 @@ else
                 }
 
             </section>
+            }
 
             <section class="yield-activity" aria-labelledby="yield-activity-title">
                 <h2 id="yield-activity-title" class="yield-activity-heading">Recent Activity</h2>
@@ -378,10 +420,13 @@ else
     private CoffeeDashboardModel _dashboard = new();
     private IReadOnlyList<StakingLedgerItem> _stakingLedger = [];
     private BlockchainNetworkOptions _chain = new();
+    private ChainDefinition SelectedChain => SelectedChainAccessor.SelectedChain;
+    private LiquidStakingDashboard _liquidDashboard = new();
     private bool _isLoading = true;
     private bool _isConnected;
     private bool _isConnecting;
     private bool _stakingConfigured;
+    private bool _legacyExitConfigured;
     private bool _cafeFaucetConfigured;
     private CafeFaucetStatus _faucetStatus = new();
     private string? _connectError;
@@ -390,6 +435,8 @@ else
     private bool _dashboardLoadStarted;
     private bool _jsInitialized;
     private IJSObjectReference? _stakingModule;
+    private IJSObjectReference? _liquidModule;
+    private IJSObjectReference? _solanaLiquidModule;
     private DotNetObjectReference<YieldPanel>? _selfRef;
     private TxStepper.Model? _activeTx;
     private string? _stakeInputError;
@@ -398,9 +445,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         _chain = ChainOptions.Value;
-        _stakingConfigured = WalletAddressRules.IsConfiguredAddress(_chain.EffectivePaymentTokenContract) &&
-            WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
-        _cafeFaucetConfigured = WalletAddressRules.IsConfiguredAddress(_chain.CafeFaucetContract);
+        ApplySelectedChainConfiguration();
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
         await ApplyResolvedWalletAsync();
@@ -455,37 +500,82 @@ else
             return;
         }
 
-        if (!_isConnected || (!_stakingConfigured && !_cafeFaucetConfigured) || _jsInitialized)
+        if (!_isConnected || (!_stakingConfigured && !_cafeFaucetConfigured && !_liquidDashboard.IsConfigured) || _jsInitialized)
         {
             return;
         }
 
-        _stakingModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
-            "import",
-            "/js/coffeeStaking.js");
-
         _selfRef ??= DotNetObjectReference.Create(this);
 
-        await _stakingModule.InvokeVoidAsync(
-            "initCoffeePurchases",
-            new
+        if (_stakingConfigured || _cafeFaucetConfigured)
+        {
+            _stakingModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
+                "import",
+                "/js/coffeeStaking.js");
+
+            await _stakingModule.InvokeVoidAsync(
+                "initCoffeePurchases",
+                new
+                {
+                    marketplaceWallet = _chain.MarketplaceWallet,
+                    paymentTokenContract = _chain.EffectivePaymentTokenContract,
+                    stakingPoolContract = _chain.StakingPoolContract,
+                    cafeFaucetContract = _chain.CafeFaucetContract,
+                    expectedWalletAddress = _dashboard.WalletAddress,
+                    stakedTokenBalance = _dashboard.StakedPaymentTokenBalance,
+                    chainId = _chain.ChainId,
+                    chainIdHex = _chain.ChainIdHex,
+                    networkName = _chain.NetworkName,
+                    rpcUrl = _chain.RpcUrl,
+                    currencyName = _chain.CurrencyName,
+                    currencySymbol = _chain.CurrencySymbol,
+                    currencyDecimals = _chain.CurrencyDecimals,
+                    explorerUrl = _chain.ExplorerUrl
+                },
+                _selfRef);
+        }
+
+        if (SelectedChain.Family == ChainFamily.Evm && _liquidDashboard.IsConfigured)
+        {
+            _liquidModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/liquidStaking.js");
+            await _liquidModule.InvokeVoidAsync("initLiquidStaking", new
             {
-                marketplaceWallet = _chain.MarketplaceWallet,
-                paymentTokenContract = _chain.EffectivePaymentTokenContract,
-                stakingPoolContract = _chain.StakingPoolContract,
-                cafeFaucetContract = _chain.CafeFaucetContract,
-                expectedWalletAddress = _dashboard.WalletAddress,
-                stakedTokenBalance = _dashboard.StakedPaymentTokenBalance,
-                chainId = _chain.ChainId,
-                chainIdHex = _chain.ChainIdHex,
-                networkName = _chain.NetworkName,
-                rpcUrl = _chain.RpcUrl,
-                currencyName = _chain.CurrencyName,
-                currencySymbol = _chain.CurrencySymbol,
-                currencyDecimals = _chain.CurrencyDecimals,
-                explorerUrl = _chain.ExplorerUrl
-            },
-            _selfRef);
+                chainKey = SelectedChain.Key,
+                chainId = SelectedChain.EvmChainId,
+                chainIdHex = SelectedChain.EvmChainIdHex,
+                networkName = SelectedChain.DisplayName,
+                rpcUrl = SelectedChain.PublicRpcUrl,
+                currencyName = SelectedChain.NativeCurrencyName,
+                currencySymbol = SelectedChain.NativeCurrencySymbol,
+                currencyDecimals = SelectedChain.NativeCurrencyDecimals,
+                explorerUrl = SelectedChain.ExplorerTransactionTemplate.Replace("{0}", string.Empty),
+                cafeContract = SelectedChain.Deployment.Cafe,
+                vaultContract = SelectedChain.Deployment.LiquidVault,
+                expectedWalletAddress = _dashboard.WalletAddress
+            }, _selfRef);
+        }
+        else if (SelectedChain.Family == ChainFamily.Solana && _liquidDashboard.IsConfigured)
+        {
+            _solanaLiquidModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/solanaLiquidStaking.js");
+            await _solanaLiquidModule.InvokeVoidAsync("initSolanaLiquidStaking", new
+            {
+                chainKey = SelectedChain.Key,
+                cluster = SelectedChain.SolanaCluster,
+                rpcUrl = SelectedChain.PublicRpcUrl,
+                program = SelectedChain.Deployment.Program,
+                vaultPda = SelectedChain.Deployment.VaultPda,
+                cafeMint = SelectedChain.Deployment.Cafe,
+                stCafeMint = SelectedChain.Deployment.StCafe,
+                coffeeMint = SelectedChain.Deployment.Coffee,
+                cafeCustody = SelectedChain.Deployment.CafeCustody,
+                coffeeCustody = SelectedChain.Deployment.CoffeeCustody,
+                token2022Program = SelectedChain.Deployment.Token2022Program,
+                cafeDecimals = SelectedChain.Deployment.CafeDecimals,
+                stCafeDecimals = SelectedChain.Deployment.StCafeDecimals,
+                coffeeDecimals = SelectedChain.Deployment.CoffeeDecimals,
+                expectedWalletAddress = _dashboard.WalletAddress
+            }, _selfRef);
+        }
 
         _jsInitialized = true;
     }
@@ -500,7 +590,7 @@ else
             return;
         }
 
-        if (flow is not ("stake" or "unstake" or "claim" or "cafe-faucet"))
+        if (flow is not ("stake" or "unstake" or "claim" or "cafe-faucet" or "deposit" or "redeem"))
         {
             return;
         }
@@ -561,17 +651,28 @@ else
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
-            var dashboardTask = Web3Service.GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token);
             var ethUsdPriceTask = EthUsdPriceService.GetEthUsdPriceAsync(timeout.Token);
             var faucetStatusTask = _cafeFaucetConfigured
                 ? Web3Service.GetCafeFaucetStatusAsync(_dashboard.WalletAddress, timeout.Token)
                 : Task.FromResult(new CafeFaucetStatus());
 
-            _dashboard = await dashboardTask.WaitAsync(timeout.Token);
+            if (SelectedChain.Key == "ethereum-sepolia")
+            {
+                // Keep the legacy Sepolia reads available during migration.
+                _dashboard = await Web3Service.GetDashboardDataAsync(_dashboard.WalletAddress, timeout.Token);
+                await LoadStakingLedgerAsync(timeout.Token);
+            }
+            else
+            {
+                // Never display Sepolia data under another selected chain.
+                _dashboard = new CoffeeDashboardModel { WalletAddress = _dashboard.WalletAddress };
+                _stakingLedger = [];
+            }
+
+            _liquidDashboard = await LiquidGateway.GetDashboardAsync(SelectedChain.Key, _dashboard.WalletAddress, timeout.Token);
             _ethUsdPrice = await ethUsdPriceTask.WaitAsync(timeout.Token);
             _faucetStatus = await faucetStatusTask.WaitAsync(timeout.Token);
-            await LoadStakingLedgerAsync(timeout.Token);
-            DashboardState.Publish(_dashboard.WalletAddress, _dashboard);
+            DashboardState.Publish(SelectedChain.Key, SelectedChain.FamilyName, _dashboard.WalletAddress, _dashboard);
         }
         catch (OperationCanceledException)
         {
@@ -589,6 +690,37 @@ else
         }
     }
 
+    private async Task HandleChainChangedAsync(ChainDefinition chain)
+    {
+        ApplySelectedChainConfiguration();
+        _dashboardLoadStarted = false;
+        _jsInitialized = false;
+        _dashboard = new CoffeeDashboardModel { WalletAddress = _dashboard.WalletAddress };
+        await InvokeAsync(StateHasChanged);
+        if (_isConnected)
+        {
+            await LoadDashboardAsync();
+        }
+    }
+
+    private void ApplySelectedChainConfiguration()
+    {
+        // The historical singleton configuration is intentionally used only by
+        // the legacy Sepolia read/exit path. It must never re-enable new pool
+        // deposits after the liquid-vault migration.
+        _stakingConfigured = SelectedChain.Key == "ethereum-sepolia" &&
+            SelectedChain.Capabilities.LiquidStaking &&
+            WalletAddressRules.IsConfiguredAddress(SelectedChain.Deployment.LiquidVault);
+        _legacyExitConfigured = SelectedChain.Key == "ethereum-sepolia" && SelectedChain.Capabilities.LegacyExit &&
+            WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
+
+        // The existing faucet adapter is Sepolia-specific until a chain-specific
+        // faucet adapter is configured; do not advertise it on other chains.
+        _cafeFaucetConfigured = SelectedChain.Key == "ethereum-sepolia" &&
+            SelectedChain.Capabilities.Faucet &&
+            WalletAddressRules.IsConfiguredAddress(_chain.CafeFaucetContract);
+    }
+
     private async Task<string?> ResolveWalletAddressAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -598,14 +730,14 @@ else
         {
             var fromClaim = principal.FindFirst("wallet_address")?.Value
                 ?? TryGetWalletFromPrincipalName(principal);
-            if (WalletAddressRules.TryNormalizeWallet(fromClaim, out var claimWallet))
+            if (TryNormalizeSelectedWallet(fromClaim, out var claimWallet))
             {
                 SyncWalletSession(claimWallet);
                 return claimWallet;
             }
 
             var user = await UserManager.GetUserAsync(principal);
-            if (WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out var userWallet))
+            if (TryNormalizeSelectedWallet(user?.WalletAddress, out var userWallet))
             {
                 SyncWalletSession(userWallet);
                 return userWallet;
@@ -613,9 +745,19 @@ else
         }
 
         var sessionWallet = HttpContextAccessor.HttpContext?.Session.GetString("WalletAddress");
-        return WalletAddressRules.TryNormalizeWallet(sessionWallet, out var normalizedSession)
+        return TryNormalizeSelectedWallet(sessionWallet, out var normalizedSession)
             ? normalizedSession
             : null;
+    }
+
+    private bool TryNormalizeSelectedWallet(string? value, out string wallet)
+    {
+        if (SelectedChain.Family == ChainFamily.Solana)
+        {
+            wallet = value?.Trim() ?? string.Empty;
+            return SolanaBase58.IsPublicKey(wallet);
+        }
+        return WalletAddressRules.TryNormalizeWallet(value, out wallet);
     }
 
     private async Task<bool> IsWalletAuthenticatedAsync()
@@ -628,13 +770,13 @@ else
         }
 
         var claimWallet = principal.FindFirst("wallet_address")?.Value ?? TryGetWalletFromPrincipalName(principal);
-        if (WalletAddressRules.TryNormalizeWallet(claimWallet, out _))
+        if (TryNormalizeSelectedWallet(claimWallet, out _))
         {
             return true;
         }
 
         var user = await UserManager.GetUserAsync(principal);
-        return WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out _);
+        return TryNormalizeSelectedWallet(user?.WalletAddress, out _);
     }
 
     private void SyncWalletSession(string wallet)
@@ -646,7 +788,7 @@ else
         }
 
         var existing = httpContext.Session.GetString("WalletAddress");
-        if (string.Equals(existing, wallet, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(existing, wallet, SelectedChain.Family == ChainFamily.Solana ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -671,9 +813,22 @@ else
 
         try
         {
-            _stakingModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
-                "import",
-                "/js/coffeeStaking.js");
+            if (SelectedChain.Family == ChainFamily.Solana)
+            {
+                var solanaModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/solanaWalletAuth.js");
+                var login = await solanaModule.InvokeAsync<SolanaLoginResult>("loginWithWallet");
+                if (!login.Success) throw new InvalidOperationException(login.Error ?? "Solana wallet login failed.");
+                _isConnected = !string.IsNullOrWhiteSpace(login.Address);
+                if (_isConnected)
+                {
+                    _dashboard = new CoffeeDashboardModel { WalletAddress = login.Address! };
+                    _jsInitialized = false;
+                    await LoadDashboardAsync();
+                }
+                return;
+            }
+
+            _stakingModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/coffeeStaking.js");
 
             var isWalletAuthenticated = await IsWalletAuthenticatedAsync();
             var wallet = await _stakingModule.InvokeAsync<string>(
@@ -707,6 +862,8 @@ else
             _isConnecting = false;
         }
     }
+
+    private sealed record SolanaLoginResult(bool Success, string? Address, string? Error);
 
     private async Task LoadStakingLedgerAsync(CancellationToken cancellationToken)
     {
@@ -868,6 +1025,28 @@ else
             catch (JSDisconnectedException)
             {
                 // The circuit can disconnect before module disposal during hot reload or navigation.
+            }
+        }
+
+        if (_liquidModule is not null)
+        {
+            try
+            {
+                await _liquidModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        if (_solanaLiquidModule is not null)
+        {
+            try
+            {
+                await _solanaLiquidModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
             }
         }
     }

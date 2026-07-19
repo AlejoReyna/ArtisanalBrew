@@ -1,0 +1,67 @@
+@page "/intro"
+@layout BlankLayout
+
+<PageTitle>Artisanal Brew</PageTitle>
+
+<main class="intro-stage" id="intro-stage">
+    <div class="intro-grain" aria-hidden="true"></div>
+    <div class="intro-vignette" aria-hidden="true"></div>
+    <div class="intro-glow" aria-hidden="true"></div>
+
+    <div class="intro-content">
+        <h1 class="intro-title" aria-label="Artisanal Brew">
+            <span class="intro-word">
+                <span class="intro-letter" style="--i:0">A</span><span class="intro-letter" style="--i:1">r</span><span class="intro-letter" style="--i:2">t</span><span class="intro-letter" style="--i:3">i</span><span class="intro-letter" style="--i:4">s</span><span class="intro-letter" style="--i:5">a</span><span class="intro-letter" style="--i:6">n</span><span class="intro-letter" style="--i:7">a</span><span class="intro-letter" style="--i:8">l</span>
+            </span>
+            <span class="intro-word">
+                <span class="intro-letter" style="--i:9">B</span><span class="intro-letter" style="--i:10">r</span><span class="intro-letter" style="--i:11">e</span><span class="intro-letter" style="--i:12">w</span>
+            </span>
+        </h1>
+
+        <div class="intro-rule" aria-hidden="true"></div>
+        <p class="intro-tagline">On-chain coffee shop</p>
+    </div>
+
+    <div class="intro-replay-zone" aria-hidden="true">
+        <p class="intro-replay-hint">Click to replay</p>
+    </div>
+</main>
+
+<script>
+    (function () {
+        var stage = document.getElementById('intro-stage');
+
+        function syncRuleWidth(root) {
+            var title = root.querySelector('.intro-title');
+            var rule = root.querySelector('.intro-rule');
+            if (title && rule) {
+                rule.style.setProperty('--rule-width', title.getBoundingClientRect().width + 'px');
+            }
+        }
+
+        function replay() {
+            var clone = stage.cloneNode(true);
+            stage.parentNode.replaceChild(clone, stage);
+            stage = clone;
+            stage.addEventListener('click', replay);
+            syncRuleWidth(stage);
+        }
+
+        stage.addEventListener('click', replay);
+        document.addEventListener('keydown', function (e) {
+            if (e.code === 'Space' || e.key === 'r' || e.key === 'R') {
+                e.preventDefault();
+                replay();
+            }
+        });
+
+        window.addEventListener('resize', function () {
+            syncRuleWidth(stage);
+        });
+
+        syncRuleWidth(stage);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(function () { syncRuleWidth(stage); });
+        }
+    })();
+</script>

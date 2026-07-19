@@ -7,6 +7,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject WalletDashboardState DashboardState
 @inject BlockchainNetworkOptions Chain
+@inject IChainRegistry ChainRegistry
+@inject ISelectedChainAccessor SelectedChainAccessor
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IProfileService ProfileService
@@ -51,6 +53,7 @@
         </NavLink>
 
         <div class="nav-utilities">
+            <ChainSelector Compact="true" OnChainChanged="HandleChainChangedAsync" />
             <AuthorizeView>
                 <Authorized>
                     <button class="@UserToggleCssClass"
@@ -59,10 +62,10 @@
                             aria-expanded="@_isUserMenuOpen"
                             aria-label="Open account menu"
                             @onclick="ToggleUserMenu">
-                        <img class="eth-mark" src="/images/eth_logo.png" alt="" aria-hidden="true" width="27" height="27" />
+                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
                         <span class="nav-login__text-stack">
                             <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
-                            <span class="nav-login__chain" aria-hidden="true">ETH Sepolia</span>
+                            <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
                         </span>
                     </button>
                     <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
@@ -78,7 +81,7 @@
                             type="button"
                             aria-haspopup="dialog"
                             @onclick="OpenWalletModal">
-                        <img class="eth-mark" src="/images/eth_logo.png" alt="" aria-hidden="true" width="27" height="27" />
+                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
                         <span class="nav-login__label">Login</span>
                     </button>
                 </NotAuthorized>
@@ -107,6 +110,7 @@
     </header>
 
     <div class="nav-drawer__body">
+        <ChainSelector OnChainChanged="HandleChainChangedAsync" />
         <AuthorizeView>
             <Authorized>
                 <div class="nav-drawer__stats">
@@ -317,7 +321,7 @@
             <div class="wallet-modal__header">
                 <div class="wallet-modal__title-group">
                     <h2 id="wallet-modal-title">Connect a wallet</h2>
-                    <ChainBadge NetworkName="@Chain.NetworkName" ChainId="Chain.ChainId" Connected="false" Compact="true" />
+                    <ChainBadge NetworkName="@SelectedChain.DisplayName" ChainId="@SelectedChain.EvmChainId" Connected="false" Compact="true" />
                 </div>
                 <button class="wallet-modal__close"
                         type="button"
@@ -328,6 +332,30 @@
             </div>
 
             <div class="wallet-options">
+                @if (SelectedChain.Family == ChainFamily.Solana)
+                {
+                    @if (SelectedChain.Capabilities.WalletLogin)
+                    {
+                        <button class="wallet-option"
+                                type="button"
+                                disabled="@_isConnecting"
+                                @onclick='() => ConnectWalletAsync("Phantom")'>
+                            <span class="wallet-option__icon wallet-option__icon--phantom" aria-hidden="true">
+                                <img src="images/phantom-wallet.svg" alt="" loading="lazy" />
+                            </span>
+                            <span class="wallet-option__copy">
+                                <span class="wallet-option__name">Phantom · Solana Wallet Standard</span>
+                            </span>
+                            <span class="wallet-option__arrow">›</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <p class="wallet-modal__note">Install a Solana Wallet Standard wallet to connect to this verified deployment.</p>
+                    }
+                }
+                else
+                {
                 <button class="wallet-option"
                         type="button"
                         disabled="@_isConnecting"
@@ -390,6 +418,7 @@
                     </span>
                     <span class="wallet-option__arrow">›</span>
                 </button>
+                }
             </div>
 
             <p class="wallet-modal__note">A signature may be requested to verify ownership.</p>
@@ -411,6 +440,7 @@
     private bool _isNavOpen;
     private int _cartItemCount;
     private CoffeeDashboardModel? _walletSnapshot;
+    private ChainDefinition SelectedChain => SelectedChainAccessor.SelectedChain;
     private bool _isLoadingWalletStats;
     private IJSObjectReference? _walletModule;
     private bool _isWalletModalOpen;
@@ -505,6 +535,16 @@
         _ = InvokeAsync(StateHasChanged);
     }
 
+    private async Task HandleChainChangedAsync(ChainDefinition chain)
+    {
+        _walletSnapshot = null;
+        await InvokeAsync(StateHasChanged);
+        if (_isNavOpen)
+        {
+            await LoadWalletStatsAsync();
+        }
+    }
+
     private async Task LoadWalletStatsAsync()
     {
         if (_isLoadingWalletStats)
@@ -519,13 +559,13 @@
             var wallet = GetWalletAddress(authState.User);
             if (authState.User.Identity?.IsAuthenticated != true ||
                 string.IsNullOrWhiteSpace(wallet) ||
-                !wallet.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
-                wallet.Length != 42)
+                (SelectedChain.Family == ChainFamily.Evm && (!wallet.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || wallet.Length != 42)) ||
+                (SelectedChain.Family == ChainFamily.Solana && !SolanaBase58.IsPublicKey(wallet)))
             {
                 return;
             }
 
-            _walletSnapshot = await DashboardState.GetOrRefreshAsync(wallet, TimeSpan.FromSeconds(60));
+            _walletSnapshot = await DashboardState.GetOrRefreshAsync(SelectedChain.Key, SelectedChain.FamilyName, wallet, TimeSpan.FromSeconds(60));
             await InvokeAsync(StateHasChanged);
         }
         catch (Exception exception)
@@ -629,7 +669,8 @@
 
         try
         {
-            _walletModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/walletAuth.js");
+            if (_walletModule is not null) await _walletModule.DisposeAsync();
+            _walletModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", SelectedChain.Family == ChainFamily.Solana ? "/js/solanaWalletAuth.js" : "/js/walletAuth.js");
             var result = await _walletModule.InvokeAsync<WalletLoginResult>("loginWithWallet", walletName);
 
             if (!result.Success)
