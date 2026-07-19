@@ -71,6 +71,31 @@ public sealed class BlockchainManifestLoaderTests
         }
     }
 
+    [Fact]
+    public void EnablesBscTestnetFromAValidatedEvmManifest()
+    {
+        var defaults = new ChainRegistry(BlockchainOptions.CreateDefaults());
+        defaults.All.Single(chain => chain.Key == "bsc-testnet").Enabled.Should().BeFalse();
+
+        var path = WriteEvmManifest();
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+            deployed.Enabled.Should().BeTrue();
+            deployed.EvmChainId.Should().Be(97);
+            deployed.EvmChainIdHex.Should().Be("0x61");
+            deployed.PublicRpcUrl.Should().Be("https://97.rpc.thirdweb.com");
+            deployed.Deployment.LiquidVault.Should().Be(Address('A'));
+            deployed.Capabilities.LiquidStaking.Should().BeTrue();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899")
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-solana-manifest-{Guid.NewGuid():N}.json");
@@ -100,7 +125,33 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
+    private static string WriteEvmManifest()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, $$"""
+        {
+          "schemaVersion": 1,
+          "chainKey": "bsc-testnet",
+          "chainId": 97,
+          "rpcUrl": "https://97.rpc.thirdweb.com",
+          "displayName": "BSC Testnet",
+          "nativeCurrency": { "name": "BNB", "symbol": "tBNB", "decimals": 18 },
+          "addresses": {
+            "cafe": "{{Address('C')}}",
+            "coffee": "{{Address('B')}}",
+            "liquidVault": "{{Address('A')}}",
+            "faucet": "{{Address('F')}}"
+          },
+          "deployBlock": 123,
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true }
+        }
+        """);
+        return path;
+    }
+
     private static string Key(char value) => Base58Encode(Enumerable.Repeat((byte)value, 32).ToArray());
+
+    private static string Address(char value) => $"0x{new string(value, 40)}";
 
     private static string Base58Encode(ReadOnlySpan<byte> bytes)
     {

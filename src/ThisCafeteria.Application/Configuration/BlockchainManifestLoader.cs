@@ -28,20 +28,41 @@ public static class BlockchainManifestLoader
             var root = document.RootElement;
             var addresses = root.GetProperty("addresses");
             var chainId = root.GetProperty("chainId").GetInt32();
+            var chainKey = root.GetProperty("chainKey").GetString() ?? string.Empty;
+            var expectedChainKey = chainId switch
+            {
+                31337 => "evm-local",
+                97 => "bsc-testnet",
+                _ => throw new InvalidDataException($"Unsupported EVM manifest chain ID {chainId}.")
+            };
+            if (!string.Equals(chainKey, expectedChainKey, StringComparison.Ordinal))
+                throw new InvalidDataException($"EVM chain ID {chainId} manifests must use chain key '{expectedChainKey}'.");
+            var displayName = Optional(root, "displayName") ?? (chainId == 97 ? "BSC Testnet" : "Local EVM");
+            var native = root.TryGetProperty("nativeCurrency", out var nativeElement) ? nativeElement : default;
+            var nativeName = Optional(native, "name") ?? (chainId == 97 ? "BNB" : "Local Ether");
+            var nativeSymbol = Optional(native, "symbol") ?? (chainId == 97 ? "tBNB" : "ETH");
+            var nativeDecimals = native.ValueKind == JsonValueKind.Object && native.TryGetProperty("decimals", out var nativeDecimalsElement)
+                ? nativeDecimalsElement.GetInt32()
+                : 18;
+            var rpcUrl = Optional(root, "rpcUrl") ?? (chainId == 97 ? "https://97.rpc.thirdweb.com" : "http://127.0.0.1:8545");
+            var explorerAddress = Optional(root, "explorerAddressTemplate") ?? (chainId == 97 ? "https://testnet.bscscan.com/address/{0}" : "http://127.0.0.1:8545/address/{0}");
+            var explorerTransaction = Optional(root, "explorerTransactionTemplate") ?? (chainId == 97 ? "https://testnet.bscscan.com/tx/{0}" : "http://127.0.0.1:8545/tx/{0}");
             definition = new ChainDefinition
             {
-                Key = root.GetProperty("chainKey").GetString() ?? "evm-local",
-                DisplayName = "Local EVM",
-                ShortName = "Local EVM",
+                Key = chainKey,
+                DisplayName = displayName,
+                ShortName = displayName,
                 Family = ChainFamily.Evm,
+                Enabled = true,
                 EvmChainId = chainId,
                 EvmChainIdHex = $"0x{chainId:x}",
-                NativeCurrencyName = "Local Ether",
-                NativeCurrencySymbol = "ETH",
-                PublicRpcUrl = "http://127.0.0.1:8545",
-                ExplorerAddressTemplate = "http://127.0.0.1:8545/address/{0}",
-                ExplorerTransactionTemplate = "http://127.0.0.1:8545/tx/{0}",
-                SortOrder = 100,
+                NativeCurrencyName = nativeName,
+                NativeCurrencySymbol = nativeSymbol,
+                NativeCurrencyDecimals = nativeDecimals,
+                PublicRpcUrl = rpcUrl,
+                ExplorerAddressTemplate = explorerAddress,
+                ExplorerTransactionTemplate = explorerTransaction,
+                SortOrder = chainId == 97 ? 6 : 100,
                 Deployment = new ChainDeployment
                 {
                     Cafe = addresses.GetProperty("cafe").GetString() ?? string.Empty,
@@ -49,7 +70,7 @@ public static class BlockchainManifestLoader
                     LiquidVault = addresses.GetProperty("liquidVault").GetString() ?? string.Empty,
                     Faucet = addresses.GetProperty("faucet").GetString() ?? string.Empty,
                     StCafe = addresses.GetProperty("liquidVault").GetString() ?? string.Empty,
-                    StartBlockOrSlot = long.Parse(root.GetProperty("deployBlock").GetString() ?? "0", CultureInfo.InvariantCulture)
+                    StartBlockOrSlot = ReadLong(root, "deployBlock")
                 },
                 Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, Faucet = true, RewardMinting = true }
             };
@@ -121,6 +142,22 @@ public static class BlockchainManifestLoader
     {
         var value = root.GetProperty(name).GetString();
         return !string.IsNullOrWhiteSpace(value) ? value : throw new InvalidDataException($"Manifest property '{name}' is required.");
+    }
+
+    private static string? Optional(JsonElement root, string name) =>
+        root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static long ReadLong(JsonElement root, string name)
+    {
+        var value = root.GetProperty(name);
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetInt64(out var number) => number,
+            JsonValueKind.String when long.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var text) => text,
+            _ => throw new InvalidDataException($"Manifest property '{name}' must be an integer.")
+        };
     }
 
     private static bool TryOpen(string? path, out JsonDocument document)

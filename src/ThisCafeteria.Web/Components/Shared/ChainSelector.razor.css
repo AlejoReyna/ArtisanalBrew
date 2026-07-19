@@ -1,0 +1,62 @@
+.chain-selector {
+    position: relative;
+    display: inline-block;
+}
+.chain-selector__control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    max-width: max-content !important;
+    padding-right: 1.2rem !important;
+    justify-content: space-between;
+    white-space: nowrap;
+}
+.chain-selector__control::after {
+    content: "▼";
+    font-size: 0.6rem;
+    margin-left: 8px;
+    color: rgba(244,239,230,0.6);
+}
+.chain-icon {
+    object-fit: contain;
+    border-radius: 50%;
+}
+.chain-selector__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 100%;
+    min-width: 200px;
+    background: #1f1915;
+    border: 1px solid rgba(244,239,230,.22);
+    border-radius: 12px;
+    z-index: 100;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.chain-selector__option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    color: #f4efe6;
+    font: 700 .72rem/1.2 Inter,sans-serif;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+    width: 100%;
+    white-space: nowrap;
+}
+.chain-selector__option:hover {
+    background: rgba(244,239,230,0.1);
+}
+.chain-selector__option.selected {
+    background: rgba(143,185,155,0.2);
+}

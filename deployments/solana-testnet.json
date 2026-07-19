@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1",
+  "chainKey": "solana-testnet",
+  "rpcUrl": "https://api.testnet.solana.com/",
+  "cluster": "testnet",
+  "programId": "EbkKufsajUNzD3bLhRpb2d8XT5fHvz9e8hND111hQJxh",
+  "deploymentSlot": 422939391,
+  "statePda": "2NyAMgREBZuYfLwiwR3LLqazR1cM3Bebsu51qosFYDGB",
+  "authorityPda": "2NyAMgREBZuYfLwiwR3LLqazR1cM3Bebsu51qosFYDGB",
+  "cafeMint": "4gw7cXQwqZ1SQnSfbY4VJy1uLZRwbMiZwJNoSchWgQM4",
+  "stCafeMint": "HiBd5DHXLkmbv3MMpDXm63jqRiUUTDQBuQdY8EYruAg1",
+  "coffeeMint": "9r6Dd9VDv6nPuQabwuNBkvJ3kLNLrYSNwXG4ipSUkg4D",
+  "cafeCustody": "3Y1ZwgfbyfYqCL4D7eyR54yFFRHZXKZiwjmUeoJ4EFGH",
+  "coffeeCustody": "2F63muAf1mrfWtLebdjWZTSAiatCbxbFB1es9Km2R8BH",
+  "administrator": "9dCm3Tm8zMQvm4XWBXBjGHKZVg6Fd9rdSPEST8Zx2aDR",
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "token2022Program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "cafeDecimals": 9,
+  "stCafeDecimals": 9,
+  "coffeeDecimals": 9,
+  "idlPath": "target/idl/cafe_liquid_staking.json",
+  "idlSha256": "bed3c95cc29a52942ee6d6c3081ac025c5ce44ef1473e908ada105179ce19f96",
+  "programBinarySha256": "14ba0f2848ebbcf749a949d617bd68c911dde4102abd46ae46e660590f72b2f9",
+  "capabilities": {
+    "walletLogin": true,
+    "liquidStaking": true,
+    "rewardFunding": true,
+    "reconciliation": true
+  }
+}

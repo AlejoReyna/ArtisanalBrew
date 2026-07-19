@@ -5,24 +5,50 @@
 @inject IJSRuntime JsRuntime
 @implements IDisposable
 
-<div class="chain-selector @(Compact ? "chain-selector--compact" : string.Empty)">
-    <label class="visually-hidden" for="@_selectId">Active blockchain network</label>
-    <select id="@_selectId"
-            class="chain-selector__control"
-            aria-label="Active blockchain network"
-            value="@SelectedChainAccessor.SelectedChainKey"
-            @onchange="SelectChainAsync">
-        @foreach (var chain in ChainRegistry.All.Where(chain => chain.Enabled))
+<div class="chain-selector @(Compact ? "chain-selector--compact" : string.Empty)" @onfocusout="CloseDropdown">
+    <button type="button" class="chain-selector__control" @onclick="ToggleDropdown" aria-label="Active blockchain network">
+        @if (SelectedChainAccessor.SelectedChain != null)
         {
-            <option value="@chain.Key">@($"{chain.ShortName} ({chain.FamilyName})")</option>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="@SelectedChainAccessor.SelectedChain.IconAsset" alt="" class="chain-icon" width="20" height="20" />
+                <span>@SelectedChainAccessor.SelectedChain.ShortName</span>
+            </div>
         }
-    </select>
+        else
+        {
+            <span>Select Network</span>
+        }
+    </button>
+    
+    @if (_isOpen)
+    {
+        <div class="chain-selector__dropdown">
+            @foreach (var chain in ChainRegistry.All.Where(c => c.Enabled))
+            {
+                <button type="button" class="chain-selector__option @(chain.Key == SelectedChainAccessor.SelectedChainKey ? "selected" : "")" 
+                        @onclick="() => SelectChainAsync(chain.Key)">
+                    <img src="@chain.IconAsset" alt="" class="chain-icon" width="20" height="20" />
+                    <span>@chain.ShortName</span>
+                </button>
+            }
+        </div>
+    }
 </div>
 
 @code {
     [Parameter] public bool Compact { get; set; }
     [Parameter] public EventCallback<ChainDefinition> OnChainChanged { get; set; }
-    private readonly string _selectId = $"chain-selector-{Guid.NewGuid():N}";
+
+    private bool _isOpen;
+    
+    private void ToggleDropdown() => _isOpen = !_isOpen;
+    
+    private async Task CloseDropdown() 
+    {
+        await Task.Delay(150);
+        _isOpen = false;
+        StateHasChanged();
+    }
 
     protected override void OnInitialized() => SelectedChainAccessor.Changed += OnSelectedChainChanged;
 
@@ -30,11 +56,11 @@
 
     public void Dispose() => SelectedChainAccessor.Changed -= OnSelectedChainChanged;
 
-    private async Task SelectChainAsync(ChangeEventArgs args)
+    private async Task SelectChainAsync(string key)
     {
-        var key = args.Value?.ToString();
         if (string.IsNullOrWhiteSpace(key) || !await SelectedChainAccessor.SelectAsync(key)) return;
         await JsRuntime.InvokeVoidAsync("artisanalChainSelector.persist", key);
         await OnChainChanged.InvokeAsync(SelectedChainAccessor.SelectedChain);
+        _isOpen = false;
     }
 }
