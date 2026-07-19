@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Serilog;
 using ThisCafeteria.Application;
@@ -19,13 +21,22 @@ using ThisCafeteria.Web.Services.Blockchain;
 using ThisCafeteria.Web.Services.Rewards;
 using ThisCafeteria.Web.Services.Cart;
 using ThisCafeteria.Web.Services.Wallet;
-using ThisCafeteria.Web.Middleware;
+using ThisCafeteria.Web.HealthChecks;
 using ThisCafeteria.Infrastructure.Configuration;
 
 LocalDotEnvLoader.LoadIfPresent();
 
 var builder = WebApplication.CreateBuilder(args);
 var hasDatabase = !string.IsNullOrWhiteSpace(DatabaseConnectionStringFactory.Resolve(builder.Configuration));
+var blockchainOptions = builder.Configuration.GetSection(BlockchainOptions.SectionName).Get<BlockchainOptions>() ?? BlockchainOptions.CreateDefaults();
+if (blockchainOptions.Chains.Count == 0)
+{
+    blockchainOptions = BlockchainOptions.CreateDefaults();
+}
+blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
+    blockchainOptions,
+    builder.Configuration["Blockchain:LocalEvmManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST"),
+    builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST"));
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
@@ -40,7 +51,9 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
+    .AddCheck<MigrationReadinessHealthCheck>("database-initialization", tags: ["ready"]);
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -73,6 +86,9 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton(blockchainOptions);
+builder.Services.AddSingleton<IChainRegistry>(new ChainRegistry(blockchainOptions));
+builder.Services.AddScoped<ISelectedChainAccessor, SelectedChainAccessor>();
 var blockchainNetworkSection = builder.Configuration.GetSection(BlockchainNetworkOptions.SectionName);
 if (!blockchainNetworkSection.Exists())
 {
@@ -85,7 +101,11 @@ builder.Services.AddSingleton(serviceProvider =>
 builder.Services.Configure<CoffeeCoinOwnerOptions>(
     builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
 builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
+builder.Services.AddScoped<EvmLiquidStakingGateway>();
+builder.Services.AddScoped<SolanaLiquidStakingGateway>();
+builder.Services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
+builder.Services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
 builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
 {
@@ -160,7 +180,6 @@ else
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseResponseCompression();
-app.UseMiddleware<MigrationBlockingMiddleware>();
 
 app.UseSession();
 app.UseAuthentication();
@@ -169,6 +188,11 @@ app.UseAntiforgery();
 
 app.Use((context, next) =>
 {
+    if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+    {
+        return next(context);
+    }
+
     var antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>();
     var tokens = antiforgery.GetAndStoreTokens(context);
     context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
@@ -183,7 +207,19 @@ app.Use((context, next) =>
 
 app.MapStaticAssets();
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready")
+});
+// Keep the original endpoint as a backwards-compatible readiness check.
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready")
+});
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

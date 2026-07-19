@@ -3,6 +3,7 @@ namespace ThisCafeteria.Infrastructure.Persistence;
 public interface IMigrationReadiness
 {
     bool IsReady { get; }
-    Task ReadyTask { get; }
+    Exception? Failure { get; }
     void MarkReady();
+    void MarkFailed(Exception exception);
 }

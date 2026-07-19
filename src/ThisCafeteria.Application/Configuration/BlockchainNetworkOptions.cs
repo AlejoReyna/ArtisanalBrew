@@ -9,6 +9,7 @@ public sealed class BlockchainNetworkOptions
     public int ChainId { get; init; } = 11155111;
     public string ChainIdHex { get; init; } = "0xaa36a7";
     public string RpcUrl { get; init; } = "https://ethereum-sepolia-rpc.publicnode.com";
+    public string? ServerRpcUrl { get; init; }
     public string CurrencyName { get; init; } = "Sepolia ETH";
     public string CurrencySymbol { get; init; } = "ETH";
     public int CurrencyDecimals { get; init; } = 18;
@@ -22,11 +23,15 @@ public sealed class BlockchainNetworkOptions
 
     public string AnkrBNBContract { get; init; } = string.Empty;
     public string StakingPoolContract { get; init; } = string.Empty;
+    public string LiquidVaultContract { get; init; } = string.Empty;
     public string CoffeeCoinContract { get; init; } = string.Empty;
     public string CafeFaucetContract { get; init; } = string.Empty;
     public string MarketplaceWallet { get; init; } = string.Empty;
     public decimal StakingAprPercent { get; init; } = 5.2m;
     public int MinimumConfirmations { get; init; } = 2;
+    public long DeploymentStartBlock { get; init; }
+
+    public string EffectiveServerRpcUrl => string.IsNullOrWhiteSpace(ServerRpcUrl) ? RpcUrl : ServerRpcUrl;
 
     public string EffectivePaymentTokenContract =>
         !string.IsNullOrWhiteSpace(PaymentTokenContract)

@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace ThisCafeteria.Web.Models;
 
-public sealed record WalletChallengeRequest(string Address, string? WalletName = null);
+public sealed record WalletChallengeRequest(string Address, string? WalletName = null, string? ChainKey = null);
 
 public sealed record WalletChallengeResponse(
     string Message,
@@ -14,7 +14,9 @@ public sealed record WalletChallengeResponse(
     string ExplorerUrl,
     string CurrencyName,
     string CurrencySymbol,
-    int CurrencyDecimals);
+    int CurrencyDecimals,
+    string ChainKey = "ethereum-sepolia",
+    string Family = "Evm");
 
 public sealed record WalletVerifyRequest(
     string Address,
@@ -22,7 +24,12 @@ public sealed record WalletVerifyRequest(
     string Message,
     string Nonce,
     int ChainId,
-    string? WalletName = null);
+    string? WalletName = null,
+    string? ChainKey = null);
+
+public sealed record SolanaWalletChallengeRequest(string Address, string ChainKey, string? WalletName = null);
+public sealed record SolanaWalletChallengeResponse(string Message, string Nonce, string ChainKey, string Cluster, DateTimeOffset IssuedAt, DateTimeOffset ExpiresAt);
+public sealed record SolanaWalletVerifyRequest(string Address, string Signature, string Message, string Nonce, string ChainKey, string? WalletName = null);
 
 public sealed record WalletVerifyResponse(
     bool Success,

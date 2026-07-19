@@ -3265,4 +3265,8 @@ body.product-detail-view .product-detail-card__title h1 {
         transition: none !important;
     }
 }
-
+/* Shared multichain selector */
+.chain-selector { display: inline-flex; min-width: 0; }
+.chain-selector__control { appearance: auto; background: #1f1915; border: 1px solid rgba(244,239,230,.22); border-radius: 999px; color: #f4efe6; font: 700 .72rem/1.2 Inter,sans-serif; min-height: 2.4rem; padding: .55rem 2rem .55rem .8rem; }
+.chain-selector--compact .chain-selector__control { max-width: 10rem; min-height: 2.1rem; }
+.chain-selector__control:focus-visible { outline: 2px solid #8fb99b; outline-offset: 2px; }

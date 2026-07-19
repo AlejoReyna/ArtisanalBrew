@@ -14,7 +14,9 @@
 - Entity Framework Core with PostgreSQL
 - ASP.NET Core Identity
 - Serilog
-- xUnit, FluentAssertions, Moq, WebApplicationFactory, Testcontainers
+- Nethereum, Solana Wallet Standard, Anchor 0.31.1, Solana CLI 2.2.1, and Token-2022
+- Hardhat 3, OpenZeppelin Contracts 5.4, TypeScript, and Rust
+- xUnit, FluentAssertions, Moq, WebApplicationFactory, Chai, and Mocha
 - Deployed on Azure Container Apps, backed by Azure Blob Storage, Service Bus, Key Vault, and Communication Services Email
 
 ## Architecture
@@ -24,26 +26,129 @@
 - `src/ThisCafeteria.Infrastructure`: EF Core DbContext, entity configurations, repositories, seed data, Identity user, Azure-backed storage/messaging/email services.
 - `src/ThisCafeteria.Web`: Blazor pages, API controllers, Identity, Swagger, health checks.
 - `src/ThisCafeteria.Worker`: background service that consumes order-processing messages from Azure Service Bus.
+- `src/ThisCafeteria.AgentGateway`: pinned TypeScript x402/MCP boundary for paid agent resources.
+- `contracts/evm`: local EVM tokens, faucet, liquid-staking vault, and ERC-8183 escrow.
+- `contracts/solana`: Anchor liquid-staking program and browser/program smoke tests.
 - `tests`: unit and integration test projects.
+
+## Multichain Liquid Staking
+
+ArtisanalBrew is moving from a single-chain, lock-and-reward staking pool to a capability-gated multichain liquid-staking system:
+
+1. The user selects a network from the same persisted selector in the login pill or staking sidebar.
+2. The connected wallet proves ownership using the chain family's native signature flow.
+3. The user deposits CAFE and receives stCAFE, a liquid receipt representing redeemable CAFE.
+4. COFFEE rewards accrue to the current stCAFE holder and can be claimed separately.
+5. Redeeming stCAFE burns the receipt and returns the corresponding CAFE.
+6. Web and Worker independently verify and reconcile every recorded operation using chain-qualified identities and cursors.
+
+This is liquid staking of the application's CAFE asset. It is not validator staking of ETH, SOL, AVAX, HBAR, BNB, or another network's native currency.
+
+### Network roadmap and visibility
+
+The registry contains all nine requested test networks, but the public API and both selectors only expose entries whose deployment and capability gates are satisfied.
+
+| Network | Registry state | User-visible behavior |
+|---|---|---|
+| Ethereum Sepolia | Enabled legacy deployment | Wallet login, CAFE faucet, marketplace payment, legacy claim/exit; new legacy deposits remain disabled |
+| Solana Localnet | Enabled by a validated runtime manifest | Wallet Standard login, liquid deposit/redeem/claim, reward funding, RPC dashboard reads, and reconciliation |
+| Solana Testnet | Planned; disabled without a verified public manifest | Hidden |
+| Hedera Testnet | Planned; contracts not deployed | Hidden |
+| Avalanche Fuji | Planned; contracts not deployed | Hidden |
+| Linea Sepolia | Planned; contracts not deployed | Hidden |
+| Base Sepolia | Planned; contracts not deployed | Hidden |
+| BNB Smart Chain Testnet | Planned; contracts not deployed | Hidden |
+| Monad Testnet | Planned; contracts not deployed | Hidden |
+| Arbitrum Sepolia | Planned; contracts not deployed | Hidden |
+
+Solana Testnet becomes visible only after the program and token fixtures are deployed, the public smoke scenario passes, and a validated `solana-testnet` manifest is supplied to both Web and Worker. The same manifest rule prevents an unfinished or mismatched connection from being advertised accidentally.
+
+The full orchestration design is documented in [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md). Operational commands and release controls live in [`docs/multichain-liquid-staking-operations.md`](docs/multichain-liquid-staking-operations.md) and [`docs/solana-local-manifest.md`](docs/solana-local-manifest.md).
+
+### What is implemented
+
+- A validated, immutable chain registry with family, network, deployment, and capability metadata.
+- One persisted chain selection shared by the desktop/mobile login pill and staking sidebar.
+- Family-qualified wallet identities and a chain-safe ledger key: `(ChainKey, TransactionId, OperationIndex)`.
+- PostgreSQL-backed Solana authentication challenges with hashed payloads, expiry, atomic consumption, origin/chain/address binding, Ed25519 verification, and identity reassignment protection.
+- An EVM liquid vault with transferable stCAFE, ERC-4626 previews, COFFEE reward checkpoints, pause controls, reentrancy protection, exact accounting, and server-side transaction verification.
+- An Anchor Solana program with PDA-controlled custody, Token-2022 stCAFE mint/burn, frozen receipt accounts, vault-mediated receipt transfers, reward funding/checkpointing/claims, pause controls, and emitted reconciliation events.
+- Browser-side Solana Wallet Standard login and sign-and-send flows for deposit, redeem, and claim.
+- Real Solana RPC dashboard reads for CAFE, stCAFE, COFFEE, custody, share supply, exchange rate, and pending rewards using raw integer arithmetic.
+- Independent EVM and Solana reconciliation supervisors with persistent cursors, restart/replay idempotency, bounded pagination, and a Solana repair/backfill command.
+- Deterministic local EVM and Solana contract workspaces, ABI/IDL output, deployment manifests, and automated tests.
+- A local-first ERC-8183 escrow and pinned x402 gateway slice. ERC-4337, ERC-8004, and ERC-7683 remain future agent-commerce work and are not presented as complete.
+
+### Security and enablement model
+
+- The browser never chooses trusted contract addresses; the server resolves them from the registry and deployment manifest.
+- Solana verification checks finalized transactions, the trusted program, instruction and event discriminators, signer, PDAs, mints, custody/token accounts, owners, decimals, and canonical SPL programs.
+- Solana events are accepted only while the trusted program is active in the invocation stack, preventing matching data emitted through an unrelated CPI path.
+- Raw Token-2022 receipt transfers are blocked. `transfer_st_cafe` checkpoints sender and recipient rewards before moving and refreezing both accounts.
+- Public manifests contain addresses and checksums only—never a private key or seed phrase.
+- Public broadcasts require explicit release acknowledgement; unattended tests and builds remain local-only.
+
+### Remaining rollout work
+
+- Fund the authorized Solana Testnet deployer, deploy the program and token fixtures, execute the public deposit → fund → transfer → claim → redeem smoke scenario, and generate the verified Testnet manifest.
+- Deploy and verify a new EVM liquid vault per selected EVM testnet; do not reuse or upgrade the unverified legacy Sepolia pool.
+- Add public-RPC health/observability and rollback evidence before enabling each network.
+- Complete the agent-commerce stack described in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md): ERC-4337, ERC-8004, and ERC-7683 are still outstanding.
 
 
 
 ## Run Locally
 
-Postgres is published on host port **5433** (container 5432) so it does not conflict with a local PostgreSQL install on 5432.
+Local PostgreSQL uses Apple Container and is published on host port **55432**. The script creates only the scoped `artisanalbrew-postgres-test` container.
 
 ```bash
-cd /Users/alexis/TCDE/ThisCafeteria
+cd /path/to/ArtisanalBrew
 cp .env.example .env
-# Edita .env y reemplaza todos los valores CHANGE_ME / YOUR_DB_*
-docker compose up -d postgres
+# Edit .env and replace every CHANGE_ME / YOUR_DB_* value.
+scripts/apple-container-postgres.sh start
+export ConnectionStrings__DefaultConnection='Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password'
 dotnet restore
+dotnet ef database update --project src/ThisCafeteria.Infrastructure --startup-project src/ThisCafeteria.Web
 dotnet run --project src/ThisCafeteria.Web
 ```
 
 Swagger is available in Development at `/swagger`, and health checks are exposed at `/health`.
 
-The app requires `ConnectionStrings__DefaultConnection` from environment variables (`.env` for local development). No default password is embedded in source code.
+Start the worker in a second terminal with the same connection string:
+
+```bash
+dotnet run --project src/ThisCafeteria.Worker
+```
+
+Stop the local database when finished:
+
+```bash
+scripts/apple-container-postgres.sh stop
+```
+
+The app requires `ConnectionStrings__DefaultConnection` from environment variables (`.env` for local development). No production password is embedded in source code.
+
+### Local blockchain manifests
+
+Build, test, and create the local EVM fixture:
+
+```bash
+cd contracts/evm
+npm ci
+npm run build
+npm test
+XDG_CONFIG_HOME=/private/tmp/artisanalbrew-hardhat-config npm run deploy:ephemeral
+cd ../..
+export ARTISANALBREW_EVM_MANIFEST="$PWD/contracts/evm/deployments/evm-local.json"
+```
+
+For Solana, install the versions pinned in `contracts/solana/Anchor.toml`, run `anchor test`, generate a public-address-only manifest as described in [`docs/solana-local-manifest.md`](docs/solana-local-manifest.md), and export it before starting both application processes:
+
+```bash
+export ARTISANALBREW_SOLANA_MANIFEST=/absolute/path/to/solana-local-deployment-manifest.json
+```
+
+Web and Worker must load the same manifest. A valid local manifest adds `solana-localnet`; a valid Testnet manifest replaces and enables the otherwise hidden `solana-testnet` placeholder.
 
 ## Migrations
 
@@ -62,8 +167,17 @@ Admin user seeding reads:
 
 ```bash
 dotnet restore
-dotnet build --configuration Release
-dotnet test --configuration Release
+dotnet build ThisCafeteria.sln --configuration Release --no-restore
+dotnet test tests/ThisCafeteria.UnitTests --configuration Release --no-build
+
+TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password' \
+  dotnet test tests/ThisCafeteria.IntegrationTests --configuration Release --no-build
+
+npm --prefix contracts/evm test
+npm --prefix src/ThisCafeteria.AgentGateway test
+npm --prefix src/ThisCafeteria.AgentGateway run build
+cargo test --manifest-path contracts/solana/Cargo.toml --locked
+npm --prefix contracts/solana run test:browser
 ```
 
 ## Worker

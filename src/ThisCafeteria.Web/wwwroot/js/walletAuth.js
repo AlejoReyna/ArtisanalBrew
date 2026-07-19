@@ -14,7 +14,8 @@ export async function loginWithWallet(walletName = "wallet") {
             return { success: false, error: "No wallet account was selected." };
         }
 
-        const challenge = await postJson("/api/wallet-auth/challenge", { address, walletName });
+        const chainState = await fetch("/api/chains", { credentials: "same-origin" }).then(response => response.json());
+        const challenge = await postJson("/api/wallet-auth/challenge", { address, walletName, chainKey: chainState.selectedChainKey });
         await ensureConfiguredNetwork(provider, challenge);
 
         const signature = await provider.request({
@@ -28,6 +29,7 @@ export async function loginWithWallet(walletName = "wallet") {
             message: challenge.message,
             nonce: challenge.nonce,
             chainId: challenge.chainId,
+            chainKey: challenge.chainKey,
             walletName
         });
 
@@ -220,7 +222,8 @@ async function postJson(url, payload) {
         method: "POST",
         credentials: "same-origin",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            ...(getCsrfToken() ? { "X-CSRF-TOKEN": getCsrfToken() } : {})
         },
         body: JSON.stringify(payload)
     });
@@ -231,6 +234,11 @@ async function postJson(url, payload) {
     }
 
     return response.json();
+}
+
+function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
 }
 
 function friendlyWalletError(error) {

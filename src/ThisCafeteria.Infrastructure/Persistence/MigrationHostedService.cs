@@ -68,6 +68,7 @@ public sealed class MigrationHostedService : IHostedService
         }
         catch (Exception exception)
         {
+            _readiness.MarkFailed(exception);
             _logger.LogError(exception, "Database migrations or seeding failed");
         }
     }

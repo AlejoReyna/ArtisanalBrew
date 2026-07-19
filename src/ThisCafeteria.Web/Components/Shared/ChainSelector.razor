@@ -1,0 +1,40 @@
+@using ThisCafeteria.Application.Configuration
+@using ThisCafeteria.Web.Services.Blockchain
+@inject IChainRegistry ChainRegistry
+@inject ISelectedChainAccessor SelectedChainAccessor
+@inject IJSRuntime JsRuntime
+@implements IDisposable
+
+<div class="chain-selector @(Compact ? "chain-selector--compact" : string.Empty)">
+    <label class="visually-hidden" for="@_selectId">Active blockchain network</label>
+    <select id="@_selectId"
+            class="chain-selector__control"
+            aria-label="Active blockchain network"
+            value="@SelectedChainAccessor.SelectedChainKey"
+            @onchange="SelectChainAsync">
+        @foreach (var chain in ChainRegistry.All.Where(chain => chain.Enabled))
+        {
+            <option value="@chain.Key">@($"{chain.ShortName} ({chain.FamilyName})")</option>
+        }
+    </select>
+</div>
+
+@code {
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public EventCallback<ChainDefinition> OnChainChanged { get; set; }
+    private readonly string _selectId = $"chain-selector-{Guid.NewGuid():N}";
+
+    protected override void OnInitialized() => SelectedChainAccessor.Changed += OnSelectedChainChanged;
+
+    private void OnSelectedChainChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => SelectedChainAccessor.Changed -= OnSelectedChainChanged;
+
+    private async Task SelectChainAsync(ChangeEventArgs args)
+    {
+        var key = args.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(key) || !await SelectedChainAccessor.SelectAsync(key)) return;
+        await JsRuntime.InvokeVoidAsync("artisanalChainSelector.persist", key);
+        await OnChainChanged.InvokeAsync(SelectedChainAccessor.SelectedChain);
+    }
+}
