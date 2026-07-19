@@ -1,6 +1,10 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using ThisCafeteria.Infrastructure.Persistence;
 
 namespace ThisCafeteria.IntegrationTests;
 
@@ -54,6 +58,32 @@ public sealed class ThisCafeteriaWebApplicationFactory : WebApplicationFactory<P
         {
             ["ConnectionStrings:DefaultConnection"] = externalConnectionString
         }));
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        var readiness = host.Services.GetRequiredService<IMigrationReadiness>();
+        var startedAt = Stopwatch.GetTimestamp();
+
+        while (!readiness.IsReady)
+        {
+            if (readiness.Failure is not null)
+            {
+                host.Dispose();
+                throw new InvalidOperationException("Integration-test database initialization failed.", readiness.Failure);
+            }
+
+            if (Stopwatch.GetElapsedTime(startedAt) >= TimeSpan.FromSeconds(30))
+            {
+                host.Dispose();
+                throw new TimeoutException("Integration-test database initialization did not complete within 30 seconds.");
+            }
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(50));
+        }
+
+        return host;
     }
 
     protected override void Dispose(bool disposing)
