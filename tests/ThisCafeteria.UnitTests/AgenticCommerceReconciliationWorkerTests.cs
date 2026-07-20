@@ -53,7 +53,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
         _registryMock.Setup(r => r.All).Returns(new[] { _chain });
 
         _providerMock = new Mock<IEscrowEventProvider>();
-        
+
         _applicator = new AgenticCommerceReconciliationApplicator();
 
         _worker = new AgenticCommerceReconciliationWorker(
@@ -105,7 +105,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
         var projection = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 1);
         projection.Status.Should().Be(AgenticJobProjection.StatusOpen);
         projection.ClientAddress.Should().Be("0xClient");
-        
+
         // Assert Applicator processed it correctly (concurrency token = 0 on creation)
         projection.ConcurrencyToken.Should().Be(0);
     }
@@ -116,7 +116,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
         // Arrange
         _providerMock.Setup(p => p.GetLatestBlockNumberAsync(_chain, It.IsAny<CancellationToken>()))
             .ReturnsAsync(105);
-            
+
         // Setup checkpoint at block 10
         _context.AgenticCommerceCheckpoints.Add(new AgenticCommerceReconciliationCheckpoint
         {
@@ -139,6 +139,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
         var checkpoint = await _context.AgenticCommerceCheckpoints.SingleAsync(c => c.ChainKey == "test-chain");
         checkpoint.LastScannedBlock.Should().Be(10);
     }
+
     [Fact]
     public async Task ReconcileOnceAsync_MultipleJobsInOneScan()
     {
@@ -170,7 +171,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
     {
         _providerMock.Setup(p => p.GetLatestBlockNumberAsync(_chain, It.IsAny<CancellationToken>()))
             .ReturnsAsync(105);
-            
+
         _context.AgenticCommerceCheckpoints.Add(new AgenticCommerceReconciliationCheckpoint
         {
             ChainKey = "test-chain",
@@ -195,5 +196,66 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
 
         var checkpoint = await _context.AgenticCommerceCheckpoints.SingleAsync(c => c.ChainKey == "test-chain");
         checkpoint.LastScannedBlock.Should().Be(10, "Checkpoint should not advance if applicator throws");
+    }
+
+    // =========================================================================
+    // NEW TEST – Phase 3 hardening: failed persistence leaves checkpoint unchanged
+    // =========================================================================
+
+    /// <summary>
+    /// If the applicator throws a DbUpdateException (persistence failure), the transaction
+    /// is rolled back and the checkpoint must remain at its previous value.
+    ///
+    /// This is distinct from ReconcileOnceAsync_ApplicatorFailureLeavesCheckpointUnchanged:
+    /// here we use a checkpoint at block 20 and a higher latest block (130) to confirm
+    /// the specific arithmetic: the checkpoint does not advance from 20 to any higher value.
+    /// </summary>
+    [Fact]
+    public async Task ReconcileOnceAsync_PersistenceFailure_CheckpointRemainsAtPreviousBlock()
+    {
+        // Arrange: checkpoint at block 20, latest at 130 → safeHead = 125.
+        _providerMock.Setup(p => p.GetLatestBlockNumberAsync(_chain, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(130);
+
+        _context.AgenticCommerceCheckpoints.Add(new AgenticCommerceReconciliationCheckpoint
+        {
+            ChainKey = "test-chain",
+            EscrowAddress = "0xEscrow",
+            LastScannedBlock = 20
+        });
+        await _context.SaveChangesAsync();
+
+        var evt = new EscrowEvent
+        {
+            Type = EscrowEventType.JobCreated,
+            OnChainJobId = 200,
+            BlockNumber = 25,
+            TransactionHash = "0xPersistFail",
+            LogIndex = 0
+        };
+        _providerMock
+            .Setup(p => p.DecodeEventsAsync(_chain, "0xEscrow", 21, 125, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<EscrowEvent> { evt });
+
+        // The applicator throws a DbUpdateException, simulating a failed SaveChanges.
+        var failApplicator = new Mock<IAgenticCommerceReconciliationApplicator>();
+        failApplicator
+            .Setup(a => a.ApplyEventAsync(
+                It.IsAny<AppDbContext>(), _chain, "0xEscrow", evt, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DbUpdateException("Persistence failure"));
+
+        var workerFail = new AgenticCommerceReconciliationWorker(
+            _scopeFactory, _registryMock.Object, _providerMock.Object, failApplicator.Object,
+            NullLogger<AgenticCommerceReconciliationWorker>.Instance);
+
+        // Act.
+        await FluentActions.Invoking(() => workerFail.ReconcileOnceAsync(_chain, CancellationToken.None))
+            .Should().ThrowAsync<DbUpdateException>();
+
+        // Assert: checkpoint must still be at 20, not 125.
+        var checkpoint = await _context.AgenticCommerceCheckpoints.AsNoTracking()
+            .SingleAsync(c => c.ChainKey == "test-chain");
+        checkpoint.LastScannedBlock.Should().Be(20,
+            "checkpoint must not advance when persistence fails at any point in the transaction");
     }
 }

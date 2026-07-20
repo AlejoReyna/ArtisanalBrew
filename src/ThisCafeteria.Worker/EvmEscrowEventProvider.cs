@@ -72,7 +72,7 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
                 Type = EscrowEventType.JobSubmitted,
                 OnChainJobId = (long)item.Event.JobId,
                 Provider = item.Event.Provider,
-                Deliverable = item.Event.Deliverable?.ToHex(true) ?? string.Empty,
+                Deliverable = NormalizeBytes32(item.Event.Deliverable),
                 TransactionHash = item.Log.TransactionHash?.ToLowerInvariant() ?? string.Empty,
                 BlockNumber = (long)(item.Log.BlockNumber?.Value ?? 0),
                 LogIndex = checked((int)(item.Log.LogIndex?.Value ?? 0))
@@ -87,7 +87,7 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
                 Type = EscrowEventType.JobCompleted,
                 OnChainJobId = (long)item.Event.JobId,
                 Evaluator = item.Event.Evaluator,
-                Reason = item.Event.Reason?.ToHex(true) ?? string.Empty,
+                Reason = NormalizeBytes32(item.Event.Reason),
                 TransactionHash = item.Log.TransactionHash?.ToLowerInvariant() ?? string.Empty,
                 BlockNumber = (long)(item.Log.BlockNumber?.Value ?? 0),
                 LogIndex = checked((int)(item.Log.LogIndex?.Value ?? 0))
@@ -101,7 +101,7 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
             {
                 Type = EscrowEventType.JobRejected,
                 OnChainJobId = (long)item.Event.JobId,
-                Reason = item.Event.Reason?.ToHex(true) ?? string.Empty,
+                Reason = NormalizeBytes32(item.Event.Reason),
                 TransactionHash = item.Log.TransactionHash?.ToLowerInvariant() ?? string.Empty,
                 BlockNumber = (long)(item.Log.BlockNumber?.Value ?? 0),
                 LogIndex = checked((int)(item.Log.LogIndex?.Value ?? 0))
@@ -180,6 +180,49 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Converts a Solidity bytes32 value to a PostgreSQL-safe string with no NUL bytes.
+    ///
+    /// Algorithm:
+    ///   1. Strip trailing zero bytes.
+    ///   2. Try strict UTF-8 decoding (DecoderExceptionFallback). If valid and non-empty, return it.
+    ///   3. Otherwise return the full 32-byte array as lowercase 0x-hex (66 chars, no NUL bytes).
+    ///
+    /// A purely-zero bytes32 (e.g. an unset field) returns an empty string.
+    /// </summary>
+    internal static string NormalizeBytes32(byte[]? raw)
+    {
+        if (raw == null || raw.Length == 0) return string.Empty;
+
+        // Strip trailing zero bytes.
+        int lastNonZero = raw.Length - 1;
+        while (lastNonZero >= 0 && raw[lastNonZero] == 0) lastNonZero--;
+
+        if (lastNonZero < 0) return string.Empty; // all zeroes
+
+        var trimmed = raw[..(lastNonZero + 1)];
+
+        // Attempt strict UTF-8 decoding. DecoderExceptionFallback throws on any invalid byte sequence.
+        try
+        {
+            var strictUtf8 = System.Text.Encoding.GetEncoding(
+                "utf-8",
+                encoderFallback: System.Text.EncoderFallback.ExceptionFallback,
+                decoderFallback: System.Text.DecoderFallback.ExceptionFallback);
+            var text = strictUtf8.GetString(trimmed);
+            // Reject strings containing NUL characters (shouldn't happen after trimming, but be safe).
+            if (!text.Contains('\0') && text.Length > 0)
+                return text;
+        }
+        catch (Exception ex) when (ex is System.Text.DecoderFallbackException or ArgumentException)
+        {
+            // Not valid strict UTF-8 — fall through to hex.
+        }
+
+        // Fall back: full 32-byte array as lowercase 0x-hex (always ASCII, never NUL).
+        return "0x" + Convert.ToHexString(raw).ToLowerInvariant();
     }
 
     public async Task<List<RegistryEvent>> DecodeRegistryEventsAsync(ChainDefinition chain, string registryAddress, long fromBlock, long toBlock, CancellationToken cancellationToken)

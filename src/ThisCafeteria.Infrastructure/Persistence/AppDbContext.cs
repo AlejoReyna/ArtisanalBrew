@@ -26,6 +26,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<AgentDirectoryEntry> AgentDirectoryEntries { get; set; } = null!;
     public DbSet<AgenticJobProjection> AgenticJobs { get; set; } = null!;
     public DbSet<AgenticJobAppliedEvent> AgenticJobAppliedEvents { get; set; } = null!;
+    public DbSet<AgenticJobDeferredEvent> AgenticJobDeferredEvents { get; set; } = null!;
     public DbSet<AgentFeedbackProjection> AgentFeedback { get; set; } = null!;
     public DbSet<AgenticCommerceReconciliationCheckpoint> AgenticCommerceCheckpoints { get; set; } = null!;
 
