@@ -23,6 +23,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<WalletStatusEvent> WalletStatusEvents => Set<WalletStatusEvent>();
     public DbSet<WalletIdentity> WalletIdentities => Set<WalletIdentity>();
     public DbSet<WalletAuthChallenge> WalletAuthChallenges => Set<WalletAuthChallenge>();
+    public DbSet<AgentDirectoryEntry> AgentDirectoryEntries { get; set; } = null!;
+    public DbSet<AgenticJobProjection> AgenticJobs { get; set; } = null!;
+    public DbSet<AgenticJobAppliedEvent> AgenticJobAppliedEvents { get; set; } = null!;
+    public DbSet<AgentFeedbackProjection> AgentFeedback { get; set; } = null!;
+    public DbSet<AgenticCommerceReconciliationCheckpoint> AgenticCommerceCheckpoints { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

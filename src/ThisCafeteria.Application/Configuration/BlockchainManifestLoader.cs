@@ -70,9 +70,20 @@ public static class BlockchainManifestLoader
                     LiquidVault = addresses.GetProperty("liquidVault").GetString() ?? string.Empty,
                     Faucet = addresses.GetProperty("faucet").GetString() ?? string.Empty,
                     StCafe = addresses.GetProperty("liquidVault").GetString() ?? string.Empty,
+                    AgenticEscrow = Optional(addresses, "erc8183Escrow") ?? string.Empty,
+                    PaymentToken = Optional(addresses, "paymentToken") ?? (addresses.TryGetProperty("cafe", out var cafeElement) ? cafeElement.GetString() : string.Empty) ?? string.Empty,
+                    EntryPoint = Optional(addresses, "entryPoint") ?? string.Empty,
+                    ERC8004Registry = Optional(addresses, "erc8004Registry") ?? string.Empty,
+                    ERC7683Resolver = Optional(addresses, "erc7683Resolver") ?? string.Empty,
                     StartBlockOrSlot = ReadLong(root, "deployBlock")
                 },
-                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, Faucet = true, RewardMinting = true }
+                Capabilities = new ChainCapabilities { 
+                    WalletLogin = true, 
+                    LiquidStaking = true, 
+                    Faucet = true, 
+                    RewardMinting = true,
+                    AgenticCommerce = root.TryGetProperty("capabilities", out var caps) && caps.TryGetProperty("agenticCommerce", out var agenticCommerce) && agenticCommerce.GetBoolean()
+                }
             };
             return true;
         }

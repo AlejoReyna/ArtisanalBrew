@@ -20,7 +20,7 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .Build();
 
         var connectionString = DatabaseConnectionStringFactory.Resolve(configuration)
-            ?? "Host=localhost;Port=5432;Database=thiscafeteria;Username=postgres;Password=postgres;SSL Mode=Disable";
+            ?? "Host=localhost;Port=5433;Database=this_cafeteria;Username=postgres;Password=postgres;SSL Mode=Disable";
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         optionsBuilder.UseNpgsql(connectionString);

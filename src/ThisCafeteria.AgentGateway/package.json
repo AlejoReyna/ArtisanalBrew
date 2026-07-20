@@ -7,7 +7,7 @@
     "dev": "tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "node --import tsx --test test/*.test.ts"
+    "test": "tsc -p tsconfig.test.json && node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.9.0",

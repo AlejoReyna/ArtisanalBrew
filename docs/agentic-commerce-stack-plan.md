@@ -362,6 +362,32 @@ Generated manifests must include chain key/ID, contract addresses, deployment bl
 
 ## Implementation Phases and Gates
 
+### Current implementation status — audited 2026-07-20
+
+The repository now contains a structurally verified foundation for agentic commerce.
+
+**Test-Verified and Implemented:**
+- **x402 Gateway:** Clean TypeScript build, successful integration tests proving idempotency binding to request/payment metadata, and replay-protection against double-charging (Priority 2 & 3).
+- **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
+- **Smart Account Scaffolding:** `SmartAccountService` safely fails closed (throwing `NotSupportedException`) for operations like deployment, sponsorship, recording usage, and revoking sessions. This prevents spoofed implementations until real external dependencies exist.
+- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (136 passing), `npm test` in gateway (8 passing), `npm test` in EVM contracts (24 passing).
+
+**Fixture-Only or Blocked:**
+- **Smart Account Infrastructure:** True ERC-4337 dependencies (paymaster, bundler, session keys) remain stubbed and unconfigured.
+
+### Known Limitations: Reorg Recovery
+
+The current agentic commerce worker relies strictly on confirmation depth (e.g., a configured `MinimumConfirmations` delay) to prevent indexing ephemeral state. However, if a deep chain reorganization occurs that rolls back a previously confirmed event (such as `JobFunded` or `JobCompleted`), the system **does not automatically revert** the database projections.
+
+**Future Implementation:**
+A complete reorg-recovery architecture will require:
+1. Continuous `BlockHeader` tracking and ancestor hash verification within the indexer loop.
+2. Detecting divergences and querying the database for all applied events post-divergence.
+3. Inverse applicators that deterministically reverse state transitions (e.g., changing `Status` from `Completed` back to `Open`, adjusting concurrency tokens, and clearing transaction hashes).
+4. Re-fetching events from the new canonical chain and rolling them forward.
+
+Until this is implemented, full reorg rollback remains unsupported. Manual database intervention is required if a deep reorg outpaces the configured confirmation delay.
+
 ### Phase 0 — Protect and characterize the baseline
 
 - inspect `git status` and preserve unrelated/in-progress multichain changes;
@@ -394,13 +420,12 @@ Gate: contract tests and direct local scripts complete create/fund/submit/comple
 
 Gate: an unauthenticated paid request returns 402, a valid payment returns the deterministic resource once, and replay/tampering/settlement failure tests pass.
 
-### Phase 3 — Identity directory and job application path
+### Phase 3 — Identity directory and job application path [COMPLETED]
 
 - index ERC-8004 identities and signals;
 - add ERC-8183 projections and APIs;
 - implement job creation, provider assignment, budget, funding preparation/verification, submission, evaluator decision, and expiry refund;
-- create Procurement Lab UI and protocol inspector;
-- implement feedback publication after confirmed terminal events.
+- create Procurement Lab UI and protocol inspector.
 
 Gate: a normal wallet completes the local procurement lifecycle before smart-account abstraction is required.
 

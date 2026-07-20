@@ -56,7 +56,8 @@ public sealed class ThisCafeteriaWebApplicationFactory : WebApplicationFactory<P
         builder.UseEnvironment("Testing");
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["ConnectionStrings:DefaultConnection"] = externalConnectionString
+            ["ConnectionStrings:DefaultConnection"] = externalConnectionString,
+            ["Blockchain:SolanaDeploymentManifest"] = solanaManifestPath
         }));
     }
 

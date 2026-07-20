@@ -1,0 +1,248 @@
+@page "/procurement-lab"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using ThisCafeteria.Application.Configuration
+@using ThisCafeteria.Application.Services
+@using ThisCafeteria.Domain.Entities
+@using ThisCafeteria.Web.Services.Blockchain
+@inject IAgenticJobService JobService
+@inject IChainRegistry ChainRegistry
+@inject ISelectedChainAccessor SelectedChainAccessor
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+<div class="procurement-lab container mt-5">
+    <div class="procurement-lab__header">
+        <div>
+            <span class="procurement-lab__eyebrow">Agentic commerce / live projection</span>
+            <h1>Procurement Lab</h1>
+            <p>Inspect the state currently known to ArtisanalBrew. This view reads persisted projections; it does not manufacture on-chain progress.</p>
+        </div>
+        
+        <div class="procurement-lab__actions">
+            @if (_walletAddress != null)
+            {
+                <button class="btn btn-outline-primary" @onclick="CreateTestJob">Simulate new Job</button>
+            }
+        </div>
+
+        <div class="procurement-lab__source">
+            <span class="procurement-lab__source-dot"></span>
+            <span>@SelectedChainAccessor.SelectedChain.ShortName</span>
+            <small>selected chain</small>
+        </div>
+    </div>
+
+    <section class="procurement-lab__summary" aria-label="Projection summary">
+        <div class="state-metric"><span class="state-metric__value">@(Agents?.Count ?? 0)</span><span class="state-metric__label">Indexed agents</span></div>
+        <div class="state-metric"><span class="state-metric__value">@(Jobs?.Count ?? 0)</span><span class="state-metric__label">Observed jobs</span></div>
+        <div class="state-metric"><span class="state-metric__value">@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</span><span class="state-metric__label">Terminal jobs</span></div>
+        <div class="state-metric state-metric--muted"><span class="state-metric__value">@(_walletAddress is null ? "—" : ShortAddress(_walletAddress))</span><span class="state-metric__label">Wallet scope</span></div>
+    </section>
+
+    @if (_walletAddress is null)
+    {
+        <section class="projection-empty" role="status">
+            <span class="projection-empty__icon">◎</span>
+            <div>
+                <h2>Connect a wallet to see your procurement state</h2>
+                <p>The directory can be public, but job projections are scoped to the authenticated wallet. No local demo address is substituted.</p>
+            </div>
+        </section>
+    }
+    else if (_loading)
+    {
+        <section class="projection-empty" role="status"><div class="projection-empty__pulse"></div><p>Loading the selected chain projection…</p></section>
+    }
+    else
+    {
+        <div class="procurement-lab__grid">
+            <section class="projection-panel">
+                <div class="projection-panel__heading"><div><span class="panel-kicker">Identity layer</span><h2>Agent directory</h2></div><span class="panel-count">@(Agents?.Count ?? 0)</span></div>
+            @if (Agents == null)
+            {
+                <p>Loading agents...</p>
+            }
+            else if (!Agents.Any())
+            {
+                <p>No agents found. (Run the seeder or register via contract)</p>
+            }
+            else
+            {
+                <ul class="agent-list">
+                    @foreach (var agent in Agents)
+                    {
+                        <li class="agent-list__item">
+                            <div>
+                                <strong>Agent #@agent.AgentId</strong>
+                                <small>@ShortAddress(agent.OwnerAddress)</small>
+                            </div>
+                            <span class="state-pill state-pill--active">@(agent.IsActive ? "Active" : "Inactive")</span>
+                        </li>
+                    }
+                </ul>
+            }
+            </section>
+
+            <section class="projection-panel projection-panel--jobs">
+                <div class="projection-panel__heading"><div><span class="panel-kicker">Escrow projection</span><h2>My procurement state</h2></div><span class="panel-count">@(Jobs?.Count ?? 0)</span></div>
+            @if (Jobs == null)
+            {
+                <p>Loading jobs...</p>
+            }
+            else if (!Jobs.Any())
+            {
+                <p>No jobs found.</p>
+            }
+            else
+            {
+                <div class="job-list">
+                    @foreach (var job in Jobs)
+                    {
+                        <article class="job-card">
+                            <div class="job-card__topline"><div><span class="job-card__id">JOB @job.JobId.ToString("D4")</span><h3>@StatusTitle(job.Status)</h3></div><span class="state-pill @StatusClass(job.Status)">@job.Status</span></div>
+                            <div class="job-card__meta"><span>Budget <strong>@job.Budget.ToString("0.##")</strong></span><span>Chain <strong>@job.ChainKey</strong></span><span>Updated <strong>@job.UpdatedAtUtc.ToLocalTime().ToString("MMM d, HH:mm")</strong></span></div>
+                            <div class="job-flow" aria-label="Job @job.JobId lifecycle">
+                                @foreach (var step in LifecycleSteps)
+                                {
+                                    var state = StepState(job.Status, step.Key);
+                                    <div class="job-flow__step @state">
+                                        <span class="job-flow__marker">@(state == "complete" ? "✓" : step.Number.ToString())</span>
+                                        <span class="job-flow__label">@step.Label</span>
+                                    </div>
+                                }
+                            </div>
+                            <dl class="job-card__roles"><div><dt>Client</dt><dd>@ShortAddress(job.ClientAddress)</dd></div><div><dt>Provider</dt><dd>@ShortAddress(job.ProviderAddress)</dd></div><div><dt>Evaluator</dt><dd>@ShortAddress(job.EvaluatorAddress)</dd></div></dl>
+                            <div class="job-card__commitment"><span>Commitment</span><code>@ShortCommitment(job.DescriptionCommitment)</code></div>
+                        
+                            <div class="job-card__actions mt-3">
+                                @if (job.Status == "Open" && string.Equals(_walletAddress, job.ClientAddress, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <button class="btn btn-sm btn-primary" @onclick="() => FundJob(job)">Fund Job</button>
+                                }
+                                @if (job.Status == "Funded" && string.Equals(_walletAddress, job.ProviderAddress, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <button class="btn btn-sm btn-success" @onclick="() => SubmitJob(job)">Submit Evidence</button>
+                                }
+                                @if (job.Status == "Submitted" && string.Equals(_walletAddress, job.EvaluatorAddress, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <button class="btn btn-sm btn-info" @onclick="() => CompleteJob(job)">Complete Job</button>
+                                    <button class="btn btn-sm btn-danger ms-2" @onclick="() => RejectJob(job)">Reject Job</button>
+                                }
+                            </div>
+
+                        </article>
+                    }
+                </div>
+            }
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly (int Number, string Key, string Label)[] LifecycleSteps =
+    [ (1, "Open", "Open"), (2, "Funded", "Funded"), (3, "Submitted", "Submitted"), (4, "Terminal", "Settled") ];
+    private List<AgentDirectoryEntry>? Agents;
+    private List<AgenticJobProjection>? Jobs;
+    private string? _walletAddress;
+    private bool _loading = true;
+
+    private IJSObjectReference? _agenticCommerce;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _agenticCommerce = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/agenticCommerce.js");
+        }
+    }
+
+    private async Task CreateTestJob()
+    {
+        if (_agenticCommerce == null || _walletAddress == null) return;
+        var chain = SelectedChainAccessor.SelectedChain;
+        var contract = chain.Deployment.AgenticEscrow;
+        // Provider = me, Evaluator = me, for testing
+        await _agenticCommerce.InvokeVoidAsync("createJob", contract, _walletAddress, _walletAddress, "Test agentic commerce job");
+        
+        // Wait briefly for tx to process and worker to pick it up (in a real app we'd wait for the tx receipt or use polling)
+        await Task.Delay(3000);
+        await ReloadJobs();
+    }
+
+    private async Task FundJob(AgenticJobProjection job)
+    {
+        if (_agenticCommerce == null) return;
+        var chain = SelectedChainAccessor.SelectedChain;
+        var contract = chain.Deployment.AgenticEscrow;
+        var token = chain.Deployment.PaymentToken;
+        
+        // We first need to set budget since it's 0 by default. Let's just set it to 10 for testing.
+        await _agenticCommerce.InvokeVoidAsync("setBudget", contract, job.OnChainJobId, 10);
+        await _agenticCommerce.InvokeVoidAsync("fundJob", contract, token, job.OnChainJobId, 10);
+        
+        await Task.Delay(3000);
+        await ReloadJobs();
+    }
+
+    private async Task SubmitJob(AgenticJobProjection job)
+    {
+        if (_agenticCommerce == null) return;
+        var chain = SelectedChainAccessor.SelectedChain;
+        var contract = chain.Deployment.AgenticEscrow;
+        await _agenticCommerce.InvokeVoidAsync("submitEvidence", contract, job.OnChainJobId, "IPFS_HASH_HERE");
+        
+        await Task.Delay(3000);
+        await ReloadJobs();
+    }
+
+    private async Task CompleteJob(AgenticJobProjection job)
+    {
+        if (_agenticCommerce == null) return;
+        var chain = SelectedChainAccessor.SelectedChain;
+        var contract = chain.Deployment.AgenticEscrow;
+        await _agenticCommerce.InvokeVoidAsync("completeJob", contract, job.OnChainJobId);
+        
+        await Task.Delay(3000);
+        await ReloadJobs();
+    }
+
+    private async Task RejectJob(AgenticJobProjection job)
+    {
+        if (_agenticCommerce == null) return;
+        var chain = SelectedChainAccessor.SelectedChain;
+        var contract = chain.Deployment.AgenticEscrow;
+        await _agenticCommerce.InvokeVoidAsync("rejectJob", contract, job.OnChainJobId);
+        
+        await Task.Delay(3000);
+        await ReloadJobs();
+    }
+
+    private async Task ReloadJobs()
+    {
+        if (!string.IsNullOrWhiteSpace(_walletAddress)) Jobs = await JobService.GetJobsAsync(SelectedChainAccessor.SelectedChainKey, _walletAddress);
+        StateHasChanged();
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authentication = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _walletAddress = authentication.User.FindFirst("wallet_address")?.Value;
+        Agents = await JobService.GetAgentsAsync(SelectedChainAccessor.SelectedChainKey);
+        if (!string.IsNullOrWhiteSpace(_walletAddress)) Jobs = await JobService.GetJobsAsync(SelectedChainAccessor.SelectedChainKey, _walletAddress);
+        _loading = false;
+    }
+
+    private static bool IsTerminal(string? status) => status is "Completed" or "Rejected" or "Expired";
+    private static string StatusTitle(string? status) => status switch { "Completed" => "Payment released", "Rejected" => "Refunded by evaluator", "Expired" => "Expired / refunded", "Submitted" => "Evidence submitted", "Funded" => "Awaiting delivery", _ => "Open proposal" };
+    private static string StatusClass(string? status) => status switch { "Completed" => "state-pill--complete", "Rejected" or "Expired" => "state-pill--attention", "Funded" or "Submitted" => "state-pill--progress", _ => "state-pill--open" };
+    private static string StepState(string? status, string step) {
+        var current = status switch { "Funded" => 2, "Submitted" => 3, "Completed" or "Rejected" or "Expired" => 4, _ => 1 };
+        var target = step == "Open" ? 1 : step == "Funded" ? 2 : step == "Submitted" ? 3 : 4;
+        return target < current ? "complete" : target == current ? "current" : "pending";
+    }
+    private static string ShortAddress(string? address) => string.IsNullOrWhiteSpace(address) ? "Not assigned" : address.Length >= 12 ? $"{address[..6]}…{address[^4..]}" : address;
+    private static string ShortCommitment(string? value) => string.IsNullOrWhiteSpace(value) ? "not recorded" : value.Length > 24 ? $"{value[..12]}…{value[^8..]}" : value;
+}

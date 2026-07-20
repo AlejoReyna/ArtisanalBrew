@@ -1,0 +1,54 @@
+.procurement-lab { color: #f4efe6; padding-bottom: 5rem; }
+.procurement-lab__header { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: 2rem; }
+.procurement-lab__eyebrow, .panel-kicker { color: #8fb99b; text-transform: uppercase; letter-spacing: .14em; font-size: .7rem; font-weight: 700; }
+.procurement-lab h1 { margin: .35rem 0 .5rem; font-family: Georgia, serif; font-size: clamp(2.5rem, 5vw, 4.5rem); }
+.procurement-lab__header p { color: rgba(244,239,230,.65); max-width: 42rem; margin: 0; }
+.procurement-lab__source { display: grid; grid-template-columns: auto auto; align-items: center; gap: .25rem .55rem; border: 1px solid rgba(143,185,155,.25); border-radius: 999px; padding: .7rem 1rem; white-space: nowrap; }
+.procurement-lab__source small { grid-column: 2; color: rgba(244,239,230,.45); font-size: .65rem; }
+.procurement-lab__source-dot { width: .55rem; height: .55rem; background: #8fb99b; border-radius: 50%; box-shadow: 0 0 12px #8fb99b; }
+.procurement-lab__summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(244,239,230,.12); border: 1px solid rgba(244,239,230,.12); margin-bottom: 1rem; }
+.state-metric { background: #1a1512; padding: 1.1rem 1.25rem; display: grid; gap: .25rem; }
+.state-metric__value { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.state-metric__label { color: rgba(244,239,230,.5); font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; }
+.state-metric--muted .state-metric__value { color: #d8c3a5; font-size: 1rem; }
+.procurement-lab__grid { display: grid; grid-template-columns: minmax(15rem, .7fr) minmax(0, 1.5fr); gap: 1rem; }
+.projection-panel, .projection-empty { background: #1a1512; border: 1px solid rgba(244,239,230,.12); padding: 1.5rem; }
+.projection-panel__heading { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem; }
+.projection-panel h2, .projection-empty h2 { margin: .25rem 0 0; font: 1.65rem Georgia, serif; }
+.panel-count { color: #8fb99b; font-size: 1.5rem; font-weight: 700; }
+.agent-list, .job-list { list-style: none; padding: 0; margin: 0; }
+.agent-list__item { display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: .9rem 0; border-top: 1px solid rgba(244,239,230,.1); }
+.agent-list__item strong, .agent-list__item small { display: block; }
+.agent-list__item small { color: rgba(244,239,230,.5); margin-top: .2rem; font-family: ui-monospace, monospace; font-size: .75rem; }
+.state-pill { border-radius: 999px; padding: .25rem .55rem; font-size: .68rem; font-weight: 700; white-space: nowrap; }
+.state-pill--active, .state-pill--complete { color: #baf1c8; background: rgba(74,170,103,.2); }
+.state-pill--progress { color: #d8e9ff; background: rgba(79,137,204,.22); }
+.state-pill--attention { color: #ffd4a8; background: rgba(196,119,48,.2); }
+.state-pill--open { color: #d8c3a5; background: rgba(216,195,165,.14); }
+.job-card { border-top: 1px solid rgba(244,239,230,.12); padding: 1.25rem 0 1.5rem; }
+.job-card:first-child { border-top: 0; padding-top: 0; }
+.job-card__topline { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+.job-card__id { color: #8fb99b; font: .68rem ui-monospace, monospace; letter-spacing: .12em; }
+.job-card h3 { margin: .3rem 0 0; font: 1.35rem Georgia, serif; }
+.job-card__meta, .job-card__roles { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; color: rgba(244,239,230,.55); font-size: .76rem; margin: 1rem 0; }
+.job-card__meta strong { color: #f4efe6; font-weight: 500; }
+.job-flow { display: grid; grid-template-columns: repeat(4, 1fr); margin: 1.25rem 0; }
+.job-flow__step { position: relative; display: grid; gap: .45rem; justify-items: center; text-align: center; color: rgba(244,239,230,.35); font-size: .68rem; }
+.job-flow__step::before { content: ""; position: absolute; top: .75rem; left: -50%; width: 100%; height: 1px; background: rgba(244,239,230,.16); z-index: 0; }
+.job-flow__step:first-child::before { display: none; }
+.job-flow__marker { z-index: 1; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border: 1px solid rgba(244,239,230,.2); border-radius: 50%; background: #1a1512; font-size: .65rem; }
+.job-flow__step.complete, .job-flow__step.current { color: #baf1c8; }
+.job-flow__step.complete .job-flow__marker, .job-flow__step.current .job-flow__marker { border-color: #8fb99b; background: #304d3a; color: #fff; }
+.job-flow__step.current .job-flow__marker { box-shadow: 0 0 0 4px rgba(143,185,155,.12); }
+.job-card__roles { margin: 1.2rem 0 0; }
+.job-card__roles div { min-width: 5rem; }
+.job-card__roles dt { color: rgba(244,239,230,.4); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; }
+.job-card__roles dd { margin: .25rem 0 0; color: #d8c3a5; font: .75rem ui-monospace, monospace; }
+.job-card__commitment { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1rem; padding-top: .75rem; border-top: 1px dashed rgba(244,239,230,.12); color: rgba(244,239,230,.45); font-size: .7rem; }
+.job-card__commitment code { color: #d8c3a5; }
+.projection-empty { display: flex; align-items: center; gap: 1rem; min-height: 10rem; color: rgba(244,239,230,.62); }
+.projection-empty p { margin: .45rem 0 0; }
+.projection-empty__icon { color: #8fb99b; font-size: 2rem; }
+.projection-empty__pulse { width: 1rem; height: 1rem; border: 2px solid #8fb99b; border-top-color: transparent; border-radius: 50%; animation: procurement-spin .8s linear infinite; }
+@keyframes procurement-spin { to { transform: rotate(360deg); } }
+@media (max-width: 760px) { .procurement-lab__header { display: block; } .procurement-lab__source { display: inline-grid; margin-top: 1rem; } .procurement-lab__summary { grid-template-columns: repeat(2, 1fr); } .procurement-lab__grid { grid-template-columns: 1fr; } }

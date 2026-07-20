@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-const artifacts = ["CafeLiquidStakingVault", "CafeFaucet", "TestCafeToken", "TestCoffeeToken"];
+const artifacts = ["CafeLiquidStakingVault", "CafeFaucet", "TestCafeToken", "TestCoffeeToken", "AgenticCommerceEscrow", "ERC8004RegistryFixture", "ERC7683ResolverFixture", "EntryPointFixture"];
 await mkdir("../../src/ThisCafeteria.Web/wwwroot/contracts", { recursive: true });
 for (const name of artifacts) {
   const path = `artifacts/contracts/${name}.sol/${name}.json`;
