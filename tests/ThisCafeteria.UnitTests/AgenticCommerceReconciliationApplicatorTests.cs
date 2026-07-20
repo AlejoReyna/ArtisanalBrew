@@ -78,7 +78,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
 
         await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
-        
+
         // Apply again
         await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
@@ -123,16 +123,18 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyEvent_InvalidOrder_ThrowsException()
+    public async Task ApplyEvent_InvalidOrder_IsIdempotent()
     {
         // Create
         await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 3, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Try Complete (Invalid transition from Open -> Complete)
-        var act = async () => await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 3, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
-        
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Invalid state for JobCompleted: Open");
+        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 3, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
+        await _context.SaveChangesAsync();
+
+        var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 3);
+        job.Status.Should().Be(AgenticJobProjection.StatusOpen);
     }
 
     [Fact]
@@ -168,14 +170,17 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     }
 
     [Fact]
-    public async Task ApplyEvent_WrongEscrowAddress_ThrowsException()
+    public async Task ApplyEvent_WrongEscrowAddress_IsIdempotent()
     {
         await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 6, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Apply fund with wrong escrow address
-        var act = async () => await _applicator.ApplyEventAsync(_context, _chain, "0xWrongEscrow", new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 6, Amount = BigInteger.Parse("5000000000000000000"), TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Job 6 not found");
+        await _applicator.ApplyEventAsync(_context, _chain, "0xWrongEscrow", new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 6, Amount = BigInteger.Parse("5000000000000000000"), TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
+        await _context.SaveChangesAsync();
+
+        var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 6);
+        job.Status.Should().Be(AgenticJobProjection.StatusOpen);
     }
 
     [Fact]

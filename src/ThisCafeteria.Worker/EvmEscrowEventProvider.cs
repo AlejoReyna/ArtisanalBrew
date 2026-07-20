@@ -3,6 +3,7 @@ using Nethereum.ABI.FunctionEncoding.Attributes;
 using Nethereum.Contracts;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
+using Nethereum.Hex.HexConvertors.Extensions;
 using ThisCafeteria.Application.Configuration;
 using static ThisCafeteria.Worker.AgenticCommerceReconciliationWorker;
 
@@ -71,7 +72,7 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
                 Type = EscrowEventType.JobSubmitted,
                 OnChainJobId = (long)item.Event.JobId,
                 Provider = item.Event.Provider,
-                Deliverable = item.Event.Deliverable,
+                Deliverable = item.Event.Deliverable?.ToHex(true) ?? string.Empty,
                 TransactionHash = item.Log.TransactionHash?.ToLowerInvariant() ?? string.Empty,
                 BlockNumber = (long)(item.Log.BlockNumber?.Value ?? 0),
                 LogIndex = checked((int)(item.Log.LogIndex?.Value ?? 0))
@@ -86,7 +87,7 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
                 Type = EscrowEventType.JobCompleted,
                 OnChainJobId = (long)item.Event.JobId,
                 Evaluator = item.Event.Evaluator,
-                Reason = item.Event.Reason,
+                Reason = item.Event.Reason?.ToHex(true) ?? string.Empty,
                 TransactionHash = item.Log.TransactionHash?.ToLowerInvariant() ?? string.Empty,
                 BlockNumber = (long)(item.Log.BlockNumber?.Value ?? 0),
                 LogIndex = checked((int)(item.Log.LogIndex?.Value ?? 0))
@@ -100,7 +101,7 @@ public class EvmEscrowEventProvider : IEscrowEventProvider
             {
                 Type = EscrowEventType.JobRejected,
                 OnChainJobId = (long)item.Event.JobId,
-                Reason = item.Event.Reason,
+                Reason = item.Event.Reason?.ToHex(true) ?? string.Empty,
                 TransactionHash = item.Log.TransactionHash?.ToLowerInvariant() ?? string.Empty,
                 BlockNumber = (long)(item.Log.BlockNumber?.Value ?? 0),
                 LogIndex = checked((int)(item.Log.LogIndex?.Value ?? 0))

@@ -370,8 +370,11 @@ The repository now contains a structurally verified foundation for agentic comme
 - **x402 Gateway:** Clean TypeScript build, successful integration tests proving idempotency binding to request/payment metadata, and replay-protection against double-charging (Priority 2 & 3).
 - **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
 - **Smart Account Scaffolding:** `SmartAccountService` safely fails closed (throwing `NotSupportedException`) for operations like deployment, sponsorship, recording usage, and revoking sessions. This prevents spoofed implementations until real external dependencies exist.
-- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (136 passing), `npm test` in gateway (8 passing), `npm test` in EVM contracts (24 passing).
+- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (142 passing), `npm test` in gateway (11 passing), `npm test` in EVM contracts (24 passing).
 
+- **Phase 3 Acceptance:** The Phase 3 gate is COMPLETE and explicitly verified via the hardened `./run-acceptance.sh` script (exit code 0).
+  - *Boundary clarifications:* The acceptance test simulates a real local wallet lifecycle via a Hardhat typescript script driving EVM transactions; it is *not* a browser wallet/UI test. It verifies database projections against actual on-chain transaction hashes, ensuring true idempotency and avoiding NUL byte errors. It does not use Smart Accounts or paymasters yet.
+  - *Limitations regarding reorg rollback:* The current worker implementation tracks a safe head and polls periodically to prevent simple fork discrepancies, but it does *not* explicitly support rolling back state (dropping `AgenticJobProjection` records) if a chain reorganization occurs deeper than the `MinimumConfirmations` configuration. In a deep reorg scenario, manual database intervention may be required.
 **Fixture-Only or Blocked:**
 - **Smart Account Infrastructure:** True ERC-4337 dependencies (paymaster, bundler, session keys) remain stubbed and unconfigured.
 

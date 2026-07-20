@@ -56,13 +56,11 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
         {
             case EscrowEventType.JobCreated:
             {
-                var localExists = db.AgenticJobs.Local.Any(j => j.ChainKey == chain.Key && j.OnChainJobId == evt.OnChainJobId && j.ContractAddress == escrowAddress);
-                if (localExists) break;
-
-                var exists = await db.AgenticJobs.AnyAsync(
-                    j => j.ChainKey == chain.Key && j.OnChainJobId == evt.OnChainJobId && j.ContractAddress == escrowAddress,
-                    cancellationToken).ConfigureAwait(false);
-                if (exists) break;
+                var existingJob = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                if (existingJob != null)
+                {
+                    return; // Idempotent: already exists
+                }
 
                 db.AgenticJobs.Add(new AgenticJobProjection
                 {
@@ -97,8 +95,8 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.BudgetSet:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
-                if (job.Status != AgenticJobProjection.StatusOpen) throw new InvalidOperationException($"Invalid state for BudgetSet: {job.Status}");
+                if (job == null) return;
+                if (job.Status != AgenticJobProjection.StatusOpen) return;
                 job.Budget = (decimal)evt.Amount / 1_000_000_000_000_000_000m;
                 job.LastReconciledBlock = evt.BlockNumber;
                 job.UpdatedAtUtc = DateTime.UtcNow;
@@ -108,8 +106,8 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.JobFunded:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
-                if (job.Status != AgenticJobProjection.StatusOpen) throw new InvalidOperationException($"Invalid state for JobFunded: {job.Status}");
+                if (job == null) return;
+                if (job.Status != AgenticJobProjection.StatusOpen) return;
                 job.Status = AgenticJobProjection.StatusFunded;
                 // Since Nethereum.Web3 is in the worker project and we extracted this to be tested,
                 // we convert Wei to Ether manually or reference Nethereum.Web3
@@ -123,8 +121,8 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.JobSubmitted:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
-                if (job.Status != AgenticJobProjection.StatusFunded) throw new InvalidOperationException($"Invalid state for JobSubmitted: {job.Status}");
+                if (job == null) return;
+                if (job.Status != AgenticJobProjection.StatusFunded) return;
                 job.Status = AgenticJobProjection.StatusSubmitted;
                 job.DeliverableCommitment = evt.Deliverable;
                 job.LastReconciledBlock = evt.BlockNumber;
@@ -135,8 +133,8 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.JobCompleted:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
-                if (job.Status != AgenticJobProjection.StatusSubmitted) throw new InvalidOperationException($"Invalid state for JobCompleted: {job.Status}");
+                if (job == null) return;
+                if (job.Status != AgenticJobProjection.StatusSubmitted) return;
                 job.Status = AgenticJobProjection.StatusCompleted;
                 job.DecisionReason = evt.Reason;
                 job.CompletionTransactionHash = evt.TransactionHash;
@@ -148,8 +146,8 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.JobRejected:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
-                if (job.Status is AgenticJobProjection.StatusCompleted or AgenticJobProjection.StatusRejected or AgenticJobProjection.StatusExpired) throw new InvalidOperationException($"Invalid state for JobRejected: {job.Status}");
+                if (job == null) return;
+                if (job.Status is AgenticJobProjection.StatusCompleted or AgenticJobProjection.StatusRejected or AgenticJobProjection.StatusExpired) return;
                 job.Status = AgenticJobProjection.StatusRejected;
                 job.DecisionReason = evt.Reason;
                 job.CompletionTransactionHash = evt.TransactionHash;
@@ -161,8 +159,8 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.JobExpired:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
-                if (job.Status != AgenticJobProjection.StatusFunded) throw new InvalidOperationException($"Invalid state for JobExpired: {job.Status}");
+                if (job == null) return;
+                if (job.Status != AgenticJobProjection.StatusFunded) return;
                 job.Status = AgenticJobProjection.StatusExpired;
                 job.CompletionTransactionHash = evt.TransactionHash;
                 job.LastReconciledBlock = evt.BlockNumber;
@@ -174,7 +172,7 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
             case EscrowEventType.Refunded:
             {
                 var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null) throw new InvalidOperationException($"Job {evt.OnChainJobId} not found");
+                if (job == null) return;
                 job.LastReconciledBlock = evt.BlockNumber;
                 job.UpdatedAtUtc = DateTime.UtcNow;
                 job.ConcurrencyToken++;
