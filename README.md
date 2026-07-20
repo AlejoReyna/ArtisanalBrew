@@ -78,6 +78,7 @@ The full orchestration design is documented in [`docs/multichain-liquid-staking-
 - Independent EVM and Solana reconciliation supervisors with persistent cursors, restart/replay idempotency, bounded pagination, and a Solana repair/backfill command.
 - Deterministic local EVM and Solana contract workspaces, ABI/IDL output, deployment manifests, and automated tests.
 - A local-first ERC-8183 escrow and pinned x402 gateway slice. ERC-4337, ERC-8004, and ERC-7683 remain future agent-commerce work and are not presented as complete.
+- Agentic-commerce scaffolding for the audited first three phases: local escrow and protocol fixtures, an integrated x402/MCP gateway, projection storage, and an initial Procurement Lab state view. The phase gates remain open (Phases 3–5) until the indexer, job lifecycle, ERC-4337, and ERC-7683 smoke tests are completely implemented.
 
 ### Security and enablement model
 
@@ -94,6 +95,7 @@ The full orchestration design is documented in [`docs/multichain-liquid-staking-
 - Deploy and verify a new EVM liquid vault per selected EVM testnet; do not reuse or upgrade the unverified legacy Sepolia pool.
 - Add public-RPC health/observability and rollback evidence before enabling each network.
 - Complete the agent-commerce stack described in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md): ERC-4337, ERC-8004, and ERC-7683 are still outstanding.
+- The audited phase status and remaining gates are tracked in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md); the current Procurement Lab is a projection viewer, not a completed procurement workflow.
 
 
 

@@ -12,7 +12,9 @@ using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Persistence;
+using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Application.Services.Blockchain;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Web.Components;
 using ThisCafeteria.Web.Configuration;
 using ThisCafeteria.Web.Catalog;
@@ -120,6 +122,8 @@ builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>
 builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
 builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
 builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
+builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();
+builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -272,3 +276,8 @@ static void ValidateMarketplaceCatalog(IServiceProvider services)
 }
 
 public partial class Program;
+
+namespace ThisCafeteria.Web
+{
+    public class WebMarker { }
+}

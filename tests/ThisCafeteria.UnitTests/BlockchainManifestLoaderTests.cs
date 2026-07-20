@@ -88,7 +88,13 @@ public sealed class BlockchainManifestLoaderTests
             deployed.EvmChainIdHex.Should().Be("0x61");
             deployed.PublicRpcUrl.Should().Be("https://97.rpc.thirdweb.com");
             deployed.Deployment.LiquidVault.Should().Be(Address('A'));
+            deployed.Deployment.AgenticEscrow.Should().Be(Address('E'));
+            deployed.Deployment.EntryPoint.Should().Be(Address('P'));
+            deployed.Deployment.ERC8004Registry.Should().Be(Address('R'));
+            deployed.Deployment.ERC7683Resolver.Should().Be(Address('S'));
+            deployed.Deployment.PaymentToken.Should().Be(Address('C'));
             deployed.Capabilities.LiquidStaking.Should().BeTrue();
+            deployed.Capabilities.AgenticCommerce.Should().BeTrue();
         }
         finally
         {
@@ -140,10 +146,14 @@ public sealed class BlockchainManifestLoaderTests
             "cafe": "{{Address('C')}}",
             "coffee": "{{Address('B')}}",
             "liquidVault": "{{Address('A')}}",
-            "faucet": "{{Address('F')}}"
+            "faucet": "{{Address('F')}}",
+            "erc8183Escrow": "{{Address('E')}}",
+            "entryPoint": "{{Address('P')}}",
+            "erc8004Registry": "{{Address('R')}}",
+            "erc7683Resolver": "{{Address('S')}}"
           },
           "deployBlock": 123,
-          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true }
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true }
         }
         """);
         return path;

@@ -38,6 +38,16 @@ await publicClient.waitForTransactionReceipt({ hash: t4 });
 const t5 = await deployer.writeContract({ address: vault.address, abi: vault.abi, functionName: "notifyRewardAmount", args: [parseEther("100000"), 30n * 24n * 60n * 60n] });
 await publicClient.waitForTransactionReceipt({ hash: t5 });
 
+const entryPoint = await viem.deployContract("EntryPointFixture");
+const registry = await viem.deployContract("ERC8004RegistryFixture");
+const resolver = await viem.deployContract("ERC7683ResolverFixture");
+const escrow = await viem.deployContract("AgenticCommerceEscrow", [
+  cafe.address,
+  admin,
+  100n, // 1% fee
+  "0x0000000000000000000000000000000000000000" // Zero address for trusted forwarder as per user preference
+]);
+
 const rpcUrl = process.env.PUBLIC_RPC_URL ?? (chainId === 97 ? process.env.BSC_TESTNET_RPC_URL ?? "https://97.rpc.thirdweb.com" : "http://127.0.0.1:8545");
 const explorerBase = chainId === 97 ? "https://testnet.bscscan.com" : "http://127.0.0.1:8545";
 const displayName = chainId === 97 ? "BSC Testnet" : "Local EVM";
@@ -53,8 +63,17 @@ const manifest = {
   deployBlock: vaultDeployBlock.toString(),
   compiler: { solc: "0.8.24", optimizerRuns: 200, viaIR: true },
   deployedAtUtc: new Date().toISOString(),
-  addresses: { cafe: cafe.address, coffee: coffee.address, liquidVault: vault.address, faucet: faucet.address },
-  capabilities: { walletLogin: true, liquidStaking: true, legacyExit: false, faucet: true, marketplacePayment: false, rewardMinting: true },
+  addresses: { 
+    cafe: cafe.address, 
+    coffee: coffee.address, 
+    liquidVault: vault.address, 
+    faucet: faucet.address,
+    entryPoint: entryPoint.address,
+    erc8004Registry: registry.address,
+    erc7683Resolver: resolver.address,
+    erc8183Escrow: escrow.address
+  },
+  capabilities: { walletLogin: true, liquidStaking: true, legacyExit: false, faucet: true, marketplacePayment: false, rewardMinting: true, agenticCommerce: true },
   admin
 };
 const manifestPath = process.env.DEPLOYMENT_MANIFEST ?? `deployments/${chainKey}.json`;

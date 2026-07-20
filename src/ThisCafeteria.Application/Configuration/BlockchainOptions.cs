@@ -22,13 +22,13 @@ public static class ChainDefinitionDefaults
         Evm("avalanche-fuji", "Avalanche Fuji", "Fuji", 43113, "AVAX", "https://43113.rpc.thirdweb.com", "https://testnet.snowtrace.io", 3, enabled: false),
         Evm("linea-sepolia", "Linea Sepolia", "Linea", 59141, "ETH", "https://59141.rpc.thirdweb.com", "https://sepolia.lineascan.build", 4, enabled: false),
         Evm("base-sepolia", "Base Sepolia", "Base", 84532, "ETH", "https://84532.rpc.thirdweb.com", "https://sepolia.basescan.org", 5, enabled: false),
-        Evm("bsc-testnet", "BNB Smart Chain Testnet", "BSC Testnet", 97, "tBNB", "https://97.rpc.thirdweb.com", "https://testnet.bscscan.com", 6, enabled: true, iconAsset: "/images/bnb_logo.svg"),
+        Evm("bsc-testnet", "BNB Smart Chain Testnet", "BSC Testnet", 97, "tBNB", "https://97.rpc.thirdweb.com", "https://testnet.bscscan.com", 6, enabled: false, iconAsset: "/images/bnb_logo.svg"),
         Evm("monad-testnet", "Monad Testnet", "Monad", 10143, "MON", "https://10143.rpc.thirdweb.com", "https://monad-testnet.socialscan.io", 7, enabled: false),
         Evm("arbitrum-sepolia", "Arbitrum Sepolia", "Arbitrum", 421614, "ETH", "https://421614.rpc.thirdweb.com", "https://sepolia.arbiscan.io", 8, enabled: false),
         new ChainDefinition
         {
             Key = "solana-testnet", DisplayName = "Solana Testnet", ShortName = "Solana Testnet", Family = ChainFamily.Solana,
-            Enabled = true,
+            Enabled = false,
             IconAsset = "/images/solana_logo.svg", SolanaCluster = "testnet", NativeCurrencyName = "Solana", NativeCurrencySymbol = "SOL",
             NativeCurrencyDecimals = 9, PublicRpcUrl = "https://api.testnet.solana.com", ExplorerAddressTemplate = "https://explorer.solana.com/address/{0}?cluster=testnet",
             ExplorerTransactionTemplate = "https://explorer.solana.com/tx/{0}?cluster=testnet", SortOrder = 9,

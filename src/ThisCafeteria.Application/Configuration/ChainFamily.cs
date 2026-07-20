@@ -14,6 +14,7 @@ public sealed record ChainCapabilities
     public bool Faucet { get; init; }
     public bool MarketplacePayment { get; init; }
     public bool RewardMinting { get; init; }
+    public bool AgenticCommerce { get; init; }
 }
 
 public sealed record ChainDeployment
@@ -24,6 +25,11 @@ public sealed record ChainDeployment
     public string LiquidVault { get; init; } = string.Empty;
     public string LegacyPool { get; init; } = string.Empty;
     public string Faucet { get; init; } = string.Empty;
+    public string AgenticEscrow { get; init; } = string.Empty;
+    public string PaymentToken { get; init; } = string.Empty;
+    public string EntryPoint { get; init; } = string.Empty;
+    public string ERC8004Registry { get; init; } = string.Empty;
+    public string ERC7683Resolver { get; init; } = string.Empty;
     public string Program { get; init; } = string.Empty;
     public string VaultPda { get; init; } = string.Empty;
     public string AuthorityPda { get; init; } = string.Empty;
