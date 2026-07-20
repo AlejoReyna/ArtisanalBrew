@@ -105,10 +105,18 @@ and does not require MetaMask or any browser extension.
 | .NET unit tests | 154 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
 | EVM contracts (Hardhat) | 24 | ✅ Passed |
-| Phase 3 acceptance harness | — | ⏳ Pending execution |
+| Phase 3 acceptance harness | exit=0 | ✅ Passed — 2026-07-20 |
 
-> **Note:** Phase 3 is **not** declared complete until `./run-acceptance.sh` exits 0 and the
-> full output is captured. Do not infer success from unit-test passage alone.
+Evidence captured to: `acceptance-evidence-20260720-143038.log`
+
+All lifecycle stages verified:
+- Agent identity registration → DB `AgentDirectoryEntries` row confirmed.
+- JobCreated (on-chain ID 1) → `AgenticJobs` row, Status: Open, CreationTx: `0xc489c0a1...` confirmed.
+- JobFunded → Status: Funded, DB row confirmed.
+- JobSubmitted → Status: Submitted, DB row confirmed.
+- JobCompleted (evaluator approval) → Status: Completed, provider payout verified on-chain.
+- Rejection variant → Status: Rejected, DB row confirmed.
+- Expiry variant → Status: Expired, DB row confirmed.
 
 ### Known Limitations
 

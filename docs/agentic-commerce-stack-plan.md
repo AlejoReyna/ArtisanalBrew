@@ -372,8 +372,16 @@ The repository now contains a structurally verified foundation for agentic comme
 - **Smart Account Scaffolding:** `SmartAccountService` safely fails closed (throwing `NotSupportedException`) for operations like deployment, sponsorship, recording usage, and revoking sessions. This prevents spoofed implementations until real external dependencies exist.
 - **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (154 passing), `npm test` in gateway (11 passing), `npm test` in EVM contracts (24 passing).
 
-- **Phase 3 Acceptance:** The Phase 3 acceptance gate is pending verification via the hardened `./run-acceptance.sh` script.
-  The script exit code and full output must be captured before Phase 3 can be declared complete.
+- **Phase 3 Acceptance:** ✅ **VERIFIED** — `./run-acceptance.sh` exited 0 on 2026-07-20.
+  Evidence captured to `acceptance-evidence-20260720-143038.log`.
+  All lifecycle stages proven:
+  - Agent identity registration → `AgentDirectoryEntries` row verified.
+  - JobCreated (on-chain ID 1) → `AgenticJobs` row, Status: Open, CreationTx verified.
+  - JobFunded → Status: Funded, DB row verified.
+  - JobSubmitted → Status: Submitted, DB row verified.
+  - JobCompleted (evaluator approval) → Status: Completed, provider payout on-chain verified.
+  - Rejection variant → Status: Rejected, verified.
+  - Expiry variant → Status: Expired, verified.
   - *Boundary clarifications:* The acceptance test simulates a real local wallet lifecycle via a Hardhat TypeScript script driving EVM transactions; it is *not* a browser wallet/UI E2E test and does not require MetaMask or any browser extension. It verifies database projections against actual on-chain transaction hashes, ensuring true idempotency and the absence of NUL byte errors. It does not use Smart Accounts or paymasters yet.
   - *Limitations regarding reorg rollback:* The current worker implementation tracks a safe head and polls periodically to prevent simple fork discrepancies, but it does *not* explicitly support rolling back state (dropping `AgenticJobProjection` records) if a chain reorganization occurs deeper than the `MinimumConfirmations` configuration. In a deep reorg scenario, manual database intervention may be required.
 **Fixture-Only or Blocked:**
@@ -424,7 +432,7 @@ Gate: contract tests and direct local scripts complete create/fund/submit/comple
 
 Gate: an unauthenticated paid request returns 402, a valid payment returns the deterministic resource once, and replay/tampering/settlement failure tests pass.
 
-### Phase 3 — Identity directory and job application path [PENDING ACCEPTANCE VERIFICATION]
+### Phase 3 — Identity directory and job application path [COMPLETE – acceptance verified 2026-07-20]
 
 - index ERC-8004 identities and signals;
 - add ERC-8183 projections and APIs;
