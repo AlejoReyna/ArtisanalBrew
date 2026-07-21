@@ -47,21 +47,59 @@ scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-
 
 ### What's still missing for the Phase 4 gate
 
-- **No bundler.** Everything above submits via `EntryPoint.handleOps` called directly by a funded
-  EOA. There is no mempool, no `eth_sendUserOperation`, no bundler validation rules. This is the
-  headline remaining item — see recommendation below.
+- **No working bundler against the local Hardhat node — attempted and diagnosed, not just
+  deferred.** See "Bundler investigation" below for exactly what was tried and why it currently
+  fails; it's a real, characterized boundary, not an unexamined gap.
 - **`NativeCurrencyUsdRate` is a static config number, not a live oracle.**
 - No batch approval+funding, no session-key permissions, no fallback/revocation beyond
   sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
   sponsorship grant, not a real session-key module — there isn't one yet).
 - The cross-stack proof scripts are not wired into CI/automated tests.
 
+### Bundler investigation (2026-07-21) — real attempt, real finding, not a deferral
+
+Installed and ran `@pimlico/alto@0.0.20` (npm-distributed, TypeScript) against the deployed local
+EntryPoint with `--safe-mode false` (Hardhat's `debug_traceCall`-based storage-access validation is
+the documented reason safe-mode doesn't work locally). Two things worked, one thing didn't, and the
+one that didn't is now precisely diagnosed rather than just "hit friction":
+
+**Worked:**
+- Alto starts, listens, and correctly reports the deployed EntryPoint via
+  `eth_supportedEntryPoints` — a real bundler process, running against this repo's real contracts.
+- `--safe-mode false` genuinely still runs EntryPoint validation, not a no-op: a malformed
+  signature reproduces the same "AA23 reverted" this session saw earlier via raw `eth_call` —
+  confirming only the storage-access tracer rules are skipped, not validation itself.
+- Alto's own deterministic-CREATE2-factory self-deploy is broken in this version (its hardcoded raw
+  transaction has every `"00"` byte pair corrupted to the literal string `"V"` — confirmed by
+  successfully deploying the real well-known transaction by hand). Worked around with
+  `contracts/evm/scripts/deploy-create2-factory.ts`, a small, genuinely reusable fix independent of
+  the issue below.
+
+**Didn't work, root cause confirmed:** `eth_estimateUserOperationGas` fails with
+`"AA23 reverted (or OOG)"`. Direct investigation (extracting Alto's own `eth_call` payload and
+comparing selectors) showed Alto does **not** call the canonical `simulateHandleOp` from the pinned
+`@account-abstraction/contracts@0.7.0` package (real selector `0x97b2dcb9`, confirmed against this
+repo's own `CanonicalEntryPointSimulations` artifact). It substitutes its **own proprietary
+simulation contract** via state override, calling selector `0xd6383f94` — a Pimlico-internal
+interface, undocumented, not part of the ERC-4337 spec. That contract is evidently calibrated for
+the canonical, officially-deployed EntryPoint and doesn't tolerate a locally-redeployed instance
+(same source, different address/deployment history) for reasons that would require reverse
+engineering Pimlico's bundler internals to pin down further — a bad trade against this project's
+own rule to depend only on pinned, unmodified, canonical contracts.
+
+`contracts/evm/scripts/bundler-e2e-check.ts` is kept in the repo in this **known-failing** state —
+it fails cleanly with an explicit `BUNDLER_E2E_RESULT=KNOWN_FAILURE` marker and a header comment
+carrying this full diagnosis, rather than either being deleted or left to crash with a raw stack
+trace. Don't mistake its presence for a passing proof; it isn't one.
+
 ### Recommended next step, in order of leverage
 
-1. **Bundler.** Self-hosted (Alto/Rundler) is the realistic option for Base Sepolia later; for the
-   local Hardhat node, real bundlers rely on `debug_traceCall` tracing that Hardhat supports
-   patchily — expect friction. Don't let bundler work block everything else; it mainly affects
-   *submission*, which nothing in .NET does yet anyway.
+1. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
+   attempted this session) — it may use the standard `EntryPointSimulations` rather than a
+   proprietary one. Alternative: skip local bundler testing entirely and defer to Base Sepolia,
+   where a hosted bundler (Pimlico/Alchemy/Biconomy) simulates against the *real* canonical
+   EntryPoint at its real address — exactly the case Alto's internals are built for. This is
+   probably the better use of effort than continuing to fight Alto locally.
 2. Session-key permissions module (needs an audited implementation — don't build one).
 3. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
    contract tests exist, but there is no solver, no two-node smoke test, no destination-verified
@@ -101,6 +139,14 @@ scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-
   out to be non-reproducible; `walkthrough.md` had gone stale twice). Treat any status claim in
   `walkthrough.md` or here as provisional until you've re-run the thing it claims — that includes
   claims made in this handoff. Re-verify, don't just extend.
+- **Double-check private key constants by their exact character count, not by eye.** This session
+  found `UserOperationSimulator.PlaceholderSignerKey` was one hex character short of a valid 32-byte
+  key (truncated when copy-pasted from a `node.log` dump). It never surfaced as a test failure
+  because the placeholder-signature trick only requires *some* valid key, not a specific one — but
+  it was still wrong. Caught only because a real bundler's stricter input validation
+  (`z.string().regex(/^0x(?:[0-9a-f]{2}){32}$/)`) rejected it outright. If you're hardcoding a hex
+  key/hash/address anywhere, verify its length programmatically once rather than trusting a visual
+  copy-paste.
 
 ## Outcome
 
@@ -557,7 +603,7 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 ### Phase 4 — ERC-4337 user experience [IN PROGRESS]
 
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
-- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
+- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; bundler attempted and blocked on a diagnosed issue, see "Bundler investigation" in the session handoff at the top of this file**;
 - ⬜ batch approval plus funding;
 - ✅ enforce sponsorship quotas and simulation — quota engine, signer, and canonical-EntryPoint gas simulation implemented and proven cross-stack (native-USD pricing is still a static config value, not an oracle);
 - 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;

@@ -217,11 +217,16 @@ automatic re-application of deferred events. No browser extension is involved at
 - **Provider assignment coverage:** the main lifecycle proves `setProvider`. The rejection and
   expiry variants still create jobs with the provider supplied inline, which exercises the
   create-with-provider form rather than the two-step assignment.
-- **No bundler.** Sponsorship signing and gas simulation are real and proven on-chain, but
-  submission still goes through `EntryPoint.handleOps` called directly by a funded EOA. There is
-  no mempool, no `eth_sendUserOperation`, no bundler validation rules, and no code path that lets a
-  user with an empty wallet actually get an operation included — which is the entire point of
-  sponsorship. Closing this requires a bundler (Alto, Rundler, or a hosted provider).
+- **No working bundler.** Sponsorship signing and gas simulation are real and proven on-chain, but
+  submission still goes through `EntryPoint.handleOps` called directly by a funded EOA — no
+  mempool, no code path that lets a user with an empty wallet actually get an operation included,
+  which is the entire point of sponsorship. This was attempted, not just deferred: `@pimlico/alto`
+  runs and correctly enforces real EntryPoint validation, but its gas-estimation RPC calls a
+  proprietary, undocumented simulation contract (confirmed via selector mismatch against the
+  canonical `EntryPointSimulations`) that doesn't tolerate a locally-redeployed EntryPoint. See
+  `docs/agentic-commerce-stack-plan.md`'s "Bundler investigation" section and
+  `contracts/evm/scripts/bundler-e2e-check.ts` (kept in a known-failing state, with the diagnosis
+  in its header) for the full account.
 - **`NativeCurrencyUsdRate` is a static configured number, not a live price oracle.** The USD
   budget is therefore only as accurate as that configured value; on a real chain with a moving gas
   price and asset price, the effective USD cost of sponsorship will drift from what the grant
