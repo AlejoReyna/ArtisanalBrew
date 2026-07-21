@@ -4,6 +4,98 @@ Date: 2026-07-18
 Status: implementation-ready design, dependent on the multichain foundation
 Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 
+## Session handoff (2026-07-21) — read this first
+
+Branch `agent/enable-solana-multichain`, PR #54. Latest commit `2bc3e23`. All work below is pushed.
+
+**Overall: ~65-70% of the whole plan.** Phase 0-3 complete and independently verified (see
+"Session handoff" evidence in `walkthrough.md` — do not trust older claims in that file without
+checking the commit that made them; several turned out to be false and had to be re-verified from
+scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-6 barely started.
+
+### What's true right now, proven not just claimed
+
+- Phase 3 (job lifecycle: create → provider assignment → budget → funding → submission →
+  completion/reject/expiry) is proven against a **live Hardhat node**, not just unit tests. Re-run
+  it yourself: `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` — must exit 0 with
+  `ACCEPTANCE_RESULT=PASS`. If it doesn't, something regressed; don't proceed on Phase 4 until it's
+  green again.
+- ERC-4337 canonical stack is pinned and deployed: EntryPoint, `SimpleAccountFactory`,
+  `VerifyingPaymaster`, and `EntryPointSimulations` (all bare, unmodified subclasses of
+  `@account-abstraction/contracts@0.7.0` — see `contracts/evm/contracts/AccountAbstractionCanonical.sol`).
+  **`EntryPointFixture` despite its name is NOT a mock** — it's the real canonical EntryPoint. This
+  was gotten wrong once already in this session; don't repeat it.
+- Account derivation, UserOperation execution (user-paid AND sponsored), the sponsorship quota
+  engine, the sponsorship signer, and gas simulation are all implemented AND proven cross-stack
+  against a real chain — not just unit-tested. The proof scripts:
+  - `contracts/evm/scripts/crossstack-sponsor-check.ts` — runs the **real** C# `UserOperationSponsor`
+    + `UserOperationSimulator` classes (via a scratch console project, not stubs) against a live
+    node, gets a signature, submits it, confirms the canonical paymaster accepts it on-chain.
+  - `contracts/evm/scripts/simulation-recipe-check.ts` — proves the `eth_call` state-override gas
+    simulation recipe in isolation.
+  - Neither is part of the automated test suite (`dotnet test` / `npm test`). Both require a live
+    Hardhat node and manual invocation. **This is a known gap** — see "Next" below.
+
+### What's still missing for the Phase 4 gate
+
+- **No bundler.** Everything above submits via `EntryPoint.handleOps` called directly by a funded
+  EOA. There is no mempool, no `eth_sendUserOperation`, no bundler validation rules. This is the
+  headline remaining item — see recommendation below.
+- **`NativeCurrencyUsdRate` is a static config number, not a live oracle.**
+- No batch approval+funding, no session-key permissions, no fallback/revocation beyond
+  sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
+  sponsorship grant, not a real session-key module — there isn't one yet).
+- The cross-stack proof scripts are not wired into CI/automated tests (see below).
+
+### Recommended next step, in order of leverage
+
+1. **Wire the cross-stack proofs into something repeatable without the scratch console project.**
+   Right now `crossstack-sponsor-check.ts` shells out to
+   `/private/tmp/claude-501/.../scratchpad/sponsorcheck` — a throwaway console app outside the
+   repo that won't survive a clean checkout or a new machine. Move it into the repo (e.g. a
+   `tools/CrossStackSimulationHarness` console project referencing `ThisCafeteria.Infrastructure`)
+   so these proofs are reproducible by anyone, not just this session's scratchpad.
+2. **Bundler.** Self-hosted (Alto/Rundler) is the realistic option for Base Sepolia later; for the
+   local Hardhat node, real bundlers rely on `debug_traceCall` tracing that Hardhat supports
+   patchily — expect friction. Don't let bundler work block everything else; it mainly affects
+   *submission*, which nothing in .NET does yet anyway.
+3. Session-key permissions module (needs an audited implementation — don't build one).
+4. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
+   contract tests exist, but there is no solver, no two-node smoke test, no destination-verified
+   funding.
+
+### Hard-won gotchas (avoid re-discovering these)
+
+- **`EntryPointFixture` / `CanonicalEntryPointSimulations` are declared as local Solidity subclasses
+  solely because Hardhat doesn't emit artifacts for `node_modules` sources.** Nothing is
+  reimplemented. If you need another canonical AA contract, follow the same pattern in
+  `AccountAbstractionCanonical.sol` rather than copying source.
+- **Nethereum tuple-return decoding needs `[FunctionOutput]` on the wrapper class** even when it
+  wraps a single nested tuple parameter — forgetting it silently misdecodes rather than erroring
+  clearly on the first attempt (it throws on the *next* attempt with a clear message, so if you see
+  "does not apply attribute FunctionOutputAttribute", that's the fix).
+- **`EntryPointSimulations.simulateHandleOp` tolerates a signature that FAILS validation
+  (`SIG_VALIDATION_FAILED`, a return value) but NOT a malformed one** (empty/wrong-length reverts
+  during `ecrecover`, surfacing as opaque "AA23 reverted"). Use a syntactically valid signature from
+  any throwaway key when simulating before the real signer is known.
+- **Hardhat deploys deterministically** — the same escrow/factory/paymaster addresses come back on
+  every `deploy:local` run against a fresh node. The acceptance harness purges reconciliation state
+  scoped by contract address for exactly this reason (`run-acceptance.sh` step 9b); if you add new
+  deployed contracts with their own reconciliation state, you may need to extend that purge.
+- **The acceptance isolation guard is real now**: `RESET_DB=1` refuses to drop anything except
+  `this_cafeteria_test`/`this_cafeteria_acceptance`. Don't weaken this without a very good reason —
+  it was added after a near-miss on the ordinary dev database.
+- **Watch which branch you're on before committing.** Mid-session in this work, a commit landed on
+  the wrong branch (`fix/page-transition-white-flash` instead of `agent/enable-solana-multichain`)
+  because the working tree had been switched earlier and the switch wasn't rechecked before
+  committing. Cherry-picked back onto the right branch with no data loss, but check
+  `git branch --show-current` before every commit if there's been any branch activity in the
+  session.
+- **This session corrected several of its own prior claims** (an earlier acceptance "PASS" turned
+  out to be non-reproducible; `walkthrough.md` had gone stale twice). Treat any status claim in
+  `walkthrough.md` or here as provisional until you've re-run the thing it claims — that includes
+  claims made in this handoff. Re-verify, don't just extend.
+
 ## Outcome
 
 ArtisanalBrew will demonstrate an end-to-end agent-commerce workflow in which:
@@ -368,12 +460,39 @@ The repository now contains a structurally verified foundation for agentic comme
 
 **Test-Verified and Implemented:**
 - **x402 Gateway:** Clean TypeScript build, successful integration tests proving idempotency binding to request/payment metadata, and replay-protection against double-charging (Priority 2 & 3).
-- **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
-- **Smart Account Scaffolding:** `SmartAccountService` safely fails closed (throwing `NotSupportedException`) for operations like deployment, sponsorship, recording usage, and revoking sessions. This prevents spoofed implementations until real external dependencies exist.
-- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (136 passing), `npm test` in gateway (8 passing), `npm test` in EVM contracts (24 passing).
+- **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions, deferred-event recording for out-of-order prerequisites, and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
+- **Smart Account Scaffolding:** as of Phase 4 (in progress) `SmartAccountService` implements configuration discovery and counterfactual account derivation against the pinned canonical v0.7.0 factory. Sponsorship and session operations still fail closed (`NotSupportedException`, or `false` for quota), preventing spoofed implementations until a paymaster, bundler, and audited permissions module exist. See the Phase 4 section for detail.
+- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (155 passing), `npm test` in gateway (11 passing) plus `npm run build` (clean), `npm test` in EVM contracts (24 passing).
 
+- **Phase 3 Acceptance:** ✅ **VERIFIED** — `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` exited 0 on
+  2026-07-21, final marker `ACCEPTANCE_RESULT=PASS  exit=0`, confirmed by two back-to-back runs with
+  identical per-run counts (`acceptance-evidence-20260721-051418.log` and `…-051513.log`; untracked,
+  logs are not committed).
+  Post-run state for escrow `0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0`: checkpoint
+  `LastScannedBlock` = 68, applied events **this run** = 19 (102 cumulative across all contracts),
+  deferred events = 0, and exactly 3 job rows (ids 1/2/3).
+
+  Earlier attempts were **not** valid evidence, and four harness defects were fixed to get here:
+  an interactive `psql` password prompt that truncated the log before any marker was written; a
+  wrapper-only process kill that orphaned 28 workers onto the acceptance database; a lifecycle that
+  never called `setProvider` while still printing "provider assignment [VERIFIED]"; and stale
+  checkpoints surviving deterministic contract redeployment, which made the worker skip an entire
+  run's events. See `walkthrough.md` §8.3.
+
+  All lifecycle stages proven:
+  - Agent identity registration → `AgentDirectoryEntries` row verified.
+  - JobCreated (on-chain ID 1, provider deliberately unset) → `AgenticJobs` row, Status: Open, CreationTx verified.
+  - ProviderSet via `setProvider` → `ProviderAddress` reconciled while status stays Open, tx verified.
+  - BudgetSet → budget projected.
+  - JobFunded → Status: Funded, DB row verified.
+  - JobSubmitted → Status: Submitted, DB row verified.
+  - JobCompleted (evaluator approval) → Status: Completed, provider payout on-chain verified.
+  - Rejection variant → Status: Rejected, verified.
+  - Expiry variant → Status: Expired, verified.
+  - *Boundary clarifications:* The acceptance test simulates a real local wallet lifecycle via a Hardhat TypeScript script driving EVM transactions; it is *not* a browser wallet/UI E2E test and does not require MetaMask or any browser extension. It verifies database projections against actual on-chain transaction hashes, ensuring true idempotency and the absence of NUL byte errors. It does not use Smart Accounts or paymasters yet.
+  - *Limitations regarding reorg rollback:* The current worker implementation tracks a safe head and polls periodically to prevent simple fork discrepancies, but it does *not* explicitly support rolling back state (dropping `AgenticJobProjection` records) if a chain reorganization occurs deeper than the `MinimumConfirmations` configuration. In a deep reorg scenario, manual database intervention may be required.
 **Fixture-Only or Blocked:**
-- **Smart Account Infrastructure:** True ERC-4337 dependencies (paymaster, bundler, session keys) remain stubbed and unconfigured.
+- **Smart Account Infrastructure:** the canonical v0.7.0 EntryPoint and account factory are deployed and account derivation works, but paymaster, bundler, and session keys remain unconfigured, so no UserOperation can be submitted.
 
 ### Known Limitations: Reorg Recovery
 
@@ -420,7 +539,7 @@ Gate: contract tests and direct local scripts complete create/fund/submit/comple
 
 Gate: an unauthenticated paid request returns 402, a valid payment returns the deterministic resource once, and replay/tampering/settlement failure tests pass.
 
-### Phase 3 — Identity directory and job application path [COMPLETED]
+### Phase 3 — Identity directory and job application path [COMPLETE – acceptance verified 2026-07-21]
 
 - index ERC-8004 identities and signals;
 - add ERC-8183 projections and APIs;
@@ -429,16 +548,190 @@ Gate: an unauthenticated paid request returns 402, a valid payment returns the d
 
 Gate: a normal wallet completes the local procurement lifecycle before smart-account abstraction is required.
 
-### Phase 4 — ERC-4337 user experience
+### Phase 4 — ERC-4337 user experience [IN PROGRESS]
 
-- integrate smart-account creation/discovery through a pinned established stack;
-- add bundler and paymaster clients;
-- batch approval plus funding;
-- enforce sponsorship quotas and simulation;
-- add explicit fallback and permission revocation;
-- add constrained session permissions only with an audited compatible module.
+- ✅ integrate smart-account creation/discovery through a pinned established stack;
+- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
+- ⬜ batch approval plus funding;
+- ✅ enforce sponsorship quotas and simulation — quota engine, signer, and canonical-EntryPoint gas simulation implemented and proven cross-stack (native-USD pricing is still a static config value, not an oracle);
+- 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
+- ⬜ add constrained session permissions only with an audited compatible module.
 
 Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail.
+
+**The gate is not met.** Both sponsored and user-paid flows are proven *on-chain*, but the negative
+half of the gate is only partly covered (wrong-signature and unauthorised-sponsorship fail
+correctly; over-budget, wrong-target, wrong-selector, expired, and revoked are not yet tested), and
+there is **no bundler** — see the boundary note below.
+
+#### Status of the pinned stack
+
+The canonical `@account-abstraction/contracts` **v0.7.0** package is a pinned dependency of
+`contracts/evm`. Both on-chain components are the canonical implementations, deployed unmodified:
+
+| Component | Contract | Notes |
+|-----------|----------|-------|
+| EntryPoint | `EntryPointFixture` | Bare subclass of canonical `EntryPoint`, no overrides. Despite the name, **not** a mock. |
+| Account factory | `CanonicalSimpleAccountFactory` | Bare subclass of canonical `SimpleAccountFactory`. |
+| Paymaster | `CanonicalVerifyingPaymaster` | Bare subclass of canonical `VerifyingPaymaster`. Signature-based sponsorship primitive, **not** a policy engine. |
+
+Both are declared as local subclasses solely because Hardhat does not emit artifacts for
+`node_modules` sources. Neither copies nor reimplements EntryPoint, as the plan requires.
+`SimpleAccount`/`SimpleAccountFactory` are the ERC-4337 *reference* account implementation,
+appropriate for local development; **a production deployment must pin an audited account
+implementation instead.**
+
+`SmartAccountService` now implements:
+
+- `IsConfiguredAsync` — true only for an EVM chain with both an EntryPoint and an account factory
+  in its manifest plus a usable RPC endpoint; fail-closed otherwise (an EntryPoint alone is not
+  enough).
+- `GetOrDeployAccountAsync` — derives the account address from the factory's
+  `getAddress(owner, salt)` and reports whether it is already deployed.
+
+Under ERC-4337 an account address is deterministic and usable before deployment, so returning the
+counterfactual address is correct rather than a stand-in. Actual deployment occurs when the first
+UserOperation carrying `initCode` is submitted through a bundler — **no bundler is configured, so
+nothing in this codebase submits UserOperations.**
+
+Still fail-closed and throwing `NotSupportedException`: `RecordSponsorshipUsageAsync`,
+`RevokeSessionPermissionsAsync`. `HasSufficientSponsorshipQuotaAsync` returns `false` because no
+paymaster is deployed.
+
+Verified against a live local chain: for owner `0xf39Fd6e5…92266` on the deployed factory, the
+service derived `0x93e957812b6ce6e7100b0B743F39376838bE9920`, matching a raw `eth_call` to
+`getAddress(address,uint256)` (selector `0x8cb84e18`) exactly. Unit tests cover the fail-closed
+gating; the derivation itself was confirmed against the real deployed factory, not a stub.
+
+#### UserOperation execution — what is proven, and the bundler boundary
+
+`contracts/evm/test/ERC4337UserOperation.test.ts` builds v0.7 `PackedUserOperation`s and executes
+them through the canonical EntryPoint. Five tests pass:
+
+| Test | Proves |
+|------|--------|
+| user-paid via deposit | account deployed from `initCode`, inner call executed, account's own deposit pays |
+| sponsored via paymaster | account deployed and executed with **zero** account deposit; paymaster deposit decreases |
+| wrong paymaster signer rejected | sponsorship signed by anyone but `verifyingSigner` is refused |
+| wrong account key rejected | signature not matching the account owner is refused |
+| no prefund rejected | an operation that cannot pay is refused rather than executed free |
+
+**Boundary — this is not a bundler.** The tests call `EntryPoint.handleOps` directly from a funded
+EOA acting as beneficiary. There is no mempool, no `eth_sendUserOperation`, no bundler validation
+rules (storage-access restrictions, reputation, throttling), and no gas policy. What is proven is
+the *on-chain half* of ERC-4337 — the half this repository actually deploys. Integrating a real
+bundler (e.g. Alto or Rundler) remains an open Phase 4 dependency, and no .NET code submits
+UserOperations: `SmartAccountService` still performs no submission at all.
+
+#### Sponsorship quota engine
+
+`CanonicalVerifyingPaymaster` enforces only "the verifying signer approved this operation" — it will
+sponsor anything that signer signs. The policy deciding *whether to sign* is therefore the real
+safety boundary for sponsored gas, and it lives in `ISponsorshipPolicyService`
+(`SponsorshipPolicyService`).
+
+Persisted state (migration `20260721115003_AddSponsorshipGrantsAndUsages`):
+
+| Entity | Purpose |
+|--------|---------|
+| `SponsorshipGrant` | Per-owner, per-chain allowance: budget, spend, per-operation cap, validity window, revocation. Unique on `ChainKey + OwnerAddress`, with a concurrency token so concurrent debits cannot race past the budget. |
+| `SponsorshipUsage` | Audit row per sponsored operation, so spend is reconstructable rather than only a running total. |
+
+Target and selector allowlists come from `SponsorshipPolicyOptions` (config section `Sponsorship`).
+
+**Fail-closed by construction:**
+
+- sponsorship is refused entirely unless `Enabled` is explicitly true;
+- an **empty allowlist denies everything** rather than allowing everything — an allowlist that
+  silently means "allow all" when unset is how gas budgets get drained;
+- a chain without a configured EntryPoint *and* paymaster is refused;
+- `RecordUsageAsync` re-evaluates policy and throws rather than debiting against a grant that would
+  not have authorised the operation, so usage can never be recorded against a revoked or absent
+  grant;
+- revocation is permanent and idempotent.
+
+`SmartAccountService` now delegates `HasSufficientSponsorshipQuotaAsync`,
+`RecordSponsorshipUsageAsync`, and `RevokeSessionPermissionsAsync` to this policy. Note that
+`HasSufficientSponsorshipQuotaAsync` carries no target or selector, so it can only evaluate grant
+validity and budget; **any caller that actually produces a paymaster signature must call
+`EvaluateAsync` with target and selector populated**, or wrong-target/wrong-selector operations
+would go unchecked.
+
+The five gate failure modes are covered by unit tests in `SponsorshipPolicyServiceTests`
+(over-budget, wrong-target, wrong-selector, expired, revoked), alongside not-yet-valid,
+per-operation cap, disabled policy, empty allowlists, absent grant, negative cost, case-insensitive
+matching, budget accumulation to exhaustion, and audit-row correctness.
+
+#### Sponsorship signer
+
+`IUserOperationSponsor` / `UserOperationSponsor` turns a policy verdict into a signature the
+canonical `VerifyingPaymaster` accepts on-chain. It asks the policy with target and selector
+populated, and signs **only** on approval.
+
+The signed hash comes from the paymaster contract's own `getHash(userOp, validUntil, validAfter)`
+rather than a C# reimplementation of v0.7 hashing. A reimplementation would agree with itself and
+nothing else; asking the contract means any divergence surfaces as a rejected operation.
+
+**The wrong-target/wrong-selector hole is closed structurally.**
+`ISmartAccountService.HasSufficientSponsorshipQuotaAsync` carries neither target nor selector, so it
+can only check budget and validity. Rather than documenting that as a caution,
+`SponsoredUserOperation.TargetAddress` and `.Selector` are `required` — it is not possible to obtain
+a paymaster signature without both having been checked.
+
+**Fail-closed:** no signer key, no native-USD rate, disabled policy, unknown chain, failed
+simulation, or any policy denial all yield no signature.
+
+#### Gas simulation
+
+Cost is **never** accepted from the caller. `IUserOperationSimulator` / `UserOperationSimulator`
+measures the real cost of an operation by calling the canonical EntryPoint's own
+`simulateHandleOp` — via an `eth_call` **state override** that substitutes the canonical
+`EntryPointSimulations` bytecode (from the same pinned `@account-abstraction/contracts@0.7.0`
+package, exported unmodified — see `CanonicalEntryPointSimulations` in
+`AccountAbstractionCanonical.sol`) for the real EntryPoint's code, for the duration of one
+read-only call. No transaction is broadcast, nothing is deployed, and no chain state changes; the
+upstream contract's own constructor refuses if it is ever actually deployed.
+
+This closes the gap this document previously flagged: `EstimatedGas`/`GasPriceWei` no longer exist
+as fields a caller can supply. `UserOperationSponsor` calls the simulator to get the account's
+real base cost in wei (`paid`), adds the paymaster's own validation/postOp gas overhead (a known
+quantity from configuration, priced at the operation's own `maxFeePerGas`), and only then converts
+to USD via `NativeCurrencyUsdRate`.
+
+Two implementation notes worth recording:
+
+- The signature used during simulation cannot be the real one — the operation has not been signed
+  yet. It is a syntactically valid ECDSA signature over a fixed placeholder message, signed by a
+  fixed throwaway key that controls nothing. It must be well-formed rather than empty:
+  `EntryPointSimulations` tolerates a signature that *fails* validation (`SIG_VALIDATION_FAILED`
+  is a return value, not a revert) but an empty/malformed one makes ECDSA recovery itself revert
+  ("AA23 reverted"), aborting the simulation before any gas figure is produced.
+- Simulation runs with an empty `paymasterAndData`, because the paymaster's own signature does not
+  exist yet at simulation time — it is what `UserOperationSponsor` is about to produce. The
+  paymaster's overhead is therefore estimated additively from configuration rather than measured
+  by a second simulation with a fabricated paymaster signature.
+
+**Verified against a live chain**, not only by unit tests:
+
+- `contracts/evm/scripts/simulation-recipe-check.ts` proves the raw `eth_call` state-override
+  recipe in isolation (a counterfactual, undeployed account, `preOpGas`/`paid` returned with no
+  transaction broadcast).
+- `contracts/evm/scripts/crossstack-sponsor-check.ts` runs the **real** `UserOperationSimulator`
+  class (not a stub) inside the full sponsor pipeline: simulate → price → policy → sign → submit.
+  The signature produced from a **real simulated cost** (`costUsd=22.252254`, derived from actual
+  measured gas, not asserted) was accepted by the on-chain paymaster; account deployed, account
+  deposit spent `0` (fully sponsored), paymaster deposit reduced accordingly.
+
+**Key handling:** `VerifyingSignerPrivateKey` authorises spending gas. It is configuration-based and
+intended for local development only — never logged, never committed. A real deployment must source
+it from a secret store or KMS.
+
+**Still missing:** `NativeCurrencyUsdRate` is a static configured number, not a live oracle, so on
+a real chain the USD budget drifts with the native asset's actual price. There is also no
+`eth_estimateUserOperationGas`/bundler-style gas-limit *estimation* — the caller still supplies
+`AccountGasLimits`/`PreVerificationGas`/`GasFees` as part of constructing the operation (which any
+UserOperation needs regardless, to be signed), and simulation measures the real cost of running
+with those limits rather than deriving suggested limits from scratch.
 
 ### Phase 5 — ERC-7683 cross-chain path
 

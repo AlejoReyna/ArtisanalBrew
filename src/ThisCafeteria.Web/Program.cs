@@ -124,6 +124,14 @@ builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
 builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
 builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();
 builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
+// Sponsorship policy. Absent configuration yields a disabled (fail-closed) policy.
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(builder.Configuration
+    .GetSection(SponsorshipPolicyOptions.SectionName)
+    .Get<SponsorshipPolicyOptions>() ?? new SponsorshipPolicyOptions());
+builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>();
+builder.Services.AddScoped<IUserOperationSimulator, UserOperationSimulator>();
+builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);

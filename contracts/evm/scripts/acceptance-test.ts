@@ -43,10 +43,14 @@ async function main() {
 
     console.log("2. Creating Job...");
     const description = "Test Job Proposal";
-    const expireTime = BigInt(Math.floor(Date.now() / 1000) + 3600);
-    const createTx = await escrow.write.createJob([providerWallet.account.address, evaluatorWallet.account.address, expireTime, description], { account: clientWallet.account });
+    const currentBlock = await publicClient.getBlock();
+    const expireTime = currentBlock.timestamp + 3600n;
+    // Create with an UNSET provider so that provider assignment is a distinct,
+    // independently verified lifecycle stage (setProvider requires provider == address(0)).
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    const createTx = await escrow.write.createJob([ZERO_ADDRESS, evaluatorWallet.account.address, expireTime, description], { account: clientWallet.account });
     const createReceipt = await publicClient.waitForTransactionReceipt({ hash: createTx });
-    
+
     // Parse logs to find jobId
     const createLogs = await publicClient.getLogs({
         address: escrowAddress,
@@ -68,10 +72,27 @@ async function main() {
     console.log(`Job created with ID: ${jobId}`);
 
     await waitForDB(publicClient, async () => {
-        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1', [jobId]);
+        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [jobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
+        if (res.rows.length > 0) {
+            console.log(`DB Job Row: ${res.rows[0].Id} | Status: ${res.rows[0].Status} | Creation Tx: ${res.rows[0].CreationTransactionHash}`);
+            if (res.rows[0].CreationTransactionHash.toLowerCase() !== createTx.toLowerCase()) throw new Error("Creation tx hash mismatch");
+        }
         return res.rows.length > 0 && res.rows[0].Status === "Open";
     });
-    console.log("Job verified in DB.");
+    console.log("✓ Job created and verified in DB.");
+
+    console.log("2b. Assigning Provider (setProvider)...");
+    const setProviderTx = await escrow.write.setProvider([jobId, providerWallet.account.address], { account: clientWallet.account });
+    await publicClient.waitForTransactionReceipt({ hash: setProviderTx });
+
+    await waitForDB(publicClient, async () => {
+        const res = await pg.query('SELECT "ProviderAddress", "Status" FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [jobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
+        if (res.rows.length === 0) return false;
+        const projected = (res.rows[0].ProviderAddress || "").toLowerCase();
+        // Must still be Open, and must now carry the assigned provider.
+        return res.rows[0].Status === "Open" && projected === providerWallet.account.address.toLowerCase();
+    });
+    console.log(`✓ ProviderSet reconciled to DB: ${providerWallet.account.address} (tx ${setProviderTx})`);
 
     console.log("3. Setting Budget...");
     const budget = parseEther("50");
@@ -86,10 +107,14 @@ async function main() {
     await publicClient.waitForTransactionReceipt({ hash: fundTx });
 
     await waitForDB(publicClient, async () => {
-        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1', [jobId]);
-        return res.rows.length > 0 && res.rows[0].Status === "Funded";
+        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [jobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
+        if (res.rows.length > 0 && res.rows[0].Status === "Funded") {
+             if (res.rows[0].FundedTransactionHash.toLowerCase() !== fundTx.toLowerCase()) throw new Error("Funded tx hash mismatch");
+             return true;
+        }
+        return false;
     });
-    console.log("Job Funding verified in DB.");
+    console.log("✓ Job Funding verified in DB.");
 
     console.log("5. Provider Submission...");
     const deliverable = padHex(toHex("ipfs://QmHash"), { size: 32 });
@@ -97,14 +122,19 @@ async function main() {
     await publicClient.waitForTransactionReceipt({ hash: submitTx });
 
     await waitForDB(publicClient, async () => {
-        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1', [jobId]);
+        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [jobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
         return res.rows.length > 0 && res.rows[0].Status === "Submitted";
     });
-    console.log("Job Submission verified in DB.");
+
+    // Verify application event record
+    let applyRes = await pg.query('SELECT * FROM "AgenticJobAppliedEvents" WHERE "ContractAddress" = $1 AND "TransactionHash" = $2', [escrowAddress.toLowerCase(), submitTx.toLowerCase()]);
+    if (applyRes.rows.length === 0) throw new Error("AgenticJobAppliedEvents record missing for submitTx");
+
+    console.log("✓ Job Submission verified in DB.");
 
     console.log("6. Evaluator Completion...");
     const reason = padHex(toHex("approved"), { size: 32 });
-    
+
     const initialBalance = await token.read.balanceOf([providerWallet.account.address]);
 
     const completeTx = await escrow.write.complete([jobId, reason, "0x"], { account: evaluatorWallet.account });
@@ -115,10 +145,10 @@ async function main() {
     console.log("Provider payout verified on-chain.");
 
     await waitForDB(publicClient, async () => {
-        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1', [jobId]);
+        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [jobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
         return res.rows.length > 0 && res.rows[0].Status === "Completed";
     });
-    console.log("Job Completion verified in DB.");
+    console.log("✓ Job Completion verified in DB.");
 
     console.log("=== Running Rejection Variant ===");
     const rejectJobTx = await escrow.write.createJob([providerWallet.account.address, evaluatorWallet.account.address, expireTime, description], { account: clientWallet.account });
@@ -134,20 +164,21 @@ async function main() {
     await token.write.approve([escrowAddress, budget], { account: clientWallet.account });
     await escrow.write.fund([rJobId, budget, "0x"], { account: clientWallet.account });
     await escrow.write.submit([rJobId, deliverable, "0x"], { account: providerWallet.account });
-    
+
     const clientInitialBalance = await token.read.balanceOf([clientWallet.account.address]);
     await escrow.write.reject([rJobId, reason, "0x"], { account: evaluatorWallet.account });
     const clientFinalBalance = await token.read.balanceOf([clientWallet.account.address]);
     if (clientFinalBalance <= clientInitialBalance) throw new Error("Client did not receive refund after rejection");
-    
+
     await waitForDB(publicClient, async () => {
-        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1', [rJobId]);
+        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [rJobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
         return res.rows.length > 0 && res.rows[0].Status === "Rejected";
     });
     console.log("Rejection variant passed.");
 
     console.log("=== Running Expiry Variant ===");
-    const expiryTime = BigInt(Math.floor(Date.now() / 1000) + 2); // 2 seconds from now
+    const expiryBlock = await publicClient.getBlock();
+    const expiryTime = expiryBlock.timestamp + 3600n; // 1 hour from now
     const expiryJobTx = await escrow.write.createJob([providerWallet.account.address, evaluatorWallet.account.address, expiryTime, description], { account: clientWallet.account });
     const expiryReceipt = await publicClient.waitForTransactionReceipt({ hash: expiryJobTx });
     const expiryLogs = await publicClient.getLogs({
@@ -160,11 +191,11 @@ async function main() {
     await escrow.write.setBudget([eJobId, budget, "0x"], { account: clientWallet.account });
     await token.write.approve([escrowAddress, budget], { account: clientWallet.account });
     await escrow.write.fund([eJobId, budget, "0x"], { account: clientWallet.account });
-    
+
     console.log("Waiting for expiry...");
-    await sleep(3000); // Wait for block timestamp to pass expiry
     // Mine a block to update block timestamp
-    await network.provider.send("evm_mine");
+    await publicClient.request({ method: "evm_increaseTime", params: [3600] });
+    await publicClient.request({ method: "evm_mine" });
 
     const eClientInitialBalance = await token.read.balanceOf([clientWallet.account.address]);
     await escrow.write.claimRefund([eJobId], { account: clientWallet.account });
@@ -172,7 +203,7 @@ async function main() {
     if (eClientFinalBalance <= eClientInitialBalance) throw new Error("Client did not receive refund after expiry");
 
     await waitForDB(publicClient, async () => {
-        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1', [eJobId]);
+        let res = await pg.query('SELECT * FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [eJobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
         return res.rows.length > 0 && res.rows[0].Status === "Expired";
     });
     console.log("Expiry variant passed.");
@@ -187,15 +218,13 @@ async function waitForDB(publicClient: any, checkFn: () => Promise<boolean>) {
     for(let i=0; i<3; i++) {
         await publicClient.request({ method: "evm_mine" });
     }
-    
+
     // Poll up to 10 seconds
     for(let i=0; i<20; i++) {
-        try {
-            const ok = await checkFn();
-            if (ok) return;
-        } catch(e) {}
+        const ok = await checkFn();
+        if (ok) return;
         await new Promise(resolve => setTimeout(resolve, 500));
-        // Mine an extra block sometimes just in case
+        // mine one block every two loops to advance worker time
         if (i % 2 === 0) await publicClient.request({ method: "evm_mine" });
     }
     throw new Error("Timeout waiting for DB state");

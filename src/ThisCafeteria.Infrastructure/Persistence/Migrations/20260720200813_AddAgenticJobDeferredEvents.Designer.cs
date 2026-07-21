@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ThisCafeteria.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using ThisCafeteria.Infrastructure.Persistence;
 namespace ThisCafeteria.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260720200813_AddAgenticJobDeferredEvents")]
+    partial class AddAgenticJobDeferredEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -934,109 +937,6 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.HasIndex("WalletAddress", "ClaimedAtUtc");
 
                     b.ToTable("RewardClaims");
-                });
-
-            modelBuilder.Entity("ThisCafeteria.Domain.Entities.SponsorshipGrant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("BudgetUsd")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("ChainKey")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<int>("ConcurrencyToken")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("MaxOperationCostUsd")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<string>("OwnerAddress")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<DateTime?>("RevokedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("SpentUsd")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ValidFromUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ValidUntilUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChainKey", "OwnerAddress")
-                        .IsUnique()
-                        .HasDatabaseName("IX_SponsorshipGrants_ChainOwner");
-
-                    b.ToTable("SponsorshipGrants");
-                });
-
-            modelBuilder.Entity("ThisCafeteria.Domain.Entities.SponsorshipUsage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ChainKey")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<decimal>("CostUsd")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)");
-
-                    b.Property<Guid>("GrantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("OwnerAddress")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<DateTime>("RecordedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Selector")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<string>("TargetAddress")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GrantId")
-                        .HasDatabaseName("IX_SponsorshipUsages_Grant");
-
-                    b.HasIndex("ChainKey", "OwnerAddress")
-                        .HasDatabaseName("IX_SponsorshipUsages_ChainOwner");
-
-                    b.ToTable("SponsorshipUsages");
                 });
 
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.StakingLedgerEntry", b =>

@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
+    <PackageReference Include="Nethereum.Web3" Version="5.*" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
     <PackageReference Include="QuestPDF" Version="2026.5.0" />
   </ItemGroup>
@@ -17,6 +18,14 @@
   <ItemGroup>
     <ProjectReference Include="..\ThisCafeteria.Application\ThisCafeteria.Application.csproj" />
     <ProjectReference Include="..\ThisCafeteria.Domain\ThisCafeteria.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Canonical ERC-4337 EntryPointSimulations deployed bytecode, used only as an eth_call
+         state override for gas simulation. Regenerate via
+         contracts/evm/scripts/export-entrypoint-simulations.ts when the pinned
+         @account-abstraction/contracts version changes. -->
+    <EmbeddedResource Include="Resources\EntryPointSimulations.generated.json" />
   </ItemGroup>
 
   <PropertyGroup>

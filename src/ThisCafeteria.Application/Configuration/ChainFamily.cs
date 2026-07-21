@@ -28,6 +28,8 @@ public sealed record ChainDeployment
     public string AgenticEscrow { get; init; } = string.Empty;
     public string PaymentToken { get; init; } = string.Empty;
     public string EntryPoint { get; init; } = string.Empty;
+    public string AccountFactory { get; init; } = string.Empty;
+    public string VerifyingPaymaster { get; init; } = string.Empty;
     public string ERC8004Registry { get; init; } = string.Empty;
     public string ERC7683Resolver { get; init; } = string.Empty;
     public string Program { get; init; } = string.Empty;

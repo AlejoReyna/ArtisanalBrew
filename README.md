@@ -171,16 +171,35 @@ Admin user seeding reads:
 dotnet restore
 dotnet build ThisCafeteria.sln --configuration Release --no-restore
 dotnet test tests/ThisCafeteria.UnitTests --configuration Release --no-build
+# Expected: 154 passing
 
 TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password' \
   dotnet test tests/ThisCafeteria.IntegrationTests --configuration Release --no-build
 
 npm --prefix contracts/evm test
+# Expected: 24 passing
+
 npm --prefix src/ThisCafeteria.AgentGateway test
+# Expected: 11 passing
+
 npm --prefix src/ThisCafeteria.AgentGateway run build
 cargo test --manifest-path contracts/solana/Cargo.toml --locked
 npm --prefix contracts/solana run test:browser
 ```
+
+### Phase 3 Acceptance Harness
+
+The acceptance harness (`./run-acceptance.sh`) drives a complete job lifecycle against a local
+Hardhat node and a local PostgreSQL database. It uses **Hardhat-controlled local wallets** — it
+is not a browser wallet test, MetaMask test, or UI E2E test. No browser extension is required.
+
+```bash
+ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh
+# Evidence is written to: acceptance-evidence-<timestamp>.log
+# Final marker: ACCEPTANCE_RESULT=PASS  exit=0
+```
+
+Phase 3 is **not** declared complete until the script exits 0 and the full output is preserved.
 
 ## Worker
 

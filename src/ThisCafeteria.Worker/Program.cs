@@ -7,7 +7,7 @@ using System.Text.Json;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
-    .WriteTo.Console()
+    .WriteTo.Console().MinimumLevel.Information()
     .CreateLogger();
 
 try

@@ -73,6 +73,8 @@ public static class BlockchainManifestLoader
                     AgenticEscrow = Optional(addresses, "erc8183Escrow") ?? string.Empty,
                     PaymentToken = Optional(addresses, "paymentToken") ?? (addresses.TryGetProperty("cafe", out var cafeElement) ? cafeElement.GetString() : string.Empty) ?? string.Empty,
                     EntryPoint = Optional(addresses, "entryPoint") ?? string.Empty,
+                    AccountFactory = Optional(addresses, "accountFactory") ?? string.Empty,
+                    VerifyingPaymaster = Optional(addresses, "verifyingPaymaster") ?? string.Empty,
                     ERC8004Registry = Optional(addresses, "erc8004Registry") ?? string.Empty,
                     ERC7683Resolver = Optional(addresses, "erc7683Resolver") ?? string.Empty,
                     StartBlockOrSlot = ReadLong(root, "deployBlock")

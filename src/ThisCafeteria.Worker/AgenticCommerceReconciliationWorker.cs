@@ -140,6 +140,7 @@ public sealed class AgenticCommerceReconciliationWorker(
 
         checkpoint.LastScannedBlock = toBlock;
         checkpoint.UpdatedAtUtc = DateTime.UtcNow;
+
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -197,7 +198,7 @@ public sealed class AgenticCommerceReconciliationWorker(
         [Parameter("address", "provider", 2, true)]
         public string Provider { get; set; } = string.Empty;
         [Parameter("bytes32", "deliverable", 3, false)]
-        public string Deliverable { get; set; } = string.Empty;
+        public byte[] Deliverable { get; set; } = Array.Empty<byte>();
     }
 
     [Event("JobCompleted")]
@@ -208,7 +209,7 @@ public sealed class AgenticCommerceReconciliationWorker(
         [Parameter("address", "evaluator", 2, true)]
         public string Evaluator { get; set; } = string.Empty;
         [Parameter("bytes32", "reason", 3, false)]
-        public string Reason { get; set; } = string.Empty;
+        public byte[] Reason { get; set; } = Array.Empty<byte>();
     }
 
     [Event("JobRejected")]
@@ -219,7 +220,7 @@ public sealed class AgenticCommerceReconciliationWorker(
         [Parameter("address", "rejector", 2, true)]
         public string Rejector { get; set; } = string.Empty;
         [Parameter("bytes32", "reason", 3, false)]
-        public string Reason { get; set; } = string.Empty;
+        public byte[] Reason { get; set; } = Array.Empty<byte>();
     }
 
     [Event("JobExpired")]
