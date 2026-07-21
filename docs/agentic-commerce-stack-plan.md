@@ -4,6 +4,98 @@ Date: 2026-07-18
 Status: implementation-ready design, dependent on the multichain foundation
 Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 
+## Session handoff (2026-07-21) — read this first
+
+Branch `agent/enable-solana-multichain`, PR #54. Latest commit `2bc3e23`. All work below is pushed.
+
+**Overall: ~65-70% of the whole plan.** Phase 0-3 complete and independently verified (see
+"Session handoff" evidence in `walkthrough.md` — do not trust older claims in that file without
+checking the commit that made them; several turned out to be false and had to be re-verified from
+scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-6 barely started.
+
+### What's true right now, proven not just claimed
+
+- Phase 3 (job lifecycle: create → provider assignment → budget → funding → submission →
+  completion/reject/expiry) is proven against a **live Hardhat node**, not just unit tests. Re-run
+  it yourself: `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` — must exit 0 with
+  `ACCEPTANCE_RESULT=PASS`. If it doesn't, something regressed; don't proceed on Phase 4 until it's
+  green again.
+- ERC-4337 canonical stack is pinned and deployed: EntryPoint, `SimpleAccountFactory`,
+  `VerifyingPaymaster`, and `EntryPointSimulations` (all bare, unmodified subclasses of
+  `@account-abstraction/contracts@0.7.0` — see `contracts/evm/contracts/AccountAbstractionCanonical.sol`).
+  **`EntryPointFixture` despite its name is NOT a mock** — it's the real canonical EntryPoint. This
+  was gotten wrong once already in this session; don't repeat it.
+- Account derivation, UserOperation execution (user-paid AND sponsored), the sponsorship quota
+  engine, the sponsorship signer, and gas simulation are all implemented AND proven cross-stack
+  against a real chain — not just unit-tested. The proof scripts:
+  - `contracts/evm/scripts/crossstack-sponsor-check.ts` — runs the **real** C# `UserOperationSponsor`
+    + `UserOperationSimulator` classes (via a scratch console project, not stubs) against a live
+    node, gets a signature, submits it, confirms the canonical paymaster accepts it on-chain.
+  - `contracts/evm/scripts/simulation-recipe-check.ts` — proves the `eth_call` state-override gas
+    simulation recipe in isolation.
+  - Neither is part of the automated test suite (`dotnet test` / `npm test`). Both require a live
+    Hardhat node and manual invocation. **This is a known gap** — see "Next" below.
+
+### What's still missing for the Phase 4 gate
+
+- **No bundler.** Everything above submits via `EntryPoint.handleOps` called directly by a funded
+  EOA. There is no mempool, no `eth_sendUserOperation`, no bundler validation rules. This is the
+  headline remaining item — see recommendation below.
+- **`NativeCurrencyUsdRate` is a static config number, not a live oracle.**
+- No batch approval+funding, no session-key permissions, no fallback/revocation beyond
+  sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
+  sponsorship grant, not a real session-key module — there isn't one yet).
+- The cross-stack proof scripts are not wired into CI/automated tests (see below).
+
+### Recommended next step, in order of leverage
+
+1. **Wire the cross-stack proofs into something repeatable without the scratch console project.**
+   Right now `crossstack-sponsor-check.ts` shells out to
+   `/private/tmp/claude-501/.../scratchpad/sponsorcheck` — a throwaway console app outside the
+   repo that won't survive a clean checkout or a new machine. Move it into the repo (e.g. a
+   `tools/CrossStackSimulationHarness` console project referencing `ThisCafeteria.Infrastructure`)
+   so these proofs are reproducible by anyone, not just this session's scratchpad.
+2. **Bundler.** Self-hosted (Alto/Rundler) is the realistic option for Base Sepolia later; for the
+   local Hardhat node, real bundlers rely on `debug_traceCall` tracing that Hardhat supports
+   patchily — expect friction. Don't let bundler work block everything else; it mainly affects
+   *submission*, which nothing in .NET does yet anyway.
+3. Session-key permissions module (needs an audited implementation — don't build one).
+4. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
+   contract tests exist, but there is no solver, no two-node smoke test, no destination-verified
+   funding.
+
+### Hard-won gotchas (avoid re-discovering these)
+
+- **`EntryPointFixture` / `CanonicalEntryPointSimulations` are declared as local Solidity subclasses
+  solely because Hardhat doesn't emit artifacts for `node_modules` sources.** Nothing is
+  reimplemented. If you need another canonical AA contract, follow the same pattern in
+  `AccountAbstractionCanonical.sol` rather than copying source.
+- **Nethereum tuple-return decoding needs `[FunctionOutput]` on the wrapper class** even when it
+  wraps a single nested tuple parameter — forgetting it silently misdecodes rather than erroring
+  clearly on the first attempt (it throws on the *next* attempt with a clear message, so if you see
+  "does not apply attribute FunctionOutputAttribute", that's the fix).
+- **`EntryPointSimulations.simulateHandleOp` tolerates a signature that FAILS validation
+  (`SIG_VALIDATION_FAILED`, a return value) but NOT a malformed one** (empty/wrong-length reverts
+  during `ecrecover`, surfacing as opaque "AA23 reverted"). Use a syntactically valid signature from
+  any throwaway key when simulating before the real signer is known.
+- **Hardhat deploys deterministically** — the same escrow/factory/paymaster addresses come back on
+  every `deploy:local` run against a fresh node. The acceptance harness purges reconciliation state
+  scoped by contract address for exactly this reason (`run-acceptance.sh` step 9b); if you add new
+  deployed contracts with their own reconciliation state, you may need to extend that purge.
+- **The acceptance isolation guard is real now**: `RESET_DB=1` refuses to drop anything except
+  `this_cafeteria_test`/`this_cafeteria_acceptance`. Don't weaken this without a very good reason —
+  it was added after a near-miss on the ordinary dev database.
+- **Watch which branch you're on before committing.** Mid-session in this work, a commit landed on
+  the wrong branch (`fix/page-transition-white-flash` instead of `agent/enable-solana-multichain`)
+  because the working tree had been switched earlier and the switch wasn't rechecked before
+  committing. Cherry-picked back onto the right branch with no data loss, but check
+  `git branch --show-current` before every commit if there's been any branch activity in the
+  session.
+- **This session corrected several of its own prior claims** (an earlier acceptance "PASS" turned
+  out to be non-reproducible; `walkthrough.md` had gone stale twice). Treat any status claim in
+  `walkthrough.md` or here as provisional until you've re-run the thing it claims — that includes
+  claims made in this handoff. Re-verify, don't just extend.
+
 ## Outcome
 
 ArtisanalBrew will demonstrate an end-to-end agent-commerce workflow in which:
