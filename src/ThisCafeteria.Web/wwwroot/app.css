@@ -1397,6 +1397,21 @@ body.product-detail-view .product-detail-card__title h1 {
 .stagger-container.is-visible [data-animate]:nth-child(3) { transition-delay: 0.5s; }
 .stagger-container.is-visible [data-animate]:nth-child(4) { transition-delay: 0.7s; }
 
+/* Applied by revealInView() when content is already inside the viewport as a route
+   change lands, or when Blazor recreates nodes that were on screen a moment ago.
+   Fading such content up from opacity:0 is what reads as a blank white flash between
+   pages — it should just be there. Scroll-triggered reveals keep the fade. Selectors
+   are written to out-specify the stagger delays above. */
+.stagger-container [data-animate].reveal-instant,
+.stagger-container.is-visible [data-animate].reveal-instant,
+[data-animate].reveal-instant,
+[data-stagger].reveal-instant,
+.comfy-animate.reveal-instant,
+.comfy-animate-image.reveal-instant {
+    transition: none;
+    transition-delay: 0s;
+}
+
 /* --- Editorial Journal --- */
 .journal-page {
     color: var(--ink);
