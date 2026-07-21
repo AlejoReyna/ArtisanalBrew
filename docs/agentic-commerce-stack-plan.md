@@ -369,7 +369,7 @@ The repository now contains a structurally verified foundation for agentic comme
 **Test-Verified and Implemented:**
 - **x402 Gateway:** Clean TypeScript build, successful integration tests proving idempotency binding to request/payment metadata, and replay-protection against double-charging (Priority 2 & 3).
 - **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions, deferred-event recording for out-of-order prerequisites, and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
-- **Smart Account Scaffolding:** `SmartAccountService` safely fails closed (throwing `NotSupportedException`) for operations like deployment, sponsorship, recording usage, and revoking sessions. This prevents spoofed implementations until real external dependencies exist.
+- **Smart Account Scaffolding:** as of Phase 4 (in progress) `SmartAccountService` implements configuration discovery and counterfactual account derivation against the pinned canonical v0.7.0 factory. Sponsorship and session operations still fail closed (`NotSupportedException`, or `false` for quota), preventing spoofed implementations until a paymaster, bundler, and audited permissions module exist. See the Phase 4 section for detail.
 - **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (155 passing), `npm test` in gateway (11 passing) plus `npm run build` (clean), `npm test` in EVM contracts (24 passing).
 
 - **Phase 3 Acceptance:** ✅ **VERIFIED** — `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` exited 0 on
@@ -400,7 +400,7 @@ The repository now contains a structurally verified foundation for agentic comme
   - *Boundary clarifications:* The acceptance test simulates a real local wallet lifecycle via a Hardhat TypeScript script driving EVM transactions; it is *not* a browser wallet/UI E2E test and does not require MetaMask or any browser extension. It verifies database projections against actual on-chain transaction hashes, ensuring true idempotency and the absence of NUL byte errors. It does not use Smart Accounts or paymasters yet.
   - *Limitations regarding reorg rollback:* The current worker implementation tracks a safe head and polls periodically to prevent simple fork discrepancies, but it does *not* explicitly support rolling back state (dropping `AgenticJobProjection` records) if a chain reorganization occurs deeper than the `MinimumConfirmations` configuration. In a deep reorg scenario, manual database intervention may be required.
 **Fixture-Only or Blocked:**
-- **Smart Account Infrastructure:** True ERC-4337 dependencies (paymaster, bundler, session keys) remain stubbed and unconfigured.
+- **Smart Account Infrastructure:** the canonical v0.7.0 EntryPoint and account factory are deployed and account derivation works, but paymaster, bundler, and session keys remain unconfigured, so no UserOperation can be submitted.
 
 ### Known Limitations: Reorg Recovery
 
@@ -456,16 +456,54 @@ Gate: an unauthenticated paid request returns 402, a valid payment returns the d
 
 Gate: a normal wallet completes the local procurement lifecycle before smart-account abstraction is required.
 
-### Phase 4 — ERC-4337 user experience
+### Phase 4 — ERC-4337 user experience [IN PROGRESS]
 
-- integrate smart-account creation/discovery through a pinned established stack;
-- add bundler and paymaster clients;
-- batch approval plus funding;
-- enforce sponsorship quotas and simulation;
-- add explicit fallback and permission revocation;
-- add constrained session permissions only with an audited compatible module.
+- ✅ integrate smart-account creation/discovery through a pinned established stack;
+- ⬜ add bundler and paymaster clients;
+- ⬜ batch approval plus funding;
+- ⬜ enforce sponsorship quotas and simulation;
+- ⬜ add explicit fallback and permission revocation;
+- ⬜ add constrained session permissions only with an audited compatible module.
 
-Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail.
+Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail. **The gate is not met** — no bundler or paymaster exists, so neither a sponsored nor a user-paid UserOperation flow can run yet.
+
+#### Status of the pinned stack
+
+The canonical `@account-abstraction/contracts` **v0.7.0** package is a pinned dependency of
+`contracts/evm`. Both on-chain components are the canonical implementations, deployed unmodified:
+
+| Component | Contract | Notes |
+|-----------|----------|-------|
+| EntryPoint | `EntryPointFixture` | Bare subclass of canonical `EntryPoint`, no overrides. Despite the name, **not** a mock. |
+| Account factory | `CanonicalSimpleAccountFactory` | Bare subclass of canonical `SimpleAccountFactory`. |
+
+Both are declared as local subclasses solely because Hardhat does not emit artifacts for
+`node_modules` sources. Neither copies nor reimplements EntryPoint, as the plan requires.
+`SimpleAccount`/`SimpleAccountFactory` are the ERC-4337 *reference* account implementation,
+appropriate for local development; **a production deployment must pin an audited account
+implementation instead.**
+
+`SmartAccountService` now implements:
+
+- `IsConfiguredAsync` — true only for an EVM chain with both an EntryPoint and an account factory
+  in its manifest plus a usable RPC endpoint; fail-closed otherwise (an EntryPoint alone is not
+  enough).
+- `GetOrDeployAccountAsync` — derives the account address from the factory's
+  `getAddress(owner, salt)` and reports whether it is already deployed.
+
+Under ERC-4337 an account address is deterministic and usable before deployment, so returning the
+counterfactual address is correct rather than a stand-in. Actual deployment occurs when the first
+UserOperation carrying `initCode` is submitted through a bundler — **no bundler is configured, so
+nothing in this codebase submits UserOperations.**
+
+Still fail-closed and throwing `NotSupportedException`: `RecordSponsorshipUsageAsync`,
+`RevokeSessionPermissionsAsync`. `HasSufficientSponsorshipQuotaAsync` returns `false` because no
+paymaster is deployed.
+
+Verified against a live local chain: for owner `0xf39Fd6e5…92266` on the deployed factory, the
+service derived `0x93e957812b6ce6e7100b0B743F39376838bE9920`, matching a raw `eth_call` to
+`getAddress(address,uint256)` (selector `0x8cb84e18`) exactly. Unit tests cover the fail-closed
+gating; the derivation itself was confirmed against the real deployed factory, not a stub.
 
 ### Phase 5 — ERC-7683 cross-chain path
 

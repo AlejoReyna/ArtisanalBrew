@@ -28,6 +28,7 @@ The `AgenticJobProjection` previously did not have a robust optimistic concurren
 
 ## 6. Smart Account Scaffolding
 - **Solution:** Maintained the smart account fail-closed implementation in `SmartAccountService`. Ensured `SmartAccountServiceTests.cs` correctly verified that the scaffolding throws `NotSupportedException` for all methods, successfully preventing spoofed transactions until true ERC-4337 dependencies exist.
+  *Updated in Phase 4:* configuration discovery and counterfactual account derivation are now implemented against the pinned canonical v0.7.0 factory. Sponsorship and session operations remain fail-closed. See `docs/agentic-commerce-stack-plan.md` § Phase 4.
 
 ## 7. Reorg Limitations Documentation
 - **Solution:** Explicitly documented the missing full reorg-rollback functionality in `docs/agentic-commerce-stack-plan.md`, clarifying that while confirmation depth prevents ephemeral indexing, manual intervention is needed if a deep reorg occurs until block-header validation and inverse applicators are implemented.
