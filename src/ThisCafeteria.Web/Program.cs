@@ -130,6 +130,7 @@ builder.Services.AddSingleton(builder.Configuration
     .GetSection(SponsorshipPolicyOptions.SectionName)
     .Get<SponsorshipPolicyOptions>() ?? new SponsorshipPolicyOptions());
 builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>();
+builder.Services.AddScoped<IUserOperationSimulator, UserOperationSimulator>();
 builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
 
 builder.Services.AddApplication();

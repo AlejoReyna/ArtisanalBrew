@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {SimpleAccountFactory} from "@account-abstraction/contracts/samples/SimpleAccountFactory.sol";
 import {VerifyingPaymaster} from "@account-abstraction/contracts/samples/VerifyingPaymaster.sol";
+import {EntryPointSimulations} from "@account-abstraction/contracts/core/EntryPointSimulations.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 // Canonical ERC-4337 v0.7.0 account factory, deployed unmodified.
@@ -30,3 +31,15 @@ contract CanonicalVerifyingPaymaster is VerifyingPaymaster {
         VerifyingPaymaster(entryPoint_, verifyingSigner_)
     {}
 }
+
+// Canonical ERC-4337 v0.7.0 EntryPointSimulations, deployed unmodified.
+//
+// This contract is declared locally only so Hardhat compiles it and emits an artifact carrying its
+// deployed bytecode. It is NEVER deployed on any chain, local or public — its own constructor
+// refuses after block 100, and the upstream comment is explicit that "this contract should never
+// be deployed on-chain". Its bytecode is used only as an `eth_call` state override: a caller can
+// substitute it for the real EntryPoint's code for the duration of a single read-only call, run
+// `simulateHandleOp`, and get back real validation/execution gas figures without ever touching
+// chain state or requiring a deployment. See UserOperationSimulator (Infrastructure) for the C#
+// side of this.
+contract CanonicalEntryPointSimulations is EntryPointSimulations {}

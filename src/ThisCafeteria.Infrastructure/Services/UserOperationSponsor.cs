@@ -17,10 +17,19 @@ namespace ThisCafeteria.Infrastructure.Services;
 /// (<c>getHash(userOp, validUntil, validAfter)</c>) rather than reimplemented here. Reimplementing
 /// v0.7 hashing would produce something that agrees with itself and nothing else; asking the
 /// contract means a mismatch surfaces as a rejected signature instead of a silent divergence.
+///
+/// Cost is likewise never accepted from the caller. <see cref="IUserOperationSimulator"/> runs the
+/// operation through the canonical EntryPoint's own gas simulation to get the account's base cost
+/// in wei; the paymaster's own validation/postOp overhead (a known quantity from configuration) is
+/// added on top, priced at the operation's own maxFeePerGas. Simulation happens with an empty
+/// paymasterAndData because the paymaster's own signature does not exist yet at this point — it is
+/// what this method is about to produce — so the paymaster's overhead is estimated additively
+/// rather than measured by a second simulation with a fabricated signature.
 /// </summary>
 public sealed class UserOperationSponsor(
     IChainRegistry chains,
     ISponsorshipPolicyService policy,
+    IUserOperationSimulator simulator,
     SponsorshipPolicyOptions options,
     TimeProvider timeProvider,
     ILogger<UserOperationSponsor> logger) : IUserOperationSponsor
@@ -66,9 +75,32 @@ public sealed class UserOperationSponsor(
             return SponsorshipSignature.Deny(SponsorshipDenialReason.NotConfigured, $"Chain '{operation.ChainKey}' has no configured paymaster.");
         }
 
-        // Cost is derived from gas, never taken from the caller: a budget enforced against a
-        // self-reported number is advisory, not a control.
-        var costUsd = EstimateCostUsd(operation.EstimatedGas, operation.GasPriceWei);
+        var simulation = await simulator.SimulateAsync(new UserOperationSimulationRequest
+        {
+            ChainKey = operation.ChainKey,
+            Sender = operation.Sender,
+            Nonce = operation.Nonce,
+            InitCode = operation.InitCode,
+            CallData = operation.CallData,
+            AccountGasLimits = operation.AccountGasLimits,
+            PreVerificationGas = operation.PreVerificationGas,
+            GasFees = operation.GasFees
+        }, cancellationToken).ConfigureAwait(false);
+
+        if (!simulation.Success)
+        {
+            logger.LogInformation(
+                "Refusing to sponsor operation for {OwnerAddress} on {ChainKey}: simulation failed - {Reason}",
+                operation.OwnerAddress, operation.ChainKey, simulation.FailureReason);
+            return SponsorshipSignature.Deny(SponsorshipDenialReason.SimulationFailed, simulation.FailureReason);
+        }
+
+        // Cost is derived from the EntryPoint's own simulated charge plus the paymaster's known
+        // gas overhead, never taken from the caller: a budget enforced against a self-reported
+        // number is advisory, not a control.
+        var maxFeePerGasWei = UnpackLow128(operation.GasFees);
+        var paymasterOverheadWei = (options.PaymasterVerificationGasLimit + options.PaymasterPostOpGasLimit) * maxFeePerGasWei;
+        var costUsd = WeiToUsd(simulation.PaidWei + paymasterOverheadWei);
 
         var decision = await policy.EvaluateAsync(new SponsorshipRequest
         {
@@ -133,12 +165,19 @@ public sealed class UserOperationSponsor(
         };
     }
 
-    /// <summary>gas * gasPrice (wei) -> ether -> USD.</summary>
-    private decimal EstimateCostUsd(BigInteger estimatedGas, BigInteger gasPriceWei)
+    /// <summary>wei -> ether -> USD.</summary>
+    private decimal WeiToUsd(BigInteger wei)
     {
-        if (estimatedGas <= BigInteger.Zero || gasPriceWei <= BigInteger.Zero) return 0m;
-        var weiCost = estimatedGas * gasPriceWei;
-        return (decimal)weiCost / WeiPerEther * options.NativeCurrencyUsdRate;
+        if (wei <= BigInteger.Zero) return 0m;
+        return (decimal)wei / WeiPerEther * options.NativeCurrencyUsdRate;
+    }
+
+    /// <summary>Low 128 bits of a packed bytes32 — this is where v0.7 stores maxFeePerGas (UserOperationLib.unpackMaxFeePerGas).</summary>
+    private static BigInteger UnpackLow128(string gasFeesHex)
+    {
+        var bytes = HexToBytes32(gasFeesHex);
+        var low16 = bytes[16..];
+        return new BigInteger(low16, isUnsigned: true, isBigEndian: true);
     }
 
     /// <summary>

@@ -20,6 +20,14 @@
     <ProjectReference Include="..\ThisCafeteria.Domain\ThisCafeteria.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Canonical ERC-4337 EntryPointSimulations deployed bytecode, used only as an eth_call
+         state override for gas simulation. Regenerate via
+         contracts/evm/scripts/export-entrypoint-simulations.ts when the pinned
+         @account-abstraction/contracts version changes. -->
+    <EmbeddedResource Include="Resources\EntryPointSimulations.generated.json" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

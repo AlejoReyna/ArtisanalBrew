@@ -9,6 +9,11 @@ namespace ThisCafeteria.Application.Services;
 /// possible to obtain a paymaster signature without the target and selector having been checked —
 /// the wrong-target/wrong-selector hole is closed by the shape of the type rather than by a
 /// comment asking callers to be careful.
+///
+/// There is deliberately no cost or gas-estimate field here. Cost is derived by
+/// <c>UserOperationSponsor</c> from <see cref="IUserOperationSimulator"/> — the canonical
+/// EntryPoint's own gas simulation — rather than accepted from the caller. A budget enforced
+/// against a self-reported number is advisory, not a control.
 /// </summary>
 public sealed record SponsoredUserOperation
 {
@@ -35,12 +40,6 @@ public sealed record SponsoredUserOperation
 
     /// <summary>4-byte selector of the inner call. Required — see the type remarks.</summary>
     public required string Selector { get; init; }
-
-    /// <summary>Total gas the operation is expected to consume, used to price sponsorship.</summary>
-    public System.Numerics.BigInteger EstimatedGas { get; init; }
-
-    /// <summary>Effective gas price in wei, used to price sponsorship.</summary>
-    public System.Numerics.BigInteger GasPriceWei { get; init; }
 }
 
 public sealed record SponsorshipSignature

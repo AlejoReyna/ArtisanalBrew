@@ -1,10 +1,14 @@
 /**
- * Cross-stack proof: the .NET UserOperationSponsor produces a paymaster signature, and the
- * canonical on-chain VerifyingPaymaster must accept it.
+ * Cross-stack proof: the .NET UserOperationSponsor (using the real UserOperationSimulator, not a
+ * stub) measures real gas cost via the canonical EntryPoint's own simulation, prices it, asks the
+ * sponsorship policy, and produces a paymaster signature that the canonical on-chain
+ * VerifyingPaymaster must accept.
  *
- * This is deliberately not a self-consistent test. The hash is computed by the Solidity paymaster,
- * the signature is produced by C#, and the EntryPoint decides. A divergence between the two stacks
- * shows up as a rejected operation rather than two components agreeing with each other.
+ * This is deliberately not a self-consistent test. The gas cost is measured by the Solidity
+ * EntryPoint's own simulateHandleOp, the sponsorship hash is computed by the Solidity paymaster,
+ * the signature is produced by C#, and the EntryPoint decides whether to accept it. A divergence
+ * anywhere in that chain shows up as a rejected operation rather than components agreeing with
+ * each other.
  */
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -65,9 +69,10 @@ await beneficiary.writeContract({
 const opDescription = {
   sender, nonce: nonce.toString(), initCode, callData,
   accountGasLimits, preVerificationGas: preVerificationGas.toString(), gasFees,
-  // The inner call's target/selector are what the sponsorship policy checks.
+  // The inner call's target/selector are what the sponsorship policy checks. There is
+  // deliberately no cost/gas-estimate field here: UserOperationSponsor derives it itself by
+  // calling the real UserOperationSimulator against this same live node.
   target, selector,
-  estimatedGas: "2000000", gasPriceWei: "10000000000",
   entryPoint, accountFactory: factory, paymaster
 };
 
@@ -95,6 +100,12 @@ console.log("--- case 2: approved sponsorship, submitted on-chain ---");
 const approved = askDotnetSponsor("approve");
 console.log(`approved=${approved.approved} costUsd=${approved.costUsd}`);
 if (!approved.approved) throw new Error(`FAIL: policy denied a valid request: ${approved.reason} ${approved.detail}`);
+// Sanity bound on a real measured cost, not proof of an exact value (real gas usage can shift
+// with compiler/version changes) — this guards against a stub silently creeping back in place of
+// genuine simulation, which would either produce 0 or an implausibly large number.
+if (!(approved.costUsd > 0 && approved.costUsd < 1000)) {
+  throw new Error(`FAIL: costUsd=${approved.costUsd} is not a plausible measured cost`);
+}
 
 const op = {
   sender, nonce, initCode, callData, accountGasLimits, preVerificationGas, gasFees,

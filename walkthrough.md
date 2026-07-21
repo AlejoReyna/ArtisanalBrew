@@ -144,7 +144,7 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 187 | ✅ Passed |
+| .NET unit tests | 192 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
 | Gateway (`tsc` build) | — | ✅ Succeeded |
 | EVM contracts (Hardhat) | 29 | ✅ Passed |
@@ -186,14 +186,16 @@ own job-id sequence; rows under earlier escrow addresses are retained history, n
 
 | Verified by | Scope |
 |-------------|-------|
-| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety — in-memory and SQLite, not a live chain. |
-| Hardhat contract tests | Solidity escrow/resolver logic in isolation. |
+| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety, sponsorship policy/signer/simulator fail-closed gating — in-memory, SQLite, and stubbed chains; not a live chain. |
+| Hardhat contract tests | Solidity escrow/resolver/ERC-4337 logic in isolation. |
 | Acceptance harness | Real EVM transactions → worker → PostgreSQL projections, driven by **Hardhat-controlled local wallets**. |
+| Cross-stack ERC-4337 scripts | `crossstack-sponsor-check.ts` and `simulation-recipe-check.ts`: real C# `UserOperationSimulator`/`UserOperationSponsor` classes driven against a live Hardhat node, producing a signature the on-chain canonical paymaster actually accepts. Not part of the automated test suite — run manually against a live node. |
 | Procurement Lab UI | Visualization of projections only; not exercised by any automated test. |
 
-**Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, ERC-4337
-smart-account or paymaster paths, deep-reorg rollback, and automatic re-application of deferred
-events. No browser extension is involved at any point.
+**Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, a real
+bundler (the cross-stack scripts call `EntryPoint.handleOps` directly from a funded EOA — there is
+no mempool, validation-rule enforcement, or gas estimation service), deep-reorg rollback, and
+automatic re-application of deferred events. No browser extension is involved at any point.
 
 ### Known Limitations
 
@@ -202,13 +204,12 @@ events. No browser extension is involved at any point.
   confirmed events. Manual database intervention is required in that scenario.
 - **Deferred-event re-application:** Durably recorded deferred events are not yet automatically
   retried. Re-application is a Phase 4 concern.
-- **Acceptance isolation is self-attested, not enforced.** The harness accepts `ACCEPTANCE_ISOLATED=1`
-  or the `contracts/evm/.acceptance-isolated` marker as proof of isolation, and its safe-name list
-  includes `this_cafeteria` — the ordinary development database. It does **not** verify that the
-  PostgreSQL container, database, or connection is genuinely disposable. `ACCEPTANCE_ISOLATED=1
-  RESET_DB=1` will therefore drop the normal dev database. Treat the isolation gate as a guard
-  against accidents, not against misconfiguration. (Step 9b's purge is always scoped by contract
-  address and is unaffected by this.)
+- **Acceptance isolation now fails closed against the dev database.** `RESET_DB=1` only drops
+  a database whose name matches `this_cafeteria_test`/`this_cafeteria_acceptance` — the ordinary
+  `this_cafeteria` dev database is refused even with `ACCEPTANCE_ISOLATED=1` set, since an
+  operator-set flag is not evidence that a *shared* database is disposable. Verified: the
+  destructive path exits 1 and refuses when pointed at `this_cafeteria`. (Step 9b's own contract
+  purge is always scoped by address regardless.)
 - **Invalid-order policy is intentionally asymmetric.** `BudgetSet` and `JobFunded` arriving after a
   job leaves `Open` are marked applied and ignored rather than deferred, because the terminal
   projection already holds the authoritative budget. Every other out-of-order event is deferred.
@@ -216,3 +217,12 @@ events. No browser extension is involved at any point.
 - **Provider assignment coverage:** the main lifecycle proves `setProvider`. The rejection and
   expiry variants still create jobs with the provider supplied inline, which exercises the
   create-with-provider form rather than the two-step assignment.
+- **No bundler.** Sponsorship signing and gas simulation are real and proven on-chain, but
+  submission still goes through `EntryPoint.handleOps` called directly by a funded EOA. There is
+  no mempool, no `eth_sendUserOperation`, no bundler validation rules, and no code path that lets a
+  user with an empty wallet actually get an operation included — which is the entire point of
+  sponsorship. Closing this requires a bundler (Alto, Rundler, or a hosted provider).
+- **`NativeCurrencyUsdRate` is a static configured number, not a live price oracle.** The USD
+  budget is therefore only as accurate as that configured value; on a real chain with a moving gas
+  price and asset price, the effective USD cost of sponsorship will drift from what the grant
+  assumes.

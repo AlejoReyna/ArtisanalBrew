@@ -36,7 +36,14 @@ public enum SponsorshipDenialReason
     DisallowedSelector,
 
     /// <summary>The request was malformed (e.g. negative cost, missing owner).</summary>
-    InvalidRequest
+    InvalidRequest,
+
+    /// <summary>
+    /// Gas simulation against the canonical EntryPoint failed or reverted — a real validation
+    /// failure (e.g. bad nonce, expired window), not a signature mismatch. An unsimulated
+    /// operation has no trustworthy cost, so it cannot be sponsored.
+    /// </summary>
+    SimulationFailed
 }
 
 /// <summary>A sponsorship request. Target/selector are optional for coarse budget-only checks.</summary>

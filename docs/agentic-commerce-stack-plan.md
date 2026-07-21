@@ -461,7 +461,7 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
 - 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
 - ⬜ batch approval plus funding;
-- 🟡 enforce sponsorship quotas and simulation — **quota engine + signer implemented and proven cross-stack; no simulation**;
+- ✅ enforce sponsorship quotas and simulation — quota engine, signer, and canonical-EntryPoint gas simulation implemented and proven cross-stack (native-USD pricing is still a static config value, not an oracle);
 - 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
 - ⬜ add constrained session permissions only with an audited compatible module.
 
@@ -573,44 +573,73 @@ matching, budget accumulation to exhaustion, and audit-row correctness.
 #### Sponsorship signer
 
 `IUserOperationSponsor` / `UserOperationSponsor` turns a policy verdict into a signature the
-canonical `VerifyingPaymaster` accepts on-chain. It prices the operation from
-`gas × gasPrice × NativeCurrencyUsdRate`, asks the policy with target and selector populated, and
-signs **only** on approval.
+canonical `VerifyingPaymaster` accepts on-chain. It asks the policy with target and selector
+populated, and signs **only** on approval.
 
 The signed hash comes from the paymaster contract's own `getHash(userOp, validUntil, validAfter)`
 rather than a C# reimplementation of v0.7 hashing. A reimplementation would agree with itself and
 nothing else; asking the contract means any divergence surfaces as a rejected operation.
 
-**The wrong-target/wrong-selector hole is now closed structurally.**
+**The wrong-target/wrong-selector hole is closed structurally.**
 `ISmartAccountService.HasSufficientSponsorshipQuotaAsync` carries neither target nor selector, so it
 can only check budget and validity. Rather than documenting that as a caution,
 `SponsoredUserOperation.TargetAddress` and `.Selector` are `required` — it is not possible to obtain
-a paymaster signature without both having been checked. Cost is likewise derived from gas rather
-than accepted from the caller: a budget enforced against a self-reported number is advisory, not a
-control.
+a paymaster signature without both having been checked.
 
-**Fail-closed:** no signer key, no native-USD rate, disabled policy, unknown chain, or any policy
-denial all yield no signature.
+**Fail-closed:** no signer key, no native-USD rate, disabled policy, unknown chain, failed
+simulation, or any policy denial all yield no signature.
 
-**Verified cross-stack**, not only by unit tests
-(`contracts/evm/scripts/crossstack-sponsor-check.ts`):
+#### Gas simulation
 
-| Case | Result |
-|------|--------|
-| disallowed target | policy denied (`DisallowedTarget`), `paymasterAndData` empty — no signature produced |
-| approved sponsorship | C#-produced signature **accepted by the on-chain paymaster**; account deployed at `0x93e9…9920`, account deposit spent `0` (fully sponsored), paymaster deposit reduced by 459,325,777,348,716 wei |
+Cost is **never** accepted from the caller. `IUserOperationSimulator` / `UserOperationSimulator`
+measures the real cost of an operation by calling the canonical EntryPoint's own
+`simulateHandleOp` — via an `eth_call` **state override** that substitutes the canonical
+`EntryPointSimulations` bytecode (from the same pinned `@account-abstraction/contracts@0.7.0`
+package, exported unmodified — see `CanonicalEntryPointSimulations` in
+`AccountAbstractionCanonical.sol`) for the real EntryPoint's code, for the duration of one
+read-only call. No transaction is broadcast, nothing is deployed, and no chain state changes; the
+upstream contract's own constructor refuses if it is ever actually deployed.
 
-Cost arithmetic confirmed end to end: 2,000,000 gas × 10 gwei = 0.02 ETH → **60 USD** at a
-3000 USD/ETH rate.
+This closes the gap this document previously flagged: `EstimatedGas`/`GasPriceWei` no longer exist
+as fields a caller can supply. `UserOperationSponsor` calls the simulator to get the account's
+real base cost in wei (`paid`), adds the paymaster's own validation/postOp gas overhead (a known
+quantity from configuration, priced at the operation's own `maxFeePerGas`), and only then converts
+to USD via `NativeCurrencyUsdRate`.
+
+Two implementation notes worth recording:
+
+- The signature used during simulation cannot be the real one — the operation has not been signed
+  yet. It is a syntactically valid ECDSA signature over a fixed placeholder message, signed by a
+  fixed throwaway key that controls nothing. It must be well-formed rather than empty:
+  `EntryPointSimulations` tolerates a signature that *fails* validation (`SIG_VALIDATION_FAILED`
+  is a return value, not a revert) but an empty/malformed one makes ECDSA recovery itself revert
+  ("AA23 reverted"), aborting the simulation before any gas figure is produced.
+- Simulation runs with an empty `paymasterAndData`, because the paymaster's own signature does not
+  exist yet at simulation time — it is what `UserOperationSponsor` is about to produce. The
+  paymaster's overhead is therefore estimated additively from configuration rather than measured
+  by a second simulation with a fabricated paymaster signature.
+
+**Verified against a live chain**, not only by unit tests:
+
+- `contracts/evm/scripts/simulation-recipe-check.ts` proves the raw `eth_call` state-override
+  recipe in isolation (a counterfactual, undeployed account, `preOpGas`/`paid` returned with no
+  transaction broadcast).
+- `contracts/evm/scripts/crossstack-sponsor-check.ts` runs the **real** `UserOperationSimulator`
+  class (not a stub) inside the full sponsor pipeline: simulate → price → policy → sign → submit.
+  The signature produced from a **real simulated cost** (`costUsd=22.252254`, derived from actual
+  measured gas, not asserted) was accepted by the on-chain paymaster; account deployed, account
+  deposit spent `0` (fully sponsored), paymaster deposit reduced accordingly.
 
 **Key handling:** `VerifyingSignerPrivateKey` authorises spending gas. It is configuration-based and
 intended for local development only — never logged, never committed. A real deployment must source
 it from a secret store or KMS.
 
-**Still missing:** simulation. There is no `eth_estimateUserOperationGas` /
-`pm_sponsorUserOperation` pre-flight, so `EstimatedGas` and `GasPriceWei` come from the caller
-rather than from a simulated operation — the conversion to USD is enforced, but those inputs are
-not yet validated. `NativeCurrencyUsdRate` is a static configured number, not an oracle.
+**Still missing:** `NativeCurrencyUsdRate` is a static configured number, not a live oracle, so on
+a real chain the USD budget drifts with the native asset's actual price. There is also no
+`eth_estimateUserOperationGas`/bundler-style gas-limit *estimation* — the caller still supplies
+`AccountGasLimits`/`PreVerificationGas`/`GasFees` as part of constructing the operation (which any
+UserOperation needs regardless, to be signed), and simulation measures the real cost of running
+with those limits rather than deriving suggested limits from scratch.
 
 ### Phase 5 — ERC-7683 cross-chain path
 

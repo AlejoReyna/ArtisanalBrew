@@ -9,10 +9,13 @@ using Xunit;
 namespace ThisCafeteria.UnitTests;
 
 /// <summary>
-/// Fail-closed behaviour of the sponsorship signer. Every case here returns before any RPC call,
-/// so these run without a chain; the happy path is proven cross-stack against the real on-chain
-/// paymaster by contracts/evm/scripts/crossstack-sponsor-check.ts, since a signature that only
-/// this codebase agrees with would prove nothing.
+/// Fail-closed behaviour of the sponsorship signer. Every case here runs against a stub simulator,
+/// so it exercises the sponsor's own logic (cost composition, policy gating, refusal ordering)
+/// without a chain. The recipe the stub stands in for — eth_call state override against the
+/// canonical EntryPoint — is proven for real by contracts/evm/scripts/simulation-recipe-check.ts,
+/// and the full sponsor happy path (simulate -> policy -> sign -> on-chain accept) is proven
+/// cross-stack by contracts/evm/scripts/crossstack-sponsor-check.ts, since a signature or a cost
+/// figure that only this codebase agrees with would prove nothing.
 /// </summary>
 public class UserOperationSponsorTests
 {
@@ -23,6 +26,12 @@ public class UserOperationSponsorTests
     // Hardhat's first well-known development account. This key is published in Hardhat's own
     // documentation and controls nothing outside a local test node - it is not a secret.
     private const string DevKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+    // GasFees packs maxPriorityFeePerGas (high 128 bits) | maxFeePerGas (low 128 bits) = 10 gwei.
+    // Default PaymasterVerificationGasLimit (500,000) + PaymasterPostOpGasLimit (200,000) at that
+    // price is 0.007 ETH of paymaster overhead, priced below alongside the simulated account cost.
+    private const string GasFeesTenGwei = "0x0000000000000000000000003b9aca00000000000000000000000002540be400";
+    private const decimal PaymasterOverheadEth = 0.007m; // 700,000 gas * 10 gwei
 
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 7, 21, 12, 0, 0, TimeSpan.Zero));
 
@@ -38,14 +47,27 @@ public class UserOperationSponsorTests
         public ChainDefinition GetRequired(string key) => TryGet(key, out var d) ? d : throw new KeyNotFoundException(key);
     }
 
+    private sealed class StubSimulator(UserOperationSimulationResult result) : IUserOperationSimulator
+    {
+        public UserOperationSimulationRequest? SeenRequest { get; private set; }
+
+        public Task<UserOperationSimulationResult> SimulateAsync(UserOperationSimulationRequest request, CancellationToken cancellationToken = default)
+        {
+            SeenRequest = request;
+            return Task.FromResult(result);
+        }
+    }
+
     private sealed class StubPolicy(SponsorshipDecision decision) : ISponsorshipPolicyService
     {
+        public bool Invoked { get; private set; }
         public decimal? SeenCostUsd { get; private set; }
         public string? SeenTarget { get; private set; }
         public string? SeenSelector { get; private set; }
 
         public Task<SponsorshipDecision> EvaluateAsync(SponsorshipRequest request, CancellationToken cancellationToken = default)
         {
+            Invoked = true;
             SeenCostUsd = request.EstimatedCostUsd;
             SeenTarget = request.TargetAddress;
             SeenSelector = request.Selector;
@@ -80,10 +102,21 @@ public class UserOperationSponsorTests
         NativeCurrencyUsdRate = 3000m
     };
 
-    private UserOperationSponsor CreateSponsor(SponsorshipPolicyOptions options, ISponsorshipPolicyService policy) =>
-        new(new StubChainRegistry(PaymasterChain), policy, options, _time, NullLogger<UserOperationSponsor>.Instance);
+    private static readonly UserOperationSimulationResult SuccessfulSimulation = new()
+    {
+        Success = true,
+        PreOpGas = 300_000,
+        PaidWei = 13_000_000_000_000_000 // 0.013 ETH: + 0.007 ETH paymaster overhead = 0.02 ETH = $60 @ $3000/ETH
+    };
 
-    private static SponsoredUserOperation Operation(System.Numerics.BigInteger? gas = null, System.Numerics.BigInteger? gasPrice = null) => new()
+    private UserOperationSponsor CreateSponsor(
+        SponsorshipPolicyOptions options,
+        ISponsorshipPolicyService policy,
+        IUserOperationSimulator? simulator = null) =>
+        new(new StubChainRegistry(PaymasterChain), policy, simulator ?? new StubSimulator(SuccessfulSimulation),
+            options, _time, NullLogger<UserOperationSponsor>.Instance);
+
+    private static SponsoredUserOperation Operation() => new()
     {
         ChainKey = ChainKey,
         OwnerAddress = Owner,
@@ -93,11 +126,9 @@ public class UserOperationSponsorTests
         CallData = "0xb61d27f6",
         AccountGasLimits = "0x000000000000000000000000000f4240000000000000000000000000000f4240",
         PreVerificationGas = 100_000,
-        GasFees = "0x0000000000000000000000003b9aca00000000000000000000000002540be400",
+        GasFees = GasFeesTenGwei,
         TargetAddress = Target,
-        Selector = Selector,
-        EstimatedGas = gas ?? 2_000_000,
-        GasPriceWei = gasPrice ?? 10_000_000_000
+        Selector = Selector
     };
 
     [Fact]
@@ -140,6 +171,36 @@ public class UserOperationSponsorTests
     }
 
     [Fact]
+    public async Task Sponsor_WhenSimulationFails_RefusesToSignWithoutConsultingPolicy()
+    {
+        var simulator = new StubSimulator(UserOperationSimulationResult.Failure("AA21 didn't pay prefund"));
+        var policy = new StubPolicy(SponsorshipDecision.Approve(100m));
+
+        var result = await CreateSponsor(SigningOptions, policy, simulator).SponsorAsync(Operation());
+
+        result.Approved.Should().BeFalse();
+        result.Reason.Should().Be(SponsorshipDenialReason.SimulationFailed);
+        result.Detail.Should().Contain("AA21");
+        result.PaymasterAndData.Should().BeEmpty();
+        policy.Invoked.Should().BeFalse("an unsimulated operation has no trustworthy cost, so the policy must never be asked");
+    }
+
+    [Fact]
+    public async Task Sponsor_PassesRawOperationFieldsToSimulator()
+    {
+        var simulator = new StubSimulator(SuccessfulSimulation);
+        var policy = new StubPolicy(SponsorshipDecision.Deny(SponsorshipDenialReason.OverBudget, "stop before signing"));
+        var operation = Operation();
+
+        await CreateSponsor(SigningOptions, policy, simulator).SponsorAsync(operation);
+
+        simulator.SeenRequest.Should().NotBeNull();
+        simulator.SeenRequest!.Sender.Should().Be(operation.Sender);
+        simulator.SeenRequest.ChainKey.Should().Be(operation.ChainKey);
+        simulator.SeenRequest.GasFees.Should().Be(operation.GasFees);
+    }
+
+    [Fact]
     public async Task Sponsor_WhenPolicyDenies_ProducesNoSignature()
     {
         var policy = new StubPolicy(SponsorshipDecision.Deny(SponsorshipDenialReason.OverBudget, "no budget"));
@@ -152,14 +213,26 @@ public class UserOperationSponsorTests
     }
 
     [Fact]
-    public async Task Sponsor_PricesGasItself_RatherThanTrustingCaller()
+    public async Task Sponsor_PricesFromSimulationPlusPaymasterOverhead_RatherThanTrustingCaller()
     {
         var policy = new StubPolicy(SponsorshipDecision.Deny(SponsorshipDenialReason.OverBudget, "stop before RPC"));
 
-        // 2,000,000 gas * 10 gwei = 0.02 ETH; at 3000 USD/ETH that is 60 USD.
+        // Simulated 0.013 ETH + 0.007 ETH paymaster overhead = 0.02 ETH = 60 USD at 3000 USD/ETH.
         await CreateSponsor(SigningOptions, policy).SponsorAsync(Operation());
 
         policy.SeenCostUsd.Should().Be(60m);
+    }
+
+    [Fact]
+    public async Task Sponsor_ZeroSimulatedCost_StillPricesPaymasterOverhead()
+    {
+        var simulator = new StubSimulator(SuccessfulSimulation with { PaidWei = 0 });
+        var policy = new StubPolicy(SponsorshipDecision.Deny(SponsorshipDenialReason.OverBudget, "stop before RPC"));
+
+        // Only the paymaster's own overhead remains: 0.007 ETH * 3000 USD/ETH.
+        await CreateSponsor(SigningOptions, policy, simulator).SponsorAsync(Operation());
+
+        policy.SeenCostUsd.Should().Be(PaymasterOverheadEth * 3000m);
     }
 
     [Fact]
@@ -176,24 +249,16 @@ public class UserOperationSponsorTests
     }
 
     [Fact]
-    public async Task Sponsor_UnknownChain_RefusesToSign()
+    public async Task Sponsor_UnknownChain_RefusesToSignWithoutSimulating()
     {
+        var simulator = new StubSimulator(SuccessfulSimulation);
         var policy = new StubPolicy(SponsorshipDecision.Approve(100m));
 
-        var result = await CreateSponsor(SigningOptions, policy)
+        var result = await CreateSponsor(SigningOptions, policy, simulator)
             .SponsorAsync(Operation() with { ChainKey = "ethereum-sepolia" });
 
         result.Approved.Should().BeFalse();
         result.Reason.Should().Be(SponsorshipDenialReason.NotConfigured);
-    }
-
-    [Fact]
-    public async Task Sponsor_ZeroGas_PricesAtZero()
-    {
-        var policy = new StubPolicy(SponsorshipDecision.Deny(SponsorshipDenialReason.OverBudget, "stop before RPC"));
-
-        await CreateSponsor(SigningOptions, policy).SponsorAsync(Operation(gas: 0));
-
-        policy.SeenCostUsd.Should().Be(0m);
+        simulator.SeenRequest.Should().BeNull("an unconfigured chain must be rejected before simulation is attempted");
     }
 }
