@@ -9,13 +9,14 @@ Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 Branch `agent/enable-solana-multichain`, PR #54. All work below is pushed (check `git log` for the
 actual latest commit — this line rots faster than it gets updated).
 
-**Overall: ~75% of the whole plan.** Phase 0-3 complete and independently verified (see
+**Overall: ~78% of the whole plan.** Phase 0-3 complete and independently verified (see
 "Session handoff" evidence in `walkthrough.md` — do not trust older claims in that file without
 checking the commit that made them; several turned out to be false and had to be re-verified from
 scratch this session). Phase 4 is ~60% there (bundler blocked on a diagnosed external-tool issue,
-see below). **Phase 5's stated gate is now met and verified live, twice** — see its section further
-down for the full evidence and honest caveats (no quote-preview surface, solver is inline in the
-smoke test, not a standing service). Phase 6 untouched.
+see below). **Phase 5's stated gate is met and verified live**, and the solver is now a real
+standing `BackgroundService` (`CrossChainSolverWorker`), not inline script logic — see its section
+further down for the full evidence and honest caveats (no quote-preview surface; single
+source/destination pair only). Phase 6 untouched.
 
 ### What's true right now, proven not just claimed
 
@@ -98,20 +99,65 @@ trace. Don't mistake its presence for a passing proof; it isn't one.
 
 ### Recommended next step, in order of leverage
 
-1. **A real standing solver.** Phase 5's gate is proven, but the "solver" is inline script logic,
-   not a process that watches chains autonomously. This is the most valuable remaining Phase 5 gap
-   and doesn't depend on anything blocked.
-2. **Quote preview** (source/destination exchange-rate surface) — Phase 5's one remaining ⬜ item.
-3. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
+1. **Quote preview** (source/destination exchange-rate surface) — Phase 5's one remaining ⬜ item,
+   now that the solver is a real standing service (see below).
+2. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
    attempted this session) — it may use the standard `EntryPointSimulations` rather than a
    proprietary one. Alternative: skip local bundler testing entirely and defer to Base Sepolia,
    where a hosted bundler (Pimlico/Alchemy/Biconomy) simulates against the *real* canonical
    EntryPoint at its real address — exactly the case Alto's internals are built for. This is
    probably the better use of effort than continuing to fight Alto locally.
-4. Session-key permissions module (needs an audited implementation — don't build one).
-5. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts`/`two-node-crosschain-smoke.ts`
-   into CI (they need live Hardhat node(s) up first, unlike the rest of the suite — worth their own
-   CI job rather than folding into the normal `dotnet test`/`npm test` steps).
+3. Session-key permissions module (needs an audited implementation — don't build one).
+4. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts`/`two-node-crosschain-smoke.ts`/
+   `two-node-standing-solver-check.ts` into CI (they need live Hardhat node(s) — and for the last
+   one, a live `ThisCafeteria.Worker` process too — up first, unlike the rest of the suite; worth
+   their own CI job rather than folding into the normal `dotnet test`/`npm test` steps).
+5. Multi-pair solver support: `CrossChainSolverOptions` currently names exactly one
+   source/destination chain and resolver pair. A real deployment would want several.
+
+### Standing cross-chain solver (2026-07-21)
+
+`CrossChainSolverWorker` (in `ThisCafeteria.Worker`) is a real `BackgroundService` — not inline
+script logic — that autonomously watches a configured source chain's resolver, decodes and
+evaluates submitted intents, and fills approved ones on a configured destination chain.
+
+**A design point worth understanding**: `IntentSubmitted` only carries
+`(orderId, user, destinationChainId, amountIn)` — not the full order `fillIntent` needs. The worker
+recovers the full order by fetching the submitting transaction and **decoding its calldata**
+against `submitIntent`'s own ABI (`CrossChainIntentProvider`, using Nethereum's
+`FunctionCallDecoder.DecodeFunctionInput<T>(selector, rawInput)`), not from a side channel or a
+richer event. This is how solvers work in practice for many real intent protocols and avoids
+needing any off-chain coordination service.
+
+**Fail-closed** (`CrossChainSolverOptions`): idle unless `Enabled` and every chain/resolver/key
+field is set; an **empty token-pair allowlist denies every intent** rather than accepting anything
+that shows up; amount and output-ratio caps are enforced before ever spending gas.
+
+**Idempotent and crash-safe**: every evaluated intent — approved or denied — is recorded in
+`CrossChainSolverFill`, keyed uniquely on `(SourceChainKey, SourceResolverAddress, OrderId)`, so a
+restart never re-evaluates or double-fills. Before actually submitting `fillIntent`, the worker also
+queries the destination contract's own `isResolved(orderId)` directly — a defensive check for the
+case where a fill succeeded on-chain but the DB write recording it did not, which would otherwise
+cause the worker to attempt (and revert against) a duplicate fill on its next pass.
+
+**Verified live**, not just unit-tested: `contracts/evm/scripts/two-node-standing-solver-check.ts`
+deploys the same two-node setup as the smoke test, then submits intents and **only watches** — it
+never calls `fillIntent` itself. A real `ThisCafeteria.Worker` process, configured via
+`CrossChainSolver__*`/`Blockchain__Chains__*` environment variables, is started separately and left
+running. Confirmed at every layer: worker log lines showing autonomous evaluation and fill, direct
+`SELECT` against `CrossChainSolverFills` showing the recorded decisions and real fill tx hashes, and
+on-chain queries (`isResolved`, token balance) confirming the actual settlement. Both outcomes
+proven:
+- An approved intent, submitted **while the worker was already running**, was picked up and filled
+  within the poll interval with no script action.
+- An intent using a token pair outside the solver's allowlist was left correctly unfilled — the
+  destination balance never moved and the contract's `isResolved` stayed false.
+
+Test-only rows (`SourceChainKey = "arbitrumLocal"`) were deleted from the shared dev database after
+verification; nothing from this run was left behind.
+
+**Not yet built**: multi-pair support (see "Next" above), a quote-preview surface, and the fee/spread
+side of `MaxOutputBps` isn't exposed anywhere a user would see it before submitting an intent.
 
 ### Hard-won gotchas (avoid re-discovering these)
 
@@ -178,6 +224,22 @@ trace. Don't mistake its presence for a passing proof; it isn't one.
   own connection validator (`HHE708`) will throw a mismatch error at connect time — the network
   config's declared `chainId` must equal what the node actually reports, not what you wanted it to
   report.
+- **`ChainDefinition.MinimumConfirmations` defaults to 2, and reconciliation/solver workers compute
+  `safeHead = latest - MinimumConfirmations`.** Against a local test chain where nothing else is
+  producing blocks after your one transaction of interest, `safeHead` never reaches that
+  transaction's block, and the worker silently sits there re-checking its checkpoint forever with
+  no error and no log line beyond the very first "starting" message. This isn't a bug — the worker
+  is correctly waiting for confirmations that will never come. For an isolated local-only chain
+  where nothing else mines blocks, set `MinimumConfirmations=0` explicitly in that chain's
+  definition (e.g. `Blockchain__Chains__0__MinimumConfirmations=0` as an env var). Cost real
+  debugging time building the standing solver's live verification before the cause was obvious.
+- **A .NET background worker can pick up an ad-hoc pair of local EVM chains without touching the
+  manifest-loading system at all** — supply `Blockchain__Chains__N__*` (Key, Family=Evm,
+  EvmChainId, EvmChainIdHex, PublicRpcUrl, Enabled, MinimumConfirmations) directly as environment
+  variables. `ChainRegistry`'s own validation requires EVM chain IDs to be unique across configured
+  chains even if the underlying nodes actually share one (see the `--chain-id` gotcha above) — the
+  *configured* `EvmChainId` is a label your own code and Nethereum never check against the live
+  RPC's real `eth_chainId`, it only has to satisfy `ChainRegistry`'s own uniqueness constraint.
 
 ## Outcome
 
@@ -819,7 +881,8 @@ with those limits rather than deriving suggested limits from scratch.
 ### Phase 5 — ERC-7683 cross-chain path [GATE PROVEN — 2026-07-21]
 
 - ✅ create/sign/submit intent orders;
-- ✅ run local solver and verify destination settlement;
+- ✅ run local solver and verify destination settlement — **a real standing `BackgroundService`
+  (`CrossChainSolverWorker`), not inline script logic**; see its own section below;
 - ✅ enable escrow funding only after verified destination funds;
 - ✅ expiry test (unfilled intent leaves the job Open and is refundable); partial/failing fill,
   slippage, duplicate, and solver-misbehavior tests still come from `ERC7683ResolverFixture.test.ts`
@@ -862,8 +925,10 @@ real `IntentSubmitted` event before filling). This is closer to the actual `IOri
 fidelity. `ERC7683ResolverFixture.sol` is untouched.
 
 **Honest caveats, not yet closed:**
-- The "solver" is this script, not a separate long-running service — a real solver process that
-  watches chains and acts autonomously doesn't exist yet.
+- **Updated**: the standing solver now exists (`CrossChainSolverWorker` — see its own section
+  below) and this two-node smoke test itself still performs the fill inline for its own purposes
+  (proving the account/escrow funding path in isolation). The standing-service proof lives in
+  `two-node-standing-solver-check.ts`, a separate script.
 - No quote-preview surface (UI or API) — the exchange rate/amounts are hardcoded in the smoke test.
 - `--chain-id` doesn't take effect on Hardhat 3's `node` task (confirmed: both nodes report
   `31337` regardless of the flag) — cosmetic only, since neither resolver contract reads

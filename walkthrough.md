@@ -144,7 +144,7 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 192 | ✅ Passed |
+| .NET unit tests | 204 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
 | Gateway (`tsc` build) | — | ✅ Succeeded |
 | EVM contracts (Hardhat) | 29 | ✅ Passed |
@@ -186,11 +186,12 @@ own job-id sequence; rows under earlier escrow addresses are retained history, n
 
 | Verified by | Scope |
 |-------------|-------|
-| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety, sponsorship policy/signer/simulator fail-closed gating — in-memory, SQLite, and stubbed chains; not a live chain. |
+| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety, sponsorship policy/signer/simulator fail-closed gating, cross-chain solver policy fail-closed gating — in-memory, SQLite, and stubbed chains; not a live chain. |
 | Hardhat contract tests | Solidity escrow/resolver/ERC-4337 logic in isolation. |
 | Acceptance harness | Real EVM transactions → worker → PostgreSQL projections, driven by **Hardhat-controlled local wallets**. |
 | Cross-stack ERC-4337 scripts | `crossstack-sponsor-check.ts` and `simulation-recipe-check.ts`: real C# `UserOperationSimulator`/`UserOperationSponsor` classes driven against a live Hardhat node, producing a signature the on-chain canonical paymaster actually accepts. Not part of the automated test suite — run manually against a live node. |
-| Two-node cross-chain smoke test | `two-node-crosschain-smoke.ts`: proves the Phase 5 gate — asset moves from a genuinely separate source node to a real (deployed, not counterfactual) smart account on a separate destination node; job funding happens only after that move is verified; an unfilled intent leaves the job Open and the source asset refundable. Re-run twice against fresh nodes for reproducibility. Not part of the automated test suite; the "solver" is inline script logic, not a standing service. |
+| Two-node cross-chain smoke test | `two-node-crosschain-smoke.ts`: proves the Phase 5 gate — asset moves from a genuinely separate source node to a real (deployed, not counterfactual) smart account on a separate destination node; job funding happens only after that move is verified; an unfilled intent leaves the job Open and the source asset refundable. Re-run twice against fresh nodes for reproducibility. Not part of the automated test suite; the "solver" here is inline script logic. |
+| Standing cross-chain solver | `two-node-standing-solver-check.ts` + a real `ThisCafeteria.Worker` process running `CrossChainSolverWorker`: the script deploys and submits intents but never fills — a separately-started, genuinely long-running .NET background service watches the source chain, decodes intents from real transaction calldata, evaluates a fail-closed policy, and fills approved ones. Confirmed at every layer: worker logs, `CrossChainSolverFills` DB rows with real fill tx hashes, and on-chain `isResolved`/balance checks. Also proved the denial path: a disallowed token pair was left correctly unfilled. Not part of the automated test suite. |
 | Procurement Lab UI | Visualization of projections only; not exercised by any automated test. |
 
 **Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, a real

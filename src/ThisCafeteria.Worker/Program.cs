@@ -1,7 +1,9 @@
 using Serilog;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Configuration;
+using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Worker;
 using System.Text.Json;
 
@@ -42,6 +44,16 @@ builder.Services.AddSingleton<IEscrowEventProvider, EvmEscrowEventProvider>();
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<SolanaReconciliationSupervisor>();
     builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<SolanaReconciliationSupervisor>());
+
+    // Cross-chain solver. Absent configuration yields a disabled (fail-closed, idle) worker.
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton(builder.Configuration
+        .GetSection(CrossChainSolverOptions.SectionName)
+        .Get<CrossChainSolverOptions>() ?? new CrossChainSolverOptions());
+    builder.Services.AddSingleton<ISolverPolicyService, SolverPolicyService>();
+    builder.Services.AddSingleton<ICrossChainIntentProvider, CrossChainIntentProvider>();
+    builder.Services.AddSingleton<ICrossChainSolverExecutor, EvmCrossChainSolverExecutor>();
+    builder.Services.AddHostedService<CrossChainSolverWorker>();
 
     var host = builder.Build();
     if (args.Length > 0 && args[0] == "--solana-backfill")
