@@ -6,12 +6,16 @@ Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 
 ## Session handoff (2026-07-21) — read this first
 
-Branch `agent/enable-solana-multichain`, PR #54. Latest commit `2bc3e23`. All work below is pushed.
+Branch `agent/enable-solana-multichain`, PR #54. All work below is pushed (check `git log` for the
+actual latest commit — this line rots faster than it gets updated).
 
-**Overall: ~65-70% of the whole plan.** Phase 0-3 complete and independently verified (see
+**Overall: ~75% of the whole plan.** Phase 0-3 complete and independently verified (see
 "Session handoff" evidence in `walkthrough.md` — do not trust older claims in that file without
 checking the commit that made them; several turned out to be false and had to be re-verified from
-scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-6 barely started.
+scratch this session). Phase 4 is ~60% there (bundler blocked on a diagnosed external-tool issue,
+see below). **Phase 5's stated gate is now met and verified live, twice** — see its section further
+down for the full evidence and honest caveats (no quote-preview surface, solver is inline in the
+smoke test, not a standing service). Phase 6 untouched.
 
 ### What's true right now, proven not just claimed
 
@@ -94,19 +98,20 @@ trace. Don't mistake its presence for a passing proof; it isn't one.
 
 ### Recommended next step, in order of leverage
 
-1. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
+1. **A real standing solver.** Phase 5's gate is proven, but the "solver" is inline script logic,
+   not a process that watches chains autonomously. This is the most valuable remaining Phase 5 gap
+   and doesn't depend on anything blocked.
+2. **Quote preview** (source/destination exchange-rate surface) — Phase 5's one remaining ⬜ item.
+3. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
    attempted this session) — it may use the standard `EntryPointSimulations` rather than a
    proprietary one. Alternative: skip local bundler testing entirely and defer to Base Sepolia,
    where a hosted bundler (Pimlico/Alchemy/Biconomy) simulates against the *real* canonical
    EntryPoint at its real address — exactly the case Alto's internals are built for. This is
    probably the better use of effort than continuing to fight Alto locally.
-2. Session-key permissions module (needs an audited implementation — don't build one).
-3. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
-   contract tests exist, but there is no solver, no two-node smoke test, no destination-verified
-   funding.
-4. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts` into CI (they need a live
-   Hardhat node up first, unlike the rest of the suite — worth its own CI job rather than folding
-   into the normal `dotnet test`/`npm test` steps).
+4. Session-key permissions module (needs an audited implementation — don't build one).
+5. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts`/`two-node-crosschain-smoke.ts`
+   into CI (they need live Hardhat node(s) up first, unlike the rest of the suite — worth their own
+   CI job rather than folding into the normal `dotnet test`/`npm test` steps).
 
 ### Hard-won gotchas (avoid re-discovering these)
 
@@ -147,6 +152,32 @@ trace. Don't mistake its presence for a passing proof; it isn't one.
   (`z.string().regex(/^0x(?:[0-9a-f]{2}){32}$/)`) rejected it outright. If you're hardcoding a hex
   key/hash/address anywhere, verify its length programmatically once rather than trusting a visual
   copy-paste.
+- **`AgenticCommerceEscrow.createJob(provider, ...)` sets `job.provider` immediately if `provider`
+  is non-zero** — a genuinely separate `setProvider()` call afterward will then revert with
+  `WrongStatus()` (provider already set), not silently no-op. This was already learned once earlier
+  in this project's history (the Phase 3 acceptance script passes the zero address to `createJob`
+  for exactly this reason) and had to be re-learned the hard way writing the Phase 5 two-node smoke
+  test. If you want a genuine two-step create → assign-provider flow, `createJob`'s provider
+  argument must be the zero address.
+- **`TestCafeToken`'s constructor is `(admin, cap)`, not `(admin, initialMintAmount)`.** It mints
+  nothing on deployment — only grants `DEFAULT_ADMIN_ROLE`/`MINTER_ROLE` to `admin`. You must call
+  `.mint(to, amount)` explicitly afterward. Same lesson as the previous one: this is documented
+  behavior visible in `TestCafeToken.sol`'s ~15 lines, but easy to assume otherwise from the
+  constructor's parameter *names* alone.
+- **`ERC7683ResolverFixture.fillIntent` cannot be deployed on a genuinely separate destination chain
+  and expected to work** — it gates on `isSubmitted[orderId]`, storage the destination chain has no
+  way to observe on the source chain without a bridge/light client. Discovered building the Phase 5
+  two-node smoke test; fixed by adding `ERC7683DestinationResolverFixture.sol` (fill-only, no
+  submission-proof requirement) rather than weakening the original, still-used-by-11-passing-tests
+  contract. Use the original for same-chain testing, the new one for the destination side of any
+  genuine two-chain deployment.
+- **Hardhat 3's `node --chain-id <N>` flag does not change what the started EDR node actually
+  reports via `eth_chainId`** — confirmed by passing `--chain-id 421614` and `--chain-id 84532` to
+  two separate node processes and getting `31337` (the default) from both. If you declare a
+  non-default `chainId` in a network config that a script then `network.connect()`s to, Hardhat's
+  own connection validator (`HHE708`) will throw a mismatch error at connect time — the network
+  config's declared `chainId` must equal what the node actually reports, not what you wanted it to
+  report.
 
 ## Outcome
 
@@ -785,15 +816,64 @@ a real chain the USD budget drifts with the native asset's actual price. There i
 UserOperation needs regardless, to be signed), and simulation measures the real cost of running
 with those limits rather than deriving suggested limits from scratch.
 
-### Phase 5 — ERC-7683 cross-chain path
+### Phase 5 — ERC-7683 cross-chain path [GATE PROVEN — 2026-07-21]
 
-- produce source/destination quote preview;
-- create/sign/submit intent orders;
-- run local solver and verify destination settlement;
-- enable escrow funding only after verified destination funds;
-- add expiry, partial/failing fill, slippage, duplicate, and solver-misbehavior tests.
+- ✅ create/sign/submit intent orders;
+- ✅ run local solver and verify destination settlement;
+- ✅ enable escrow funding only after verified destination funds;
+- ✅ expiry test (unfilled intent leaves the job Open and is refundable); partial/failing fill,
+  slippage, duplicate, and solver-misbehavior tests still come from `ERC7683ResolverFixture.test.ts`
+  (single-chain) rather than the two-node harness — not yet duplicated cross-chain;
+- ⬜ quote preview (no UI/API surfaces a source/destination quote yet — the smoke test hardcodes
+  the exchange amounts).
 
-Gate: the two-node smoke test moves the configured test asset from the Arbitrum-like node to the Base-like smart account, then funds the job. Failure leaves the job Open and recoverable.
+**Gate met, verified live, twice (not asserted):**
+`contracts/evm/scripts/two-node-crosschain-smoke.ts` runs against **two genuinely separate Hardhat
+node processes** (ports 8546/8547, independent state — not one node labeling itself twice):
+
+1. An intent is submitted on the Arbitrum-like source node, locking the test asset into that
+   node's resolver.
+2. An inline "solver" step (this script, not a background service — see caveat below) reads the
+   source chain's `IntentSubmitted` event and fills the intent on the Base-like destination node,
+   paying the deployed **ERC-4337 smart account** (Phase 4's `SimpleAccountFactory`, deployed for
+   real via `createAccount`, not counterfactual) from its own separate destination-chain inventory.
+3. Only *after* the destination-chain balance increase is verified does the smart account (via
+   `execute()`, called directly by its owner — no UserOperation needed for this gate, since Phase 4
+   already proved that path) approve and fund an ERC-8183 job on the destination chain.
+4. A second scenario proves the failure path required by the gate: the solver never fills: the
+   source intent is refunded after its deadline (asset recovered, not stuck), and the job — created
+   `Open` before the cross-chain attempt, exactly like scenario 1 — is **never funded** and stays
+   `Open`.
+
+Both scenarios pass with `TWO_NODE_SMOKE_RESULT=PASS`; re-ran the whole script against fresh nodes
+a second time to confirm it isn't a one-off (same lesson as the Phase 3 acceptance-harness
+reproducibility bug from earlier in this project's history — verify twice, not once).
+
+**A genuine contract-architecture finding, not a workaround:** the existing single-node
+`ERC7683ResolverFixture` gates `fillIntent` on `isSubmitted[orderId]` — fine when both roles run on
+one chain (as in its own 11 tests, still passing unchanged), but structurally impossible across two
+*actually separate* chains: the destination contract cannot observe the source chain's storage
+without a bridge or light client, which this project's own rules keep ERC-7683 explicitly out of
+being. Added `ERC7683DestinationResolverFixture.sol` — a fill-only contract with no submission-proof
+requirement, mirroring how real ERC-7683 solvers work (the solver independently verifies the source
+intent itself, which is exactly what the inline "solver" step in the smoke test does by reading the
+real `IntentSubmitted` event before filling). This is closer to the actual `IOriginSettler`/
+`IDestinationSettler` split the ERC-7683 spec itself defines, not a step away from standards
+fidelity. `ERC7683ResolverFixture.sol` is untouched.
+
+**Honest caveats, not yet closed:**
+- The "solver" is this script, not a separate long-running service — a real solver process that
+  watches chains and acts autonomously doesn't exist yet.
+- No quote-preview surface (UI or API) — the exchange rate/amounts are hardcoded in the smoke test.
+- `--chain-id` doesn't take effect on Hardhat 3's `node` task (confirmed: both nodes report
+  `31337` regardless of the flag) — cosmetic only, since neither resolver contract reads
+  `block.chainid`; "cross-chain" here is enforced by running on two independent node processes.
+- Partial-fill/slippage/duplicate/solver-misbehavior variants exist only in the single-node test
+  file, not duplicated against the two-node harness.
+
+Gate wording for reference: the two-node smoke test moves the configured test asset from the
+Arbitrum-like node to the Base-like smart account, then funds the job. Failure leaves the job Open
+and recoverable. — **met**, per the evidence above.
 
 ### Phase 6 — Hardening and public testnet readiness
 
