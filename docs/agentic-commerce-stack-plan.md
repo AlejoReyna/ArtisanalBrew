@@ -370,10 +370,21 @@ The repository now contains a structurally verified foundation for agentic comme
 - **x402 Gateway:** Clean TypeScript build, successful integration tests proving idempotency binding to request/payment metadata, and replay-protection against double-charging (Priority 2 & 3).
 - **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions, deferred-event recording for out-of-order prerequisites, and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
 - **Smart Account Scaffolding:** `SmartAccountService` safely fails closed (throwing `NotSupportedException`) for operations like deployment, sponsorship, recording usage, and revoking sessions. This prevents spoofed implementations until real external dependencies exist.
-- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (154 passing), `npm test` in gateway (11 passing), `npm test` in EVM contracts (24 passing).
+- **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (155 passing), `npm test` in gateway (11 passing) plus `npm run build` (clean), `npm test` in EVM contracts (24 passing).
 
-- **Phase 3 Acceptance:** ✅ **VERIFIED** — `./run-acceptance.sh` exited 0 on 2026-07-20.
-  Evidence captured to `acceptance-evidence-20260720-143038.log`.
+- **Phase 3 Acceptance:** ✅ **VERIFIED** — `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` exited 0 on
+  2026-07-21, final marker `ACCEPTANCE_RESULT=PASS  exit=0`.
+  Evidence captured to `acceptance-evidence-20260721-050306.log` (untracked; logs are not committed).
+  Post-run state: checkpoint `LastScannedBlock` = 62 for escrow
+  `0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0`, `AgenticJobAppliedEvents` = 101 (cumulative across
+  all runs), `AgenticJobDeferredEvents` = 0.
+
+  An earlier run on 2026-07-20 was **not** valid evidence: the harness blocked on an interactive
+  `psql` password prompt during evidence capture, so its log was truncated before any checkpoint
+  value, applied-event count, or success marker was written, and its cleanup trap never ran. Both
+  that hang and a wrapper-only process kill (which had orphaned 28 worker processes) were fixed
+  before the 2026-07-21 re-run. See `walkthrough.md` §8.3.
+
   All lifecycle stages proven:
   - Agent identity registration → `AgentDirectoryEntries` row verified.
   - JobCreated (on-chain ID 1) → `AgenticJobs` row, Status: Open, CreationTx verified.
@@ -432,7 +443,7 @@ Gate: contract tests and direct local scripts complete create/fund/submit/comple
 
 Gate: an unauthenticated paid request returns 402, a valid payment returns the deterministic resource once, and replay/tampering/settlement failure tests pass.
 
-### Phase 3 — Identity directory and job application path [COMPLETE – acceptance verified 2026-07-20]
+### Phase 3 — Identity directory and job application path [COMPLETE – acceptance verified 2026-07-21]
 
 - index ERC-8004 identities and signals;
 - add ERC-8183 projections and APIs;

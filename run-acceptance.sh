@@ -35,29 +35,60 @@ echo "========================================================"
 NODE_PID=""
 WORKER_PID=""
 
-cleanup() {
-    echo "--- cleanup trap: terminating background processes ---"
-    if [ -n "$WORKER_PID" ] && kill -0 "$WORKER_PID" 2>/dev/null; then
-        echo "Killing worker PID $WORKER_PID"
-        kill "$WORKER_PID" 2>/dev/null || true
-    fi
-    if [ -n "$NODE_PID" ] && kill -0 "$NODE_PID" 2>/dev/null; then
-        echo "Killing Hardhat node PID $NODE_PID"
-        kill "$NODE_PID" 2>/dev/null || true
-    fi
-    # Wait for children to exit (up to 5s)
-    local deadline=$(( $(date +%s) + 5 ))
-    while [ -n "$WORKER_PID" ] && kill -0 "$WORKER_PID" 2>/dev/null; do
-        [ "$(date +%s)" -ge "$deadline" ] && break
-        sleep 0.5
-    done
-    while [ -n "$NODE_PID" ] && kill -0 "$NODE_PID" 2>/dev/null; do
-        [ "$(date +%s)" -ge "$deadline" ] && break
-        sleep 0.5
+# `dotnet run` and `npm run` spawn child processes that survive a kill of the
+# wrapper PID.  Earlier revisions killed only the wrapper, which orphaned the
+# real Worker/Hardhat binaries and left them polling the database indefinitely.
+# Collect the whole descendant tree and signal it depth-first.
+descendant_pids() {
+    local parent="$1"
+    local child
+    for child in $(pgrep -P "$parent" 2>/dev/null); do
+        descendant_pids "$child"
+        echo "$child"
     done
 }
 
-trap cleanup EXIT
+kill_tree() {
+    local label="$1"
+    local root="$2"
+    [ -n "$root" ] || return 0
+    kill -0 "$root" 2>/dev/null || return 0
+
+    local pids
+    pids="$(descendant_pids "$root") $root"
+    echo "Killing $label tree (root PID $root): $(echo $pids)"
+
+    local pid
+    for pid in $pids; do
+        kill -TERM "$pid" 2>/dev/null || true
+    done
+
+    # Give the tree up to 5s to exit, then escalate to SIGKILL.
+    local deadline=$(( $(date +%s) + 5 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
+        local alive=0
+        for pid in $pids; do
+            kill -0 "$pid" 2>/dev/null && alive=1
+        done
+        [ "$alive" = "0" ] && return 0
+        sleep 0.5
+    done
+
+    for pid in $pids; do
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "  escalating to SIGKILL for PID $pid"
+            kill -KILL "$pid" 2>/dev/null || true
+        fi
+    done
+}
+
+cleanup() {
+    echo "--- cleanup trap: terminating background processes ---"
+    kill_tree "worker" "$WORKER_PID"
+    kill_tree "hardhat node" "$NODE_PID"
+}
+
+trap cleanup EXIT INT TERM
 
 # ---------------------------------------------------------------------------
 # 3. Isolation marker check (fail closed)
@@ -103,6 +134,9 @@ fi
 # 5. Database isolation sanity check
 # ---------------------------------------------------------------------------
 DB_NAME="this_cafeteria"
+# PostgreSQL runs under the Apple `container` runtime; evidence queries exec into
+# it rather than using host psql (which blocks on an interactive password prompt).
+PG_CONTAINER="${PG_CONTAINER:-this-cafeteria-postgres}"
 # Refuse to reset shared databases (must not match production names).
 SAFE_DB_PATTERNS=("this_cafeteria_test" "this_cafeteria_acceptance" "this_cafeteria_local" "this_cafeteria")
 SAFE=0
@@ -202,21 +236,38 @@ echo "--- Acceptance test exit code: $TEST_EXIT ---"
 # 12. Capture evidence
 # ---------------------------------------------------------------------------
 echo "--- Worker checkpoint and applied-event counts (via psql) ---"
-psql -h localhost -p 5433 -U postgres -d "$DB_NAME" \
-    -c 'SELECT "ChainKey", "EscrowAddress", "LastScannedBlock", "UpdatedAtUtc" FROM "AgenticCommerceCheckpoints";' \
-    2>/dev/null || echo "(psql query failed – DB may not be available)"
 
-psql -h localhost -p 5433 -U postgres -d "$DB_NAME" \
-    -c 'SELECT COUNT(*) AS applied_event_count FROM "AgenticJobAppliedEvents";' \
-    2>/dev/null || echo "(psql query failed)"
+# Run psql inside the Apple `container` PostgreSQL instance.  Host `psql` would
+# prompt for a password on the tty and block forever, which previously stalled
+# evidence capture before the final marker was ever emitted.  Database errors
+# are NOT swallowed: stderr is kept and a non-zero status is reported inline.
+EVIDENCE_DB_FAILED=0
+run_evidence_query() {
+    local label="$1"
+    local sql="$2"
+    echo "-- ${label} --"
+    if ! container exec "$PG_CONTAINER" psql -U postgres -d "$DB_NAME" -c "$sql"; then
+        echo "ERROR: evidence query failed: ${label}"
+        EVIDENCE_DB_FAILED=1
+    fi
+}
 
-psql -h localhost -p 5433 -U postgres -d "$DB_NAME" \
-    -c 'SELECT COUNT(*) AS deferred_event_count FROM "AgenticJobDeferredEvents";' \
-    2>/dev/null || echo "(psql query failed)"
+run_evidence_query "checkpoints" \
+    'SELECT "ChainKey", "EscrowAddress", "LastScannedBlock", "UpdatedAtUtc" FROM "AgenticCommerceCheckpoints";'
 
-psql -h localhost -p 5433 -U postgres -d "$DB_NAME" \
-    -c 'SELECT "OnChainJobId", "Status", "CreationTransactionHash", "FundedTransactionHash", "CompletionTransactionHash" FROM "AgenticJobs" ORDER BY "OnChainJobId";' \
-    2>/dev/null || echo "(psql query failed)"
+run_evidence_query "applied event count" \
+    'SELECT COUNT(*) AS applied_event_count FROM "AgenticJobAppliedEvents";'
+
+run_evidence_query "deferred event count" \
+    'SELECT COUNT(*) AS deferred_event_count FROM "AgenticJobDeferredEvents";'
+
+run_evidence_query "job projections" \
+    'SELECT "OnChainJobId", "Status", "CreationTransactionHash", "FundedTransactionHash", "CompletionTransactionHash" FROM "AgenticJobs" ORDER BY "OnChainJobId";'
+
+if [ "$EVIDENCE_DB_FAILED" = "1" ] && [ "$TEST_EXIT" = "0" ]; then
+    echo "ERROR: lifecycle assertions passed but database evidence capture failed."
+    TEST_EXIT=1
+fi
 
 echo ""
 echo "--- Lifecycle stages proven ---"

@@ -262,6 +262,47 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
         deferred.DeferralReason.Should().Contain("not found");
     }
 
+    /// <summary>JobSubmitted arrives before funding: must defer, leave the projection Open, and stay unapplied.</summary>
+    [Fact]
+    public async Task ApplyEvent_JobSubmitted_BeforeFunding_RecordsDeferredEventAndLeavesStatusOpen()
+    {
+        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent
+        {
+            Type = EscrowEventType.JobCreated,
+            OnChainJobId = 107,
+            TransactionHash = "0xCreatedNoFunding",
+            LogIndex = 0,
+            BlockNumber = 50
+        }, CancellationToken.None);
+        await _context.SaveChangesAsync();
+
+        // Submission arrives while the job is still Open (never funded).
+        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent
+        {
+            Type = EscrowEventType.JobSubmitted,
+            OnChainJobId = 107,
+            Deliverable = "ipfs://premature",
+            TransactionHash = "0xSubmitBeforeFunding",
+            LogIndex = 0,
+            BlockNumber = 51
+        }, CancellationToken.None);
+        await _context.SaveChangesAsync();
+
+        var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 107);
+        job.Status.Should().Be(AgenticJobProjection.StatusOpen, "an unfunded job must not advance to Submitted");
+        job.DeliverableCommitment.Should().BeNullOrEmpty("the projection must not absorb a premature deliverable");
+
+        var deferred = await _context.AgenticJobDeferredEvents
+            .SingleAsync(d => d.TransactionHash == "0xSubmitBeforeFunding");
+        deferred.EventType.Should().Be("JobSubmitted");
+        deferred.DeferralReason.Should().Contain("Invalid state");
+
+        // The event must NOT be marked applied, so the checkpoint cannot skip past it.
+        var applied = await _context.AgenticJobAppliedEvents
+            .AnyAsync(e => e.TransactionHash == "0xSubmitBeforeFunding");
+        applied.Should().BeFalse("a deferred event must remain unapplied for later retry");
+    }
+
     /// <summary>Duplicate JobCreated with a different log identity: second call is idempotent (job already exists).</summary>
     [Fact]
     public async Task ApplyEvent_DuplicateJobCreated_DifferentLogIdentity_IsIdempotent()

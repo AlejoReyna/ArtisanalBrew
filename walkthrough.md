@@ -71,11 +71,30 @@ correct but undocumented and untested.
 **Changes to `run-acceptance.sh`:**
 - PostgreSQL health check now runs **before** migrations (previously was after).
 - `RESET_DB=1` now requires an isolation marker (`ACCEPTANCE_ISOLATED=1` or `contracts/evm/.acceptance-isolated`); fails closed without it.
-- Explicit `NODE_PID`/`WORKER_PID` variables with a cleanup trap that kills each by PID.
-- `wait` on child processes before final exit.
+- Explicit `NODE_PID`/`WORKER_PID` variables with a cleanup trap, now trapping `EXIT INT TERM`.
 - Machine-readable final marker: `ACCEPTANCE_RESULT=PASS` or `ACCEPTANCE_RESULT=FAIL exit=N`.
 - Evidence captured to timestamped `acceptance-evidence-<timestamp>.log`.
-- DB error output is no longer swallowed.
+
+**Two defects found on re-verification (2026-07-21) and fixed:**
+
+1. *Evidence capture hung, so the final marker was never reached.* The evidence queries invoked
+   host `psql -h localhost -p 5433 -U postgres` with no `PGPASSWORD` and with `2>/dev/null`. psql
+   prompted for a password on the tty with the prompt suppressed, and blocked indefinitely; the run
+   had to be killed, which also meant the cleanup trap never fired. Evidence queries now `exec`
+   into the Apple `container` PostgreSQL instance (`$PG_CONTAINER`, default
+   `this-cafeteria-postgres`), so no password prompt is possible.
+
+2. *Database errors were still being swallowed, and orphaned workers accumulated.* The `2>/dev/null`
+   redirects are removed — a failed evidence query now prints its error and forces
+   `ACCEPTANCE_RESULT=FAIL` even when the lifecycle assertions passed. Separately, the trap killed
+   only the `dotnet run` / `npm run` **wrapper** PID, orphaning the real Worker binary each run; 28
+   orphaned workers had accumulated, all concurrently polling the acceptance database. Cleanup now
+   walks the full descendant tree (`descendant_pids`/`kill_tree`), sends `SIGTERM`, then escalates
+   to `SIGKILL` after 5s. Verified: the run leaves zero orphaned worker or Hardhat processes.
+
+Because these defects invalidated the previous evidence capture, the 2026-07-20 acceptance log was
+truncated before any checkpoint value, applied-event count, or success marker was recorded. The
+results in this document come from a clean 2026-07-21 re-run.
 
 **Harness boundary:** The acceptance test uses Hardhat-controlled local wallets via a TypeScript
 script (`contracts/evm/scripts/acceptance-test.ts`). It is **not** a browser wallet/UI E2E test
@@ -87,6 +106,7 @@ and does not require MetaMask or any browser extension.
 |------|------|---------|
 | `ApplyEvent_JobCompleted_BeforeJobCreated_RecordsDeferredEvent` | Applicator | Missing prerequisite → deferred |
 | `ApplyEvent_JobFunded_BeforeJobCreated_RecordsDeferredEvent` | Applicator | Missing prerequisite → deferred |
+| `ApplyEvent_JobSubmitted_BeforeFunding_RecordsDeferredEventAndLeavesStatusOpen` | Applicator | Submission before funding → deferred, stays unapplied |
 | `ApplyEvent_DuplicateJobCreated_DifferentLogIdentity_IsIdempotent` | Applicator | Same job, two log identities |
 | `ApplyEvent_DelayedPrerequisite_DeferralIsRetainable` | Applicator | Deferred record survives subsequent Create |
 | `ApplyEvent_WrongEscrowAddress_IsIgnoredSafely` | Applicator | Cross-escrow events deferred |
@@ -102,21 +122,54 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 154 | ✅ Passed |
+| .NET unit tests | 155 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
+| Gateway (`tsc` build) | — | ✅ Succeeded |
 | EVM contracts (Hardhat) | 24 | ✅ Passed |
-| Phase 3 acceptance harness | exit=0 | ✅ Passed — 2026-07-20 |
+| Phase 3 acceptance harness | exit=0 | ✅ Passed — 2026-07-21 |
 
-Evidence captured to: `acceptance-evidence-20260720-143038.log`
+Evidence captured to: `acceptance-evidence-20260721-050306.log` (untracked; logs are not committed).
 
-All lifecycle stages verified:
+Harness final marker: `ACCEPTANCE_RESULT=PASS  exit=0`.
+
+Escrow deployed for this run: `0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0`
+(chain `evm-local`, chainId 31337, deployBlock 3).
+
+Post-run database evidence:
+
+| Metric | Value |
+|--------|-------|
+| Checkpoint `LastScannedBlock` (run escrow) | 62 |
+| `AgenticJobAppliedEvents` count (cumulative, all runs) | 101 |
+| `AgenticJobDeferredEvents` count | 0 |
+
+Lifecycle stages verified against on-chain transaction hashes (job `OnChainJobId` 1 for this run's
+escrow):
 - Agent identity registration → DB `AgentDirectoryEntries` row confirmed.
-- JobCreated (on-chain ID 1) → `AgenticJobs` row, Status: Open, CreationTx: `0xc489c0a1...` confirmed.
-- JobFunded → Status: Funded, DB row confirmed.
+- JobCreated → `AgenticJobs` row, Status: Open, CreationTx `0x0554c0340df21a76f4c4d1377a32fb99763813b675a16cf52e415e785ab09d7a`.
+- BudgetSet + JobFunded → Status: Funded, FundedTx `0x9253f4b3848123d42c78938b26083dc3ea343de0dc3846a1cd00bdf6bc41f5a5`.
 - JobSubmitted → Status: Submitted, DB row confirmed.
-- JobCompleted (evaluator approval) → Status: Completed, provider payout verified on-chain.
-- Rejection variant → Status: Rejected, DB row confirmed.
-- Expiry variant → Status: Expired, DB row confirmed.
+- JobCompleted (evaluator approval) → Status: Completed, CompletionTx `0x521c9ecb18b6f33305fdbf25b8df5266c0afc338f724928d65bf12d48d92f77d`; provider payout asserted on-chain.
+- Rejection variant (job 2) → Status: Rejected, refund path confirmed.
+- Expiry variant (job 3) → Status: Expired, refund path confirmed.
+
+The `AgenticJobs` table contains rows repeating `OnChainJobId` 1/2/3 across *different*
+`ContractAddress` values. That is expected: job identity is `ChainKey + ContractAddress +
+OnChainJobId`, so each redeployed escrow starts its own job-id sequence. Rows from earlier escrow
+deployments are retained history, not duplicates.
+
+### What these results do and do not prove
+
+| Verified by | Scope |
+|-------------|-------|
+| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety — in-memory and SQLite, not a live chain. |
+| Hardhat contract tests | Solidity escrow/resolver logic in isolation. |
+| Acceptance harness | Real EVM transactions → worker → PostgreSQL projections, driven by **Hardhat-controlled local wallets**. |
+| Procurement Lab UI | Visualization of projections only; not exercised by any automated test. |
+
+**Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, ERC-4337
+smart-account or paymaster paths, deep-reorg rollback, and automatic re-application of deferred
+events. No browser extension is involved at any point.
 
 ### Known Limitations
 
