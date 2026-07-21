@@ -133,6 +133,14 @@ builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>(
 builder.Services.AddScoped<IUserOperationSimulator, UserOperationSimulator>();
 builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
 
+// Cross-chain solver quote preview. Absent configuration yields a disabled (fail-closed) quote —
+// wraps the same policy CrossChainSolverWorker (in ThisCafeteria.Worker) uses, not a separate calculation.
+builder.Services.AddSingleton(builder.Configuration
+    .GetSection(CrossChainSolverOptions.SectionName)
+    .Get<CrossChainSolverOptions>() ?? new CrossChainSolverOptions());
+builder.Services.AddScoped<ISolverPolicyService, SolverPolicyService>();
+builder.Services.AddScoped<IIntentQuoteService, IntentQuoteService>();
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<IMigrationReadiness, MigrationReadiness>();

@@ -41,12 +41,25 @@ public sealed record CrossChainSolverOptions
     /// </summary>
     public int MaxOutputBps { get; init; } = 10000;
 
-    public bool CanOperate => Enabled
-        && !string.IsNullOrWhiteSpace(SourceChainKey)
+    /// <summary>
+    /// Full readiness to actually EXECUTE fills: resolver addresses and a signing key, in addition
+    /// to everything <see cref="CanPrice"/> requires. Gates <c>CrossChainSolverWorker</c> — the
+    /// process that submits transactions and therefore needs the solver's private key.
+    /// </summary>
+    public bool CanOperate => CanPrice
         && !string.IsNullOrWhiteSpace(SourceResolverAddress)
-        && !string.IsNullOrWhiteSpace(DestinationChainKey)
         && !string.IsNullOrWhiteSpace(DestinationResolverAddress)
         && !string.IsNullOrWhiteSpace(SolverPrivateKey);
+
+    /// <summary>
+    /// Readiness to PRICE a hypothetical intent — deliberately does not require resolver addresses
+    /// or a signing key. Gates <see cref="ISolverPolicyService.Evaluate"/>, so a read-only
+    /// quote-preview process (e.g. the Web API) can price routes without ever holding the solver's
+    /// private key, which it has no legitimate reason to need: pricing signs and submits nothing.
+    /// </summary>
+    public bool CanPrice => Enabled
+        && !string.IsNullOrWhiteSpace(SourceChainKey)
+        && !string.IsNullOrWhiteSpace(DestinationChainKey);
 
     public bool IsTokenPairAllowed(string sourceToken, string destinationToken) =>
         AllowedTokenPairs.Any(p =>

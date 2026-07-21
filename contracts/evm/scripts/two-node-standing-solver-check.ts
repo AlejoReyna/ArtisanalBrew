@@ -106,7 +106,7 @@ async function submitAndWatch(sourceToken: Address, destToken: Address, nonce: b
     destinationChainId: 84532n,
     destinationToken: destToken,
     destinationReceiver: state.accountAddress,
-    minAmountOut: parseEther("10"),
+    minAmountOut: parseEther("9"), // below any reasonable solver spread on a 10 ETH amountIn
     deadline: (await sourcePublic.getBlock()).timestamp + 3600n,
     nonce,
     allowedSolver: zeroAddress // any solver may fill
@@ -129,8 +129,13 @@ async function submitAndWatch(sourceToken: Address, destToken: Address, nonce: b
 
   if (expectFill) {
     if (!resolved) throw new Error(`FAIL: worker never filled orderId ${orderId} within 30s`);
-    if (balanceAfter - balanceBefore !== order.amountIn) throw new Error("FAIL: destination account balance did not increase by the filled amount");
-    console.log(`PASS: standing worker filled ${orderId} autonomously — balance +${balanceAfter - balanceBefore}`);
+    const delta = balanceAfter - balanceBefore;
+    // The solver's MaxOutputBps may pay less than amountIn (a spread) — assert only that
+    // something within the order's own bounds was paid, not a specific bps.
+    if (delta <= 0n || delta > order.amountIn || delta < order.minAmountOut) {
+      throw new Error(`FAIL: filled amount ${delta} is outside [minAmountOut=${order.minAmountOut}, amountIn=${order.amountIn}]`);
+    }
+    console.log(`PASS: standing worker filled ${orderId} autonomously — balance +${delta} (amountIn was ${order.amountIn})`);
   } else {
     if (resolved) throw new Error(`FAIL: worker filled an intent (${orderId}) using a token pair that should have been denied`);
     if (balanceAfter !== balanceBefore) throw new Error("FAIL: balance changed despite the intent being outside the solver's policy");

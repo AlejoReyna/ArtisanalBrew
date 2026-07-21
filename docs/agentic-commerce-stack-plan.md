@@ -9,14 +9,14 @@ Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 Branch `agent/enable-solana-multichain`, PR #54. All work below is pushed (check `git log` for the
 actual latest commit — this line rots faster than it gets updated).
 
-**Overall: ~78% of the whole plan.** Phase 0-3 complete and independently verified (see
+**Overall: ~80% of the whole plan.** Phase 0-3 complete and independently verified (see
 "Session handoff" evidence in `walkthrough.md` — do not trust older claims in that file without
 checking the commit that made them; several turned out to be false and had to be re-verified from
 scratch this session). Phase 4 is ~60% there (bundler blocked on a diagnosed external-tool issue,
-see below). **Phase 5's stated gate is met and verified live**, and the solver is now a real
-standing `BackgroundService` (`CrossChainSolverWorker`), not inline script logic — see its section
-further down for the full evidence and honest caveats (no quote-preview surface; single
-source/destination pair only). Phase 6 untouched.
+see below). **Phase 5 is essentially complete**: the gate is met and verified live, the solver is a
+real standing `BackgroundService` (`CrossChainSolverWorker`), and the quote-preview surface now
+exists and was verified to match real fills exactly — see its section further down. Remaining Phase
+5 gap is single source/destination pair only (no multi-pair support). Phase 6 untouched.
 
 ### What's true right now, proven not just claimed
 
@@ -99,21 +99,23 @@ trace. Don't mistake its presence for a passing proof; it isn't one.
 
 ### Recommended next step, in order of leverage
 
-1. **Quote preview** (source/destination exchange-rate surface) — Phase 5's one remaining ⬜ item,
-   now that the solver is a real standing service (see below).
-2. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
+1. **Bundler, if pursued further:** try Rundler (Alchemy's Rust bundler; not on npm, wasn't
    attempted this session) — it may use the standard `EntryPointSimulations` rather than a
    proprietary one. Alternative: skip local bundler testing entirely and defer to Base Sepolia,
    where a hosted bundler (Pimlico/Alchemy/Biconomy) simulates against the *real* canonical
    EntryPoint at its real address — exactly the case Alto's internals are built for. This is
    probably the better use of effort than continuing to fight Alto locally.
-3. Session-key permissions module (needs an audited implementation — don't build one).
-4. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts`/`two-node-crosschain-smoke.ts`/
+2. Session-key permissions module (needs an audited implementation — don't build one).
+3. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts`/`two-node-crosschain-smoke.ts`/
    `two-node-standing-solver-check.ts` into CI (they need live Hardhat node(s) — and for the last
    one, a live `ThisCafeteria.Worker` process too — up first, unlike the rest of the suite; worth
    their own CI job rather than folding into the normal `dotnet test`/`npm test` steps).
-5. Multi-pair solver support: `CrossChainSolverOptions` currently names exactly one
-   source/destination chain and resolver pair. A real deployment would want several.
+4. Multi-pair solver support: `CrossChainSolverOptions` currently names exactly one
+   source/destination chain and resolver pair. A real deployment would want several — and the
+   quote endpoint would need a way to select among them rather than always pricing against the one
+   configured pair.
+5. Wire the quote endpoint into the actual UI so a user sees an estimate before submitting an
+   intent (currently API-only — `GET /api/intents/quote`, no frontend consumes it yet).
 
 ### Standing cross-chain solver (2026-07-21)
 
@@ -156,8 +158,50 @@ proven:
 Test-only rows (`SourceChainKey = "arbitrumLocal"`) were deleted from the shared dev database after
 verification; nothing from this run was left behind.
 
-**Not yet built**: multi-pair support (see "Next" above), a quote-preview surface, and the fee/spread
-side of `MaxOutputBps` isn't exposed anywhere a user would see it before submitting an intent.
+**Not yet built**: multi-pair support (see "Next" above). The quote-preview surface below now
+exposes the `MaxOutputBps` spread to a caller before they submit an intent.
+
+### Quote preview (2026-07-21)
+
+`GET /api/intents/quote?sourceToken=...&destinationToken=...&amountIn=...`
+(`IntentsController` / `IIntentQuoteService` / `IntentQuoteService`) lets a caller ask what the
+standing solver would pay out for a hypothetical intent, before ever submitting one on-chain.
+
+**Deliberately contains no pricing logic of its own.** It builds a synthetic, never-submitted
+`SolverIntent` (real token addresses and amount, a far-future deadline, a fixed sentinel `OrderId`
+clearly marked as synthetic — see the gotchas list) and evaluates it through the **exact same**
+`ISolverPolicyService.Evaluate` the real `CrossChainSolverWorker` uses. A preview computed by
+separate logic could silently drift from what the solver actually does; delegating to the identical
+code path means they cannot disagree with each other, only with reality if configuration changes
+between the quote and the real submission — a disclosed property of any quote, not a bug.
+
+**A real security-shaped bug found and fixed while building this, not merely worked around:** the
+first version gated the quote on `CrossChainSolverOptions.CanOperate`, which requires resolver
+addresses **and the solver's private key**. That would mean a read-only, publicly-reachable pricing
+endpoint could only work in a process that also holds the signing key used to spend the solver's
+inventory — a real key-exposure risk for a component that signs and submits nothing. Split the
+option into two: `CanOperate` (full: chains, resolvers, signing key — gates the executing
+`CrossChainSolverWorker`) and a new `CanPrice` (chains only — gates
+`ISolverPolicyService.Evaluate`'s own "not configured" check). `IntentQuoteService` no longer
+performs its own redundant `CanOperate` check at all; it relies entirely on `Evaluate`'s internal
+`CanPrice` gate. Caught before merging, by actually trying to run the quote endpoint in a process
+configured with no private key at all (the intended real deployment shape) rather than assuming the
+happy path.
+
+**Verified live, and the strongest form of proof available**: previewed a quote, then — with the
+standing solver worker (in a *separate* process, MaxOutputBps 9700) still running — submitted the
+identical route as a real intent and let the worker fill it autonomously.
+
+```
+quote:  amountOut = 9700000000000000000  (9.7, for a 10 amountIn — a 3% solver spread)
+fill:   Solver filled intent ... for 9700000000000000000 on baseLocal, tx 0x5d9a36a1...
+```
+
+The previewed amount and the actually-paid amount are byte-for-byte identical, and the Web process
+serving the quote held no private key throughout. Also reconfirmed the failure path (solver
+declining an order whose `minAmountOut` is stricter than what a discounted quote would pay) is a
+real, working policy check, not a stub — see the `SolverPolicyServiceTests`/`IntentQuoteServiceTests`
+suites and the `OutputBelowMinimum` denial reason.
 
 ### Hard-won gotchas (avoid re-discovering these)
 
@@ -240,6 +284,15 @@ side of `MaxOutputBps` isn't exposed anywhere a user would see it before submitt
   chains even if the underlying nodes actually share one (see the `--chain-id` gotcha above) — the
   *configured* `EvmChainId` is a label your own code and Nethereum never check against the live
   RPC's real `eth_chainId`, it only has to satisfy `ChainRegistry`'s own uniqueness constraint.
+- **A "can this run at all" flag can silently bundle unrelated requirements together, and the
+  fix is to split it, not to special-case around it.** `CrossChainSolverOptions.CanOperate`
+  originally required resolver addresses AND a private key. That's correct for the worker that
+  executes fills, but wrong for read-only pricing, which signs and submits nothing — reusing the
+  same flag would have meant a public quote endpoint could only run in a process holding the
+  solver's signing key. Split into `CanOperate` (execution: everything) and `CanPrice` (pricing:
+  chains only) rather than adding a bypass or a second parallel check in the caller. If a
+  capability flag is gating two things with genuinely different requirements, that is a sign the
+  flag itself is the wrong shape, not that the caller needs a workaround.
 
 ## Outcome
 
@@ -887,8 +940,9 @@ with those limits rather than deriving suggested limits from scratch.
 - ✅ expiry test (unfilled intent leaves the job Open and is refundable); partial/failing fill,
   slippage, duplicate, and solver-misbehavior tests still come from `ERC7683ResolverFixture.test.ts`
   (single-chain) rather than the two-node harness — not yet duplicated cross-chain;
-- ⬜ quote preview (no UI/API surfaces a source/destination quote yet — the smoke test hardcodes
-  the exchange amounts).
+- ✅ quote preview — `GET /api/intents/quote`; see its own section below. API-only, no frontend
+  consumes it yet, and only one source/destination pair can be quoted (matches
+  `CrossChainSolverOptions`' current single-pair scope).
 
 **Gate met, verified live, twice (not asserted):**
 `contracts/evm/scripts/two-node-crosschain-smoke.ts` runs against **two genuinely separate Hardhat

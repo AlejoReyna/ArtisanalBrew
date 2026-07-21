@@ -15,7 +15,7 @@ public sealed class SolverPolicyService(CrossChainSolverOptions options) : ISolv
             return SolverPolicyDecision.Deny(SolverDenialReason.InvalidRequest, "Intent is missing required fields or has a non-positive amountIn.");
         }
 
-        if (!options.CanOperate)
+        if (!options.CanPrice)
         {
             return SolverPolicyDecision.Deny(SolverDenialReason.NotConfigured, "Cross-chain solver is not configured.");
         }
