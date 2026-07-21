@@ -42,6 +42,36 @@
     <script>
         window.animationObserver = null;
 
+        window.animateSelector =
+            '[data-animate]:not(.is-visible):not(#hero-section *), [data-stagger]:not(.is-visible), .comfy-animate:not(.is-visible), .comfy-animate-image:not(.is-visible)';
+
+        // Everything with [data-animate] starts at opacity:0. An IntersectionObserver
+        // only delivers its first callback asynchronously, so on an enhanced navigation
+        // the freshly swapped-in page would sit fully transparent for a frame or more —
+        // long enough to read as a blank flash of the page background between routes.
+        // Reveal whatever is already on screen synchronously; the observer then only has
+        // to handle what's below the fold, where a late reveal is the point.
+        //
+        // `instant` additionally suppresses the 1s fade (see .reveal-instant in app.css).
+        // Adding .is-visible alone isn't enough mid-navigation: the element spends most
+        // of a second near opacity:0, which looks exactly like the blank flash we're
+        // trying to remove. Content already on screen when the route changes should
+        // simply be there; the fade is for scrolling into new content.
+        window.revealInView = (instant) => {
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+            document.querySelectorAll(window.animateSelector).forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < viewportHeight && rect.bottom > 0) {
+                    if (instant) {
+                        el.classList.add('reveal-instant');
+                    }
+
+                    el.classList.add('is-visible');
+                }
+            });
+        };
+
         window.initAnimations = () => {
             if (window.animationObserver) {
                 window.animationObserver.disconnect();
@@ -64,25 +94,76 @@
 
             window.animationObserver = observer;
 
-            const animatedElements = document.querySelectorAll(
-                '[data-animate]:not(.is-visible):not(#hero-section *), [data-stagger]:not(.is-visible), .comfy-animate:not(.is-visible), .comfy-animate-image:not(.is-visible)'
-            );
+            const animatedElements = document.querySelectorAll(window.animateSelector);
 
             animatedElements.forEach(el => observer.observe(el));
         };
 
-        window.revealHero = () => {
-            document.querySelectorAll('#hero-section [data-animate]').forEach(el => el.classList.add('is-visible'));
+        window.revealHero = (instant) => {
+            document.querySelectorAll('#hero-section [data-animate]').forEach(el => {
+                if (instant) {
+                    el.classList.add('reveal-instant');
+                }
+
+                el.classList.add('is-visible');
+            });
         };
 
-        window.queueAnimations = () => {
+        window.revealMutationObserver = null;
+
+        // Enhanced navigation isn't the only time markup gets replaced: when a
+        // component goes interactive Blazor swaps out the prerendered nodes, and later
+        // re-renders can recreate subtrees wholesale. Either way the fresh nodes come
+        // back at opacity:0 because .is-visible only ever lived on the discarded ones,
+        // which flashes the bare page background mid-navigation. MutationObserver
+        // callbacks are delivered as microtasks — before the next paint — so
+        // re-revealing here closes the gap rather than showing a blank frame first.
+        window.watchReveals = () => {
+            if (window.revealMutationObserver || !('MutationObserver' in window) || !document.body) {
+                return;
+            }
+
+            const observer = new MutationObserver(records => {
+                for (const record of records) {
+                    for (const node of record.addedNodes) {
+                        if (node.nodeType !== 1) {
+                            continue;
+                        }
+
+                        if (node.matches(window.animateSelector) || node.querySelector(window.animateSelector)) {
+                            window.revealInView(true);
+                            // Newly created nodes below the fold aren't known to the
+                            // IntersectionObserver, so re-arm it for the next scroll.
+                            requestAnimationFrame(window.initAnimations);
+                            return;
+                        }
+                    }
+                }
+            });
+
+            // Only childList — revealInView mutates classes, and observing attributes
+            // would feed that straight back in as a loop.
+            observer.observe(document.body, { childList: true, subtree: true });
+            window.revealMutationObserver = observer;
+        };
+
+        // `instant` is set for route changes, where the fade reads as a flash, and left
+        // off for the initial load, where it's the intended entrance.
+        window.queueAnimations = (instant) => {
+            // Synchronous, before the browser gets a chance to paint the new page.
+            window.revealHero(instant);
+            window.revealInView(instant);
+            window.watchReveals();
+
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     window.initAnimations();
-                    window.revealHero();
+                    window.revealHero(instant);
                 });
             });
         };
+
+        window.watchReveals();
 
         window.queuePublicHeader = () => {
             requestAnimationFrame(() => {
@@ -139,14 +220,16 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', window.queueAnimations);
+        // Wrapped, not passed by reference: the handler would otherwise receive the
+        // Event as `instant` and skip the intended entrance fade on a cold load.
+        document.addEventListener('DOMContentLoaded', () => window.queueAnimations(false));
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
         document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
         document.addEventListener('DOMContentLoaded', window.queueHeroVideo);
 
         const onEnhancedLoad = () => {
-            window.queueAnimations();
+            window.queueAnimations(true);
             window.queuePublicHeader();
             window.queueRecruiterMotion();
             window.queueHeroWebGL();
