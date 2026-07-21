@@ -95,6 +95,18 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Deployment.PaymentToken.Should().Be(Address('C'));
             deployed.Capabilities.LiquidStaking.Should().BeTrue();
             deployed.Capabilities.AgenticCommerce.Should().BeTrue();
+            deployed.Capabilities.AgenticSessionPayments.Should().BeTrue();
+            deployed.Deployment.ModularAccountFactory.Should().Be(Address('M'));
+            deployed.Deployment.DelegationManager.Should().Be(Address('D'));
+            deployed.Deployment.HybridDeleGatorImplementation.Should().Be(Address('H'));
+            deployed.Deployment.AllowedTargetsEnforcer.Should().Be(Address('1'));
+            deployed.Deployment.AllowedMethodsEnforcer.Should().Be(Address('2'));
+            deployed.Deployment.ExactCalldataEnforcer.Should().Be(Address('3'));
+            deployed.Deployment.LimitedCallsEnforcer.Should().Be(Address('4'));
+            deployed.Deployment.NonceEnforcer.Should().Be(Address('5'));
+            deployed.Deployment.TimestampEnforcer.Should().Be(Address('6'));
+            deployed.Deployment.ModularAccountType.Should().Be("metamask-hybrid-delegator-v1.3.0");
+            deployed.Deployment.ModularFrameworkRevision.Should().Be("bfbdf9795a976833ed2fa000baf42fbb83958b03");
         }
         finally
         {
@@ -150,10 +162,23 @@ public sealed class BlockchainManifestLoaderTests
             "erc8183Escrow": "{{Address('E')}}",
             "entryPoint": "{{Address('P')}}",
             "erc8004Registry": "{{Address('R')}}",
-            "erc7683Resolver": "{{Address('S')}}"
+            "erc7683Resolver": "{{Address('S')}}",
+            "modularSimpleFactory": "{{Address('M')}}",
+            "delegationManager": "{{Address('D')}}",
+            "hybridDeleGatorImplementation": "{{Address('H')}}",
+            "allowedTargetsEnforcer": "{{Address('1')}}",
+            "allowedMethodsEnforcer": "{{Address('2')}}",
+            "exactCalldataEnforcer": "{{Address('3')}}",
+            "limitedCallsEnforcer": "{{Address('4')}}",
+            "nonceEnforcer": "{{Address('5')}}",
+            "timestampEnforcer": "{{Address('6')}}"
           },
           "deployBlock": 123,
-          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true }
+          "accountAbstraction": {
+            "modularAccountType": "metamask-hybrid-delegator-v1.3.0",
+            "modularFrameworkRevision": "bfbdf9795a976833ed2fa000baf42fbb83958b03"
+          },
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true }
         }
         """);
         return path;

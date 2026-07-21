@@ -1,0 +1,11 @@
+# Rundler chain spec pointing at this repo's own locally-deployed, pinned canonical EntryPoint.
+# See rundler-e2e-check.ts's header for the full investigation this supports. The address below
+# matches deployments/evm-local.json's "entryPoint" — deterministic given deploy.ts's fixed
+# deployer-nonce sequence against a fresh Hardhat node, confirmed identical across repeated
+# redeploys. If deploy.ts's deployment order ever changes, update this to match the new manifest.
+base = "ethereum"
+
+name = "ArtisanalBrew Local"
+id = 31337
+
+entry_point_address_v0_7 = "0x8a791620dd6260079bf849dc5567adc3f2fdc318"

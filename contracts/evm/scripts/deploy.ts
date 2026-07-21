@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { network } from "hardhat";
 import { parseEther } from "viem";
+import { deployDeleGatorEnvironment } from "@metamask/delegation-toolkit/utils";
 
 const { viem } = await network.connect();
 const [deployer] = await viem.getWalletClients();
@@ -53,6 +54,21 @@ const escrow = await viem.deployContract("AgenticCommerceEscrow", [
   "0x0000000000000000000000000000000000000000" // Zero address for trusted forwarder as per user preference
 ]);
 
+// Additive modular-account stack. The official SDK deploys the published,
+// unmodified Delegation Framework v1.3.0 bytecode and reuses this deployment's
+// canonical EntryPoint v0.7. Existing SimpleAccount addresses and behavior are
+// deliberately left intact. Public deployments require the same explicit
+// confirmation as the rest of this script.
+const modularAccountsEnabled = chainId === 31337 || process.env.ENABLE_METAMASK_MODULAR_ACCOUNTS === "true";
+const modularEnvironment = modularAccountsEnabled
+  ? await deployDeleGatorEnvironment(
+      deployer as never,
+      publicClient as never,
+      publicClient.chain!,
+      { EntryPoint: entryPoint.address }
+    )
+  : null;
+
 const rpcUrl = process.env.PUBLIC_RPC_URL ?? (chainId === 97 ? process.env.BSC_TESTNET_RPC_URL ?? "https://97.rpc.thirdweb.com" : "http://127.0.0.1:8545");
 const explorerBase = chainId === 97 ? "https://testnet.bscscan.com" : "http://127.0.0.1:8545";
 const displayName = chainId === 97 ? "BSC Testnet" : "Local EVM";
@@ -78,9 +94,27 @@ const manifest = {
     verifyingPaymaster: verifyingPaymaster.address,
     erc8004Registry: registry.address,
     erc7683Resolver: resolver.address,
-    erc8183Escrow: escrow.address
+    erc8183Escrow: escrow.address,
+    ...(modularEnvironment ? {
+      modularSimpleFactory: modularEnvironment.SimpleFactory,
+      delegationManager: modularEnvironment.DelegationManager,
+      hybridDeleGatorImplementation: modularEnvironment.implementations.HybridDeleGatorImpl,
+      allowedTargetsEnforcer: modularEnvironment.caveatEnforcers.AllowedTargetsEnforcer,
+      allowedMethodsEnforcer: modularEnvironment.caveatEnforcers.AllowedMethodsEnforcer,
+      exactCalldataEnforcer: modularEnvironment.caveatEnforcers.ExactCalldataEnforcer,
+      limitedCallsEnforcer: modularEnvironment.caveatEnforcers.LimitedCallsEnforcer,
+      nonceEnforcer: modularEnvironment.caveatEnforcers.NonceEnforcer,
+      timestampEnforcer: modularEnvironment.caveatEnforcers.TimestampEnforcer
+    } : {})
   },
-  capabilities: { walletLogin: true, liquidStaking: true, legacyExit: false, faucet: true, marketplacePayment: false, rewardMinting: true, agenticCommerce: true },
+  accountAbstraction: {
+    entryPointVersion: "0.7",
+    legacyAccountType: "simple-v0.7",
+    modularAccountType: modularEnvironment ? "metamask-hybrid-delegator-v1.3.0" : null,
+    modularFrameworkRevision: modularEnvironment ? "bfbdf9795a976833ed2fa000baf42fbb83958b03" : null,
+    modularCompiler: modularEnvironment ? { solc: "0.8.23", optimizerRuns: 200, evmVersion: "london" } : null
+  },
+  capabilities: { walletLogin: true, liquidStaking: true, legacyExit: false, faucet: true, marketplacePayment: false, rewardMinting: true, agenticCommerce: true, agenticSessionPayments: modularEnvironment !== null },
   admin
 };
 const manifestPath = process.env.DEPLOYMENT_MANIFEST ?? `deployments/${chainKey}.json`;

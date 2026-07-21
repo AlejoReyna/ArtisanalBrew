@@ -77,14 +77,26 @@ public static class BlockchainManifestLoader
                     VerifyingPaymaster = Optional(addresses, "verifyingPaymaster") ?? string.Empty,
                     ERC8004Registry = Optional(addresses, "erc8004Registry") ?? string.Empty,
                     ERC7683Resolver = Optional(addresses, "erc7683Resolver") ?? string.Empty,
+                    ModularAccountFactory = Optional(addresses, "modularSimpleFactory") ?? string.Empty,
+                    DelegationManager = Optional(addresses, "delegationManager") ?? string.Empty,
+                    HybridDeleGatorImplementation = Optional(addresses, "hybridDeleGatorImplementation") ?? string.Empty,
+                    AllowedTargetsEnforcer = Optional(addresses, "allowedTargetsEnforcer") ?? string.Empty,
+                    AllowedMethodsEnforcer = Optional(addresses, "allowedMethodsEnforcer") ?? string.Empty,
+                    ExactCalldataEnforcer = Optional(addresses, "exactCalldataEnforcer") ?? string.Empty,
+                    LimitedCallsEnforcer = Optional(addresses, "limitedCallsEnforcer") ?? string.Empty,
+                    NonceEnforcer = Optional(addresses, "nonceEnforcer") ?? string.Empty,
+                    TimestampEnforcer = Optional(addresses, "timestampEnforcer") ?? string.Empty,
+                    ModularAccountType = root.TryGetProperty("accountAbstraction", out var aa) ? Optional(aa, "modularAccountType") ?? string.Empty : string.Empty,
+                    ModularFrameworkRevision = root.TryGetProperty("accountAbstraction", out var aa2) ? Optional(aa2, "modularFrameworkRevision") ?? string.Empty : string.Empty,
                     StartBlockOrSlot = ReadLong(root, "deployBlock")
                 },
-                Capabilities = new ChainCapabilities { 
-                    WalletLogin = true, 
-                    LiquidStaking = true, 
-                    Faucet = true, 
+                Capabilities = new ChainCapabilities {
+                    WalletLogin = true,
+                    LiquidStaking = true,
+                    Faucet = true,
                     RewardMinting = true,
-                    AgenticCommerce = root.TryGetProperty("capabilities", out var caps) && caps.TryGetProperty("agenticCommerce", out var agenticCommerce) && agenticCommerce.GetBoolean()
+                    AgenticCommerce = root.TryGetProperty("capabilities", out var caps) && caps.TryGetProperty("agenticCommerce", out var agenticCommerce) && agenticCommerce.GetBoolean(),
+                    AgenticSessionPayments = root.TryGetProperty("capabilities", out var caps2) && caps2.TryGetProperty("agenticSessionPayments", out var agenticSessionPayments) && agenticSessionPayments.GetBoolean()
                 }
             };
             return true;

@@ -66,6 +66,231 @@ jobs:
       - name: Format check
         run: dotnet format --verify-no-changes --no-restore
 
+  crossstack-verification:
+    name: Cross-stack live verification (sponsorship, bundler, cross-chain solver)
+    runs-on: ubuntu-latest
+    needs: build-test
+    # Deliberately not a dependency of deploy-azure: this job drives live Hardhat nodes, a
+    # downloaded external bundler binary, and a real standing worker process, all of which carry
+    # more inherent timing/flakiness risk than the unit/contract suites in build-test. It verifies
+    # real cross-stack behavior that no unit test can (see docs/agentic-commerce-stack-plan.md and
+    # walkthrough.md for what each proof script actually establishes), but gating production
+    # deploys on it is a separate decision this job does not make unilaterally.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: thiscafeteria_test
+          POSTGRES_USER: test_only
+          POSTGRES_PASSWORD: test_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_only -d thiscafeteria_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore and build
+        run: dotnet restore && dotnet build --configuration Release --no-restore
+
+      - name: Restore local dotnet tools (dotnet-ef)
+        run: dotnet tool restore
+
+      - name: Install contract dependencies
+        working-directory: contracts/evm
+        run: npm ci
+
+      # --- Stage 1: sponsorship, gas-simulation, and bundler proofs (single node, port 8546) ---
+
+      - name: Start Hardhat node (arbitrumLocal)
+        working-directory: contracts/evm
+        run: nohup npx hardhat node --network hardhat --port 8546 > /tmp/hardhat-8546.log 2>&1 &
+
+      - name: Wait for Hardhat node RPC
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -sf -X POST -H "Content-Type: application/json" \
+                --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+                http://127.0.0.1:8546 > /dev/null; then
+              echo "Hardhat node ready."
+              exit 0
+            fi
+            echo "Waiting for Hardhat node (attempt $i/30)..."
+            sleep 2
+          done
+          echo "ERROR: Hardhat node did not start within 60 seconds." >&2
+          cat /tmp/hardhat-8546.log >&2
+          exit 1
+
+      - name: Deploy contracts to arbitrumLocal
+        working-directory: contracts/evm
+        run: npx hardhat run scripts/deploy.ts --network arbitrumLocal
+
+      - name: Run crossstack sponsor check (real C# UserOperationSponsor/UserOperationSimulator)
+        working-directory: contracts/evm
+        run: HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/crossstack-sponsor-check.ts
+
+      - name: Run simulation recipe check
+        working-directory: contracts/evm
+        run: HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/simulation-recipe-check.ts
+
+      - name: Download Rundler v0.11.0 (pinned release binary, not npm-distributed)
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rundler
+          curl -sL -o /tmp/rundler.tar.gz \
+            "https://github.com/alchemyplatform/rundler/releases/download/v0.11.0/rundler-v0.11.0-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xzf /tmp/rundler.tar.gz -C /tmp/rundler
+          chmod +x /tmp/rundler/rundler
+
+      - name: Start Rundler bundler in --unsafe mode (local Hardhat can't run bundler safe-mode's JS tracer; see "Rundler investigation" in agentic-commerce-stack-plan.md)
+        run: |
+          nohup /tmp/rundler/rundler node \
+            --chain_spec contracts/evm/scripts/rundler-chain-spec-local.toml \
+            --node_http http://127.0.0.1:8546 \
+            --signer.private_keys 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d \
+            --rpc.port 4338 \
+            --unsafe \
+            > /tmp/rundler.log 2>&1 &
+
+      - name: Wait for Rundler RPC
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -sf -X POST -H "Content-Type: application/json" \
+                --data '{"jsonrpc":"2.0","method":"eth_supportedEntryPoints","params":[],"id":1}' \
+                http://127.0.0.1:4338 > /dev/null; then
+              echo "Rundler ready."
+              exit 0
+            fi
+            echo "Waiting for Rundler (attempt $i/30)..."
+            sleep 2
+          done
+          echo "ERROR: Rundler did not start within 60 seconds." >&2
+          cat /tmp/rundler.log >&2
+          exit 1
+
+      - name: Run Rundler end-to-end bundler check
+        working-directory: contracts/evm
+        run: HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/rundler-e2e-check.ts
+
+      - name: Stop stage 1 processes
+        if: always()
+        run: |
+          pkill -9 -f "rundler node" || true
+          pkill -9 -f "hardhat node" || true
+          sleep 2
+
+      # --- Stage 2: two-node cross-chain smoke test and standing solver (two nodes, 8546+8547) ---
+
+      - name: Start two independent Hardhat nodes (arbitrumLocal, baseLocal)
+        working-directory: contracts/evm
+        run: |
+          nohup npx hardhat node --network hardhat --port 8546 > /tmp/hardhat-8546-b.log 2>&1 &
+          nohup npx hardhat node --network hardhat --port 8547 > /tmp/hardhat-8547.log 2>&1 &
+
+      - name: Wait for both Hardhat node RPCs
+        run: |
+          set -euo pipefail
+          for port in 8546 8547; do
+            for i in $(seq 1 30); do
+              if curl -sf -X POST -H "Content-Type: application/json" \
+                  --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+                  "http://127.0.0.1:${port}" > /dev/null; then
+                echo "Hardhat node on port ${port} ready."
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "ERROR: Hardhat node on port ${port} did not start within 60 seconds." >&2
+                exit 1
+              fi
+              sleep 2
+            done
+          done
+
+      - name: Run two-node cross-chain smoke test (Phase 5 gate)
+        working-directory: contracts/evm
+        run: npx tsx scripts/two-node-crosschain-smoke.ts
+
+      - name: Apply database migrations
+        run: |
+          dotnet ef database update \
+            --project src/ThisCafeteria.Infrastructure \
+            --startup-project src/ThisCafeteria.Web
+
+      - name: Deploy standing-solver fixtures
+        working-directory: contracts/evm
+        run: HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/two-node-standing-solver-check.ts --deploy
+
+      - name: Start ThisCafeteria.Worker (real standing CrossChainSolverWorker BackgroundService)
+        run: |
+          set -euo pipefail
+          STATE=/tmp/standing-solver-state.json
+          read_field() { node -e "process.stdout.write(String(require('$STATE').$1))"; }
+
+          export Blockchain__DefaultChainKey=arbitrumLocal
+          export Blockchain__Chains__0__Key=arbitrumLocal
+          export Blockchain__Chains__0__Family=Evm
+          export Blockchain__Chains__0__EvmChainId=421614
+          export Blockchain__Chains__0__EvmChainIdHex=0x66eee
+          export Blockchain__Chains__0__PublicRpcUrl=http://127.0.0.1:8546
+          export Blockchain__Chains__0__Enabled=true
+          export Blockchain__Chains__1__Key=baseLocal
+          export Blockchain__Chains__1__Family=Evm
+          export Blockchain__Chains__1__EvmChainId=84532
+          export Blockchain__Chains__1__EvmChainIdHex=0x14a34
+          export Blockchain__Chains__1__PublicRpcUrl=http://127.0.0.1:8547
+          export Blockchain__Chains__1__Enabled=true
+          export CrossChainSolver__Enabled=true
+          export CrossChainSolver__SourceChainKey=arbitrumLocal
+          export CrossChainSolver__SourceResolverAddress=$(read_field sourceResolver)
+          export CrossChainSolver__DestinationChainKey=baseLocal
+          export CrossChainSolver__DestinationResolverAddress=$(read_field destResolver)
+          export CrossChainSolver__SolverPrivateKey=$(read_field solverPrivateKey)
+          export CrossChainSolver__AllowedTokenPairs__0__SourceToken=$(read_field sourceToken)
+          export CrossChainSolver__AllowedTokenPairs__0__DestinationToken=$(read_field destToken)
+          export CrossChainSolver__MaxAmountIn=1000
+          export CrossChainSolver__MaxOutputBps=10000
+
+          nohup dotnet run --project src/ThisCafeteria.Worker --environment Development \
+            --configuration Release --no-build \
+            > /tmp/worker.log 2>&1 &
+          echo "Worker starting, waiting 10s to initialize..."
+          sleep 10
+          cat /tmp/worker.log
+
+      - name: Submit policy-approved intent and verify autonomous fill
+        working-directory: contracts/evm
+        run: HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/two-node-standing-solver-check.ts --submit-good
+
+      - name: Submit disallowed-token-pair intent and verify it stays unfilled
+        working-directory: contracts/evm
+        run: HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/two-node-standing-solver-check.ts --submit-denied
+
+      - name: Show worker log
+        if: always()
+        run: cat /tmp/worker.log || true
+
+      - name: Stop stage 2 processes
+        if: always()
+        run: |
+          pkill -9 -f "ThisCafeteria.Worker" || true
+          pkill -9 -f "hardhat node" || true
+
   deploy-azure:
     name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest

@@ -2,18 +2,53 @@
   "schemaVersion": 1,
   "chainKey": "evm-local",
   "chainId": 31337,
-  "deployBlock": "9",
+  "rpcUrl": "http://127.0.0.1:8545",
+  "displayName": "Local EVM",
+  "explorerAddressTemplate": "http://127.0.0.1:8545/address/{0}",
+  "explorerTransactionTemplate": "http://127.0.0.1:8545/tx/{0}",
+  "nativeCurrency": {
+    "name": "Local Ether",
+    "symbol": "ETH",
+    "decimals": 18
+  },
+  "deployBlock": "3",
   "compiler": {
     "solc": "0.8.24",
     "optimizerRuns": 200,
     "viaIR": true
   },
-  "deployedAtUtc": "2026-07-19T00:28:53.382Z",
+  "deployedAtUtc": "2026-07-21T23:00:41.661Z",
   "addresses": {
     "cafe": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
     "coffee": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
     "liquidVault": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
-    "faucet": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9"
+    "faucet": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "entryPoint": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+    "accountFactory": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+    "verifyingPaymaster": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "erc8004Registry": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
+    "erc7683Resolver": "0x0dcd1bf9a1b36ce34237eeafef220932846bcd82",
+    "erc8183Escrow": "0x9a676e781a523b5d0c0e43731313a708cb607508",
+    "modularSimpleFactory": "0x0b306bf915c4d645ff596e518faf3f9669b97016",
+    "delegationManager": "0x5eb3bc0a489c5a8288765d2336659ebca68fcd00",
+    "hybridDeleGatorImplementation": "0x4c5859f0f772848b2d91f1d83e2fe57935348029",
+    "allowedTargetsEnforcer": "0x9a9f2ccfde556a7e9ff0848998aa4a0cfd8863ae",
+    "allowedMethodsEnforcer": "0x68b1d87f95878fe05b998f19b66f4baba5de1aed",
+    "exactCalldataEnforcer": "0x99bba657f2bbc93c02d617f8ba121cb8fc104acf",
+    "limitedCallsEnforcer": "0x322813fd9a801c5507c9de605d63cea4f2ce6c44",
+    "nonceEnforcer": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+    "timestampEnforcer": "0x59b670e9fa9d0a427751af201d676719a970857b"
+  },
+  "accountAbstraction": {
+    "entryPointVersion": "0.7",
+    "legacyAccountType": "simple-v0.7",
+    "modularAccountType": "metamask-hybrid-delegator-v1.3.0",
+    "modularFrameworkRevision": "bfbdf9795a976833ed2fa000baf42fbb83958b03",
+    "modularCompiler": {
+      "solc": "0.8.23",
+      "optimizerRuns": 200,
+      "evmVersion": "london"
+    }
   },
   "capabilities": {
     "walletLogin": true,
@@ -21,6 +56,9 @@
     "legacyExit": false,
     "faucet": true,
     "marketplacePayment": false,
-    "rewardMinting": true
-  }
+    "rewardMinting": true,
+    "agenticCommerce": true,
+    "agenticSessionPayments": true
+  },
+  "admin": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
 }

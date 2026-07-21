@@ -11,7 +11,14 @@ export default defineConfig({
     }
   },
   networks: {
-    hardhat: { type: "edr-simulated", chainId: 31337 },
+    // transactionGasCap raises L1 Osaka's EIP-7825 per-tx/call gas cap (default 16,777,216,
+    // and `false` would only fall back to this network's 60M block gas limit). ERC-4337
+    // bundlers routinely simulate UserOperations with very high gas ceilings (Rundler uses
+    // ~550M) to distinguish real reverts from artificial out-of-gas during simulation; the
+    // Osaka default cap rejects those calls outright with "transaction gas limit ... greater
+    // than the cap". `npx hardhat node` (backing arbitrumLocal/baseLocal as separate
+    // processes) boots from this entry.
+    hardhat: { type: "edr-simulated", chainId: 31337, transactionGasCap: 1_000_000_000n },
     localhost: { type: "http", url: "http://127.0.0.1:8545", chainId: 31337 },
     bscTestnet: {
       type: "http",

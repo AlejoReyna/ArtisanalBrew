@@ -29,26 +29,33 @@
 @if (!_isConnected)
 {
     <section class="staking-connect" data-animate="fade-up">
-        <ChainSelector OnChainChanged="HandleChainChangedAsync" />
-        <div class="staking-connect__content">
-            <h2>Connect your wallet to deposit CAFE, receive stCAFE, and earn COFFEE.</h2>
-            <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
-            @if (!string.IsNullOrWhiteSpace(_connectError))
-            {
-                <p class="text-danger">@_connectError</p>
-            }
-            <button type="button" class="button button--dark" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
-            </button>
-            @if (OnBackToProfile.HasDelegate)
-            {
-                <button type="button" class="yield-back yield-back--center" @onclick="OnBackToProfile">
-                    <span aria-hidden="true">&larr;</span> Back to Profile
+        <div class="staking-connect__left">
+            <img src="/images/coffee-coin.png" class="staking-connect__bg-coin" alt="Coffee Coin" aria-hidden="true" />
+            <div class="staking-connect__content">
+                <div class="staking-connect__chain-wrapper">
+                    <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+                </div>
+                <h2>Connect your wallet to deposit CAFE, receive stCAFE, and earn COFFEE.</h2>
+                <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
+                @if (!string.IsNullOrWhiteSpace(_connectError))
+                {
+                    <p class="text-danger">@_connectError</p>
+                }
+                <button type="button" class="button button--dark button--glow" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                    @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
                 </button>
-            }
+                @if (OnBackToProfile.HasDelegate)
+                {
+                    <button type="button" class="yield-back yield-back--center" @onclick="OnBackToProfile">
+                        <span aria-hidden="true">&larr;</span> Back to Profile
+                    </button>
+                }
+            </div>
         </div>
-        <div class="staking-connect__faucet">
-            <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" />
+        <div class="staking-connect__right">
+            <div class="staking-connect__faucet">
+                <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" />
+            </div>
         </div>
     </section>
 }

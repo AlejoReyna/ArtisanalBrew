@@ -11,39 +11,48 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("""
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1
-                        FROM information_schema.columns
-                        WHERE table_schema = 'public'
-                          AND table_name = 'RewardClaims'
-                          AND column_name = 'PaymentTransactionHash'
-                    ) THEN
-                        ALTER TABLE "RewardClaims"
-                        ADD COLUMN "PaymentTransactionHash" character varying(66);
-                    END IF;
-                END $$;
-                """);
+            if (migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                migrationBuilder.Sql("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1
+                            FROM information_schema.columns
+                            WHERE table_schema = 'public'
+                              AND table_name = 'RewardClaims'
+                              AND column_name = 'PaymentTransactionHash'
+                        ) THEN
+                            ALTER TABLE "RewardClaims"
+                            ADD COLUMN "PaymentTransactionHash" character varying(66);
+                        END IF;
+                    END $$;
+                    """);
+            }
 
-            migrationBuilder.Sql("""
-                DROP INDEX IF EXISTS "IX_RewardClaims_PaymentTransactionHash";
+            if (migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                migrationBuilder.Sql("""
+                    DROP INDEX IF EXISTS "IX_RewardClaims_PaymentTransactionHash";
 
-                CREATE UNIQUE INDEX IF NOT EXISTS "IX_RewardClaims_PaymentTransactionHash"
-                ON "RewardClaims" ("PaymentTransactionHash")
-                WHERE "PaymentTransactionHash" IS NOT NULL;
-                """);
+                    CREATE UNIQUE INDEX IF NOT EXISTS "IX_RewardClaims_PaymentTransactionHash"
+                    ON "RewardClaims" ("PaymentTransactionHash")
+                    WHERE "PaymentTransactionHash" IS NOT NULL;
+                    """);
+            }
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("""
-                DROP INDEX IF EXISTS "IX_RewardClaims_PaymentTransactionHash";
-
-                ALTER TABLE "RewardClaims"
-                DROP COLUMN IF EXISTS "PaymentTransactionHash";
-                """);
+            if (migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                migrationBuilder.Sql("""
+                    DROP INDEX IF EXISTS "IX_RewardClaims_PaymentTransactionHash";
+    
+                    ALTER TABLE "RewardClaims"
+                    DROP COLUMN IF EXISTS "PaymentTransactionHash";
+                    """);
+            }
         }
     }
 }

@@ -33,6 +33,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<SponsorshipUsage> SponsorshipUsages { get; set; } = null!;
     public DbSet<CrossChainSolverCheckpoint> CrossChainSolverCheckpoints { get; set; } = null!;
     public DbSet<CrossChainSolverFill> CrossChainSolverFills { get; set; } = null!;
+    public DbSet<SmartAccountRecord> SmartAccountRecords { get; set; } = null!;
+    public DbSet<AgentPermissionEpoch> AgentPermissionEpochs { get; set; } = null!;
+    public DbSet<AgentPermissionGrant> AgentPermissionGrants { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

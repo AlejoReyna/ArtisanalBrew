@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "chainKey": "bsc-testnet",
+  "chainId": 97,
+  "rpcUrl": "https://data-seed-prebsc-1-s1.binance.org:8545",
+  "displayName": "BSC Testnet",
+  "explorerAddressTemplate": "https://testnet.bscscan.com/address/{0}",
+  "explorerTransactionTemplate": "https://testnet.bscscan.com/tx/{0}",
+  "nativeCurrency": {
+    "name": "BNB",
+    "symbol": "tBNB",
+    "decimals": 18
+  },
+  "deployBlock": "120021047",
+  "compiler": {
+    "solc": "0.8.24",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "deployedAtUtc": "2026-07-19T09:50:41.746Z",
+  "addresses": {
+    "cafe": "0x0c6301f656f67003011ca87b202f6b966e8df035",
+    "coffee": "0x7cec9e6c2b86fe5d714ef4307ea200768131caa9",
+    "liquidVault": "0x7a8fc3f7bead45a61e0f7516c1bc5e125b0db8a7",
+    "faucet": "0x9350dfebd50999ce3e84552c92a3137d0d846075"
+  },
+  "capabilities": {
+    "walletLogin": true,
+    "liquidStaking": true,
+    "legacyExit": false,
+    "faucet": true,
+    "marketplacePayment": false,
+    "rewardMinting": true
+  },
+  "admin": "0x9d5305a9621aafb5b5f8ba7a9977e3d96ea7eceb"
+}
