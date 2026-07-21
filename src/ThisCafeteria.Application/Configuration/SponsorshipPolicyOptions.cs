@@ -29,6 +29,36 @@ public sealed record SponsorshipPolicyOptions
     /// <summary>Validity window applied to new grants.</summary>
     public TimeSpan DefaultValidity { get; init; } = TimeSpan.FromDays(30);
 
+    /// <summary>
+    /// Private key of the paymaster's verifying signer. Sponsorship signing is disabled when this
+    /// is empty, so the system fails closed rather than signing with some default.
+    ///
+    /// This key authorises spending gas. It is intended for local development only, must never be
+    /// logged or committed, and a real deployment should source it from a secret store or KMS
+    /// rather than from configuration.
+    /// </summary>
+    public string VerifyingSignerPrivateKey { get; init; } = string.Empty;
+
+    /// <summary>
+    /// USD price of one unit of the chain's native currency, used to price gas. Zero disables
+    /// signing rather than silently treating gas as free — an unpriced budget is not a budget.
+    /// </summary>
+    public decimal NativeCurrencyUsdRate { get; init; }
+
+    /// <summary>Gas limit written into paymasterAndData for paymaster validation.</summary>
+    public ulong PaymasterVerificationGasLimit { get; init; } = 500_000;
+
+    /// <summary>Gas limit written into paymasterAndData for the postOp call.</summary>
+    public ulong PaymasterPostOpGasLimit { get; init; } = 200_000;
+
+    /// <summary>How long a produced sponsorship signature remains valid.</summary>
+    public TimeSpan SignatureValidity { get; init; } = TimeSpan.FromMinutes(15);
+
+    /// <summary>Signing requires the policy enabled, a signer key, and a usable gas price.</summary>
+    public bool CanSign => Enabled
+        && !string.IsNullOrWhiteSpace(VerifyingSignerPrivateKey)
+        && NativeCurrencyUsdRate > 0m;
+
     public bool IsTargetAllowed(string? target) =>
         !string.IsNullOrWhiteSpace(target)
         && AllowedTargets.Any(t => string.Equals(t, target, StringComparison.OrdinalIgnoreCase));

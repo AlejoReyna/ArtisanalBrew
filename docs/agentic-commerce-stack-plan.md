@@ -461,7 +461,7 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
 - 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
 - ⬜ batch approval plus funding;
-- 🟡 enforce sponsorship quotas and simulation — **quota engine implemented; no simulation**;
+- 🟡 enforce sponsorship quotas and simulation — **quota engine + signer implemented and proven cross-stack; no simulation**;
 - 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
 - ⬜ add constrained session permissions only with an audited compatible module.
 
@@ -570,10 +570,47 @@ The five gate failure modes are covered by unit tests in `SponsorshipPolicyServi
 per-operation cap, disabled policy, empty allowlists, absent grant, negative cost, case-insensitive
 matching, budget accumulation to exhaustion, and audit-row correctness.
 
-**Still missing:** simulation (`eth_estimateUserOperationGas` / `pm_sponsorUserOperation`-style
-pre-flight) is not implemented, so `EstimatedCostUsd` is supplied by the caller rather than derived
-from a simulated operation. Nothing yet converts gas to USD. And no code path signs a paymaster
-approval — the policy exists, but the signer that would consume it does not.
+#### Sponsorship signer
+
+`IUserOperationSponsor` / `UserOperationSponsor` turns a policy verdict into a signature the
+canonical `VerifyingPaymaster` accepts on-chain. It prices the operation from
+`gas × gasPrice × NativeCurrencyUsdRate`, asks the policy with target and selector populated, and
+signs **only** on approval.
+
+The signed hash comes from the paymaster contract's own `getHash(userOp, validUntil, validAfter)`
+rather than a C# reimplementation of v0.7 hashing. A reimplementation would agree with itself and
+nothing else; asking the contract means any divergence surfaces as a rejected operation.
+
+**The wrong-target/wrong-selector hole is now closed structurally.**
+`ISmartAccountService.HasSufficientSponsorshipQuotaAsync` carries neither target nor selector, so it
+can only check budget and validity. Rather than documenting that as a caution,
+`SponsoredUserOperation.TargetAddress` and `.Selector` are `required` — it is not possible to obtain
+a paymaster signature without both having been checked. Cost is likewise derived from gas rather
+than accepted from the caller: a budget enforced against a self-reported number is advisory, not a
+control.
+
+**Fail-closed:** no signer key, no native-USD rate, disabled policy, unknown chain, or any policy
+denial all yield no signature.
+
+**Verified cross-stack**, not only by unit tests
+(`contracts/evm/scripts/crossstack-sponsor-check.ts`):
+
+| Case | Result |
+|------|--------|
+| disallowed target | policy denied (`DisallowedTarget`), `paymasterAndData` empty — no signature produced |
+| approved sponsorship | C#-produced signature **accepted by the on-chain paymaster**; account deployed at `0x93e9…9920`, account deposit spent `0` (fully sponsored), paymaster deposit reduced by 459,325,777,348,716 wei |
+
+Cost arithmetic confirmed end to end: 2,000,000 gas × 10 gwei = 0.02 ETH → **60 USD** at a
+3000 USD/ETH rate.
+
+**Key handling:** `VerifyingSignerPrivateKey` authorises spending gas. It is configuration-based and
+intended for local development only — never logged, never committed. A real deployment must source
+it from a secret store or KMS.
+
+**Still missing:** simulation. There is no `eth_estimateUserOperationGas` /
+`pm_sponsorUserOperation` pre-flight, so `EstimatedGas` and `GasPriceWei` come from the caller
+rather than from a simulated operation — the conversion to USD is enforced, but those inputs are
+not yet validated. `NativeCurrencyUsdRate` is a static configured number, not an oracle.
 
 ### Phase 5 — ERC-7683 cross-chain path
 

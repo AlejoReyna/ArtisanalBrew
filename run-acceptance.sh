@@ -137,7 +137,7 @@ DB_NAME="this_cafeteria"
 # PostgreSQL runs under the Apple `container` runtime; evidence queries exec into
 # it rather than using host psql (which blocks on an interactive password prompt).
 PG_CONTAINER="${PG_CONTAINER:-this-cafeteria-postgres}"
-# Refuse to reset shared databases (must not match production names).
+# Databases this harness may run against non-destructively.
 SAFE_DB_PATTERNS=("this_cafeteria_test" "this_cafeteria_acceptance" "this_cafeteria_local" "this_cafeteria")
 SAFE=0
 for pat in "${SAFE_DB_PATTERNS[@]}"; do
@@ -152,11 +152,35 @@ if [ "$SAFE" = "0" ]; then
     exit 1
 fi
 
+# Databases that may be DROPPED. Deliberately excludes "this_cafeteria": that is the ordinary
+# development database, and an isolation flag the operator sets by hand is not evidence that
+# losing it is acceptable. Destructive runs must name a dedicated database.
+DESTRUCTIBLE_DB_PATTERNS=("this_cafeteria_test" "this_cafeteria_acceptance")
+
 # ---------------------------------------------------------------------------
 # 6. Optionally reset database (fail closed unless isolation confirmed)
 # ---------------------------------------------------------------------------
 if [ "${RESET_DB:-0}" = "1" ]; then
-    echo "RESET_DB=1: dropping database for clean state..."
+    DESTRUCTIBLE=0
+    for pat in "${DESTRUCTIBLE_DB_PATTERNS[@]}"; do
+        if [ "$DB_NAME" = "$pat" ]; then
+            DESTRUCTIBLE=1
+            break
+        fi
+    done
+
+    if [ "$DESTRUCTIBLE" = "0" ]; then
+        echo "ERROR: refusing to drop database '$DB_NAME'."
+        echo "  RESET_DB=1 may only drop a dedicated acceptance database:"
+        printf '    %s\n' "${DESTRUCTIBLE_DB_PATTERNS[@]}"
+        echo "  '$DB_NAME' is the ordinary development database. ACCEPTANCE_ISOLATED=1 asserts the"
+        echo "  environment is disposable, but it cannot make a shared database safe to drop."
+        echo "  Point ConnectionStrings__DefaultConnection at a dedicated database and retry."
+        echo "ACCEPTANCE_RESULT=FAIL exit=1"
+        exit 1
+    fi
+
+    echo "RESET_DB=1: dropping database '$DB_NAME' for clean state..."
     dotnet ef database drop -f \
         --project src/ThisCafeteria.Infrastructure \
         --startup-project src/ThisCafeteria.Web
