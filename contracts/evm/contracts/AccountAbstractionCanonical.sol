@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {SimpleAccountFactory} from "@account-abstraction/contracts/samples/SimpleAccountFactory.sol";
+import {VerifyingPaymaster} from "@account-abstraction/contracts/samples/VerifyingPaymaster.sol";
 import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 // Canonical ERC-4337 v0.7.0 account factory, deployed unmodified.
@@ -16,4 +17,16 @@ import {IEntryPoint} from "@account-abstraction/contracts/interfaces/IEntryPoint
 // an audited account implementation instead.
 contract CanonicalSimpleAccountFactory is SimpleAccountFactory {
     constructor(IEntryPoint entryPoint_) SimpleAccountFactory(entryPoint_) {}
+}
+
+// Canonical ERC-4337 v0.7.0 VerifyingPaymaster, deployed unmodified.
+//
+// Sponsorship is authorised off-chain: `verifyingSigner` signs a hash covering the UserOperation
+// plus a validUntil/validAfter window, and the paymaster verifies that signature on-chain. This is
+// the reference sponsorship primitive, not a policy engine — quota enforcement, per-user limits,
+// and simulation still have to be implemented on top of it.
+contract CanonicalVerifyingPaymaster is VerifyingPaymaster {
+    constructor(IEntryPoint entryPoint_, address verifyingSigner_)
+        VerifyingPaymaster(entryPoint_, verifyingSigner_)
+    {}
 }

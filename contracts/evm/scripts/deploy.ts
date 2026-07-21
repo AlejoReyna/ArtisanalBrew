@@ -41,6 +41,9 @@ await publicClient.waitForTransactionReceipt({ hash: t5 });
 const entryPoint = await viem.deployContract("EntryPointFixture");
 // Canonical ERC-4337 v0.7.0 reference account factory, bound to the EntryPoint above.
 const accountFactory = await viem.deployContract("CanonicalSimpleAccountFactory", [entryPoint.address]);
+// Canonical VerifyingPaymaster. `admin` is the sponsorship-authorising signer for local dev;
+// a real deployment must use a dedicated, secured signer and fund the paymaster's deposit.
+const verifyingPaymaster = await viem.deployContract("CanonicalVerifyingPaymaster", [entryPoint.address, admin]);
 const registry = await viem.deployContract("ERC8004RegistryFixture");
 const resolver = await viem.deployContract("ERC7683ResolverFixture");
 const escrow = await viem.deployContract("AgenticCommerceEscrow", [
@@ -72,6 +75,7 @@ const manifest = {
     faucet: faucet.address,
     entryPoint: entryPoint.address,
     accountFactory: accountFactory.address,
+    verifyingPaymaster: verifyingPaymaster.address,
     erc8004Registry: registry.address,
     erc7683Resolver: resolver.address,
     erc8183Escrow: escrow.address

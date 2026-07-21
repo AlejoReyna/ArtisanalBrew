@@ -144,10 +144,10 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 155 | ✅ Passed |
+| .NET unit tests | 160 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
 | Gateway (`tsc` build) | — | ✅ Succeeded |
-| EVM contracts (Hardhat) | 24 | ✅ Passed |
+| EVM contracts (Hardhat) | 29 | ✅ Passed |
 | Phase 3 acceptance harness | exit=0 | ✅ Passed — 2026-07-21 |
 
 Evidence captured to `acceptance-evidence-20260721-051418.log`, with an immediate back-to-back

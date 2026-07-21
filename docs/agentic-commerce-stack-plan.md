@@ -459,13 +459,18 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 ### Phase 4 — ERC-4337 user experience [IN PROGRESS]
 
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
-- ⬜ add bundler and paymaster clients;
+- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
 - ⬜ batch approval plus funding;
 - ⬜ enforce sponsorship quotas and simulation;
 - ⬜ add explicit fallback and permission revocation;
 - ⬜ add constrained session permissions only with an audited compatible module.
 
-Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail. **The gate is not met** — no bundler or paymaster exists, so neither a sponsored nor a user-paid UserOperation flow can run yet.
+Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail.
+
+**The gate is not met.** Both sponsored and user-paid flows are proven *on-chain*, but the negative
+half of the gate is only partly covered (wrong-signature and unauthorised-sponsorship fail
+correctly; over-budget, wrong-target, wrong-selector, expired, and revoked are not yet tested), and
+there is **no bundler** — see the boundary note below.
 
 #### Status of the pinned stack
 
@@ -476,6 +481,7 @@ The canonical `@account-abstraction/contracts` **v0.7.0** package is a pinned de
 |-----------|----------|-------|
 | EntryPoint | `EntryPointFixture` | Bare subclass of canonical `EntryPoint`, no overrides. Despite the name, **not** a mock. |
 | Account factory | `CanonicalSimpleAccountFactory` | Bare subclass of canonical `SimpleAccountFactory`. |
+| Paymaster | `CanonicalVerifyingPaymaster` | Bare subclass of canonical `VerifyingPaymaster`. Signature-based sponsorship primitive, **not** a policy engine. |
 
 Both are declared as local subclasses solely because Hardhat does not emit artifacts for
 `node_modules` sources. Neither copies nor reimplements EntryPoint, as the plan requires.
@@ -504,6 +510,30 @@ Verified against a live local chain: for owner `0xf39Fd6e5…92266` on the deplo
 service derived `0x93e957812b6ce6e7100b0B743F39376838bE9920`, matching a raw `eth_call` to
 `getAddress(address,uint256)` (selector `0x8cb84e18`) exactly. Unit tests cover the fail-closed
 gating; the derivation itself was confirmed against the real deployed factory, not a stub.
+
+#### UserOperation execution — what is proven, and the bundler boundary
+
+`contracts/evm/test/ERC4337UserOperation.test.ts` builds v0.7 `PackedUserOperation`s and executes
+them through the canonical EntryPoint. Five tests pass:
+
+| Test | Proves |
+|------|--------|
+| user-paid via deposit | account deployed from `initCode`, inner call executed, account's own deposit pays |
+| sponsored via paymaster | account deployed and executed with **zero** account deposit; paymaster deposit decreases |
+| wrong paymaster signer rejected | sponsorship signed by anyone but `verifyingSigner` is refused |
+| wrong account key rejected | signature not matching the account owner is refused |
+| no prefund rejected | an operation that cannot pay is refused rather than executed free |
+
+**Boundary — this is not a bundler.** The tests call `EntryPoint.handleOps` directly from a funded
+EOA acting as beneficiary. There is no mempool, no `eth_sendUserOperation`, no bundler validation
+rules (storage-access restrictions, reputation, throttling), and no gas policy. What is proven is
+the *on-chain half* of ERC-4337 — the half this repository actually deploys. Integrating a real
+bundler (e.g. Alto or Rundler) remains an open Phase 4 dependency, and no .NET code submits
+UserOperations: `SmartAccountService` still performs no submission at all.
+
+Sponsorship quota enforcement also remains unimplemented. `CanonicalVerifyingPaymaster` will sponsor
+anything its `verifyingSigner` signs; `HasSufficientSponsorshipQuotaAsync` therefore still returns
+`false`, so nothing in the application can authorise sponsorship yet.
 
 ### Phase 5 — ERC-7683 cross-chain path
 
