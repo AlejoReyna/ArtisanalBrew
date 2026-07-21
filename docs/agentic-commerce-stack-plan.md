@@ -29,12 +29,21 @@ scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-
   engine, the sponsorship signer, and gas simulation are all implemented AND proven cross-stack
   against a real chain — not just unit-tested. The proof scripts:
   - `contracts/evm/scripts/crossstack-sponsor-check.ts` — runs the **real** C# `UserOperationSponsor`
-    + `UserOperationSimulator` classes (via a scratch console project, not stubs) against a live
-    node, gets a signature, submits it, confirms the canonical paymaster accepts it on-chain.
+    + `UserOperationSimulator` classes (via `tools/ThisCafeteria.CrossStackHarness`, an in-repo
+    console project referencing `ThisCafeteria.Infrastructure` directly — not a scratch/throwaway
+    app, not stubs) against a live node, gets a signature, submits it, confirms the canonical
+    paymaster accepts it on-chain.
   - `contracts/evm/scripts/simulation-recipe-check.ts` — proves the `eth_call` state-override gas
     simulation recipe in isolation.
   - Neither is part of the automated test suite (`dotnet test` / `npm test`). Both require a live
-    Hardhat node and manual invocation. **This is a known gap** — see "Next" below.
+    Hardhat node and manual invocation:
+    ```
+    npx hardhat node --chain-id 31337 &
+    npm run deploy:local
+    HARDHAT_NETWORK=localhost npx tsx scripts/simulation-recipe-check.ts
+    HARDHAT_NETWORK=localhost npx tsx scripts/crossstack-sponsor-check.ts
+    ```
+    Wiring these into CI is still open — see "Next" below.
 
 ### What's still missing for the Phase 4 gate
 
@@ -45,24 +54,21 @@ scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-
 - No batch approval+funding, no session-key permissions, no fallback/revocation beyond
   sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
   sponsorship grant, not a real session-key module — there isn't one yet).
-- The cross-stack proof scripts are not wired into CI/automated tests (see below).
+- The cross-stack proof scripts are not wired into CI/automated tests.
 
 ### Recommended next step, in order of leverage
 
-1. **Wire the cross-stack proofs into something repeatable without the scratch console project.**
-   Right now `crossstack-sponsor-check.ts` shells out to
-   `/private/tmp/claude-501/.../scratchpad/sponsorcheck` — a throwaway console app outside the
-   repo that won't survive a clean checkout or a new machine. Move it into the repo (e.g. a
-   `tools/CrossStackSimulationHarness` console project referencing `ThisCafeteria.Infrastructure`)
-   so these proofs are reproducible by anyone, not just this session's scratchpad.
-2. **Bundler.** Self-hosted (Alto/Rundler) is the realistic option for Base Sepolia later; for the
+1. **Bundler.** Self-hosted (Alto/Rundler) is the realistic option for Base Sepolia later; for the
    local Hardhat node, real bundlers rely on `debug_traceCall` tracing that Hardhat supports
    patchily — expect friction. Don't let bundler work block everything else; it mainly affects
    *submission*, which nothing in .NET does yet anyway.
-3. Session-key permissions module (needs an audited implementation — don't build one).
-4. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
+2. Session-key permissions module (needs an audited implementation — don't build one).
+3. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
    contract tests exist, but there is no solver, no two-node smoke test, no destination-verified
    funding.
+4. Wiring `crossstack-sponsor-check.ts`/`simulation-recipe-check.ts` into CI (they need a live
+   Hardhat node up first, unlike the rest of the suite — worth its own CI job rather than folding
+   into the normal `dotnet test`/`npm test` steps).
 
 ### Hard-won gotchas (avoid re-discovering these)
 

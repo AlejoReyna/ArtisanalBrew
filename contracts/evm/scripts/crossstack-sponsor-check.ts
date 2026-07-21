@@ -16,8 +16,7 @@ import { network } from "hardhat";
 import { concat, encodeFunctionData, encodePacked, parseEther, type Address, type Hex } from "viem";
 import manifest from "../deployments/evm-local.json" with { type: "json" };
 
-const SPONSOR_PROJECT =
-  "/private/tmp/claude-501/-Users-alexis-dev-monSite/3a229c88-22fd-4e32-98c0-89516adaa68c/scratchpad/sponsorcheck";
+const SPONSOR_PROJECT = "../../tools/ThisCafeteria.CrossStackHarness";
 
 const { viem } = await network.connect();
 const publicClient = await viem.getPublicClient();

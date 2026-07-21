@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ThisCafeteria.CrossStackHarness</RootNamespace>
+    <!-- Not part of `dotnet test` or the solution's normal build/publish path in CI: this is a
+         manual verification tool invoked by contracts/evm scripts against a live Hardhat node. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ThisCafeteria.Application\ThisCafeteria.Application.csproj" />
+    <ProjectReference Include="..\..\src\ThisCafeteria.Infrastructure\ThisCafeteria.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
