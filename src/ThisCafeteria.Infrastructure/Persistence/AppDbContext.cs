@@ -29,6 +29,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<AgenticJobDeferredEvent> AgenticJobDeferredEvents { get; set; } = null!;
     public DbSet<AgentFeedbackProjection> AgentFeedback { get; set; } = null!;
     public DbSet<AgenticCommerceReconciliationCheckpoint> AgenticCommerceCheckpoints { get; set; } = null!;
+    public DbSet<SponsorshipGrant> SponsorshipGrants { get; set; } = null!;
+    public DbSet<SponsorshipUsage> SponsorshipUsages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -461,8 +461,8 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
 - 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
 - ⬜ batch approval plus funding;
-- ⬜ enforce sponsorship quotas and simulation;
-- ⬜ add explicit fallback and permission revocation;
+- 🟡 enforce sponsorship quotas and simulation — **quota engine implemented; no simulation**;
+- 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
 - ⬜ add constrained session permissions only with an audited compatible module.
 
 Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail.
@@ -531,9 +531,49 @@ the *on-chain half* of ERC-4337 — the half this repository actually deploys. I
 bundler (e.g. Alto or Rundler) remains an open Phase 4 dependency, and no .NET code submits
 UserOperations: `SmartAccountService` still performs no submission at all.
 
-Sponsorship quota enforcement also remains unimplemented. `CanonicalVerifyingPaymaster` will sponsor
-anything its `verifyingSigner` signs; `HasSufficientSponsorshipQuotaAsync` therefore still returns
-`false`, so nothing in the application can authorise sponsorship yet.
+#### Sponsorship quota engine
+
+`CanonicalVerifyingPaymaster` enforces only "the verifying signer approved this operation" — it will
+sponsor anything that signer signs. The policy deciding *whether to sign* is therefore the real
+safety boundary for sponsored gas, and it lives in `ISponsorshipPolicyService`
+(`SponsorshipPolicyService`).
+
+Persisted state (migration `20260721115003_AddSponsorshipGrantsAndUsages`):
+
+| Entity | Purpose |
+|--------|---------|
+| `SponsorshipGrant` | Per-owner, per-chain allowance: budget, spend, per-operation cap, validity window, revocation. Unique on `ChainKey + OwnerAddress`, with a concurrency token so concurrent debits cannot race past the budget. |
+| `SponsorshipUsage` | Audit row per sponsored operation, so spend is reconstructable rather than only a running total. |
+
+Target and selector allowlists come from `SponsorshipPolicyOptions` (config section `Sponsorship`).
+
+**Fail-closed by construction:**
+
+- sponsorship is refused entirely unless `Enabled` is explicitly true;
+- an **empty allowlist denies everything** rather than allowing everything — an allowlist that
+  silently means "allow all" when unset is how gas budgets get drained;
+- a chain without a configured EntryPoint *and* paymaster is refused;
+- `RecordUsageAsync` re-evaluates policy and throws rather than debiting against a grant that would
+  not have authorised the operation, so usage can never be recorded against a revoked or absent
+  grant;
+- revocation is permanent and idempotent.
+
+`SmartAccountService` now delegates `HasSufficientSponsorshipQuotaAsync`,
+`RecordSponsorshipUsageAsync`, and `RevokeSessionPermissionsAsync` to this policy. Note that
+`HasSufficientSponsorshipQuotaAsync` carries no target or selector, so it can only evaluate grant
+validity and budget; **any caller that actually produces a paymaster signature must call
+`EvaluateAsync` with target and selector populated**, or wrong-target/wrong-selector operations
+would go unchecked.
+
+The five gate failure modes are covered by unit tests in `SponsorshipPolicyServiceTests`
+(over-budget, wrong-target, wrong-selector, expired, revoked), alongside not-yet-valid,
+per-operation cap, disabled policy, empty allowlists, absent grant, negative cost, case-insensitive
+matching, budget accumulation to exhaustion, and audit-row correctness.
+
+**Still missing:** simulation (`eth_estimateUserOperationGas` / `pm_sponsorUserOperation`-style
+pre-flight) is not implemented, so `EstimatedCostUsd` is supplied by the caller rather than derived
+from a simulated operation. Nothing yet converts gas to USD. And no code path signs a paymaster
+approval — the policy exists, but the signer that would consume it does not.
 
 ### Phase 5 — ERC-7683 cross-chain path
 

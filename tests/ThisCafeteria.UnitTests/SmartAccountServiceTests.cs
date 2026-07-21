@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Infrastructure.Services;
 using Xunit;
 
@@ -38,11 +39,35 @@ public class SmartAccountServiceTests
         Deployment = new ChainDeployment { EntryPoint = entryPoint, AccountFactory = accountFactory }
     };
 
-    private static SmartAccountService CreateService() => new(
+    /// <summary>
+    /// Sponsorship policy stub. Denies by default, which is the fail-closed posture these tests
+    /// assert; SponsorshipPolicyServiceTests covers the real policy behaviour.
+    /// </summary>
+    private sealed class StubSponsorshipPolicy(bool approve = false) : ISponsorshipPolicyService
+    {
+        public bool RevokeCalled { get; private set; }
+
+        public Task<SponsorshipDecision> EvaluateAsync(SponsorshipRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult(approve
+                ? SponsorshipDecision.Approve(5m)
+                : SponsorshipDecision.Deny(SponsorshipDenialReason.NotConfigured, "stub denies"));
+
+        public Task RecordUsageAsync(SponsorshipRequest request, CancellationToken cancellationToken = default) =>
+            approve ? Task.CompletedTask : throw new InvalidOperationException("Cannot record sponsorship usage: NotConfigured - stub denies");
+
+        public Task RevokeAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default)
+        {
+            RevokeCalled = true;
+            return Task.CompletedTask;
+        }
+    }
+
+    private static SmartAccountService CreateService(ISponsorshipPolicyService? sponsorship = null) => new(
         new StubChainRegistry(
             EvmChain(ConfiguredChain, "0x8a791620dd6260079bf849dc5567adc3f2fdc318", "0x1111111111111111111111111111111111111111"),
             EvmChain(NoFactoryChain, "0x8a791620dd6260079bf849dc5567adc3f2fdc318", string.Empty),
             new ChainDefinition { Key = SolanaChain, Family = ChainFamily.Solana, PublicRpcUrl = "http://127.0.0.1:8899" }),
+        sponsorship ?? new StubSponsorshipPolicy(),
         NullLogger<SmartAccountService>.Instance);
 
     [Fact]
@@ -99,25 +124,32 @@ public class SmartAccountServiceTests
     }
 
     [Fact]
-    public async Task HasSufficientSponsorshipQuotaAsync_ReturnsFalse_NoPaymasterConfigured()
+    public async Task HasSufficientSponsorshipQuotaAsync_ReturnsFalse_WhenPolicyDenies()
     {
         var result = await CreateService().HasSufficientSponsorshipQuotaAsync(ConfiguredChain, "0x0000000000000000000000000000000000000001", 10.0m);
-        result.Should().BeFalse("no paymaster is deployed, so nothing can be sponsored");
+        result.Should().BeFalse("the policy denies, so the service must not report available quota");
     }
 
     [Fact]
-    public async Task RecordSponsorshipUsageAsync_ThrowsNotSupportedException()
+    public async Task HasSufficientSponsorshipQuotaAsync_ReturnsTrue_WhenPolicyApproves()
+    {
+        var result = await CreateService(new StubSponsorshipPolicy(approve: true))
+            .HasSufficientSponsorshipQuotaAsync(ConfiguredChain, "0x0000000000000000000000000000000000000001", 1.0m);
+        result.Should().BeTrue("the policy approved the request");
+    }
+
+    [Fact]
+    public async Task RecordSponsorshipUsageAsync_Throws_WhenPolicyWouldNotAuthorise()
     {
         await FluentActions.Invoking(() => CreateService().RecordSponsorshipUsageAsync(ConfiguredChain, "0x0000000000000000000000000000000000000001", 10.0m))
-            .Should().ThrowAsync<NotSupportedException>()
-            .WithMessage($"Sponsorship is not configured for chain '{ConfiguredChain}'.");
+            .Should().ThrowAsync<InvalidOperationException>("usage must never be debited against a grant that would not authorise it");
     }
 
     [Fact]
-    public async Task RevokeSessionPermissionsAsync_ThrowsNotSupportedException()
+    public async Task RevokeSessionPermissionsAsync_DelegatesToPolicy()
     {
-        await FluentActions.Invoking(() => CreateService().RevokeSessionPermissionsAsync(ConfiguredChain, "0x0000000000000000000000000000000000000001"))
-            .Should().ThrowAsync<NotSupportedException>()
-            .WithMessage($"Smart account sessions are not configured for chain '{ConfiguredChain}'.");
+        var policy = new StubSponsorshipPolicy();
+        await CreateService(policy).RevokeSessionPermissionsAsync(ConfiguredChain, "0x0000000000000000000000000000000000000001");
+        policy.RevokeCalled.Should().BeTrue("revocation must reach the sponsorship policy");
     }
 }

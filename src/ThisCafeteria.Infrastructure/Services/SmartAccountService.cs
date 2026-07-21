@@ -16,16 +16,20 @@ namespace ThisCafeteria.Infrastructure.Services;
 ///   - configuration discovery (EntryPoint + account factory present on an EVM chain);
 ///   - counterfactual account address derivation via the factory's getAddress(owner, salt).
 ///
+///   - sponsorship quota checks and revocation, delegated to ISponsorshipPolicyService.
+///
 /// Deliberately still fail-closed (Phase 4 work in progress):
-///   - sponsorship quotas require a paymaster, which is not deployed or configured;
-///   - session permissions require an audited permissions module;
+///   - session-key permissions require an audited permissions module;
 ///   - actual on-chain deployment happens when the first UserOperation carrying initCode is
 ///     submitted through a bundler. No bundler is configured, so nothing here submits UserOps.
 ///
 /// Under ERC-4337 an account address is deterministic and usable before deployment, so returning
 /// the counterfactual address is correct and not a stand-in for a deployment we cannot perform.
 /// </summary>
-public class SmartAccountService(IChainRegistry chains, ILogger<SmartAccountService> logger) : ISmartAccountService
+public class SmartAccountService(
+    IChainRegistry chains,
+    ISponsorshipPolicyService sponsorship,
+    ILogger<SmartAccountService> logger) : ISmartAccountService
 {
     /// <summary>Salt used for account derivation. One account per owner for now.</summary>
     private const int AccountSalt = 0;
@@ -77,23 +81,49 @@ public class SmartAccountService(IChainRegistry chains, ILogger<SmartAccountServ
         return accountAddress;
     }
 
-    public Task<bool> HasSufficientSponsorshipQuotaAsync(string chainKey, string ownerAddress, decimal estimatedCostUsd)
+    /// <summary>
+    /// Coarse budget check. This overload carries no target or selector, so it can only evaluate
+    /// grant validity and budget. Callers that actually produce a paymaster signature must go
+    /// through <see cref="ISponsorshipPolicyService.EvaluateAsync"/> with the target and selector
+    /// populated, otherwise wrong-target/wrong-selector operations would go unchecked.
+    /// </summary>
+    public async Task<bool> HasSufficientSponsorshipQuotaAsync(string chainKey, string ownerAddress, decimal estimatedCostUsd)
     {
-        // Fail-closed: no paymaster is deployed or configured, so nothing can be sponsored.
-        logger.LogDebug("HasSufficientSponsorshipQuotaAsync returning false for {ChainKey} / {OwnerAddress} - no paymaster configured.", chainKey, ownerAddress);
-        return Task.FromResult(false);
+        var decision = await sponsorship.EvaluateAsync(new SponsorshipRequest
+        {
+            ChainKey = chainKey,
+            OwnerAddress = ownerAddress,
+            EstimatedCostUsd = estimatedCostUsd
+        }).ConfigureAwait(false);
+
+        if (!decision.Approved)
+        {
+            logger.LogDebug(
+                "Sponsorship denied for {OwnerAddress} on {ChainKey}: {Reason} - {Detail}",
+                ownerAddress, chainKey, decision.Reason, decision.Detail);
+        }
+
+        return decision.Approved;
     }
 
     public Task RecordSponsorshipUsageAsync(string chainKey, string ownerAddress, decimal costUsd)
     {
-        logger.LogWarning("RecordSponsorshipUsageAsync called but sponsorship is not configured.");
-        throw new NotSupportedException($"Sponsorship is not configured for chain '{chainKey}'.");
+        return sponsorship.RecordUsageAsync(new SponsorshipRequest
+        {
+            ChainKey = chainKey,
+            OwnerAddress = ownerAddress,
+            EstimatedCostUsd = costUsd
+        });
     }
 
+    /// <summary>
+    /// Revokes the owner's sponsorship grant. Session-key permissions proper still require an
+    /// audited permissions module and remain unimplemented; revoking sponsorship is the part that
+    /// exists today, and it is permanent.
+    /// </summary>
     public Task RevokeSessionPermissionsAsync(string chainKey, string ownerAddress)
     {
-        logger.LogWarning("RevokeSessionPermissionsAsync called but smart account sessions are not configured.");
-        throw new NotSupportedException($"Smart account sessions are not configured for chain '{chainKey}'.");
+        return sponsorship.RevokeAsync(chainKey, ownerAddress);
     }
 
     /// <summary>

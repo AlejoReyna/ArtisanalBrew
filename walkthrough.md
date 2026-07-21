@@ -144,7 +144,7 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 160 | ✅ Passed |
+| .NET unit tests | 179 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
 | Gateway (`tsc` build) | — | ✅ Succeeded |
 | EVM contracts (Hardhat) | 29 | ✅ Passed |
