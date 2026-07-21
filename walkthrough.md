@@ -93,8 +93,29 @@ correct but undocumented and untested.
    to `SIGKILL` after 5s. Verified: the run leaves zero orphaned worker or Hardhat processes.
 
 Because these defects invalidated the previous evidence capture, the 2026-07-20 acceptance log was
-truncated before any checkpoint value, applied-event count, or success marker was recorded. The
-results in this document come from a clean 2026-07-21 re-run.
+truncated before any checkpoint value, applied-event count, or success marker was recorded.
+
+**Two further defects found under audit and fixed:**
+
+3. *Provider assignment was never actually exercised.* The acceptance script passed the provider
+   directly into `createJob`, so `setProvider` was never called and the `ProviderSet` decode →
+   apply path was never proven end to end — yet the harness still printed
+   `create → provider assignment → … [VERIFIED]`. The contract requires `job.provider ==
+   address(0)` for `setProvider`, so the script now creates the job with the zero address, calls
+   `setProvider`, and asserts the projection's `ProviderAddress` before budgeting. The proven path
+   is now genuinely `create → provider assignment → budget → funding → submission → completion`.
+
+4. *The harness was not repeatable, and could silently produce a stale pass.* Hardhat deploys
+   deterministically, so a fresh node redeploys the escrow to the **same address** every run. A
+   checkpoint left from a previous run (e.g. block 62) refers to a chain that no longer exists;
+   because the new chain restarts near block 0, the worker treated the stale higher checkpoint as
+   "already scanned" and skipped every event of the new run. The earlier 05:03 run only passed
+   because that escrow address had never been used before. Step 9b now purges reconciliation state
+   scoped strictly by the freshly deployed `ContractAddress`/`RegistryAddress` — never a blanket
+   delete — and evidence queries report **per-run** counts alongside cumulative ones. Verified by
+   two back-to-back runs, both exit 0 with identical per-run counts.
+
+The results in this document come from those clean, repeatable 2026-07-21 runs.
 
 **Harness boundary:** The acceptance test uses Hardhat-controlled local wallets via a TypeScript
 script (`contracts/evm/scripts/acceptance-test.ts`). It is **not** a browser wallet/UI E2E test
@@ -128,35 +149,37 @@ and does not require MetaMask or any browser extension.
 | EVM contracts (Hardhat) | 24 | ✅ Passed |
 | Phase 3 acceptance harness | exit=0 | ✅ Passed — 2026-07-21 |
 
-Evidence captured to: `acceptance-evidence-20260721-050306.log` (untracked; logs are not committed).
+Evidence captured to `acceptance-evidence-20260721-051418.log`, with an immediate back-to-back
+repeat run in `acceptance-evidence-20260721-051513.log` (untracked; logs are not committed).
+Both exited 0 with identical per-run counts, demonstrating the harness is now repeatable.
 
 Harness final marker: `ACCEPTANCE_RESULT=PASS  exit=0`.
 
 Escrow deployed for this run: `0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0`
-(chain `evm-local`, chainId 31337, deployBlock 3).
+(chain `evm-local`, chainId 31337).
 
-Post-run database evidence:
+Post-run database evidence, scoped to the contracts deployed by this run:
 
 | Metric | Value |
 |--------|-------|
-| Checkpoint `LastScannedBlock` (run escrow) | 62 |
-| `AgenticJobAppliedEvents` count (cumulative, all runs) | 101 |
-| `AgenticJobDeferredEvents` count | 0 |
+| Checkpoint `LastScannedBlock` (run escrow) | 68 |
+| `AgenticJobAppliedEvents` — **this run** | 19 |
+| `AgenticJobAppliedEvents` — cumulative, all contracts | 102 |
+| `AgenticJobDeferredEvents` — **this run** | 0 |
+| `AgenticJobs` rows for this escrow | 3 (ids 1/2/3) |
 
-Lifecycle stages verified against on-chain transaction hashes (job `OnChainJobId` 1 for this run's
-escrow):
+Lifecycle stages verified against on-chain transaction hashes:
 - Agent identity registration → DB `AgentDirectoryEntries` row confirmed.
-- JobCreated → `AgenticJobs` row, Status: Open, CreationTx `0x0554c0340df21a76f4c4d1377a32fb99763813b675a16cf52e415e785ab09d7a`.
-- BudgetSet + JobFunded → Status: Funded, FundedTx `0x9253f4b3848123d42c78938b26083dc3ea343de0dc3846a1cd00bdf6bc41f5a5`.
+- JobCreated with an **unset provider** → Status: Open, CreationTx `0x84ea9fa3d0026822d8f22ce4d525a30a3f1307a0ab7191093dc3a0e88dc33b1f`.
+- **ProviderSet (`setProvider`)** → `ProviderAddress` reconciled to `0x70997970C51812dc3A010C7d01b50e0d17dc79C8`, tx `0x95f2d9383635ddca12287ebba02a0a09bac0ed487d234a3f75694a3c86bd4277`, status still Open.
+- BudgetSet + JobFunded → Status: Funded, FundedTx `0x85266a28116135a087bed35f1ad92bfa9e28535a86cbac138009a96265f1688a`.
 - JobSubmitted → Status: Submitted, DB row confirmed.
-- JobCompleted (evaluator approval) → Status: Completed, CompletionTx `0x521c9ecb18b6f33305fdbf25b8df5266c0afc338f724928d65bf12d48d92f77d`; provider payout asserted on-chain.
+- JobCompleted (evaluator approval) → Status: Completed, CompletionTx `0x480799e06539c98c859a08e34f427fe0bc8b6dc36b663355500852d8d79b84ec`; provider payout asserted on-chain.
 - Rejection variant (job 2) → Status: Rejected, refund path confirmed.
 - Expiry variant (job 3) → Status: Expired, refund path confirmed.
 
-The `AgenticJobs` table contains rows repeating `OnChainJobId` 1/2/3 across *different*
-`ContractAddress` values. That is expected: job identity is `ChainKey + ContractAddress +
-OnChainJobId`, so each redeployed escrow starts its own job-id sequence. Rows from earlier escrow
-deployments are retained history, not duplicates.
+Job identity is `ChainKey + ContractAddress + OnChainJobId`, so each redeployed escrow starts its
+own job-id sequence; rows under earlier escrow addresses are retained history, not duplicates.
 
 ### What these results do and do not prove
 
@@ -178,3 +201,17 @@ events. No browser extension is involved at any point.
   confirmed events. Manual database intervention is required in that scenario.
 - **Deferred-event re-application:** Durably recorded deferred events are not yet automatically
   retried. Re-application is a Phase 4 concern.
+- **Acceptance isolation is self-attested, not enforced.** The harness accepts `ACCEPTANCE_ISOLATED=1`
+  or the `contracts/evm/.acceptance-isolated` marker as proof of isolation, and its safe-name list
+  includes `this_cafeteria` — the ordinary development database. It does **not** verify that the
+  PostgreSQL container, database, or connection is genuinely disposable. `ACCEPTANCE_ISOLATED=1
+  RESET_DB=1` will therefore drop the normal dev database. Treat the isolation gate as a guard
+  against accidents, not against misconfiguration. (Step 9b's purge is always scoped by contract
+  address and is unaffected by this.)
+- **Invalid-order policy is intentionally asymmetric.** `BudgetSet` and `JobFunded` arriving after a
+  job leaves `Open` are marked applied and ignored rather than deferred, because the terminal
+  projection already holds the authoritative budget. Every other out-of-order event is deferred.
+  This is deliberate, but it is not a uniformly strict invalid-order policy.
+- **Provider assignment coverage:** the main lifecycle proves `setProvider`. The rejection and
+  expiry variants still create jobs with the provider supplied inline, which exercises the
+  create-with-provider form rather than the two-step assignment.

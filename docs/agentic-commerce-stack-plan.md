@@ -373,21 +373,25 @@ The repository now contains a structurally verified foundation for agentic comme
 - **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (155 passing), `npm test` in gateway (11 passing) plus `npm run build` (clean), `npm test` in EVM contracts (24 passing).
 
 - **Phase 3 Acceptance:** ✅ **VERIFIED** — `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` exited 0 on
-  2026-07-21, final marker `ACCEPTANCE_RESULT=PASS  exit=0`.
-  Evidence captured to `acceptance-evidence-20260721-050306.log` (untracked; logs are not committed).
-  Post-run state: checkpoint `LastScannedBlock` = 62 for escrow
-  `0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0`, `AgenticJobAppliedEvents` = 101 (cumulative across
-  all runs), `AgenticJobDeferredEvents` = 0.
+  2026-07-21, final marker `ACCEPTANCE_RESULT=PASS  exit=0`, confirmed by two back-to-back runs with
+  identical per-run counts (`acceptance-evidence-20260721-051418.log` and `…-051513.log`; untracked,
+  logs are not committed).
+  Post-run state for escrow `0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0`: checkpoint
+  `LastScannedBlock` = 68, applied events **this run** = 19 (102 cumulative across all contracts),
+  deferred events = 0, and exactly 3 job rows (ids 1/2/3).
 
-  An earlier run on 2026-07-20 was **not** valid evidence: the harness blocked on an interactive
-  `psql` password prompt during evidence capture, so its log was truncated before any checkpoint
-  value, applied-event count, or success marker was written, and its cleanup trap never ran. Both
-  that hang and a wrapper-only process kill (which had orphaned 28 worker processes) were fixed
-  before the 2026-07-21 re-run. See `walkthrough.md` §8.3.
+  Earlier attempts were **not** valid evidence, and four harness defects were fixed to get here:
+  an interactive `psql` password prompt that truncated the log before any marker was written; a
+  wrapper-only process kill that orphaned 28 workers onto the acceptance database; a lifecycle that
+  never called `setProvider` while still printing "provider assignment [VERIFIED]"; and stale
+  checkpoints surviving deterministic contract redeployment, which made the worker skip an entire
+  run's events. See `walkthrough.md` §8.3.
 
   All lifecycle stages proven:
   - Agent identity registration → `AgentDirectoryEntries` row verified.
-  - JobCreated (on-chain ID 1) → `AgenticJobs` row, Status: Open, CreationTx verified.
+  - JobCreated (on-chain ID 1, provider deliberately unset) → `AgenticJobs` row, Status: Open, CreationTx verified.
+  - ProviderSet via `setProvider` → `ProviderAddress` reconciled while status stays Open, tx verified.
+  - BudgetSet → budget projected.
   - JobFunded → Status: Funded, DB row verified.
   - JobSubmitted → Status: Submitted, DB row verified.
   - JobCompleted (evaluator approval) → Status: Completed, provider payout on-chain verified.

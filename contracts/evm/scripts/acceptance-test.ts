@@ -45,7 +45,10 @@ async function main() {
     const description = "Test Job Proposal";
     const currentBlock = await publicClient.getBlock();
     const expireTime = currentBlock.timestamp + 3600n;
-    const createTx = await escrow.write.createJob([providerWallet.account.address, evaluatorWallet.account.address, expireTime, description], { account: clientWallet.account });
+    // Create with an UNSET provider so that provider assignment is a distinct,
+    // independently verified lifecycle stage (setProvider requires provider == address(0)).
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    const createTx = await escrow.write.createJob([ZERO_ADDRESS, evaluatorWallet.account.address, expireTime, description], { account: clientWallet.account });
     const createReceipt = await publicClient.waitForTransactionReceipt({ hash: createTx });
 
     // Parse logs to find jobId
@@ -77,6 +80,19 @@ async function main() {
         return res.rows.length > 0 && res.rows[0].Status === "Open";
     });
     console.log("✓ Job created and verified in DB.");
+
+    console.log("2b. Assigning Provider (setProvider)...");
+    const setProviderTx = await escrow.write.setProvider([jobId, providerWallet.account.address], { account: clientWallet.account });
+    await publicClient.waitForTransactionReceipt({ hash: setProviderTx });
+
+    await waitForDB(publicClient, async () => {
+        const res = await pg.query('SELECT "ProviderAddress", "Status" FROM "AgenticJobs" WHERE "OnChainJobId" = $1 AND "ContractAddress" = $2 AND "ChainKey" = $3', [jobId.toString(), escrowAddress.toLowerCase(), 'evm-local']);
+        if (res.rows.length === 0) return false;
+        const projected = (res.rows[0].ProviderAddress || "").toLowerCase();
+        // Must still be Open, and must now carry the assigned provider.
+        return res.rows[0].Status === "Open" && projected === providerWallet.account.address.toLowerCase();
+    });
+    console.log(`✓ ProviderSet reconciled to DB: ${providerWallet.account.address} (tx ${setProviderTx})`);
 
     console.log("3. Setting Budget...");
     const budget = parseEther("50");

@@ -209,6 +209,45 @@ echo "Contract addresses (from manifest):"
 cat contracts/evm/deployments/evm-local.json | grep -E '"erc8183Escrow"|"cafe"|"erc8004Registry"' || true
 
 # ---------------------------------------------------------------------------
+# 9b. Purge reconciliation state for the freshly deployed contracts
+#
+# Hardhat deploys deterministically: a fresh node redeploys the escrow and
+# registry to the SAME addresses every run.  A checkpoint left over from a
+# previous run therefore points at a block height on a chain that no longer
+# exists.  Because the new chain restarts near block 0, the worker would treat
+# the stale (higher) checkpoint as "already scanned" and silently skip every
+# event of this run, leaving the previous run's rows in place.  That produces
+# either a false pass or a confusing tx-hash mismatch.
+#
+# A fresh deployment at an address makes all prior state for that address
+# invalid by definition, so purge exactly those rows — scoped by
+# ContractAddress, never a blanket delete.
+# ---------------------------------------------------------------------------
+ESCROW_ADDR="$(node -e 'const m=require("./contracts/evm/deployments/evm-local.json");process.stdout.write((m.addresses.erc8183Escrow||"").toLowerCase())')"
+REGISTRY_ADDR="$(node -e 'const m=require("./contracts/evm/deployments/evm-local.json");process.stdout.write((m.addresses.erc8004Registry||"").toLowerCase())')"
+
+if [ -z "$ESCROW_ADDR" ] || [ -z "$REGISTRY_ADDR" ]; then
+    echo "ERROR: could not read deployed contract addresses from the manifest."
+    echo "ACCEPTANCE_RESULT=FAIL exit=1"
+    exit 1
+fi
+
+echo "--- Purging stale reconciliation state for redeployed contracts ---"
+echo "  escrow:   $ESCROW_ADDR"
+echo "  registry: $REGISTRY_ADDR"
+
+if ! container exec "$PG_CONTAINER" psql -U postgres -d "$DB_NAME" -v ON_ERROR_STOP=1 \
+    -c "DELETE FROM \"AgenticJobAppliedEvents\" WHERE lower(\"ContractAddress\") IN ('$ESCROW_ADDR','$REGISTRY_ADDR');
+        DELETE FROM \"AgenticJobDeferredEvents\" WHERE lower(\"ContractAddress\") = '$ESCROW_ADDR';
+        DELETE FROM \"AgenticJobs\"              WHERE lower(\"ContractAddress\") = '$ESCROW_ADDR';
+        DELETE FROM \"AgentDirectoryEntries\"    WHERE lower(\"RegistryAddress\") = '$REGISTRY_ADDR';
+        DELETE FROM \"AgenticCommerceCheckpoints\" WHERE lower(\"EscrowAddress\") IN ('$ESCROW_ADDR','$REGISTRY_ADDR');"; then
+    echo "ERROR: failed to purge stale reconciliation state; evidence would not be trustworthy."
+    echo "ACCEPTANCE_RESULT=FAIL exit=1"
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # 10. Start worker
 # ---------------------------------------------------------------------------
 export Blockchain__LocalEvmManifest="$(pwd)/contracts/evm/deployments/evm-local.json"
@@ -255,14 +294,20 @@ run_evidence_query() {
 run_evidence_query "checkpoints" \
     'SELECT "ChainKey", "EscrowAddress", "LastScannedBlock", "UpdatedAtUtc" FROM "AgenticCommerceCheckpoints";'
 
-run_evidence_query "applied event count" \
-    'SELECT COUNT(*) AS applied_event_count FROM "AgenticJobAppliedEvents";'
+run_evidence_query "applied event count (THIS RUN – escrow + registry only)" \
+    "SELECT COUNT(*) AS applied_event_count_this_run FROM \"AgenticJobAppliedEvents\" WHERE lower(\"ContractAddress\") IN ('$ESCROW_ADDR','$REGISTRY_ADDR');"
 
-run_evidence_query "deferred event count" \
-    'SELECT COUNT(*) AS deferred_event_count FROM "AgenticJobDeferredEvents";'
+run_evidence_query "applied event count (cumulative, all contracts)" \
+    'SELECT COUNT(*) AS applied_event_count_total FROM "AgenticJobAppliedEvents";'
 
-run_evidence_query "job projections" \
-    'SELECT "OnChainJobId", "Status", "CreationTransactionHash", "FundedTransactionHash", "CompletionTransactionHash" FROM "AgenticJobs" ORDER BY "OnChainJobId";'
+run_evidence_query "deferred event count (THIS RUN)" \
+    "SELECT COUNT(*) AS deferred_event_count_this_run FROM \"AgenticJobDeferredEvents\" WHERE lower(\"ContractAddress\") = '$ESCROW_ADDR';"
+
+run_evidence_query "deferred event count (cumulative)" \
+    'SELECT COUNT(*) AS deferred_event_count_total FROM "AgenticJobDeferredEvents";'
+
+run_evidence_query "job projections (THIS RUN)" \
+    "SELECT \"OnChainJobId\", \"Status\", \"ProviderAddress\", \"CreationTransactionHash\", \"FundedTransactionHash\", \"CompletionTransactionHash\" FROM \"AgenticJobs\" WHERE lower(\"ContractAddress\") = '$ESCROW_ADDR' ORDER BY \"OnChainJobId\";"
 
 if [ "$EVIDENCE_DB_FAILED" = "1" ] && [ "$TEST_EXIT" = "0" ]; then
     echo "ERROR: lifecycle assertions passed but database evidence capture failed."
