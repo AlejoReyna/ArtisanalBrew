@@ -153,6 +153,10 @@ if (hasDatabase)
     builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();
     builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>();
     builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
+    builder.Services.AddHttpClient<IBundlerClient, RundlerBundlerClient>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
     builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
 }
 builder.Services.AddSingleton<IMigrationReadiness, MigrationReadiness>();
