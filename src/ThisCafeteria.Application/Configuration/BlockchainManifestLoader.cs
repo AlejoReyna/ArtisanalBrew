@@ -198,8 +198,44 @@ public static class BlockchainManifestLoader
     private static bool TryOpen(string? path, out JsonDocument document)
     {
         document = null!;
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
-        document = JsonDocument.Parse(File.ReadAllText(path));
+        if (!TryResolveManifestPath(path, out var resolved)) return false;
+        document = JsonDocument.Parse(File.ReadAllText(resolved));
         return true;
+    }
+
+    /// <summary>
+    /// Resolves a manifest path so relative paths (e.g. "deployments/ethereum-sepolia.json" from
+    /// appsettings) do not depend on the process working directory. A local `dotnet run --project`
+    /// or IDE launch sets the CWD to the project directory, where repo-root "deployments/" does not
+    /// exist; without this, the manifest silently fails to load and the registry falls back to the
+    /// addressless default stub (surfacing as "liquid staking is not deployed on this chain yet").
+    /// Absolute paths are used as-is; relative paths are probed against the CWD and each ancestor
+    /// directory, mirroring how <c>LocalDotEnvLoader</c> locates the repo-root ".env".
+    /// </summary>
+    private static bool TryResolveManifestPath(string? path, out string resolved)
+    {
+        resolved = string.Empty;
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        if (Path.IsPathRooted(path))
+        {
+            if (!File.Exists(path)) return false;
+            resolved = path;
+            return true;
+        }
+
+        var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(directory.FullName, path);
+            if (File.Exists(candidate))
+            {
+                resolved = candidate;
+                return true;
+            }
+
+            directory = directory.Parent;
+        }
+
+        return false;
     }
 }
