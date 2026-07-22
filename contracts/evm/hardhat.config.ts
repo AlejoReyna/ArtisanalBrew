@@ -26,6 +26,14 @@ export default defineConfig({
       chainId: 97,
       accounts: process.env.BSC_DEPLOYER_PRIVATE_KEY ? [process.env.BSC_DEPLOYER_PRIVATE_KEY] : []
     },
+    ethereumSepolia: {
+      type: "http",
+      url: process.env.ETHEREUM_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com",
+      chainId: 11155111,
+      accounts: process.env.ETHEREUM_SEPOLIA_DEPLOYER_PRIVATE_KEY
+        ? [process.env.ETHEREUM_SEPOLIA_DEPLOYER_PRIVATE_KEY]
+        : []
+    },
     // Local, deterministic stand-ins for the Phase 5 two-node cross-chain smoke test: two
     // SEPARATE Hardhat node processes (different ports, independent state), not one node
     // simulating two chains. chainId is 31337 for both because Hardhat 3's `node --chain-id`

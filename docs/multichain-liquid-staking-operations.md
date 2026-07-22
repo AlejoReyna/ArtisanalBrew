@@ -22,6 +22,31 @@ The deployment script refuses non-local networks unless
 Sepolia CAFE and COFFEE can be supplied with `CAFE_ADDRESS` and
 `COFFEE_ADDRESS`; the script never replaces those legacy tokens.
 
+## Ethereum Sepolia liquid vault
+
+Ethereum Sepolia requires the existing CAFE and COFFEE addresses and deploys a
+new liquid vault against them. It does not replace or upgrade the legacy pool:
+
+```sh
+cd contracts/evm
+export ETHEREUM_SEPOLIA_RPC_URL='https://ethereum-sepolia-rpc.publicnode.com'
+export ETHEREUM_SEPOLIA_DEPLOYER_PRIVATE_KEY='0x...'
+export CAFE_ADDRESS='0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A'
+export COFFEE_ADDRESS='0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C'
+export REWARD_AMOUNT='100000'
+export CONFIRM_PUBLIC_DEPLOYMENT=I_UNDERSTAND_THIS_BROADCASTS
+npm run build
+npm run test
+npm run deploy:ethereum-sepolia
+```
+
+The deployer must hold Sepolia ETH and enough CAFE/COFFEE to fund the vault's
+reward schedule. The known legacy Sepolia COFFEE owner may leave
+`MINT_SEPOLIA_REWARDS` enabled (the default), which mints the configured
+`REWARD_AMOUNT` to the deployer before transferring it into the new vault.
+Review the generated manifest and verify each address and receipt on Sepolia
+before loading it into the Web and Worker processes.
+
 ## BSC Testnet EVM
 
 BSC Testnet uses chain ID `97` and the `bscTestnet` Hardhat target. The deployer
@@ -49,9 +74,20 @@ Worker with:
 export ARTISANALBREW_EVM_MANIFEST="$PWD/deployments/bsc-testnet.json"
 ```
 
-The application loader accepts only chain ID 97 for a `bsc-testnet` manifest,
-so an incomplete or mismatched deployment remains disabled rather than being
-advertised by the selectors.
+For a deployment exposing both BSC Testnet and Ethereum Sepolia, pass both
+reviewed manifests to Web and Worker using a semicolon-separated value:
+
+```sh
+export ARTISANALBREW_EVM_MANIFEST="$PWD/deployments/bsc-testnet.json;$PWD/deployments/ethereum-sepolia.json"
+```
+
+The singular environment-variable name is retained for compatibility; the
+semicolon delimiter avoids ambiguity with URL schemes and Windows paths.
+
+The application loader accepts only the expected chain ID for each manifest
+(`97` for `bsc-testnet`, `11155111` for `ethereum-sepolia`, or `31337` for
+`evm-local`), so an incomplete or mismatched deployment remains disabled rather
+than being advertised by the selectors.
 
 ## Local Solana
 
