@@ -84,6 +84,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: targetPort
         transport: 'auto'
         allowInsecure: false
+        // Interactive Server components keep each Blazor circuit in the memory of
+        // the replica that created it. Keep the negotiate request and subsequent
+        // WebSocket/long-poll traffic on that same replica when the web app scales.
+        stickySessions: {
+          affinity: 'sticky'
+        }
       } : null
     }
     template: {
