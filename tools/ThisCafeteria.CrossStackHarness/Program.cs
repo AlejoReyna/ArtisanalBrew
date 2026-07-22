@@ -59,7 +59,10 @@ var chain = new ChainDefinition
     Family = ChainFamily.Evm,
     EvmChainId = 31337,
     EvmChainIdHex = "0x7a69",
-    PublicRpcUrl = "http://127.0.0.1:8545",
+    // Set by the calling script (crossstack-sponsor-check.ts) to match whichever Hardhat network
+    // it connected to - this process has no Hardhat context of its own. Defaults to 8545 for the
+    // README-documented manual `HARDHAT_NETWORK=localhost` single-node flow.
+    PublicRpcUrl = Environment.GetEnvironmentVariable("CROSSSTACK_RPC_URL") ?? "http://127.0.0.1:8545",
     Deployment = new ChainDeployment
     {
         EntryPoint = ReadString("entryPoint"),
