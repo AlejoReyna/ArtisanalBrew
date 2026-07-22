@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "chainKey": "ethereum-sepolia",
+  "chainId": 11155111,
+  "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+  "displayName": "Ethereum Sepolia",
+  "explorerAddressTemplate": "https://sepolia.etherscan.io/address/{0}",
+  "explorerTransactionTemplate": "https://sepolia.etherscan.io/tx/{0}",
+  "nativeCurrency": {
+    "name": "Ether",
+    "symbol": "ETH",
+    "decimals": 18
+  },
+  "deployBlock": "11324863",
+  "compiler": {
+    "solc": "0.8.24",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "deployedAtUtc": "2026-07-22T06:18:13.689Z",
+  "addresses": {
+    "cafe": "0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A",
+    "coffee": "0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C",
+    "liquidVault": "0x0a7b7d7eb39ca835ef5854875bb97885d23d1df3",
+    "faucet": "0xBD1517529BB0BA20c43b4E39323C70058FADe86D",
+    "entryPoint": "0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217",
+    "accountFactory": "0x78fc122eb0bf03d8dd0c51ef726066f0d2821061",
+    "verifyingPaymaster": "0x8fd124964ecd13f46b7ea15cfbdcb8ea808692b8",
+    "erc8004Registry": "0x45d9e43a0ce744eaa29982a31a5b5ad48d1d6106",
+    "erc7683Resolver": "0xb5bf1af688316d724f1fec07b6867c770cab82e6",
+    "erc8183Escrow": "0x44f97d09090e27962d2665f0b95a753273a89350"
+  },
+  "accountAbstraction": {
+    "entryPointVersion": "0.7",
+    "legacyAccountType": "simple-v0.7",
+    "modularAccountType": null,
+    "modularFrameworkRevision": null,
+    "modularCompiler": null
+  },
+  "capabilities": {
+    "walletLogin": true,
+    "liquidStaking": true,
+    "legacyExit": false,
+    "faucet": true,
+    "marketplacePayment": false,
+    "rewardMinting": true,
+    "agenticCommerce": true,
+    "agenticSessionPayments": false
+  },
+  "admin": "0x9d5305a9621aafb5b5f8ba7a9977e3d96ea7eceb"
+}
