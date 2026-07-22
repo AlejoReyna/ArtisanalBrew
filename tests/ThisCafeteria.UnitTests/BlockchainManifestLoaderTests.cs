@@ -5,6 +5,11 @@ using ThisCafeteria.Application.Configuration;
 
 namespace ThisCafeteria.UnitTests;
 
+// One test mutates the process working directory, so this class must not run in parallel with others.
+[CollectionDefinition("ManifestLoaderCwdSerial", DisableParallelization = true)]
+public sealed class ManifestLoaderCwdSerialCollection;
+
+[Collection("ManifestLoaderCwdSerial")]
 public sealed class BlockchainManifestLoaderTests
 {
     [Fact]
@@ -165,10 +170,51 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
+    [Fact]
+    public void ResolvesRelativeManifestPathByWalkingUpFromTheWorkingDirectory()
+    {
+        // Reproduces the "liquid staking is not deployed on this chain yet" report: appsettings ships
+        // a relative "deployments/ethereum-sepolia.json" path, but a local `dotnet run --project` (or
+        // IDE launch) sets the process CWD to the project directory, where that relative path does not
+        // exist. Before the walk-up fix the manifest silently failed to load and the registry fell back
+        // to the addressless ethereum-sepolia stub (empty LiquidVault). The loader must find the
+        // repo-root copy from a nested working directory.
+        var root = Directory.CreateTempSubdirectory("artisanalbrew-manifest-cwd-");
+        var originalWorkingDirectory = Directory.GetCurrentDirectory();
+        try
+        {
+            var deployments = Directory.CreateDirectory(Path.Combine(root.FullName, "deployments"));
+            File.WriteAllText(
+                Path.Combine(deployments.FullName, "ethereum-sepolia.json"),
+                EvmManifestJson("ethereum-sepolia", 11155111, "https://ethereum-sepolia-rpc.publicnode.com"));
+            var nestedWorkingDirectory = Directory.CreateDirectory(Path.Combine(root.FullName, "src", "ThisCafeteria.Web"));
+            Directory.SetCurrentDirectory(nestedWorkingDirectory.FullName);
+
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(
+                BlockchainOptions.CreateDefaults(), "deployments/ethereum-sepolia.json", null);
+            var deployed = new ChainRegistry(options).GetRequired("ethereum-sepolia");
+
+            deployed.Enabled.Should().BeTrue();
+            deployed.Capabilities.LiquidStaking.Should().BeTrue();
+            deployed.Deployment.LiquidVault.Should().Be(Address('A'));
+            deployed.Deployment.StCafe.Should().Be(Address('A'));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalWorkingDirectory);
+            Directory.Delete(root.FullName, recursive: true);
+        }
+    }
+
     private static string WriteEvmManifest(string chainKey = "bsc-testnet", int chainId = 97, string rpcUrl = "https://97.rpc.thirdweb.com")
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
-        File.WriteAllText(path, $$"""
+        File.WriteAllText(path, EvmManifestJson(chainKey, chainId, rpcUrl));
+        return path;
+    }
+
+    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl) =>
+        $$"""
         {
           "schemaVersion": 1,
           "chainKey": "{{chainKey}}",
@@ -202,9 +248,7 @@ public sealed class BlockchainManifestLoaderTests
           },
           "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true }
         }
-        """);
-        return path;
-    }
+        """;
 
     private static string Key(char value) => Base58Encode(Enumerable.Repeat((byte)value, 32).ToArray());
 
