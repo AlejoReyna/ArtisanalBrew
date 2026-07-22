@@ -13,7 +13,7 @@ public class AgentFeedbackProjectionConfiguration : IEntityTypeConfiguration<Age
         builder.Property(x => x.RegistryAddress).HasMaxLength(128).IsRequired();
         builder.Property(x => x.ReviewerAddress).HasMaxLength(128).IsRequired();
         builder.Property(x => x.CommentUri).HasMaxLength(2048).IsRequired();
-        
+
         builder.HasIndex(x => new { x.ChainKey, x.RegistryAddress, x.AgentId, x.JobId }).IsUnique();
         builder.HasIndex(x => x.ReviewerAddress);
     }

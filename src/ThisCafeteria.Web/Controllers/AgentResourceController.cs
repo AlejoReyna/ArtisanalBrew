@@ -68,26 +68,26 @@ public sealed class AgentResourceController(IConfiguration configuration, ILogge
     }
 
     public abstract record AgentRequest(string CorrelationId, string? RequestHash);
-    
+
     public sealed record SearchProductsRequest(
-        [Required, MaxLength(200)] string Query, 
-        string CorrelationId, 
+        [Required, MaxLength(200)] string Query,
+        string CorrelationId,
         string? RequestHash) : AgentRequest(CorrelationId, RequestHash);
-        
+
     public sealed record BrewPlanRequest(
-        [Required, MaxLength(100)] string ProductId, 
-        [Range(1, 10000)] int Quantity, 
-        string CorrelationId, 
+        [Required, MaxLength(100)] string ProductId,
+        [Range(1, 10000)] int Quantity,
+        string CorrelationId,
         string? RequestHash) : AgentRequest(CorrelationId, RequestHash);
-        
+
     public sealed record ProvenanceRequest(
-        [Required, MaxLength(100)] string ProductId, 
-        string CorrelationId, 
+        [Required, MaxLength(100)] string ProductId,
+        string CorrelationId,
         string? RequestHash) : AgentRequest(CorrelationId, RequestHash);
-        
+
     public sealed record WholesaleQuoteRequest(
-        [Required, MaxLength(100)] string ProductId, 
-        [Range(1, 10000)] int Quantity, 
-        string CorrelationId, 
+        [Required, MaxLength(100)] string ProductId,
+        [Range(1, 10000)] int Quantity,
+        string CorrelationId,
         string? RequestHash) : AgentRequest(CorrelationId, RequestHash);
 }

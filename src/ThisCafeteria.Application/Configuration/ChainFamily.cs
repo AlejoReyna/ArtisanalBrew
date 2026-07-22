@@ -15,6 +15,13 @@ public sealed record ChainCapabilities
     public bool MarketplacePayment { get; init; }
     public bool RewardMinting { get; init; }
     public bool AgenticCommerce { get; init; }
+
+    /// <summary>
+    /// True when the chain has a verified MetaMask Delegation Framework deployment (see
+    /// <see cref="ChainDeployment.ModularAccountFactory"/> and friends) so agent session-key
+    /// permissions can be installed on modular accounts. See docs/erc4337-session-key-provenance.md.
+    /// </summary>
+    public bool AgenticSessionPayments { get; init; }
 }
 
 public sealed record ChainDeployment
@@ -32,6 +39,23 @@ public sealed record ChainDeployment
     public string VerifyingPaymaster { get; init; } = string.Empty;
     public string ERC8004Registry { get; init; } = string.Empty;
     public string ERC7683Resolver { get; init; } = string.Empty;
+
+    // --- Modular account stack (MetaMask Delegation Framework v1.3.0, commit bfbdf9795a976833ed2fa000baf42fbb83958b03).
+    // See docs/erc4337-session-key-provenance.md for the provenance matrix. Every field here must
+    // point at unmodified, audited contract deployments — SmartAccountService fails closed unless
+    // all of them (plus EntryPoint) are present.
+    public string ModularAccountFactory { get; init; } = string.Empty;
+    public string DelegationManager { get; init; } = string.Empty;
+    public string HybridDeleGatorImplementation { get; init; } = string.Empty;
+    public string AllowedTargetsEnforcer { get; init; } = string.Empty;
+    public string AllowedMethodsEnforcer { get; init; } = string.Empty;
+    public string ExactCalldataEnforcer { get; init; } = string.Empty;
+    public string LimitedCallsEnforcer { get; init; } = string.Empty;
+    public string NonceEnforcer { get; init; } = string.Empty;
+    public string TimestampEnforcer { get; init; } = string.Empty;
+    public string ModularAccountType { get; init; } = string.Empty;
+    public string ModularFrameworkRevision { get; init; } = string.Empty;
+
     public string Program { get; init; } = string.Empty;
     public string VaultPda { get; init; } = string.Empty;
     public string AuthorityPda { get; init; } = string.Empty;

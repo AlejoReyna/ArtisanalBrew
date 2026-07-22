@@ -33,9 +33,11 @@ public sealed class UserOperationSimulator(
     IChainRegistry chains,
     ILogger<UserOperationSimulator> logger) : IUserOperationSimulator
 {
-    // A well-known throwaway key, used only to produce a syntactically valid placeholder
-    // signature for gas simulation. It signs a fixed, meaningless message and controls nothing.
-    private const string PlaceholderSignerKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690";
+    // Hardhat's second well-known development account private key, published in Hardhat's own
+    // documentation and controlling nothing outside a local test node. Used only to produce a
+    // syntactically valid placeholder signature for gas simulation - it signs a fixed, meaningless
+    // message and is never the real account owner's key.
+    private const string PlaceholderSignerKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
     private const string PlaceholderBalanceHex = "0x152d02c7e14af6800000"; // 100,000 ETH
 
     private static readonly Lazy<string> DeployedBytecode = new(LoadDeployedBytecode);

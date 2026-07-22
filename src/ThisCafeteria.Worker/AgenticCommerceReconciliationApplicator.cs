@@ -86,225 +86,225 @@ public class AgenticCommerceReconciliationApplicator : IAgenticCommerceReconcili
         switch (evt.Type)
         {
             case EscrowEventType.JobCreated:
-            {
-                var existingJob = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (existingJob != null)
                 {
-                    // Idempotent: same on-chain identity already projected.
-                    // Still record the applied-event so this log identity is never re-processed.
+                    var existingJob = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (existingJob != null)
+                    {
+                        // Idempotent: same on-chain identity already projected.
+                        // Still record the applied-event so this log identity is never re-processed.
+                        break;
+                    }
+
+                    db.AgenticJobs.Add(new AgenticJobProjection
+                    {
+                        ChainKey = chain.Key,
+                        OnChainJobId = evt.OnChainJobId,
+                        ChainId = chainId,
+                        ContractAddress = escrowAddress,
+                        EscrowAddress = escrowAddress,
+                        ClientAddress = evt.Client,
+                        ProviderAddress = evt.Provider,
+                        EvaluatorAddress = evt.Evaluator,
+                        ExpiredAt = (long)evt.ExpiredAt,
+                        Status = AgenticJobProjection.StatusOpen,
+                        CreationTransactionHash = evt.TransactionHash,
+                        LastReconciledBlock = evt.BlockNumber,
+                        CreatedAtUtc = DateTime.UtcNow,
+                        UpdatedAtUtc = DateTime.UtcNow
+                    });
                     break;
                 }
-
-                db.AgenticJobs.Add(new AgenticJobProjection
-                {
-                    ChainKey = chain.Key,
-                    OnChainJobId = evt.OnChainJobId,
-                    ChainId = chainId,
-                    ContractAddress = escrowAddress,
-                    EscrowAddress = escrowAddress,
-                    ClientAddress = evt.Client,
-                    ProviderAddress = evt.Provider,
-                    EvaluatorAddress = evt.Evaluator,
-                    ExpiredAt = (long)evt.ExpiredAt,
-                    Status = AgenticJobProjection.StatusOpen,
-                    CreationTransactionHash = evt.TransactionHash,
-                    LastReconciledBlock = evt.BlockNumber,
-                    CreatedAtUtc = DateTime.UtcNow,
-                    UpdatedAtUtc = DateTime.UtcNow
-                });
-                break;
-            }
 
             case EscrowEventType.ProviderSet:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for ProviderSet");
-                    return; // Do NOT record applied-event; checkpoint may not advance past this silently.
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for ProviderSet");
+                        return; // Do NOT record applied-event; checkpoint may not advance past this silently.
+                    }
+                    if (job.Status != AgenticJobProjection.StatusOpen)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for ProviderSet");
+                        return;
+                    }
+                    job.ProviderAddress = evt.Provider;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
+                    break;
                 }
-                if (job.Status != AgenticJobProjection.StatusOpen)
-                {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for ProviderSet");
-                    return;
-                }
-                job.ProviderAddress = evt.Provider;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.BudgetSet:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for BudgetSet");
-                    return;
-                }
-                if (job.Status != AgenticJobProjection.StatusOpen)
-                {
-                    // BudgetSet on a non-open job is silently ignored (budget is already set via fund).
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for BudgetSet");
+                        return;
+                    }
+                    if (job.Status != AgenticJobProjection.StatusOpen)
+                    {
+                        // BudgetSet on a non-open job is silently ignored (budget is already set via fund).
+                        break;
+                    }
+                    job.Budget = (decimal)evt.Amount / 1_000_000_000_000_000_000m;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
                     break;
                 }
-                job.Budget = (decimal)evt.Amount / 1_000_000_000_000_000_000m;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.JobFunded:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobFunded");
-                    return;
-                }
-                if (job.Status != AgenticJobProjection.StatusOpen)
-                {
-                    // Duplicate fund on an already-funded/terminal job: idempotent skip.
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobFunded");
+                        return;
+                    }
+                    if (job.Status != AgenticJobProjection.StatusOpen)
+                    {
+                        // Duplicate fund on an already-funded/terminal job: idempotent skip.
+                        break;
+                    }
+                    job.Status = AgenticJobProjection.StatusFunded;
+                    job.Budget = (decimal)evt.Amount / 1_000_000_000_000_000_000m;
+                    job.FundedTransactionHash = evt.TransactionHash;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
                     break;
                 }
-                job.Status = AgenticJobProjection.StatusFunded;
-                job.Budget = (decimal)evt.Amount / 1_000_000_000_000_000_000m;
-                job.FundedTransactionHash = evt.TransactionHash;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.JobSubmitted:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobSubmitted");
-                    return;
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobSubmitted");
+                        return;
+                    }
+                    if (job.Status != AgenticJobProjection.StatusFunded)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobSubmitted (expected Funded)");
+                        return;
+                    }
+                    job.Status = AgenticJobProjection.StatusSubmitted;
+                    job.DeliverableCommitment = evt.Deliverable;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
+                    break;
                 }
-                if (job.Status != AgenticJobProjection.StatusFunded)
-                {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobSubmitted (expected Funded)");
-                    return;
-                }
-                job.Status = AgenticJobProjection.StatusSubmitted;
-                job.DeliverableCommitment = evt.Deliverable;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.JobCompleted:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobCompleted");
-                    return;
-                }
-                if (job.Status == AgenticJobProjection.StatusCompleted)
-                {
-                    // Idempotent duplicate terminal event.
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobCompleted");
+                        return;
+                    }
+                    if (job.Status == AgenticJobProjection.StatusCompleted)
+                    {
+                        // Idempotent duplicate terminal event.
+                        break;
+                    }
+                    if (job.Status != AgenticJobProjection.StatusSubmitted)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobCompleted (expected Submitted)");
+                        return;
+                    }
+                    job.Status = AgenticJobProjection.StatusCompleted;
+                    job.DecisionReason = evt.Reason;
+                    job.CompletionTransactionHash = evt.TransactionHash;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
                     break;
                 }
-                if (job.Status != AgenticJobProjection.StatusSubmitted)
-                {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobCompleted (expected Submitted)");
-                    return;
-                }
-                job.Status = AgenticJobProjection.StatusCompleted;
-                job.DecisionReason = evt.Reason;
-                job.CompletionTransactionHash = evt.TransactionHash;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.JobRejected:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobRejected");
-                    return;
-                }
-                if (job.Status is AgenticJobProjection.StatusCompleted or AgenticJobProjection.StatusRejected or AgenticJobProjection.StatusExpired)
-                {
-                    // Idempotent duplicate terminal event.
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobRejected");
+                        return;
+                    }
+                    if (job.Status is AgenticJobProjection.StatusCompleted or AgenticJobProjection.StatusRejected or AgenticJobProjection.StatusExpired)
+                    {
+                        // Idempotent duplicate terminal event.
+                        break;
+                    }
+                    if (job.Status != AgenticJobProjection.StatusSubmitted)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobRejected (expected Submitted)");
+                        return;
+                    }
+                    job.Status = AgenticJobProjection.StatusRejected;
+                    job.DecisionReason = evt.Reason;
+                    job.CompletionTransactionHash = evt.TransactionHash;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
                     break;
                 }
-                if (job.Status != AgenticJobProjection.StatusSubmitted)
-                {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobRejected (expected Submitted)");
-                    return;
-                }
-                job.Status = AgenticJobProjection.StatusRejected;
-                job.DecisionReason = evt.Reason;
-                job.CompletionTransactionHash = evt.TransactionHash;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.JobExpired:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobExpired");
-                    return;
-                }
-                if (job.Status == AgenticJobProjection.StatusExpired)
-                {
-                    // Idempotent duplicate terminal event.
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, "Job not found for JobExpired");
+                        return;
+                    }
+                    if (job.Status == AgenticJobProjection.StatusExpired)
+                    {
+                        // Idempotent duplicate terminal event.
+                        break;
+                    }
+                    if (job.Status != AgenticJobProjection.StatusFunded)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobExpired (expected Funded)");
+                        return;
+                    }
+                    job.Status = AgenticJobProjection.StatusExpired;
+                    job.CompletionTransactionHash = evt.TransactionHash;
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
                     break;
                 }
-                if (job.Status != AgenticJobProjection.StatusFunded)
-                {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, $"Invalid state {job.Status} for JobExpired (expected Funded)");
-                    return;
-                }
-                job.Status = AgenticJobProjection.StatusExpired;
-                job.CompletionTransactionHash = evt.TransactionHash;
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
 
             case EscrowEventType.PaymentReleased:
             case EscrowEventType.Refunded:
-            {
-                var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
-                if (job == null)
                 {
-                    if (!alreadyDeferred)
-                        RecordDeferred(db, chain.Key, escrowAddress, evt, $"Job not found for {evt.Type}");
-                    return;
+                    var job = await FindJobAsync(db, chain.Key, escrowAddress, evt.OnChainJobId, cancellationToken);
+                    if (job == null)
+                    {
+                        if (!alreadyDeferred)
+                            RecordDeferred(db, chain.Key, escrowAddress, evt, $"Job not found for {evt.Type}");
+                        return;
+                    }
+                    job.LastReconciledBlock = evt.BlockNumber;
+                    job.UpdatedAtUtc = DateTime.UtcNow;
+                    job.ConcurrencyToken++;
+                    break;
                 }
-                job.LastReconciledBlock = evt.BlockNumber;
-                job.UpdatedAtUtc = DateTime.UtcNow;
-                job.ConcurrencyToken++;
-                break;
-            }
         }
 
         // Record that this log identity was processed (either applied or idempotent skip).

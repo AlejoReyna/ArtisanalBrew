@@ -18,7 +18,7 @@ public class AgenticJobProjectionConfiguration : IEntityTypeConfiguration<Agenti
         builder.Property(x => x.Status).HasMaxLength(32).IsRequired();
         builder.Property(x => x.DeliverableCommitment).HasMaxLength(1024);
         builder.Property(x => x.DecisionReason).HasMaxLength(1024);
-        
+
         // Use the on-chain identity for unique index since JobId is auto-increment internal ID
         builder.HasIndex(x => new { x.ChainKey, x.ContractAddress, x.OnChainJobId }).IsUnique();
         builder.HasIndex(x => x.ClientAddress);

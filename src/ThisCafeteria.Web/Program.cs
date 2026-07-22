@@ -37,8 +37,11 @@ if (blockchainOptions.Chains.Count == 0)
 }
 blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
     blockchainOptions,
-    builder.Configuration["Blockchain:LocalEvmManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST"),
-    builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST"));
+    // ARTISANALBREW_*_MANIFEST is the explicit, deliberate override mechanism (README/docs) - it
+    // must win over appsettings.{Environment}.json's static default, which is always non-null in
+    // Development and would otherwise make the env var override permanently unreachable.
+    Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST") ?? builder.Configuration["Blockchain:LocalEvmManifest"],
+    Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST") ?? builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"]);
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
@@ -112,29 +115,46 @@ builder.Services.AddScoped<EvmLiquidStakingGateway>();
 builder.Services.AddScoped<SolanaLiquidStakingGateway>();
 builder.Services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
-builder.Services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
 builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
 {
     client.BaseAddress = new Uri("https://api.coingecko.com/api/v3/");
     client.Timeout = TimeSpan.FromSeconds(5);
 });
-builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
-builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
-builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
-builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();
-builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
+builder.Services.AddScoped<ISelectedSmartAccountAccessor, SelectedSmartAccountAccessor>();
 // Sponsorship policy. Absent configuration yields a disabled (fail-closed) policy.
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(builder.Configuration
     .GetSection(SponsorshipPolicyOptions.SectionName)
     .Get<SponsorshipPolicyOptions>() ?? new SponsorshipPolicyOptions());
-builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>();
 builder.Services.AddScoped<IUserOperationSimulator, UserOperationSimulator>();
-builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
 
-builder.Services.AddApplication();
+// Cross-chain solver quote preview. Absent configuration yields a disabled (fail-closed) quote —
+// wraps the same policy CrossChainSolverWorker (in ThisCafeteria.Worker) uses, not a separate calculation.
+builder.Services.AddSingleton(builder.Configuration
+    .GetSection(CrossChainSolverOptions.SectionName)
+    .Get<CrossChainSolverOptions>() ?? new CrossChainSolverOptions());
+builder.Services.AddScoped<ISolverPolicyService, SolverPolicyService>();
+builder.Services.AddScoped<IIntentQuoteService, IntentQuoteService>();
+
+builder.Services.AddApplication(hasDatabase);
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// The services below all depend on AppDbContext (directly or transitively) - AddInfrastructure
+// only registers AppDbContext itself when hasDatabase, so registering these unconditionally would
+// leave a dangling dependency that ASP.NET's Development-mode ValidateOnBuild catches at startup
+// (and that would otherwise only surface, confusingly, the first time something tried to use it).
+if (hasDatabase)
+{
+    builder.Services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
+    builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
+    builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
+    builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
+    builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();
+    builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>();
+    builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
+    builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
+}
 builder.Services.AddSingleton<IMigrationReadiness, MigrationReadiness>();
 builder.Services.AddHostedService<MigrationHostedService>(provider =>
     new MigrationHostedService(

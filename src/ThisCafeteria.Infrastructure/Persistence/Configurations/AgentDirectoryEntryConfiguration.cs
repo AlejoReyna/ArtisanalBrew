@@ -13,7 +13,7 @@ public class AgentDirectoryEntryConfiguration : IEntityTypeConfiguration<AgentDi
         builder.Property(x => x.RegistryAddress).HasMaxLength(128).IsRequired();
         builder.Property(x => x.OwnerAddress).HasMaxLength(128).IsRequired();
         builder.Property(x => x.MetadataUri).HasMaxLength(2048).IsRequired();
-        
+
         builder.HasIndex(x => new { x.ChainKey, x.RegistryAddress, x.AgentId }).IsUnique();
         builder.HasIndex(x => x.OwnerAddress);
     }

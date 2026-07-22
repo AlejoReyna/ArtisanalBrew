@@ -144,7 +144,7 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 192 | ✅ Passed |
+| .NET unit tests | 210 | ✅ Passed |
 | Gateway (TypeScript) | 11 | ✅ Passed |
 | Gateway (`tsc` build) | — | ✅ Succeeded |
 | EVM contracts (Hardhat) | 29 | ✅ Passed |
@@ -186,16 +186,22 @@ own job-id sequence; rows under earlier escrow addresses are retained history, n
 
 | Verified by | Scope |
 |-------------|-------|
-| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety, sponsorship policy/signer/simulator fail-closed gating — in-memory, SQLite, and stubbed chains; not a live chain. |
+| .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety, sponsorship policy/signer/simulator fail-closed gating, cross-chain solver policy fail-closed gating — in-memory, SQLite, and stubbed chains; not a live chain. |
 | Hardhat contract tests | Solidity escrow/resolver/ERC-4337 logic in isolation. |
 | Acceptance harness | Real EVM transactions → worker → PostgreSQL projections, driven by **Hardhat-controlled local wallets**. |
-| Cross-stack ERC-4337 scripts | `crossstack-sponsor-check.ts` and `simulation-recipe-check.ts`: real C# `UserOperationSimulator`/`UserOperationSponsor` classes driven against a live Hardhat node, producing a signature the on-chain canonical paymaster actually accepts. Not part of the automated test suite — run manually against a live node. |
+| Cross-stack ERC-4337 scripts | `crossstack-sponsor-check.ts` and `simulation-recipe-check.ts`: real C# `UserOperationSimulator`/`UserOperationSponsor` classes driven against a live Hardhat node, producing a signature the on-chain canonical paymaster actually accepts. Submission still goes through `EntryPoint.handleOps` directly, not through a bundler. Not part of the automated test suite — run manually against a live node. |
+| Bundler (Rundler) e2e script | `rundler-e2e-check.ts`: a real bundler (Rundler, `--unsafe` mode) accepts a UserOperation via `eth_sendUserOperation`, bundles it, and gets it mined — confirmed via `eth_getUserOperationReceipt`, on-chain account bytecode, and recipient balance change. Proves the bundler path itself works against this repo's pinned canonical EntryPoint; does not involve `ThisCafeteria.*` .NET code and does not exercise storage-access-rule validation (Hardhat can't run the tracer that enforces it — see `docs/agentic-commerce-stack-plan.md`'s "Rundler investigation"). Not part of the automated test suite — run manually against a live node plus a separately-started Rundler process. |
+| Two-node cross-chain smoke test | `two-node-crosschain-smoke.ts`: proves the Phase 5 gate — asset moves from a genuinely separate source node to a real (deployed, not counterfactual) smart account on a separate destination node; job funding happens only after that move is verified; an unfilled intent leaves the job Open and the source asset refundable. Re-run twice against fresh nodes for reproducibility. Not part of the automated test suite; the "solver" here is inline script logic. |
+| Standing cross-chain solver | `two-node-standing-solver-check.ts` + a real `ThisCafeteria.Worker` process running `CrossChainSolverWorker`: the script deploys and submits intents but never fills — a separately-started, genuinely long-running .NET background service watches the source chain, decodes intents from real transaction calldata, evaluates a fail-closed policy, and fills approved ones. Confirmed at every layer: worker logs, `CrossChainSolverFills` DB rows with real fill tx hashes, and on-chain `isResolved`/balance checks. Also proved the denial path: a disallowed token pair was left correctly unfilled. Not part of the automated test suite. |
+| Quote-preview vs. real fill | `GET /api/intents/quote` was queried against a live `ThisCafeteria.Web` process holding **no private key**, then the identical route was submitted as a real intent and autonomously filled by the separately-running solver worker. The previewed `amountOut` and the actually-paid amount were byte-for-byte identical (`9700000000000000000` both times, a 9700 bps / 3% spread). Not part of the automated test suite; the endpoint itself has no UI consumer yet. |
 | Procurement Lab UI | Visualization of projections only; not exercised by any automated test. |
 
-**Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, a real
-bundler (the cross-stack scripts call `EntryPoint.handleOps` directly from a funded EOA — there is
-no mempool, validation-rule enforcement, or gas estimation service), deep-reorg rollback, and
-automatic re-application of deferred events. No browser extension is involved at any point.
+**Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, .NET code
+submitting through the bundler (the cross-stack scripts still call `EntryPoint.handleOps` directly
+from a funded EOA — the bundler proof is a standalone script, not wired to `ThisCafeteria.*`),
+bundler-enforced storage-access-rule validation (only provable against a node with JS-tracer
+support, which local Hardhat lacks), deep-reorg rollback, and automatic re-application of deferred
+events. No browser extension is involved at any point.
 
 ### Known Limitations
 
@@ -217,11 +223,19 @@ automatic re-application of deferred events. No browser extension is involved at
 - **Provider assignment coverage:** the main lifecycle proves `setProvider`. The rejection and
   expiry variants still create jobs with the provider supplied inline, which exercises the
   create-with-provider form rather than the two-step assignment.
-- **No bundler.** Sponsorship signing and gas simulation are real and proven on-chain, but
-  submission still goes through `EntryPoint.handleOps` called directly by a funded EOA. There is
-  no mempool, no `eth_sendUserOperation`, no bundler validation rules, and no code path that lets a
-  user with an empty wallet actually get an operation included — which is the entire point of
-  sponsorship. Closing this requires a bundler (Alto, Rundler, or a hosted provider).
+- **A working local bundler exists (Rundler), but nothing in `ThisCafeteria.*` submits through it
+  yet.** Sponsorship signing and gas simulation are real and proven on-chain, but the cross-stack
+  scripts still go through `EntryPoint.handleOps` called directly by a funded EOA — there is no .NET
+  code path yet that lets a user with an empty wallet get an operation included via a real mempool,
+  which is the entire point of sponsorship. `@pimlico/alto` was tried first and hit a real,
+  diagnosed blocker (its gas-estimation RPC calls a proprietary, undocumented simulation contract,
+  confirmed via selector mismatch against the canonical `EntryPointSimulations`, that doesn't
+  tolerate a locally-redeployed EntryPoint — kept as a known-failing script,
+  `contracts/evm/scripts/bundler-e2e-check.ts`). Rundler (Alchemy's bundler) succeeded instead, in
+  `--unsafe` mode — Hardhat can't run the JS tracer bundler safe-mode needs, confirmed by strings
+  found in the compiled EDR binary itself. See `docs/agentic-commerce-stack-plan.md`'s "Rundler
+  investigation" section and `contracts/evm/scripts/rundler-e2e-check.ts` (passing,
+  `RUNDLER_E2E_RESULT=PASS`) for the full account.
 - **`NativeCurrencyUsdRate` is a static configured number, not a live price oracle.** The USD
   budget is therefore only as accurate as that configured value; on a real chain with a moving gas
   price and asset price, the effective USD cost of sponsorship will drift from what the grant

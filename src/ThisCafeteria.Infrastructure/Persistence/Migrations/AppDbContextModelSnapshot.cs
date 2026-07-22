@@ -250,6 +250,137 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.ToTable("AgentFeedback");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.AgentPermissionEpoch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AgentAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DelegatorAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Epoch")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTime?>("InstalledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InstalledTxHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("OwnerAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RevokedTxHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("SmartAccountRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ValidAfterUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ValidBeforeUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChainKey", "DelegatorAddress")
+                        .HasDatabaseName("IX_AgentPermissionEpochs_ChainDelegator");
+
+                    b.HasIndex("ChainKey", "SmartAccountRecordId", "Epoch")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AgentPermissionEpochs_AccountEpoch");
+
+                    b.ToTable("AgentPermissionEpochs");
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.AgentPermissionGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AmountWei")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DelegationHash")
+                        .IsRequired()
+                        .HasMaxLength(66)
+                        .HasColumnType("character varying(66)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("EpochId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Selector")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("TargetAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("TokenAddress")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DelegationHash")
+                        .HasDatabaseName("IX_AgentPermissionGrants_DelegationHash");
+
+                    b.HasIndex("EpochId")
+                        .HasDatabaseName("IX_AgentPermissionGrants_Epoch");
+
+                    b.ToTable("AgentPermissionGrants");
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.AgenticCommerceReconciliationCheckpoint", b =>
                 {
                     b.Property<Guid>("Id")
@@ -602,6 +733,86 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.ToTable("CouponRedemptions");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.CrossChainSolverCheckpoint", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("LastScannedBlock")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SourceChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SourceResolverAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceChainKey", "SourceResolverAddress")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CrossChainSolverCheckpoints_SourceChainResolver");
+
+                    b.ToTable("CrossChainSolverCheckpoints");
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.CrossChainSolverFill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DenialReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("EvaluatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FillTransactionHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("Filled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OrderId")
+                        .IsRequired()
+                        .HasMaxLength(66)
+                        .HasColumnType("character varying(66)");
+
+                    b.Property<string>("SourceChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SourceResolverAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SubmitTransactionHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceChainKey", "SourceResolverAddress", "OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CrossChainSolverFills_Identity");
+
+                    b.ToTable("CrossChainSolverFills");
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -934,6 +1145,67 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.HasIndex("WalletAddress", "ClaimedAtUtc");
 
                     b.ToTable("RewardClaims");
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.SmartAccountRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccountAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("AccountType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("DeployedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DiscoveredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FactoryAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("ImplementationVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeployed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OwnerAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Salt")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChainKey", "AccountAddress")
+                        .HasDatabaseName("IX_SmartAccountRecords_ChainAddress");
+
+                    b.HasIndex("ChainKey", "OwnerAddress", "AccountType")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SmartAccountRecords_ChainOwnerType");
+
+                    b.ToTable("SmartAccountRecords");
                 });
 
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.SponsorshipGrant", b =>
@@ -1613,6 +1885,15 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.HasOne("ThisCafeteria.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.AgentPermissionGrant", b =>
+                {
+                    b.HasOne("ThisCafeteria.Domain.Entities.AgentPermissionEpoch", null)
+                        .WithMany()
+                        .HasForeignKey("EpochId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

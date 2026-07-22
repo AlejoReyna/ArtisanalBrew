@@ -1,7 +1,9 @@
 using Serilog;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Configuration;
+using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Worker;
 using System.Text.Json;
 
@@ -19,10 +21,13 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
     var blockchainOptions = builder.Configuration.GetSection(BlockchainOptions.SectionName).Get<BlockchainOptions>() ?? BlockchainOptions.CreateDefaults();
     if (blockchainOptions.Chains.Count == 0) blockchainOptions = BlockchainOptions.CreateDefaults();
+    // ARTISANALBREW_*_MANIFEST is the explicit, deliberate override mechanism (README/docs) - it
+    // must win over appsettings.{Environment}.json's static default, which is always non-null in
+    // Development and would otherwise make the env var override permanently unreachable.
     blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
         blockchainOptions,
-        builder.Configuration["Blockchain:LocalEvmManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST"),
-        builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST"));
+        Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST") ?? builder.Configuration["Blockchain:LocalEvmManifest"],
+        Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST") ?? builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"]);
     builder.Services.AddSingleton(blockchainOptions);
     builder.Services.AddSingleton<IChainRegistry>(new ChainRegistry(blockchainOptions));
 
@@ -36,12 +41,22 @@ try
     builder.Services.AddHostedService<OrderProcessingWorker>();
     builder.Services.AddHostedService<StakingLedgerReconciliationWorker>();
     builder.Services.AddSingleton<IAgenticCommerceReconciliationApplicator, AgenticCommerceReconciliationApplicator>();
-builder.Services.AddSingleton<IEscrowEventProvider, EvmEscrowEventProvider>();
+    builder.Services.AddSingleton<IEscrowEventProvider, EvmEscrowEventProvider>();
     builder.Services.AddHostedService<AgenticCommerceReconciliationWorker>();
     builder.Services.AddHostedService<ChainReconciliationSupervisor>();
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<SolanaReconciliationSupervisor>();
     builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<SolanaReconciliationSupervisor>());
+
+    // Cross-chain solver. Absent configuration yields a disabled (fail-closed, idle) worker.
+    builder.Services.AddSingleton(TimeProvider.System);
+    builder.Services.AddSingleton(builder.Configuration
+        .GetSection(CrossChainSolverOptions.SectionName)
+        .Get<CrossChainSolverOptions>() ?? new CrossChainSolverOptions());
+    builder.Services.AddSingleton<ISolverPolicyService, SolverPolicyService>();
+    builder.Services.AddSingleton<ICrossChainIntentProvider, CrossChainIntentProvider>();
+    builder.Services.AddSingleton<ICrossChainSolverExecutor, EvmCrossChainSolverExecutor>();
+    builder.Services.AddHostedService<CrossChainSolverWorker>();
 
     var host = builder.Build();
     if (args.Length > 0 && args[0] == "--solana-backfill")

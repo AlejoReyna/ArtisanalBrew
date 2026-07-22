@@ -188,6 +188,11 @@ else if (_dashboard is not null)
                             <dd><a class="profile-dash__faucet-link" href="staking">Get Sepolia ETH <span aria-hidden="true">→</span></a></dd>
                         </div>
                     </dl>
+
+                    @if (!string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+                    {
+                        <SmartAccountPanel WalletAddress="@_dashboard.WalletAddress" />
+                    }
                 </section>
 
                 <section id="orders" class="profile-dash__section">

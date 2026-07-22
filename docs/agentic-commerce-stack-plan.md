@@ -6,12 +6,18 @@ Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 
 ## Session handoff (2026-07-21) — read this first
 
-Branch `agent/enable-solana-multichain`, PR #54. Latest commit `2bc3e23`. All work below is pushed.
+Branch `agent/enable-solana-multichain`, PR #54. All work below is pushed (check `git log` for the
+actual latest commit — this line rots faster than it gets updated).
 
-**Overall: ~65-70% of the whole plan.** Phase 0-3 complete and independently verified (see
+**Overall: ~80% of the whole plan.** Phase 0-3 complete and independently verified (see
 "Session handoff" evidence in `walkthrough.md` — do not trust older claims in that file without
 checking the commit that made them; several turned out to be false and had to be re-verified from
-scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-6 barely started.
+scratch this session). Phase 4 has a working local bundler now (Rundler, in `--unsafe` mode — see
+"Rundler investigation" below for the real caveat that comes with that). **Phase 5 is essentially
+complete**: the gate is met and verified live, the solver is a real standing `BackgroundService`
+(`CrossChainSolverWorker`), and the quote-preview surface now exists and was verified to match real
+fills exactly — see its section further down. Remaining Phase 5 gap is single source/destination
+pair only (no multi-pair support). Phase 6 untouched.
 
 ### What's true right now, proven not just claimed
 
@@ -29,40 +35,254 @@ scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-
   engine, the sponsorship signer, and gas simulation are all implemented AND proven cross-stack
   against a real chain — not just unit-tested. The proof scripts:
   - `contracts/evm/scripts/crossstack-sponsor-check.ts` — runs the **real** C# `UserOperationSponsor`
-    + `UserOperationSimulator` classes (via a scratch console project, not stubs) against a live
-    node, gets a signature, submits it, confirms the canonical paymaster accepts it on-chain.
+    + `UserOperationSimulator` classes (via `tools/ThisCafeteria.CrossStackHarness`, an in-repo
+    console project referencing `ThisCafeteria.Infrastructure` directly — not a scratch/throwaway
+    app, not stubs) against a live node, gets a signature, submits it, confirms the canonical
+    paymaster accepts it on-chain.
   - `contracts/evm/scripts/simulation-recipe-check.ts` — proves the `eth_call` state-override gas
     simulation recipe in isolation.
   - Neither is part of the automated test suite (`dotnet test` / `npm test`). Both require a live
-    Hardhat node and manual invocation. **This is a known gap** — see "Next" below.
+    Hardhat node and manual invocation:
+    ```
+    npx hardhat node --chain-id 31337 &
+    npm run deploy:local
+    HARDHAT_NETWORK=localhost npx tsx scripts/simulation-recipe-check.ts
+    HARDHAT_NETWORK=localhost npx tsx scripts/crossstack-sponsor-check.ts
+    ```
+    Wiring these into CI is still open — see "Next" below.
 
 ### What's still missing for the Phase 4 gate
 
-- **No bundler.** Everything above submits via `EntryPoint.handleOps` called directly by a funded
-  EOA. There is no mempool, no `eth_sendUserOperation`, no bundler validation rules. This is the
-  headline remaining item — see recommendation below.
+- **Bundler now works against the local Hardhat node (Rundler, `--unsafe` mode) — see "Rundler
+  investigation" below.** The caveat: `--unsafe` mode skips ERC-4337 storage-access-rule
+  validation (Hardhat's EDR engine can't run the standard JS tracer that enforces it). No .NET
+  code submits through it yet — `scripts/rundler-e2e-check.ts` proves the bundler path works, but
+  nothing in `ThisCafeteria.*` calls `eth_sendUserOperation` yet.
 - **`NativeCurrencyUsdRate` is a static config number, not a live oracle.**
 - No batch approval+funding, no session-key permissions, no fallback/revocation beyond
   sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
   sponsorship grant, not a real session-key module — there isn't one yet).
-- The cross-stack proof scripts are not wired into CI/automated tests (see below).
+- The cross-stack proof scripts are not wired into CI/automated tests.
+
+### Bundler investigation (2026-07-21) — real attempt, real finding, not a deferral
+
+Installed and ran `@pimlico/alto@0.0.20` (npm-distributed, TypeScript) against the deployed local
+EntryPoint with `--safe-mode false` (Hardhat's `debug_traceCall`-based storage-access validation is
+the documented reason safe-mode doesn't work locally). Two things worked, one thing didn't, and the
+one that didn't is now precisely diagnosed rather than just "hit friction":
+
+**Worked:**
+- Alto starts, listens, and correctly reports the deployed EntryPoint via
+  `eth_supportedEntryPoints` — a real bundler process, running against this repo's real contracts.
+- `--safe-mode false` genuinely still runs EntryPoint validation, not a no-op: a malformed
+  signature reproduces the same "AA23 reverted" this session saw earlier via raw `eth_call` —
+  confirming only the storage-access tracer rules are skipped, not validation itself.
+- Alto's own deterministic-CREATE2-factory self-deploy is broken in this version (its hardcoded raw
+  transaction has every `"00"` byte pair corrupted to the literal string `"V"` — confirmed by
+  successfully deploying the real well-known transaction by hand). Worked around with
+  `contracts/evm/scripts/deploy-create2-factory.ts`, a small, genuinely reusable fix independent of
+  the issue below.
+
+**Didn't work, root cause confirmed:** `eth_estimateUserOperationGas` fails with
+`"AA23 reverted (or OOG)"`. Direct investigation (extracting Alto's own `eth_call` payload and
+comparing selectors) showed Alto does **not** call the canonical `simulateHandleOp` from the pinned
+`@account-abstraction/contracts@0.7.0` package (real selector `0x97b2dcb9`, confirmed against this
+repo's own `CanonicalEntryPointSimulations` artifact). It substitutes its **own proprietary
+simulation contract** via state override, calling selector `0xd6383f94` — a Pimlico-internal
+interface, undocumented, not part of the ERC-4337 spec. That contract is evidently calibrated for
+the canonical, officially-deployed EntryPoint and doesn't tolerate a locally-redeployed instance
+(same source, different address/deployment history) for reasons that would require reverse
+engineering Pimlico's bundler internals to pin down further — a bad trade against this project's
+own rule to depend only on pinned, unmodified, canonical contracts.
+
+`contracts/evm/scripts/bundler-e2e-check.ts` is kept in the repo in this **known-failing** state —
+it fails cleanly with an explicit `BUNDLER_E2E_RESULT=KNOWN_FAILURE` marker and a header comment
+carrying this full diagnosis, rather than either being deleted or left to crash with a raw stack
+trace. Don't mistake its presence for a passing proof; it isn't one.
+
+### Rundler investigation (2026-07-21) — real success, with a stated caveat
+
+Downloaded the Rundler v0.11.0 release binary (Alchemy's Rust bundler; not distributed via npm) and
+ran it against the same deployed local EntryPoint. Unlike Alto, Rundler's success came from its
+chain-spec system: a TOML file (`contracts/evm/scripts/rundler-chain-spec-local.toml`) that lets you
+declare the actual deployed `entry_point_address_v0_7` directly, rather than assuming the canonical
+mainnet address the way Alto's proprietary simulation contract does.
+
+**Three real, diagnosed issues had to be fixed, in order encountered (not guessed — each confirmed
+against Rundler's own error messages or, in the last case, strings in a compiled binary):**
+
+1. **ERC-4337 v0.7 JSON-RPC schema split.** v0.7's JSON-RPC `UserOperation` shape splits `initCode`
+   into `factory`/`factoryData` fields (the on-chain `PackedUserOperation` struct still concatenates
+   them — only the RPC layer changed). Alto's RPC layer tolerates the old combined shape; Rundler
+   enforces the split strictly, rejecting the old shape with `-32602 Invalid user operation for
+   entry point`.
+2. **Hardhat's EIP-7825 (Osaka hardfork) default transaction gas cap of 16,777,216** rejected
+   Rundler's simulation `eth_call`, which deliberately requests ~550,000,000 gas (standard bundler
+   practice — a high ceiling to distinguish a real revert from an artificial out-of-gas during
+   simulation). Fixed in `contracts/evm/hardhat.config.ts` by setting
+   `transactionGasCap: 1_000_000_000n` on the `hardhat` network entry. Non-obvious gotcha: `npx
+   hardhat node` defaults to a network named `"node"`, **not** `"hardhat"` — you must pass
+   `--network hardhat` explicitly for a `networks.hardhat` config change to actually apply to the
+   spawned node process.
+3. **Rundler's default (safe-mode) validation requires a custom JS `debug_traceCall` tracer** — the
+   standard ERC-4337/ERC-7562 storage-access-rule tracer. Hardhat's EDR engine (Rust-based)
+   recognizes the `tracer`/`tracerConfig` RPC fields but does not implement JS-tracer execution:
+   confirmed by finding the literal strings `"JS Tracer is not enabled"` and `"unsupported tracer"`
+   inside the compiled EDR native binary itself
+   (`node_modules/@nomicfoundation/edr-*/edr.*.node`). This is architecturally the same class of
+   limitation that blocks Alto's safe-mode locally — a different mechanism, same root cause (local
+   Hardhat can't do bundler-grade tracing), not fixable via config. Worked around with Rundler's own
+   `--unsafe` flag (equivalent to Alto's `--safe-mode false`), which skips tracer-based validation
+   while still performing full EntryPoint signature/nonce/deposit validation via plain `eth_call`
+   (confirmed: a malformed signature still fails, same as Alto's safe-mode-off behavior).
+
+**Result, verified on-chain, not just `receipt.success: true`:** a full UserOperation (counterfactual
+account creation via the pinned `CanonicalSimpleAccountFactory` + a funded `execute` call)
+submitted only via `eth_sendUserOperation`/polled via `eth_getUserOperationReceipt` — this session's
+script never called `EntryPoint.handleOps` directly. Confirmed the smart account received real
+deployed bytecode and the recipient's balance increased by exactly the transferred amount.
+`contracts/evm/scripts/rundler-e2e-check.ts` is the permanent, passing version of this proof; it
+prints `RUNDLER_E2E_RESULT=PASS`.
+
+**The caveat, stated plainly:** this pass is with Rundler in `--unsafe` mode. Locally, that's the
+only option — Hardhat can't run the standard tracer either way, with either bundler. It means
+storage-access-rule enforcement (the ERC-4337 anti-DoS rules about what a paymaster/account may
+read/write during validation) is not exercised by this proof. A hosted bundler against a real chain
+(Base Sepolia or mainnet) would run in safe mode by default, against a node that does support the
+tracer. This proves Rundler correctly bundles and mines a UserOperation against this repo's real,
+pinned, unmodified canonical EntryPoint/factory — it does not prove storage-access rules are
+enforced, which no current local Hardhat-based setup (Alto or Rundler) can prove.
+
+### CI wiring (2026-07-21) — done
+
+Added a `crossstack-verification` job to `.github/workflows/ci.yml`, separate from `build-test`
+(needs it, so it doesn't run against a broken build, but is deliberately **not** a dependency of
+`deploy-azure` — it drives live Hardhat nodes, a downloaded external bundler binary, and a real
+standing worker process, all carrying more inherent timing/flakiness risk than the unit/contract
+suites; gating production deploys on it is a separate decision left to whoever owns that call). It
+has its own isolated `postgres:16` service container (same credentials pattern as `build-test`'s,
+different database name) and runs, in order:
+
+1. **Stage 1** (single Hardhat node, port 8546): deploys contracts, then runs
+   `crossstack-sponsor-check.ts`, `simulation-recipe-check.ts`, and `rundler-e2e-check.ts` — the
+   last of which downloads the pinned Rundler v0.11.0 Linux release binary
+   (`rundler-v0.11.0-x86_64-unknown-linux-gnu.tar.gz`, confirmed to exist via the GitHub releases
+   API before wiring it in) and runs it in `--unsafe` mode per the Rundler investigation above.
+2. **Stage 2** (two Hardhat nodes, ports 8546/8547): runs `two-node-crosschain-smoke.ts`, applies
+   EF Core migrations, deploys the standing-solver fixtures (`--deploy`), starts a real
+   `ThisCafeteria.Worker` process with `Blockchain__Chains__*`/`CrossChainSolver__*` env vars
+   derived from the deploy step's `/tmp/standing-solver-state.json` output, then runs
+   `--submit-good` and `--submit-denied` to prove the standing `CrossChainSolverWorker`
+   autonomously fills approved intents and correctly ignores disallowed ones.
+
+Both stages have `if: always()` cleanup steps that kill the Hardhat/Rundler/Worker processes they
+started, regardless of whether earlier steps passed. Validated locally before committing: the full
+`rundler-e2e-check.ts` flow was run end-to-end (not just read), `two-node-crosschain-smoke.ts` was
+re-run fresh and passed, and the YAML was parsed with PyYAML to catch structural errors (one real
+bug found and fixed this way — an unquoted step name containing a literal `:` broke YAML parsing).
+The standing-solver stage's exact env-var contract was taken directly from
+`two-node-standing-solver-check.ts`'s own source, not guessed or re-derived by running it against
+the local dev database (deliberately avoided, to not risk touching real dev data with exploratory
+runs — the CI job's own isolated service container carries no such risk).
 
 ### Recommended next step, in order of leverage
 
-1. **Wire the cross-stack proofs into something repeatable without the scratch console project.**
-   Right now `crossstack-sponsor-check.ts` shells out to
-   `/private/tmp/claude-501/.../scratchpad/sponsorcheck` — a throwaway console app outside the
-   repo that won't survive a clean checkout or a new machine. Move it into the repo (e.g. a
-   `tools/CrossStackSimulationHarness` console project referencing `ThisCafeteria.Infrastructure`)
-   so these proofs are reproducible by anyone, not just this session's scratchpad.
-2. **Bundler.** Self-hosted (Alto/Rundler) is the realistic option for Base Sepolia later; for the
-   local Hardhat node, real bundlers rely on `debug_traceCall` tracing that Hardhat supports
-   patchily — expect friction. Don't let bundler work block everything else; it mainly affects
-   *submission*, which nothing in .NET does yet anyway.
-3. Session-key permissions module (needs an audited implementation — don't build one).
-4. Then Phase 5 (ERC-7683 cross-chain), which has barely been touched — resolver fixture + 11
-   contract tests exist, but there is no solver, no two-node smoke test, no destination-verified
-   funding.
+1. Wire actual .NET UserOperation submission through Rundler — right now `rundler-e2e-check.ts`
+   proves the bundler path works, but no `ThisCafeteria.*` code calls `eth_sendUserOperation`; the
+   sponsorship/simulation cross-stack scripts still submit via `EntryPoint.handleOps` directly.
+2. Session-key permissions module (needs an audited implementation — don't build one).
+3. Multi-pair solver support: `CrossChainSolverOptions` currently names exactly one
+   source/destination chain and resolver pair. A real deployment would want several — and the
+   quote endpoint would need a way to select among them rather than always pricing against the one
+   configured pair.
+4. Wire the quote endpoint into the actual UI so a user sees an estimate before submitting an
+   intent (currently API-only — `GET /api/intents/quote`, no frontend consumes it yet).
+
+### Standing cross-chain solver (2026-07-21)
+
+`CrossChainSolverWorker` (in `ThisCafeteria.Worker`) is a real `BackgroundService` — not inline
+script logic — that autonomously watches a configured source chain's resolver, decodes and
+evaluates submitted intents, and fills approved ones on a configured destination chain.
+
+**A design point worth understanding**: `IntentSubmitted` only carries
+`(orderId, user, destinationChainId, amountIn)` — not the full order `fillIntent` needs. The worker
+recovers the full order by fetching the submitting transaction and **decoding its calldata**
+against `submitIntent`'s own ABI (`CrossChainIntentProvider`, using Nethereum's
+`FunctionCallDecoder.DecodeFunctionInput<T>(selector, rawInput)`), not from a side channel or a
+richer event. This is how solvers work in practice for many real intent protocols and avoids
+needing any off-chain coordination service.
+
+**Fail-closed** (`CrossChainSolverOptions`): idle unless `Enabled` and every chain/resolver/key
+field is set; an **empty token-pair allowlist denies every intent** rather than accepting anything
+that shows up; amount and output-ratio caps are enforced before ever spending gas.
+
+**Idempotent and crash-safe**: every evaluated intent — approved or denied — is recorded in
+`CrossChainSolverFill`, keyed uniquely on `(SourceChainKey, SourceResolverAddress, OrderId)`, so a
+restart never re-evaluates or double-fills. Before actually submitting `fillIntent`, the worker also
+queries the destination contract's own `isResolved(orderId)` directly — a defensive check for the
+case where a fill succeeded on-chain but the DB write recording it did not, which would otherwise
+cause the worker to attempt (and revert against) a duplicate fill on its next pass.
+
+**Verified live**, not just unit-tested: `contracts/evm/scripts/two-node-standing-solver-check.ts`
+deploys the same two-node setup as the smoke test, then submits intents and **only watches** — it
+never calls `fillIntent` itself. A real `ThisCafeteria.Worker` process, configured via
+`CrossChainSolver__*`/`Blockchain__Chains__*` environment variables, is started separately and left
+running. Confirmed at every layer: worker log lines showing autonomous evaluation and fill, direct
+`SELECT` against `CrossChainSolverFills` showing the recorded decisions and real fill tx hashes, and
+on-chain queries (`isResolved`, token balance) confirming the actual settlement. Both outcomes
+proven:
+- An approved intent, submitted **while the worker was already running**, was picked up and filled
+  within the poll interval with no script action.
+- An intent using a token pair outside the solver's allowlist was left correctly unfilled — the
+  destination balance never moved and the contract's `isResolved` stayed false.
+
+Test-only rows (`SourceChainKey = "arbitrumLocal"`) were deleted from the shared dev database after
+verification; nothing from this run was left behind.
+
+**Not yet built**: multi-pair support (see "Next" above). The quote-preview surface below now
+exposes the `MaxOutputBps` spread to a caller before they submit an intent.
+
+### Quote preview (2026-07-21)
+
+`GET /api/intents/quote?sourceToken=...&destinationToken=...&amountIn=...`
+(`IntentsController` / `IIntentQuoteService` / `IntentQuoteService`) lets a caller ask what the
+standing solver would pay out for a hypothetical intent, before ever submitting one on-chain.
+
+**Deliberately contains no pricing logic of its own.** It builds a synthetic, never-submitted
+`SolverIntent` (real token addresses and amount, a far-future deadline, a fixed sentinel `OrderId`
+clearly marked as synthetic — see the gotchas list) and evaluates it through the **exact same**
+`ISolverPolicyService.Evaluate` the real `CrossChainSolverWorker` uses. A preview computed by
+separate logic could silently drift from what the solver actually does; delegating to the identical
+code path means they cannot disagree with each other, only with reality if configuration changes
+between the quote and the real submission — a disclosed property of any quote, not a bug.
+
+**A real security-shaped bug found and fixed while building this, not merely worked around:** the
+first version gated the quote on `CrossChainSolverOptions.CanOperate`, which requires resolver
+addresses **and the solver's private key**. That would mean a read-only, publicly-reachable pricing
+endpoint could only work in a process that also holds the signing key used to spend the solver's
+inventory — a real key-exposure risk for a component that signs and submits nothing. Split the
+option into two: `CanOperate` (full: chains, resolvers, signing key — gates the executing
+`CrossChainSolverWorker`) and a new `CanPrice` (chains only — gates
+`ISolverPolicyService.Evaluate`'s own "not configured" check). `IntentQuoteService` no longer
+performs its own redundant `CanOperate` check at all; it relies entirely on `Evaluate`'s internal
+`CanPrice` gate. Caught before merging, by actually trying to run the quote endpoint in a process
+configured with no private key at all (the intended real deployment shape) rather than assuming the
+happy path.
+
+**Verified live, and the strongest form of proof available**: previewed a quote, then — with the
+standing solver worker (in a *separate* process, MaxOutputBps 9700) still running — submitted the
+identical route as a real intent and let the worker fill it autonomously.
+
+```
+quote:  amountOut = 9700000000000000000  (9.7, for a 10 amountIn — a 3% solver spread)
+fill:   Solver filled intent ... for 9700000000000000000 on baseLocal, tx 0x5d9a36a1...
+```
+
+The previewed amount and the actually-paid amount are byte-for-byte identical, and the Web process
+serving the quote held no private key throughout. Also reconfirmed the failure path (solver
+declining an order whose `minAmountOut` is stricter than what a discounted quote would pay) is a
+real, working policy check, not a stub — see the `SolverPolicyServiceTests`/`IntentQuoteServiceTests`
+suites and the `OutputBelowMinimum` denial reason.
 
 ### Hard-won gotchas (avoid re-discovering these)
 
@@ -95,6 +315,65 @@ scratch this session). Phase 4 is the active front, roughly 60% there. Phases 5-
   out to be non-reproducible; `walkthrough.md` had gone stale twice). Treat any status claim in
   `walkthrough.md` or here as provisional until you've re-run the thing it claims — that includes
   claims made in this handoff. Re-verify, don't just extend.
+- **Double-check private key constants by their exact character count, not by eye.** This session
+  found `UserOperationSimulator.PlaceholderSignerKey` was one hex character short of a valid 32-byte
+  key (truncated when copy-pasted from a `node.log` dump). It never surfaced as a test failure
+  because the placeholder-signature trick only requires *some* valid key, not a specific one — but
+  it was still wrong. Caught only because a real bundler's stricter input validation
+  (`z.string().regex(/^0x(?:[0-9a-f]{2}){32}$/)`) rejected it outright. If you're hardcoding a hex
+  key/hash/address anywhere, verify its length programmatically once rather than trusting a visual
+  copy-paste.
+- **`AgenticCommerceEscrow.createJob(provider, ...)` sets `job.provider` immediately if `provider`
+  is non-zero** — a genuinely separate `setProvider()` call afterward will then revert with
+  `WrongStatus()` (provider already set), not silently no-op. This was already learned once earlier
+  in this project's history (the Phase 3 acceptance script passes the zero address to `createJob`
+  for exactly this reason) and had to be re-learned the hard way writing the Phase 5 two-node smoke
+  test. If you want a genuine two-step create → assign-provider flow, `createJob`'s provider
+  argument must be the zero address.
+- **`TestCafeToken`'s constructor is `(admin, cap)`, not `(admin, initialMintAmount)`.** It mints
+  nothing on deployment — only grants `DEFAULT_ADMIN_ROLE`/`MINTER_ROLE` to `admin`. You must call
+  `.mint(to, amount)` explicitly afterward. Same lesson as the previous one: this is documented
+  behavior visible in `TestCafeToken.sol`'s ~15 lines, but easy to assume otherwise from the
+  constructor's parameter *names* alone.
+- **`ERC7683ResolverFixture.fillIntent` cannot be deployed on a genuinely separate destination chain
+  and expected to work** — it gates on `isSubmitted[orderId]`, storage the destination chain has no
+  way to observe on the source chain without a bridge/light client. Discovered building the Phase 5
+  two-node smoke test; fixed by adding `ERC7683DestinationResolverFixture.sol` (fill-only, no
+  submission-proof requirement) rather than weakening the original, still-used-by-11-passing-tests
+  contract. Use the original for same-chain testing, the new one for the destination side of any
+  genuine two-chain deployment.
+- **Hardhat 3's `node --chain-id <N>` flag does not change what the started EDR node actually
+  reports via `eth_chainId`** — confirmed by passing `--chain-id 421614` and `--chain-id 84532` to
+  two separate node processes and getting `31337` (the default) from both. If you declare a
+  non-default `chainId` in a network config that a script then `network.connect()`s to, Hardhat's
+  own connection validator (`HHE708`) will throw a mismatch error at connect time — the network
+  config's declared `chainId` must equal what the node actually reports, not what you wanted it to
+  report.
+- **`ChainDefinition.MinimumConfirmations` defaults to 2, and reconciliation/solver workers compute
+  `safeHead = latest - MinimumConfirmations`.** Against a local test chain where nothing else is
+  producing blocks after your one transaction of interest, `safeHead` never reaches that
+  transaction's block, and the worker silently sits there re-checking its checkpoint forever with
+  no error and no log line beyond the very first "starting" message. This isn't a bug — the worker
+  is correctly waiting for confirmations that will never come. For an isolated local-only chain
+  where nothing else mines blocks, set `MinimumConfirmations=0` explicitly in that chain's
+  definition (e.g. `Blockchain__Chains__0__MinimumConfirmations=0` as an env var). Cost real
+  debugging time building the standing solver's live verification before the cause was obvious.
+- **A .NET background worker can pick up an ad-hoc pair of local EVM chains without touching the
+  manifest-loading system at all** — supply `Blockchain__Chains__N__*` (Key, Family=Evm,
+  EvmChainId, EvmChainIdHex, PublicRpcUrl, Enabled, MinimumConfirmations) directly as environment
+  variables. `ChainRegistry`'s own validation requires EVM chain IDs to be unique across configured
+  chains even if the underlying nodes actually share one (see the `--chain-id` gotcha above) — the
+  *configured* `EvmChainId` is a label your own code and Nethereum never check against the live
+  RPC's real `eth_chainId`, it only has to satisfy `ChainRegistry`'s own uniqueness constraint.
+- **A "can this run at all" flag can silently bundle unrelated requirements together, and the
+  fix is to split it, not to special-case around it.** `CrossChainSolverOptions.CanOperate`
+  originally required resolver addresses AND a private key. That's correct for the worker that
+  executes fills, but wrong for read-only pricing, which signs and submits nothing — reusing the
+  same flag would have meant a public quote endpoint could only run in a process holding the
+  solver's signing key. Split into `CanOperate` (execution: everything) and `CanPrice` (pricing:
+  chains only) rather than adding a bypass or a second parallel check in the caller. If a
+  capability flag is gating two things with genuinely different requirements, that is a sign the
+  flag itself is the wrong shape, not that the caller needs a workaround.
 
 ## Outcome
 
@@ -551,7 +830,7 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 ### Phase 4 — ERC-4337 user experience [IN PROGRESS]
 
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
-- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; no bundler**;
+- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; a working local bundler (Rundler, `--unsafe` mode) is proven via `scripts/rundler-e2e-check.ts`, but no .NET code submits through it yet — see "Rundler investigation" in the session handoff at the top of this file**;
 - ⬜ batch approval plus funding;
 - ✅ enforce sponsorship quotas and simulation — quota engine, signer, and canonical-EntryPoint gas simulation implemented and proven cross-stack (native-USD pricing is still a static config value, not an oracle);
 - 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
@@ -562,7 +841,7 @@ Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-
 **The gate is not met.** Both sponsored and user-paid flows are proven *on-chain*, but the negative
 half of the gate is only partly covered (wrong-signature and unauthorised-sponsorship fail
 correctly; over-budget, wrong-target, wrong-selector, expired, and revoked are not yet tested), and
-there is **no bundler** — see the boundary note below.
+**no .NET code submits through the now-working local bundler** — see the boundary note below.
 
 #### Status of the pinned stack
 
@@ -591,8 +870,10 @@ implementation instead.**
 
 Under ERC-4337 an account address is deterministic and usable before deployment, so returning the
 counterfactual address is correct rather than a stand-in. Actual deployment occurs when the first
-UserOperation carrying `initCode` is submitted through a bundler — **no bundler is configured, so
-nothing in this codebase submits UserOperations.**
+UserOperation carrying `initCode` is submitted through a bundler — `scripts/rundler-e2e-check.ts`
+proves this now works end-to-end against a real bundler (Rundler), **but no code in
+`ThisCafeteria.*` submits UserOperations yet; `SmartAccountService` still performs no submission at
+all.**
 
 Still fail-closed and throwing `NotSupportedException`: `RecordSponsorshipUsageAsync`,
 `RevokeSessionPermissionsAsync`. `HasSufficientSponsorshipQuotaAsync` returns `false` because no
@@ -616,12 +897,15 @@ them through the canonical EntryPoint. Five tests pass:
 | wrong account key rejected | signature not matching the account owner is refused |
 | no prefund rejected | an operation that cannot pay is refused rather than executed free |
 
-**Boundary — this is not a bundler.** The tests call `EntryPoint.handleOps` directly from a funded
-EOA acting as beneficiary. There is no mempool, no `eth_sendUserOperation`, no bundler validation
-rules (storage-access restrictions, reputation, throttling), and no gas policy. What is proven is
-the *on-chain half* of ERC-4337 — the half this repository actually deploys. Integrating a real
-bundler (e.g. Alto or Rundler) remains an open Phase 4 dependency, and no .NET code submits
-UserOperations: `SmartAccountService` still performs no submission at all.
+**Boundary — this test suite is not a bundler.** These tests call `EntryPoint.handleOps` directly
+from a funded EOA acting as beneficiary. There is no mempool, no `eth_sendUserOperation`, no
+bundler validation rules (storage-access restrictions, reputation, throttling), and no gas policy.
+What is proven here is the *on-chain half* of ERC-4337. `scripts/rundler-e2e-check.ts` separately
+proves a real bundler (Rundler) accepting, bundling, and mining a UserOperation submitted only via
+`eth_sendUserOperation` — see "Rundler investigation" in the session handoff — but that script runs
+standalone, outside this test suite and outside .NET. Wiring actual `ThisCafeteria.*` code to submit
+through Rundler remains an open Phase 4 dependency: `SmartAccountService` still performs no
+submission at all.
 
 #### Sponsorship quota engine
 
@@ -733,15 +1017,68 @@ a real chain the USD budget drifts with the native asset's actual price. There i
 UserOperation needs regardless, to be signed), and simulation measures the real cost of running
 with those limits rather than deriving suggested limits from scratch.
 
-### Phase 5 — ERC-7683 cross-chain path
+### Phase 5 — ERC-7683 cross-chain path [GATE PROVEN — 2026-07-21]
 
-- produce source/destination quote preview;
-- create/sign/submit intent orders;
-- run local solver and verify destination settlement;
-- enable escrow funding only after verified destination funds;
-- add expiry, partial/failing fill, slippage, duplicate, and solver-misbehavior tests.
+- ✅ create/sign/submit intent orders;
+- ✅ run local solver and verify destination settlement — **a real standing `BackgroundService`
+  (`CrossChainSolverWorker`), not inline script logic**; see its own section below;
+- ✅ enable escrow funding only after verified destination funds;
+- ✅ expiry test (unfilled intent leaves the job Open and is refundable); partial/failing fill,
+  slippage, duplicate, and solver-misbehavior tests still come from `ERC7683ResolverFixture.test.ts`
+  (single-chain) rather than the two-node harness — not yet duplicated cross-chain;
+- ✅ quote preview — `GET /api/intents/quote`; see its own section below. API-only, no frontend
+  consumes it yet, and only one source/destination pair can be quoted (matches
+  `CrossChainSolverOptions`' current single-pair scope).
 
-Gate: the two-node smoke test moves the configured test asset from the Arbitrum-like node to the Base-like smart account, then funds the job. Failure leaves the job Open and recoverable.
+**Gate met, verified live, twice (not asserted):**
+`contracts/evm/scripts/two-node-crosschain-smoke.ts` runs against **two genuinely separate Hardhat
+node processes** (ports 8546/8547, independent state — not one node labeling itself twice):
+
+1. An intent is submitted on the Arbitrum-like source node, locking the test asset into that
+   node's resolver.
+2. An inline "solver" step (this script, not a background service — see caveat below) reads the
+   source chain's `IntentSubmitted` event and fills the intent on the Base-like destination node,
+   paying the deployed **ERC-4337 smart account** (Phase 4's `SimpleAccountFactory`, deployed for
+   real via `createAccount`, not counterfactual) from its own separate destination-chain inventory.
+3. Only *after* the destination-chain balance increase is verified does the smart account (via
+   `execute()`, called directly by its owner — no UserOperation needed for this gate, since Phase 4
+   already proved that path) approve and fund an ERC-8183 job on the destination chain.
+4. A second scenario proves the failure path required by the gate: the solver never fills: the
+   source intent is refunded after its deadline (asset recovered, not stuck), and the job — created
+   `Open` before the cross-chain attempt, exactly like scenario 1 — is **never funded** and stays
+   `Open`.
+
+Both scenarios pass with `TWO_NODE_SMOKE_RESULT=PASS`; re-ran the whole script against fresh nodes
+a second time to confirm it isn't a one-off (same lesson as the Phase 3 acceptance-harness
+reproducibility bug from earlier in this project's history — verify twice, not once).
+
+**A genuine contract-architecture finding, not a workaround:** the existing single-node
+`ERC7683ResolverFixture` gates `fillIntent` on `isSubmitted[orderId]` — fine when both roles run on
+one chain (as in its own 11 tests, still passing unchanged), but structurally impossible across two
+*actually separate* chains: the destination contract cannot observe the source chain's storage
+without a bridge or light client, which this project's own rules keep ERC-7683 explicitly out of
+being. Added `ERC7683DestinationResolverFixture.sol` — a fill-only contract with no submission-proof
+requirement, mirroring how real ERC-7683 solvers work (the solver independently verifies the source
+intent itself, which is exactly what the inline "solver" step in the smoke test does by reading the
+real `IntentSubmitted` event before filling). This is closer to the actual `IOriginSettler`/
+`IDestinationSettler` split the ERC-7683 spec itself defines, not a step away from standards
+fidelity. `ERC7683ResolverFixture.sol` is untouched.
+
+**Honest caveats, not yet closed:**
+- **Updated**: the standing solver now exists (`CrossChainSolverWorker` — see its own section
+  below) and this two-node smoke test itself still performs the fill inline for its own purposes
+  (proving the account/escrow funding path in isolation). The standing-service proof lives in
+  `two-node-standing-solver-check.ts`, a separate script.
+- No quote-preview surface (UI or API) — the exchange rate/amounts are hardcoded in the smoke test.
+- `--chain-id` doesn't take effect on Hardhat 3's `node` task (confirmed: both nodes report
+  `31337` regardless of the flag) — cosmetic only, since neither resolver contract reads
+  `block.chainid`; "cross-chain" here is enforced by running on two independent node processes.
+- Partial-fill/slippage/duplicate/solver-misbehavior variants exist only in the single-node test
+  file, not duplicated against the two-node harness.
+
+Gate wording for reference: the two-node smoke test moves the configured test asset from the
+Arbitrum-like node to the Base-like smart account, then funds the job. Failure leaves the job Open
+and recoverable. — **met**, per the evidence above.
 
 ### Phase 6 — Hardening and public testnet readiness
 

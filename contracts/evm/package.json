@@ -9,21 +9,28 @@
     "deploy:ephemeral": "hardhat run scripts/deploy.ts --network hardhat",
     "deploy:bsc-testnet": "hardhat run scripts/deploy.ts --network bscTestnet",
     "deploy:local:node": "hardhat node --chain-id 31337",
-    "export:abi": "tsx scripts/export-abi.ts"
+    "test:session-key:e2e": "hardhat run scripts/metamask-session-key-e2e.ts --network arbitrumLocal",
+    "export:abi": "tsx scripts/export-abi.ts",
+    "build:browser-delegation-bundle": "tsx scripts/build-browser-delegation-bundle.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "5.0.0",
     "@types/node": "22.15.21",
     "@types/pg": "^8.20.0",
     "chai": "5.2.0",
+    "esbuild": "0.25.12",
     "hardhat": "3.8.0",
     "pg": "^8.22.0",
     "tsx": "4.19.4",
     "typescript": "5.8.3",
-    "viem": "2.47.6"
+    "viem": "2.55.5"
   },
   "dependencies": {
     "@account-abstraction/contracts": "0.7.0",
+    "@metamask/delegation-abis": "0.11.0",
+    "@metamask/delegation-core": "0.2.0",
+    "@metamask/delegation-deployments": "0.12.0",
+    "@metamask/delegation-toolkit": "0.13.0",
     "@openzeppelin/contracts": "5.4.0"
   }
 }

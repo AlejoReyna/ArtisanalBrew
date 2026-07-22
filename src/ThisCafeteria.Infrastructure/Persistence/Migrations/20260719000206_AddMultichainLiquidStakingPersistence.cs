@@ -270,20 +270,29 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.Sql("UPDATE \"StakingLedgerEntries\" SET \"ChainKey\" = 'ethereum-sepolia', \"Family\" = 'Evm', \"VerificationState\" = 'legacy', \"Verified\" = true WHERE \"ChainKey\" = '';");
-            migrationBuilder.Sql("UPDATE \"StakingReconciliationCheckpoints\" SET \"ChainKey\" = 'ethereum-sepolia', \"Family\" = 'Evm', \"SourceIdentifier\" = \"StakingPoolContract\", \"CursorType\" = 'block' WHERE \"ChainKey\" = '';");
-            migrationBuilder.Sql(@"
-                INSERT INTO ""WalletIdentities""
-                    (""Id"", ""UserId"", ""Family"", ""NormalizedAddress"", ""DisplayAddress"", ""WalletProvider"", ""VerifiedAtUtc"")
-                SELECT DISTINCT ON (lower(u.""WalletAddress"")) md5(u.""Id""::text || ':wallet')::uuid, u.""Id"", 'Evm', lower(u.""WalletAddress""), u.""WalletAddress"", 'legacy', COALESCE(u.""WalletVerifiedAt"", now())
-                FROM ""AspNetUsers"" u
-                WHERE u.""WalletAddress"" IS NOT NULL
-                  AND u.""WalletAddress"" <> ''
-                  AND NOT EXISTS (
-                      SELECT 1 FROM ""WalletIdentities"" wi
-                      WHERE wi.""Family"" = 'Evm' AND wi.""NormalizedAddress"" = lower(u.""WalletAddress"")
-                  )
-                ORDER BY lower(u.""WalletAddress""), u.""WalletVerifiedAt"" DESC NULLS LAST, u.""Id"";");
+            if (migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                migrationBuilder.Sql("UPDATE \"StakingLedgerEntries\" SET \"ChainKey\" = 'ethereum-sepolia', \"Family\" = 'Evm', \"VerificationState\" = 'legacy', \"Verified\" = true WHERE \"ChainKey\" = '';");
+            }
+            if (migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                migrationBuilder.Sql("UPDATE \"StakingReconciliationCheckpoints\" SET \"ChainKey\" = 'ethereum-sepolia', \"Family\" = 'Evm', \"SourceIdentifier\" = \"StakingPoolContract\", \"CursorType\" = 'block' WHERE \"ChainKey\" = '';");
+            }
+            if (migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                migrationBuilder.Sql(@"
+                    INSERT INTO ""WalletIdentities""
+                        (""Id"", ""UserId"", ""Family"", ""NormalizedAddress"", ""DisplayAddress"", ""WalletProvider"", ""VerifiedAtUtc"")
+                    SELECT DISTINCT ON (lower(u.""WalletAddress"")) md5(u.""Id""::text || ':wallet')::uuid, u.""Id"", 'Evm', lower(u.""WalletAddress""), u.""WalletAddress"", 'legacy', COALESCE(u.""WalletVerifiedAt"", now())
+                    FROM ""AspNetUsers"" u
+                    WHERE u.""WalletAddress"" IS NOT NULL
+                      AND u.""WalletAddress"" <> ''
+                      AND NOT EXISTS (
+                          SELECT 1 FROM ""WalletIdentities"" wi
+                          WHERE wi.""Family"" = 'Evm' AND wi.""NormalizedAddress"" = lower(u.""WalletAddress"")
+                      )
+                    ORDER BY lower(u.""WalletAddress""), u.""WalletVerifiedAt"" DESC NULLS LAST, u.""Id"";");
+            }
 
             migrationBuilder.CreateIndex(
                 name: "IX_StakingReconciliationCheckpoints_ChainKey_SourceIdentifier",

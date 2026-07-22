@@ -2,7 +2,9 @@
   "name": "thiscafeteria-agent-gateway",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "tsc",
@@ -10,11 +12,16 @@
     "test": "tsc -p tsconfig.test.json && node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@metamask/delegation-abis": "0.11.0",
+    "@metamask/delegation-core": "0.2.0",
+    "@metamask/delegation-deployments": "0.12.0",
+    "@metamask/delegation-toolkit": "0.13.0",
     "@modelcontextprotocol/sdk": "1.9.0",
     "@x402/core": "2.19.0",
     "@x402/evm": "2.19.0",
     "@x402/mcp": "2.19.0",
     "express": "5.1.0",
+    "viem": "2.55.5",
     "zod": "3.25.76"
   },
   "devDependencies": {

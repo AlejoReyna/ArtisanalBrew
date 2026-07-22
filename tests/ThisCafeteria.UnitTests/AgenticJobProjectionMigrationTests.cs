@@ -36,7 +36,7 @@ public class AgenticJobProjectionMigrationTests : IDisposable
     public async Task MigrateAsync_AppliesUniqueConstraintSuccessfully()
     {
         using var setupContext = CreateContext();
-        
+
         // 1. Actually run migrations rather than EnsureCreated()
         await setupContext.Database.MigrateAsync();
 
@@ -70,7 +70,7 @@ public class AgenticJobProjectionMigrationTests : IDisposable
 
         setupContext.AgenticJobs.Add(job1);
         setupContext.AgenticJobs.Add(job2);
-        
+
         await FluentActions.Invoking(() => setupContext.SaveChangesAsync())
             .Should().NotThrowAsync("the unique constraint on (ChainKey, JobId) was successfully removed by migrations");
 

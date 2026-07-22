@@ -1,0 +1,278 @@
+@using ThisCafeteria.Application.Configuration
+@using ThisCafeteria.Application.Services
+@using ThisCafeteria.Application.Services.Blockchain
+@using ThisCafeteria.Domain.Entities
+@using ThisCafeteria.Web.Services.Blockchain
+@inject ISmartAccountService SmartAccountService
+@inject ISelectedChainAccessor SelectedChainAccessor
+@inject ISelectedSmartAccountAccessor SelectedSmartAccountAccessor
+@inject IJSRuntime JsRuntime
+@inject ILogger<SmartAccountPanel> Logger
+@implements IAsyncDisposable
+
+<section class="smart-account-panel">
+    <div class="smart-account-panel__head">
+        <p class="smart-account-panel__kicker">Smart Accounts</p>
+        <ChainSelector Compact="true" OnChainChanged="HandleChainChangedAsync" />
+    </div>
+
+    @if (!IsWalletUsable)
+    {
+        <p class="smart-account-panel__empty">Connect a wallet to see your smart accounts.</p>
+    }
+    else if (SelectedChainAccessor.SelectedChain.Family != ChainFamily.Evm)
+    {
+        <p class="smart-account-panel__empty">Smart accounts are an EVM feature - switch to an EVM network to view them.</p>
+    }
+    else if (_isLoading)
+    {
+        <p class="smart-account-panel__empty">Loading accounts on @SelectedChainAccessor.SelectedChain.ShortName…</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(_loadError))
+    {
+        <p class="smart-account-panel__empty smart-account-panel__error">@_loadError</p>
+    }
+    else if (_accounts.Count == 0)
+    {
+        <p class="smart-account-panel__empty">No ERC-4337 smart account is configured for @SelectedChainAccessor.SelectedChain.ShortName yet.</p>
+    }
+    else
+    {
+        <div class="smart-account-panel__list" role="radiogroup" aria-label="Select active smart account">
+            @foreach (var account in _accounts)
+            {
+                var isSelected = account.AccountType == SelectedSmartAccountAccessor.SelectedAccountType;
+                <label class="smart-account-panel__option @(isSelected ? "smart-account-panel__option--selected" : null)">
+                    <input type="radio"
+                           name="smart-account-selection"
+                           checked="@isSelected"
+                           @onchange="() => SelectAccountAsync(account.AccountType)" />
+                    <div class="smart-account-panel__option-body">
+                        <div class="smart-account-panel__option-head">
+                            <span class="smart-account-panel__type-badge smart-account-panel__type-badge--@(account.AccountType == SmartAccountType.ModularHybridDeleGator ? "modular" : "legacy")">
+                                @(account.AccountType == SmartAccountType.ModularHybridDeleGator ? "Modular · Session keys" : "SimpleAccount · Reference")
+                            </span>
+                            <span class="smart-account-panel__status">
+                                @(account.IsDeployed ? "Deployed" : "Counterfactual (not yet deployed)")
+                                @if (account.AccountType == SmartAccountType.ModularHybridDeleGator && account.IsDeployed)
+                                {
+                                    <text> · @(account.ImplementationVerified ? "implementation verified" : "implementation unverified")</text>
+                                }
+                            </span>
+                        </div>
+                        <AddressChip Address="@account.AccountAddress" ExplorerUrl="@SelectedChainAccessor.SelectedChain.ExplorerAddressTemplate.Replace("/address/{0}", string.Empty)" />
+                    </div>
+                </label>
+            }
+        </div>
+
+        @if (_activeEpoch is not null)
+        {
+            <div class="smart-account-panel__permission">
+                <p class="smart-account-panel__permission-kicker">Active agent permission</p>
+                <dl class="smart-account-panel__permission-facts">
+                    <div>
+                        <dt>Agent</dt>
+                        <dd><AddressChip Address="@_activeEpoch.AgentAddress" /></dd>
+                    </div>
+                    <div>
+                        <dt>Expires</dt>
+                        <dd>@_activeEpoch.ValidBeforeUtc.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</dd>
+                    </div>
+                    <div>
+                        <dt>Grants</dt>
+                        <dd>@_activeEpoch.Grants.Count scoped call@(_activeEpoch.Grants.Count == 1 ? "" : "s")</dd>
+                    </div>
+                </dl>
+            </div>
+        }
+        else if (_modularAccountRegistered)
+        {
+            <p class="smart-account-panel__empty">No active agent permission is installed on this account.</p>
+        }
+        else if (IsModularConfigured)
+        {
+            <div class="smart-account-panel__register">
+                <p class="smart-account-panel__empty">
+                    No modular (session-key capable) account is registered yet on @SelectedChainAccessor.SelectedChain.ShortName.
+                </p>
+                <button type="button"
+                        class="smart-account-panel__register-button"
+                        disabled="@_isRegistering"
+                        @onclick="RegisterModularAccountAsync">
+                    @(_isRegistering ? "Deriving address…" : "Register modular account")
+                </button>
+                @if (!string.IsNullOrWhiteSpace(_registerError))
+                {
+                    <p class="smart-account-panel__empty smart-account-panel__error">@_registerError</p>
+                }
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public string WalletAddress { get; set; } = string.Empty;
+
+    private IReadOnlyList<SmartAccountInfo> _accounts = [];
+    private AgentPermissionEpochInfo? _activeEpoch;
+    private bool _modularAccountRegistered;
+    private bool _isLoading;
+    private string? _loadError;
+    private bool _isRegistering;
+    private string? _registerError;
+    private IJSObjectReference? _registrationModule;
+
+    private bool IsWalletUsable => WalletAddressRules.TryNormalizeWallet(WalletAddress, out _);
+
+    private bool IsModularConfigured
+    {
+        get
+        {
+            var deployment = SelectedChainAccessor.SelectedChain.Deployment;
+            return !string.IsNullOrWhiteSpace(deployment.EntryPoint)
+                && !string.IsNullOrWhiteSpace(deployment.ModularAccountFactory)
+                && !string.IsNullOrWhiteSpace(deployment.DelegationManager)
+                && !string.IsNullOrWhiteSpace(deployment.HybridDeleGatorImplementation)
+                && !string.IsNullOrWhiteSpace(deployment.AllowedTargetsEnforcer)
+                && !string.IsNullOrWhiteSpace(deployment.AllowedMethodsEnforcer)
+                && !string.IsNullOrWhiteSpace(deployment.ExactCalldataEnforcer)
+                && !string.IsNullOrWhiteSpace(deployment.LimitedCallsEnforcer)
+                && !string.IsNullOrWhiteSpace(deployment.NonceEnforcer)
+                && !string.IsNullOrWhiteSpace(deployment.TimestampEnforcer);
+        }
+    }
+
+    protected override void OnInitialized() => SelectedSmartAccountAccessor.Changed += OnSelectionChanged;
+
+    public async ValueTask DisposeAsync()
+    {
+        SelectedSmartAccountAccessor.Changed -= OnSelectionChanged;
+
+        if (_registrationModule is not null)
+        {
+            try
+            {
+                await _registrationModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit can disconnect before module disposal during hot reload or navigation.
+            }
+        }
+    }
+
+    private void OnSelectionChanged() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task HandleChainChangedAsync(ChainDefinition _)
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _accounts = [];
+        _activeEpoch = null;
+        _modularAccountRegistered = false;
+        _loadError = null;
+
+        if (!IsWalletUsable || SelectedChainAccessor.SelectedChain.Family != ChainFamily.Evm)
+        {
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var chainKey = SelectedChainAccessor.SelectedChainKey;
+            _accounts = await SmartAccountService.DiscoverAccountsAsync(chainKey, WalletAddress);
+
+            var modular = _accounts.FirstOrDefault(a => a.AccountType == SmartAccountType.ModularHybridDeleGator);
+            if (modular is not null)
+            {
+                _modularAccountRegistered = true;
+                _activeEpoch = await SmartAccountService.GetActivePermissionEpochAsync(chainKey, modular.AccountAddress);
+            }
+        }
+        catch (NotSupportedException)
+        {
+            // No smart-account stack configured for this chain - the empty-list branch already
+            // covers this; nothing further to show.
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Failed to discover smart accounts for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _loadError = "Could not reach the chain to load your smart accounts. Try again shortly.";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private Task SelectAccountAsync(SmartAccountType accountType)
+    {
+        SelectedSmartAccountAccessor.Select(accountType);
+        return Task.CompletedTask;
+    }
+
+    private async Task RegisterModularAccountAsync()
+    {
+        _isRegistering = true;
+        _registerError = null;
+        StateHasChanged();
+
+        try
+        {
+            var chain = SelectedChainAccessor.SelectedChain;
+            var deployment = chain.Deployment;
+
+            _registrationModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/smartAccountRegistration.js");
+            var derived = await _registrationModule.InvokeAsync<DerivedModularAddress>("deriveModularAccountAddress", new
+            {
+                ownerAddress = WalletAddress,
+                chainIdHex = chain.EvmChainIdHex,
+                entryPoint = deployment.EntryPoint,
+                delegationManager = deployment.DelegationManager,
+                factory = deployment.ModularAccountFactory,
+                hybridImplementation = deployment.HybridDeleGatorImplementation,
+                allowedTargetsEnforcer = deployment.AllowedTargetsEnforcer,
+                allowedMethodsEnforcer = deployment.AllowedMethodsEnforcer,
+                exactCalldataEnforcer = deployment.ExactCalldataEnforcer,
+                limitedCallsEnforcer = deployment.LimitedCallsEnforcer,
+                nonceEnforcer = deployment.NonceEnforcer,
+                timestampEnforcer = deployment.TimestampEnforcer,
+                deploySalt = "0"
+            });
+
+            await SmartAccountService.RegisterModularAccountAsync(chain.Key, WalletAddress, derived.Address, derived.DeploySalt);
+            await LoadAsync();
+        }
+        catch (JSException exception)
+        {
+            Logger.LogWarning(exception, "Modular account address derivation failed for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _registerError = "Could not derive your modular account address. Make sure your wallet is connected and try again.";
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Modular account registration failed for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _registerError = "Could not register your modular account. Try again shortly.";
+        }
+        finally
+        {
+            _isRegistering = false;
+            StateHasChanged();
+        }
+    }
+
+    private sealed record DerivedModularAddress(string Address, string DeploySalt);
+}

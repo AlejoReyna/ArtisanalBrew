@@ -16,8 +16,17 @@ import { network } from "hardhat";
 import { concat, encodeFunctionData, encodePacked, parseEther, type Address, type Hex } from "viem";
 import manifest from "../deployments/evm-local.json" with { type: "json" };
 
-const SPONSOR_PROJECT =
-  "/private/tmp/claude-501/-Users-alexis-dev-monSite/3a229c88-22fd-4e32-98c0-89516adaa68c/scratchpad/sponsorcheck";
+const SPONSOR_PROJECT = "../../tools/ThisCafeteria.CrossStackHarness";
+
+// Must match hardhat.config.ts's networks exactly - this script's own viem/hardhat calls connect
+// via HARDHAT_NETWORK, but the harness below is a separate OS process with no Hardhat context of
+// its own, so its RPC target has to be derived and passed through explicitly rather than assumed.
+const RPC_URLS_BY_NETWORK: Record<string, string> = {
+  localhost: "http://127.0.0.1:8545",
+  arbitrumLocal: "http://127.0.0.1:8546",
+  baseLocal: "http://127.0.0.1:8547"
+};
+const rpcUrl = RPC_URLS_BY_NETWORK[process.env.HARDHAT_NETWORK ?? "localhost"] ?? RPC_URLS_BY_NETWORK.localhost;
 
 const { viem } = await network.connect();
 const publicClient = await viem.getPublicClient();
@@ -81,7 +90,8 @@ writeFileSync(opPath, JSON.stringify(opDescription, null, 2));
 
 function askDotnetSponsor(mode: string) {
   const out = execFileSync("dotnet", ["run", "--project", SPONSOR_PROJECT, "--", opPath, mode], {
-    encoding: "utf8", stdio: ["ignore", "pipe", "pipe"]
+    encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, CROSSSTACK_RPC_URL: rpcUrl }
   });
   const line = out.trim().split("\n").filter(l => l.startsWith("{")).pop()!;
   return JSON.parse(line);

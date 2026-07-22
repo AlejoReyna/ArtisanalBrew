@@ -57,7 +57,7 @@ public class AgentResourceControllerTests : IClassFixture<WebApplicationFactory<
     {
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("x-agent-gateway-secret", "test-secret");
-        
+
         // Empty query
         var response = await client.PostAsJsonAsync("/internal/agent/resources/search-products", new { Query = "", CorrelationId = "123" });
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -73,7 +73,7 @@ public class AgentResourceControllerTests : IClassFixture<WebApplicationFactory<
     {
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("x-agent-gateway-secret", "test-secret");
-        
+
         // Zero quantity
         var response = await client.PostAsJsonAsync("/internal/agent/resources/brew-plan", new { ProductId = "test", Quantity = 0, CorrelationId = "123" });
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -88,7 +88,7 @@ public class AgentResourceControllerTests : IClassFixture<WebApplicationFactory<
     {
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Add("x-agent-gateway-secret", "test-secret");
-        
+
         var response = await client.PostAsJsonAsync("/internal/agent/resources/brew-plan", new { ProductId = "test", Quantity = 1 });
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

@@ -1,0 +1,9 @@
+This bundle vendors, unmodified apart from bundling/minification:
+
+- @metamask/delegation-toolkit@0.13.0 ((MIT-0 OR Apache-2.0))
+  https://www.npmjs.com/package/@metamask/delegation-toolkit
+- viem@2.55.5 (MIT)
+  https://www.npmjs.com/package/viem
+
+Built by contracts/evm/scripts/build-browser-delegation-bundle.ts from the exact versions pinned in
+contracts/evm/package.json. Regenerate with: npm run build:browser-delegation-bundle --prefix contracts/evm
