@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Generates public deployment metadata. Every address is supplied explicitly so an
-# ephemeral validator run cannot silently become a Testnet configuration. Testnet
-# output additionally requires an explicit release acknowledgement.
+# ephemeral validator run cannot silently become a public configuration. Public
+# cluster output additionally requires an explicit release acknowledgement.
 output="${1:-contracts/solana/local-deployment-manifest.json}"
 idl="${SOLANA_IDL_PATH:-contracts/solana/target/idl/cafe_liquid_staking.json}"
 binary="${SOLANA_PROGRAM_BINARY:-contracts/solana/target/deploy/cafe_liquid_staking.so}"
@@ -15,16 +15,16 @@ for name in "${required[@]}"; do
     exit 2
   fi
 done
-[[ "${SOLANA_CLUSTER}" == "localnet" || "${SOLANA_CLUSTER}" == "testnet" ]] || { echo "Only localnet and testnet manifests are supported." >&2; exit 2; }
+[[ "${SOLANA_CLUSTER}" == "localnet" || "${SOLANA_CLUSTER}" == "devnet" || "${SOLANA_CLUSTER}" == "testnet" ]] || { echo "Only localnet, devnet, and testnet manifests are supported." >&2; exit 2; }
 expected_chain_key="solana-${SOLANA_CLUSTER}"
 [[ "${SOLANA_CHAIN_KEY}" == "${expected_chain_key}" ]] || { echo "Expected SOLANA_CHAIN_KEY=${expected_chain_key}." >&2; exit 2; }
-if [[ "${SOLANA_CLUSTER}" == "testnet" ]]; then
-  [[ "${SOLANA_PUBLIC_DEPLOYMENT_CONFIRMED:-}" == "true" ]] || { echo "Set SOLANA_PUBLIC_DEPLOYMENT_CONFIRMED=true after completing the Testnet release gate." >&2; exit 2; }
-  [[ "${SOLANA_RPC_URL}" == https://* ]] || { echo "Solana Testnet RPC must use HTTPS." >&2; exit 2; }
+if [[ "${SOLANA_CLUSTER}" != "localnet" ]]; then
+  [[ "${SOLANA_PUBLIC_DEPLOYMENT_CONFIRMED:-}" == "true" ]] || { echo "Set SOLANA_PUBLIC_DEPLOYMENT_CONFIRMED=true after completing the public release gate." >&2; exit 2; }
+  [[ "${SOLANA_RPC_URL}" == https://* ]] || { echo "Public Solana RPC must use HTTPS." >&2; exit 2; }
 fi
 [[ "${SOLANA_DEPLOYMENT_SLOT}" =~ ^[0-9]+$ ]] || { echo "SOLANA_DEPLOYMENT_SLOT must be a non-negative integer." >&2; exit 2; }
-if [[ "${SOLANA_CLUSTER}" == "testnet" && "${SOLANA_DEPLOYMENT_SLOT}" -eq 0 ]]; then
-  echo "Solana Testnet deployment slot must be positive." >&2
+if [[ "${SOLANA_CLUSTER}" != "localnet" && "${SOLANA_DEPLOYMENT_SLOT}" -eq 0 ]]; then
+  echo "Public Solana deployment slot must be positive." >&2
   exit 2
 fi
 [[ -f "${idl}" && -f "${binary}" ]] || { echo "IDL or program binary is missing." >&2; exit 2; }

@@ -13,9 +13,9 @@ public sealed class ChainRegistryTests
         registry.All.Should().HaveCount(9);
         registry.All.Select(chain => chain.Key).Should().ContainInOrder(
             "ethereum-sepolia", "hedera-testnet", "avalanche-fuji", "linea-sepolia", "base-sepolia",
-            "bsc-testnet", "monad-testnet", "arbitrum-sepolia", "solana-testnet");
+            "bsc-testnet", "monad-testnet", "arbitrum-sepolia", "solana-devnet");
         registry.All.Where(chain => chain.Enabled).Should().ContainSingle(chain => chain.Key == "ethereum-sepolia");
-        registry.All.Single(chain => chain.Key == "solana-testnet").EvmChainId.Should().BeNull();
+        registry.All.Single(chain => chain.Key == "solana-devnet").EvmChainId.Should().BeNull();
     }
 
     [Fact]
