@@ -117,6 +117,12 @@ async function submitAndWatch(sourceToken: Address, destToken: Address, nonce: b
   const orderId = (await sourcePublic.readContract({ address: state.sourceResolver, abi: resolverAbi, functionName: "getOrderId", args: [order] })) as Hex;
   console.log(`submitted intent, orderId=${orderId}, waiting up to 30s for the STANDING WORKER to act (this script performs no fill)...`);
 
+  // CrossChainSolverWorker only scans up to safeHead = latest - MinimumConfirmations (default 2)
+  // on the source chain. A real chain accrues confirmations for free from other network traffic;
+  // this idle local Hardhat node needs a nudge or safeHead can never reach the intent's own block.
+  await (sourcePublic as any).request({ method: "evm_mine", params: [] });
+  await (sourcePublic as any).request({ method: "evm_mine", params: [] });
+
   const balanceBefore = await destPublic.readContract({ address: destToken, abi: (await destination.viem.getContractAt("TestCafeToken", destToken)).abi, functionName: "balanceOf", args: [state.accountAddress] }) as bigint;
 
   let resolved = false;
