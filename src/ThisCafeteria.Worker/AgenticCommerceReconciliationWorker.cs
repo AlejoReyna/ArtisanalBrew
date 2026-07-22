@@ -84,7 +84,7 @@ public sealed class AgenticCommerceReconciliationWorker(
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
+
         var latest = await eventProvider.GetLatestBlockNumberAsync(chain, cancellationToken).ConfigureAwait(false);
         var safeHead = latest - Math.Max(0, chain.MinimumConfirmations);
 
@@ -112,7 +112,7 @@ public sealed class AgenticCommerceReconciliationWorker(
 
         var fromBlock = checkpoint.LastScannedBlock + 1;
         logger.LogInformation("AgenticCommerceReconciliationWorker: chain={Chain}, latest={Latest}, safeHead={SafeHead}, fromBlock={FromBlock}", chain.Key, latest, safeHead, fromBlock);
-        
+
         if (fromBlock > safeHead) return;
         var toBlock = Math.Min(safeHead, fromBlock + MaxBlockRangePerScan - 1);
         logger.LogInformation("AgenticCommerceReconciliationWorker: scanning {FromBlock}-{ToBlock}", fromBlock, toBlock);
@@ -121,8 +121,8 @@ public sealed class AgenticCommerceReconciliationWorker(
             .ConfigureAwait(false);
 
         var registryAddress = chain.Deployment.ERC8004Registry;
-        var registryEvents = string.IsNullOrWhiteSpace(registryAddress) 
-            ? new List<RegistryEvent>() 
+        var registryEvents = string.IsNullOrWhiteSpace(registryAddress)
+            ? new List<RegistryEvent>()
             : await eventProvider.DecodeRegistryEventsAsync(chain, registryAddress, fromBlock, toBlock, cancellationToken).ConfigureAwait(false);
         logger.LogInformation("AgenticCommerceReconciliationWorker: found {Count} registry events in {FromBlock}-{ToBlock}", registryEvents.Count, fromBlock, toBlock);
 

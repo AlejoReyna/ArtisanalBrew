@@ -65,8 +65,8 @@ public class AgenticJobService(AppDbContext dbContext, IChainRegistry chainRegis
         if (job == null)
             throw new InvalidOperationException($"Job {id} not found.");
 
-        if (job.Status == AgenticJobProjection.StatusCompleted || 
-            job.Status == AgenticJobProjection.StatusRejected || 
+        if (job.Status == AgenticJobProjection.StatusCompleted ||
+            job.Status == AgenticJobProjection.StatusRejected ||
             job.Status == AgenticJobProjection.StatusExpired)
         {
             throw new InvalidOperationException("Terminal states are immutable.");
@@ -102,8 +102,8 @@ public class AgenticJobService(AppDbContext dbContext, IChainRegistry chainRegis
         // Idempotent: if already in the target state, skip silently
         if (job.Status == newStatus) return;
 
-        if (job.Status == AgenticJobProjection.StatusCompleted || 
-            job.Status == AgenticJobProjection.StatusRejected || 
+        if (job.Status == AgenticJobProjection.StatusCompleted ||
+            job.Status == AgenticJobProjection.StatusRejected ||
             job.Status == AgenticJobProjection.StatusExpired)
         {
             throw new InvalidOperationException("Terminal states are immutable.");

@@ -21,9 +21,9 @@ public class AgenticJobServiceTests
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _dbContext = new AppDbContext(options);
-        
+
         _chainRegistryMock = new Mock<IChainRegistry>();
-        
+
         // Mock chain validation
         ChainDefinition dummyDef;
         _chainRegistryMock.Setup(x => x.TryGet(It.IsAny<string>(), out dummyDef)).Returns(true);
@@ -36,12 +36,12 @@ public class AgenticJobServiceTests
     public async Task CreateJobAsync_WithValidInputs_CreatesJob()
     {
         var job = await _service.CreateJobAsync(
-            "ethereum-sepolia", 
-            "0x1234567890123456789012345678901234567890", 
-            "0x2234567890123456789012345678901234567890", 
-            "0x3234567890123456789012345678901234567890", 
-            "commit123", 
-            100, 
+            "ethereum-sepolia",
+            "0x1234567890123456789012345678901234567890",
+            "0x2234567890123456789012345678901234567890",
+            "0x3234567890123456789012345678901234567890",
+            "commit123",
+            100,
             DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds());
 
         job.Should().NotBeNull();
@@ -52,12 +52,12 @@ public class AgenticJobServiceTests
     public async Task CreateJobAsync_WithInvalidChain_ThrowsException()
     {
         await FluentActions.Invoking(() => _service.CreateJobAsync(
-            "invalid-chain", 
-            "0x1234567890123456789012345678901234567890", 
-            "0x2234567890123456789012345678901234567890", 
-            "0x3234567890123456789012345678901234567890", 
-            "commit123", 
-            100, 
+            "invalid-chain",
+            "0x1234567890123456789012345678901234567890",
+            "0x2234567890123456789012345678901234567890",
+            "0x3234567890123456789012345678901234567890",
+            "commit123",
+            100,
             DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds()))
             .Should().ThrowAsync<ArgumentException>().WithMessage("Unsupported chain key.");
     }
@@ -66,12 +66,12 @@ public class AgenticJobServiceTests
     public async Task CreateJobAsync_WithInvalidAddress_ThrowsException()
     {
         await FluentActions.Invoking(() => _service.CreateJobAsync(
-            "ethereum-sepolia", 
-            "invalid_address", 
-            "0x2234567890123456789012345678901234567890", 
-            "0x3234567890123456789012345678901234567890", 
-            "commit123", 
-            100, 
+            "ethereum-sepolia",
+            "invalid_address",
+            "0x2234567890123456789012345678901234567890",
+            "0x3234567890123456789012345678901234567890",
+            "commit123",
+            100,
             DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds()))
             .Should().ThrowAsync<ArgumentException>().WithMessage("Invalid client address.");
     }
@@ -80,12 +80,12 @@ public class AgenticJobServiceTests
     public async Task CreateJobAsync_WithNegativeBudget_ThrowsException()
     {
         await FluentActions.Invoking(() => _service.CreateJobAsync(
-            "ethereum-sepolia", 
-            "0x1234567890123456789012345678901234567890", 
-            "0x2234567890123456789012345678901234567890", 
-            "0x3234567890123456789012345678901234567890", 
-            "commit123", 
-            -10, 
+            "ethereum-sepolia",
+            "0x1234567890123456789012345678901234567890",
+            "0x2234567890123456789012345678901234567890",
+            "0x3234567890123456789012345678901234567890",
+            "commit123",
+            -10,
             DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds()))
             .Should().ThrowAsync<ArgumentException>().WithMessage("Budget must be greater than zero.");
     }
@@ -94,12 +94,12 @@ public class AgenticJobServiceTests
     public async Task CreateJobAsync_WithPastExpiry_ThrowsException()
     {
         await FluentActions.Invoking(() => _service.CreateJobAsync(
-            "ethereum-sepolia", 
-            "0x1234567890123456789012345678901234567890", 
-            "0x2234567890123456789012345678901234567890", 
-            "0x3234567890123456789012345678901234567890", 
-            "commit123", 
-            100, 
+            "ethereum-sepolia",
+            "0x1234567890123456789012345678901234567890",
+            "0x2234567890123456789012345678901234567890",
+            "0x3234567890123456789012345678901234567890",
+            "commit123",
+            100,
             DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeSeconds()))
             .Should().ThrowAsync<ArgumentException>().WithMessage("Expiry must be in the future.");
     }
@@ -120,7 +120,7 @@ public class AgenticJobServiceTests
         await _dbContext.SaveChangesAsync();
 
         await _service.AdvanceJobStatusAsync(job.Id, currentStatus, newStatus);
-        
+
         var updatedJob = await _dbContext.AgenticJobs.FindAsync(job.Id);
         updatedJob!.Status.Should().Be(newStatus);
     }

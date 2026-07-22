@@ -90,7 +90,8 @@ public static class BlockchainManifestLoader
                     ModularFrameworkRevision = root.TryGetProperty("accountAbstraction", out var aa2) ? Optional(aa2, "modularFrameworkRevision") ?? string.Empty : string.Empty,
                     StartBlockOrSlot = ReadLong(root, "deployBlock")
                 },
-                Capabilities = new ChainCapabilities {
+                Capabilities = new ChainCapabilities
+                {
                     WalletLogin = true,
                     LiquidStaking = true,
                     Faucet = true,

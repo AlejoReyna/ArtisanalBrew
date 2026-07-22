@@ -82,7 +82,7 @@ public class AgenticJobProjectionConcurrencyTests : IDisposable
         // Save in Context 2 should fail because Context 1 bumped the ConcurrencyToken
         await FluentActions.Invoking(() => context2.SaveChangesAsync())
             .Should().ThrowAsync<DbUpdateConcurrencyException>();
-            
+
         // Verify the database kept the first edit
         using var verifyContext = CreateContext();
         var verifiedJob = await verifyContext.AgenticJobs.SingleAsync(j => j.Id == jobId);

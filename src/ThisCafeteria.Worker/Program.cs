@@ -41,7 +41,7 @@ try
     builder.Services.AddHostedService<OrderProcessingWorker>();
     builder.Services.AddHostedService<StakingLedgerReconciliationWorker>();
     builder.Services.AddSingleton<IAgenticCommerceReconciliationApplicator, AgenticCommerceReconciliationApplicator>();
-builder.Services.AddSingleton<IEscrowEventProvider, EvmEscrowEventProvider>();
+    builder.Services.AddSingleton<IEscrowEventProvider, EvmEscrowEventProvider>();
     builder.Services.AddHostedService<AgenticCommerceReconciliationWorker>();
     builder.Services.AddHostedService<ChainReconciliationSupervisor>();
     builder.Services.AddHttpClient();

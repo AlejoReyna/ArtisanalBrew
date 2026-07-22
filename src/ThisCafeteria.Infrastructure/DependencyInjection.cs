@@ -25,7 +25,8 @@ public static class DependencyInjection
             return services;
         }
 
-        services.AddDbContextFactory<AppDbContext>(options => {
+        services.AddDbContextFactory<AppDbContext>(options =>
+        {
             options.UseNpgsql(connectionString);
         });
         services.AddScoped<AppDbContext>(serviceProvider =>

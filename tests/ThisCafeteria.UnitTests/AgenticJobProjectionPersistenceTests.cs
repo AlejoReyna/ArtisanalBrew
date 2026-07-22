@@ -67,7 +67,7 @@ public class AgenticJobProjectionPersistenceTests : IDisposable
         await _context.SaveChangesAsync();
 
         _context.AgenticJobs.Add(job2);
-        
+
         // Assert that the second save fails due to the unique constraint on (ChainKey, ContractAddress, OnChainJobId)
         await FluentActions.Invoking(() => _context.SaveChangesAsync())
             .Should().ThrowAsync<DbUpdateException>();
