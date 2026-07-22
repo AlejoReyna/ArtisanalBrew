@@ -55,9 +55,10 @@ pair only (no multi-pair support). Phase 6 untouched.
 
 - **Bundler now works against the local Hardhat node (Rundler, `--unsafe` mode) — see "Rundler
   investigation" below.** The caveat: `--unsafe` mode skips ERC-4337 storage-access-rule
-  validation (Hardhat's EDR engine can't run the standard JS tracer that enforces it). No .NET
-  code submits through it yet — `scripts/rundler-e2e-check.ts` proves the bundler path works, but
-  nothing in `ThisCafeteria.*` calls `eth_sendUserOperation` yet.
+  validation (Hardhat's EDR engine can't run the standard JS tracer that enforces it).
+  **The .NET transport now exists** — `RundlerBundlerClient` (see "App-layer bundler client"
+  below) is the first `ThisCafeteria.*` code to call `eth_sendUserOperation`, submitting through
+  the chosen Rundler path rather than calling `EntryPoint.handleOps` directly.
 - **`NativeCurrencyUsdRate` is a static config number, not a live oracle.**
 - No batch approval+funding, no session-key permissions, no fallback/revocation beyond
   sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
@@ -152,6 +153,42 @@ read/write during validation) is not exercised by this proof. A hosted bundler a
 tracer. This proves Rundler correctly bundles and mines a UserOperation against this repo's real,
 pinned, unmodified canonical EntryPoint/factory — it does not prove storage-access rules are
 enforced, which no current local Hardhat-based setup (Alto or Rundler) can prove.
+
+### App-layer bundler client (2026-07-22) — .NET transport for the chosen path
+
+`scripts/rundler-e2e-check.ts` proved the bundler path from TypeScript; this closes the gap noted
+above ("no .NET code submits through it yet") with a real `ThisCafeteria.*` transport.
+
+**E2E-path decision, made explicit: option (a) — a local Rundler instance — is the chosen path**,
+not (b) deferring to a hosted Base/Sepolia bundler. Rationale:
+
+- (a) genuinely works end-to-end *and* satisfies this repo's no-unpinned-bytecode rule. Rundler
+  simulates against the canonical `EntryPointSimulations` (`simulateHandleOp` selector `0x97b2dcb9`,
+  matching this repo's `CanonicalEntryPointSimulations` artifact) via its chain-spec system —
+  it does not substitute a proprietary simulation contract the way Alto does. That's why Alto's
+  `bundler-e2e-check.ts` stays honestly `KNOWN_FAILURE` (adopting Alto would mean depending on
+  unpinned, undocumented, proprietary bytecode) while Rundler's `rundler-e2e-check.ts` passes.
+- (b) remains the documented complement, not a replacement: a hosted bundler runs in safe mode
+  against a node that supports the JS tracer, so it is the only way to exercise the
+  storage-access-rule enforcement that local Hardhat (`--unsafe`, either bundler) cannot. It is a
+  superset check to run before mainnet, not a substitute for the local proof.
+
+The client:
+
+- `IBundlerClient` / `BundlerUserOperation` (`ThisCafeteria.Application.Services`) — the v0.7
+  UserOperation in its bundler JSON-RPC shape.
+- `RundlerBundlerClient` (`ThisCafeteria.Infrastructure.Services`) — a thin transport that owns no
+  policy, keys, or chain addresses. It reads both the endpoint and the trusted EntryPoint from the
+  chain registry, refuses to submit unless the bundler advertises that EntryPoint via
+  `eth_supportedEntryPoints` (fail-closed), and emits the **v0.7 split JSON-RPC schema** Rundler
+  enforces strictly: `initCode` → `factory` (20-byte address) + `factoryData`, and
+  `paymasterAndData` → `paymaster`/`paymasterVerificationGasLimit`/`paymasterPostOpGasLimit`/
+  `paymasterData`. This is exactly issue #1 from the Rundler investigation above; getting the
+  factory split wrong (10 vs 20 bytes) is what `RundlerBundlerClientTests` guards against.
+- `ChainDefinition.BundlerRpcUrl` — trusted, **server-side only**. It is never returned by public
+  chain metadata (`/api/chains`); `RundlerBundlerClient.GetChain` fails closed when it is unset.
+- Registered in `Program.cs` via `AddHttpClient<IBundlerClient, RundlerBundlerClient>` inside the
+  `hasDatabase` block, alongside the other agentic-commerce services.
 
 ### CI wiring (2026-07-21) — done
 
