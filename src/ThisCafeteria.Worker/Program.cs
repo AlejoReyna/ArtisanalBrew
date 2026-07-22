@@ -21,10 +21,13 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
     var blockchainOptions = builder.Configuration.GetSection(BlockchainOptions.SectionName).Get<BlockchainOptions>() ?? BlockchainOptions.CreateDefaults();
     if (blockchainOptions.Chains.Count == 0) blockchainOptions = BlockchainOptions.CreateDefaults();
+    // ARTISANALBREW_*_MANIFEST is the explicit, deliberate override mechanism (README/docs) - it
+    // must win over appsettings.{Environment}.json's static default, which is always non-null in
+    // Development and would otherwise make the env var override permanently unreachable.
     blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
         blockchainOptions,
-        builder.Configuration["Blockchain:LocalEvmManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST"),
-        builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST"));
+        Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST") ?? builder.Configuration["Blockchain:LocalEvmManifest"],
+        Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST") ?? builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"]);
     builder.Services.AddSingleton(blockchainOptions);
     builder.Services.AddSingleton<IChainRegistry>(new ChainRegistry(blockchainOptions));
 

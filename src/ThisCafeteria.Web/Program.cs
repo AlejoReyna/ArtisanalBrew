@@ -37,8 +37,11 @@ if (blockchainOptions.Chains.Count == 0)
 }
 blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
     blockchainOptions,
-    builder.Configuration["Blockchain:LocalEvmManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST"),
-    builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"] ?? Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST"));
+    // ARTISANALBREW_*_MANIFEST is the explicit, deliberate override mechanism (README/docs) - it
+    // must win over appsettings.{Environment}.json's static default, which is always non-null in
+    // Development and would otherwise make the env var override permanently unreachable.
+    Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST") ?? builder.Configuration["Blockchain:LocalEvmManifest"],
+    Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST") ?? builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"]);
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
