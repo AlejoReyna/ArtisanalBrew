@@ -27,11 +27,11 @@ public static class ChainDefinitionDefaults
         Evm("arbitrum-sepolia", "Arbitrum Sepolia", "Arbitrum", 421614, "ETH", "https://421614.rpc.thirdweb.com", "https://sepolia.arbiscan.io", 8, enabled: false),
         new ChainDefinition
         {
-            Key = "solana-testnet", DisplayName = "Solana Testnet", ShortName = "Solana Testnet", Family = ChainFamily.Solana,
+            Key = "solana-devnet", DisplayName = "Solana Devnet", ShortName = "Solana Devnet", Family = ChainFamily.Solana,
             Enabled = false,
-            IconAsset = "/images/solana_logo.svg", SolanaCluster = "testnet", NativeCurrencyName = "Solana", NativeCurrencySymbol = "SOL",
-            NativeCurrencyDecimals = 9, PublicRpcUrl = "https://api.testnet.solana.com", ExplorerAddressTemplate = "https://explorer.solana.com/address/{0}?cluster=testnet",
-            ExplorerTransactionTemplate = "https://explorer.solana.com/tx/{0}?cluster=testnet", SortOrder = 9,
+            IconAsset = "/images/solana_logo.svg", SolanaCluster = "devnet", NativeCurrencyName = "Solana", NativeCurrencySymbol = "SOL",
+            NativeCurrencyDecimals = 9, PublicRpcUrl = "https://api.devnet.solana.com", ExplorerAddressTemplate = "https://explorer.solana.com/address/{0}?cluster=devnet",
+            ExplorerTransactionTemplate = "https://explorer.solana.com/tx/{0}?cluster=devnet", SortOrder = 9,
             // A verified deployment manifest replaces and enables this entry.
             // Keeping the undeployed definition disabled prevents either selector
             // and the public chain API from advertising a non-working connection.

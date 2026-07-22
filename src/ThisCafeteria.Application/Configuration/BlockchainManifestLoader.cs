@@ -8,10 +8,18 @@ public static class BlockchainManifestLoader
     public static BlockchainOptions LoadDeploymentManifests(BlockchainOptions options, string? evmManifestPath, string? solanaManifestPath)
     {
         var chains = options.Chains.ToList();
-        if (TryReadEvm(evmManifestPath, out var evm)) Replace(chains, evm);
+        // Keep the singular argument for compatibility, but accept a semicolon-separated
+        // manifest list so one deployed application can expose multiple real EVM networks.
+        foreach (var path in SplitManifestPaths(evmManifestPath))
+        {
+            if (TryReadEvm(path, out var evm)) Replace(chains, evm);
+        }
         if (TryReadSolana(solanaManifestPath, out var solana)) Replace(chains, solana);
         return new BlockchainOptions { DefaultChainKey = options.DefaultChainKey, Chains = chains };
     }
+
+    private static IEnumerable<string> SplitManifestPaths(string? value) =>
+        (value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     private static void Replace(List<ChainDefinition> chains, ChainDefinition definition)
     {
@@ -33,20 +41,21 @@ public static class BlockchainManifestLoader
             {
                 31337 => "evm-local",
                 97 => "bsc-testnet",
+                11155111 => "ethereum-sepolia",
                 _ => throw new InvalidDataException($"Unsupported EVM manifest chain ID {chainId}.")
             };
             if (!string.Equals(chainKey, expectedChainKey, StringComparison.Ordinal))
                 throw new InvalidDataException($"EVM chain ID {chainId} manifests must use chain key '{expectedChainKey}'.");
-            var displayName = Optional(root, "displayName") ?? (chainId == 97 ? "BSC Testnet" : "Local EVM");
+            var displayName = Optional(root, "displayName") ?? (chainId == 97 ? "BSC Testnet" : chainId == 11155111 ? "Ethereum Sepolia" : "Local EVM");
             var native = root.TryGetProperty("nativeCurrency", out var nativeElement) ? nativeElement : default;
-            var nativeName = Optional(native, "name") ?? (chainId == 97 ? "BNB" : "Local Ether");
+            var nativeName = Optional(native, "name") ?? (chainId == 97 ? "BNB" : "Ether");
             var nativeSymbol = Optional(native, "symbol") ?? (chainId == 97 ? "tBNB" : "ETH");
             var nativeDecimals = native.ValueKind == JsonValueKind.Object && native.TryGetProperty("decimals", out var nativeDecimalsElement)
                 ? nativeDecimalsElement.GetInt32()
                 : 18;
-            var rpcUrl = Optional(root, "rpcUrl") ?? (chainId == 97 ? "https://97.rpc.thirdweb.com" : "http://127.0.0.1:8545");
-            var explorerAddress = Optional(root, "explorerAddressTemplate") ?? (chainId == 97 ? "https://testnet.bscscan.com/address/{0}" : "http://127.0.0.1:8545/address/{0}");
-            var explorerTransaction = Optional(root, "explorerTransactionTemplate") ?? (chainId == 97 ? "https://testnet.bscscan.com/tx/{0}" : "http://127.0.0.1:8545/tx/{0}");
+            var rpcUrl = Optional(root, "rpcUrl") ?? (chainId == 97 ? "https://97.rpc.thirdweb.com" : chainId == 11155111 ? "https://ethereum-sepolia-rpc.publicnode.com" : "http://127.0.0.1:8545");
+            var explorerAddress = Optional(root, "explorerAddressTemplate") ?? (chainId == 97 ? "https://testnet.bscscan.com/address/{0}" : chainId == 11155111 ? "https://sepolia.etherscan.io/address/{0}" : "http://127.0.0.1:8545/address/{0}");
+            var explorerTransaction = Optional(root, "explorerTransactionTemplate") ?? (chainId == 97 ? "https://testnet.bscscan.com/tx/{0}" : chainId == 11155111 ? "https://sepolia.etherscan.io/tx/{0}" : "http://127.0.0.1:8545/tx/{0}");
             definition = new ChainDefinition
             {
                 Key = chainKey,
@@ -62,7 +71,7 @@ public static class BlockchainManifestLoader
                 PublicRpcUrl = rpcUrl,
                 ExplorerAddressTemplate = explorerAddress,
                 ExplorerTransactionTemplate = explorerTransaction,
-                SortOrder = chainId == 97 ? 6 : 100,
+                SortOrder = chainId == 97 ? 6 : chainId == 11155111 ? 1 : 100,
                 Deployment = new ChainDeployment
                 {
                     Cafe = addresses.GetProperty("cafe").GetString() ?? string.Empty,
@@ -113,9 +122,9 @@ public static class BlockchainManifestLoader
             var root = document.RootElement;
             if (!string.Equals(root.GetProperty("schemaVersion").GetString(), "1", StringComparison.Ordinal)) throw new InvalidDataException("Unsupported Solana manifest schema version.");
             var cluster = Required(root, "cluster");
-            if (cluster is not ("localnet" or "testnet")) throw new InvalidDataException("Only Solana localnet and Testnet deployment manifests are supported.");
+            if (cluster is not ("localnet" or "devnet" or "testnet")) throw new InvalidDataException("Only Solana localnet, Devnet, and Testnet deployment manifests are supported.");
             var chainKey = Required(root, "chainKey");
-            var expectedChainKey = cluster == "localnet" ? "solana-localnet" : "solana-testnet";
+            var expectedChainKey = $"solana-{cluster}";
             if (!string.Equals(chainKey, expectedChainKey, StringComparison.Ordinal)) throw new InvalidDataException($"Solana {cluster} manifests must use chain key '{expectedChainKey}'.");
             var statePda = Required(root, "statePda");
             var authorityPda = Required(root, "authorityPda");
@@ -127,8 +136,8 @@ public static class BlockchainManifestLoader
             definition = new ChainDefinition
             {
                 Key = chainKey,
-                DisplayName = cluster == "localnet" ? "Solana Localnet" : "Solana Testnet",
-                ShortName = cluster == "localnet" ? "Solana Localnet" : "Solana Testnet",
+                DisplayName = cluster switch { "localnet" => "Solana Localnet", "devnet" => "Solana Devnet", _ => "Solana Testnet" },
+                ShortName = cluster switch { "localnet" => "Solana Localnet", "devnet" => "Solana Devnet", _ => "Solana Testnet" },
                 Family = ChainFamily.Solana,
                 Enabled = true,
                 SolanaCluster = cluster,
@@ -136,10 +145,10 @@ public static class BlockchainManifestLoader
                 NativeCurrencySymbol = "SOL",
                 NativeCurrencyDecimals = 9,
                 PublicRpcUrl = Required(root, "rpcUrl"),
-                ExplorerAddressTemplate = $"https://explorer.solana.com/address/{{0}}?cluster={(cluster == "localnet" ? "custom" : "testnet")}",
-                ExplorerTransactionTemplate = $"https://explorer.solana.com/tx/{{0}}?cluster={(cluster == "localnet" ? "custom" : "testnet")}",
+                ExplorerAddressTemplate = $"https://explorer.solana.com/address/{{0}}?cluster={(cluster == "localnet" ? "custom" : cluster)}",
+                ExplorerTransactionTemplate = $"https://explorer.solana.com/tx/{{0}}?cluster={(cluster == "localnet" ? "custom" : cluster)}",
                 SolanaCommitment = "finalized",
-                SortOrder = cluster == "localnet" ? 101 : 9,
+                SortOrder = cluster == "localnet" ? 101 : cluster == "devnet" ? 9 : 10,
                 Deployment = new ChainDeployment
                 {
                     Program = Required(root, "programId"),

@@ -47,23 +47,23 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
-    public void EnablesSolanaTestnetOnlyWhenAValidatedDeploymentManifestIsPresent()
+    public void EnablesSolanaDevnetOnlyWhenAValidatedDeploymentManifestIsPresent()
     {
         var defaults = new ChainRegistry(BlockchainOptions.CreateDefaults());
-        defaults.All.Single(chain => chain.Key == "solana-testnet").Enabled.Should().BeFalse();
-        Action unresolvedLookup = () => defaults.GetRequired("solana-testnet");
+        defaults.All.Single(chain => chain.Key == "solana-devnet").Enabled.Should().BeFalse();
+        Action unresolvedLookup = () => defaults.GetRequired("solana-devnet");
         unresolvedLookup.Should().Throw<KeyNotFoundException>();
 
-        var path = WriteManifest(9, 9, 9, "testnet", "solana-testnet", "https://api.testnet.solana.com");
+        var path = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com");
         try
         {
             var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, path);
-            var deployed = new ChainRegistry(options).GetRequired("solana-testnet");
+            var deployed = new ChainRegistry(options).GetRequired("solana-devnet");
 
             deployed.Enabled.Should().BeTrue();
             deployed.Capabilities.WalletLogin.Should().BeTrue();
             deployed.Capabilities.LiquidStaking.Should().BeTrue();
-            deployed.SolanaCluster.Should().Be("testnet");
+            deployed.SolanaCluster.Should().Be("devnet");
         }
         finally
         {
@@ -114,6 +114,28 @@ public sealed class BlockchainManifestLoaderTests
         }
     }
 
+    [Fact]
+    public void LoadsMultipleEvmDeploymentManifestsForOneApplication()
+    {
+        var bscPath = WriteEvmManifest();
+        var sepoliaPath = WriteEvmManifest("ethereum-sepolia", 11155111, "https://ethereum-sepolia-rpc.publicnode.com");
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(
+                BlockchainOptions.CreateDefaults(), $"{bscPath};{sepoliaPath}", null);
+            var registry = new ChainRegistry(options);
+
+            registry.GetRequired("bsc-testnet").EvmChainId.Should().Be(97);
+            registry.GetRequired("ethereum-sepolia").EvmChainId.Should().Be(11155111);
+            registry.GetRequired("ethereum-sepolia").PublicRpcUrl.Should().Be("https://ethereum-sepolia-rpc.publicnode.com");
+        }
+        finally
+        {
+            File.Delete(bscPath);
+            File.Delete(sepoliaPath);
+        }
+    }
+
     private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899")
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-solana-manifest-{Guid.NewGuid():N}.json");
@@ -143,16 +165,16 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
-    private static string WriteEvmManifest()
+    private static string WriteEvmManifest(string chainKey = "bsc-testnet", int chainId = 97, string rpcUrl = "https://97.rpc.thirdweb.com")
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, $$"""
         {
           "schemaVersion": 1,
-          "chainKey": "bsc-testnet",
-          "chainId": 97,
-          "rpcUrl": "https://97.rpc.thirdweb.com",
-          "displayName": "BSC Testnet",
+          "chainKey": "{{chainKey}}",
+          "chainId": {{chainId}},
+          "rpcUrl": "{{rpcUrl}}",
+          "displayName": "Test Network",
           "nativeCurrency": { "name": "BNB", "symbol": "tBNB", "decimals": 18 },
           "addresses": {
             "cafe": "{{Address('C')}}",

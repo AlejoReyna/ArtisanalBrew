@@ -5,8 +5,11 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
 async function main() {
-  const rpcUrl = "https://api.testnet.solana.com/";
-  const keypairPath = `${process.env.HOME}/.config/solana/artisanalbrew-testnet-deployer.json`;
+  const cluster = process.env.SOLANA_CLUSTER ?? "devnet";
+  const rpcUrl = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
+  const keypairPath = process.env.SOLANA_WALLET;
+  if (cluster !== "devnet" && cluster !== "testnet") throw new Error("SOLANA_CLUSTER must be devnet or testnet.");
+  if (!keypairPath) throw new Error("SOLANA_WALLET must point to the deployer keypair; do not put the key in source or a manifest.");
   
   const connection = new Connection(rpcUrl, "confirmed");
   const keypair = Keypair.fromSecretKey(Buffer.from(JSON.parse(readFileSync(keypairPath, "utf-8"))));
@@ -100,7 +103,7 @@ async function main() {
   console.log("Redeeming...");
   await program.methods.redeem(new anchor.BN(1_000)).accounts({ vault, owner: payer.publicKey, position, custodyCafe: custodyCafe.address, ownerCafe: ownerCafe.address, stCafeMint, ownerStCafe: ownerShares.address, cafeMint, tokenProgram: TOKEN_2022_PROGRAM_ID }).rpc();
 
-  console.log("All smoke tests passed on Testnet!");
+  console.log(`All smoke tests passed on Solana ${cluster}.`);
 
   const idlPath = "target/idl/cafe_liquid_staking.json";
   const binaryPath = "target/deploy/cafe_liquid_staking.so";
@@ -112,11 +115,17 @@ async function main() {
     }
   };
 
+  const sanitizedRpcUrl = (() => {
+    const url = new URL(rpcUrl);
+    url.search = "";
+    return url.toString();
+  })();
+
   const manifest = {
     schemaVersion: "1",
-    chainKey: "solana-testnet",
-    rpcUrl: "https://api.testnet.rpcpool.com/",
-    cluster: "testnet",
+    chainKey: `solana-${cluster}`,
+    rpcUrl: sanitizedRpcUrl,
+    cluster,
     programId: programId.toBase58(),
     deploymentSlot: await provider.connection.getSlot("finalized"),
     statePda: vault.toBase58(),
@@ -138,7 +147,7 @@ async function main() {
     capabilities: { walletLogin: true, liquidStaking: true, rewardFunding: true, reconciliation: true }
   };
 
-  const outputPath = "../../deployments/solana-testnet.json";
+  const outputPath = `../../deployments/solana-${cluster}.json`;
   writeFileSync(outputPath, JSON.stringify(manifest, null, 2) + "\n");
   console.log("Wrote manifest to", outputPath);
 }

@@ -5,16 +5,25 @@ import { deployDeleGatorEnvironment } from "@metamask/delegation-toolkit/utils";
 
 const { viem } = await network.connect();
 const [deployer] = await viem.getWalletClients();
+if (!deployer?.account) throw new Error("No deployer account configured for this network. Set the network-specific private-key environment variable in the shell; never put it in the repository or chat.");
 const admin = deployer.account.address;
 const publicClient = await viem.getPublicClient();
 const chainId = await publicClient.getChainId();
-const chainKey = chainId === 31337 ? "evm-local" : chainId === 97 ? "bsc-testnet" : "";
-if (!chainKey) throw new Error(`Unsupported deployment chain ID ${chainId}. Only local chain 31337 and BSC Testnet 97 are supported.`);
+const chainKey = chainId === 31337 ? "evm-local" : chainId === 97 ? "bsc-testnet" : chainId === 11155111 ? "ethereum-sepolia" : "";
+if (!chainKey) throw new Error(`Unsupported deployment chain ID ${chainId}. Only local chain 31337, BSC Testnet 97, and Ethereum Sepolia 11155111 are supported.`);
 if (chainId !== 31337 && process.env.CONFIRM_PUBLIC_DEPLOYMENT !== "I_UNDERSTAND_THIS_BROADCASTS") {
   throw new Error("Refusing public deployment. Set CONFIRM_PUBLIC_DEPLOYMENT=I_UNDERSTAND_THIS_BROADCASTS explicitly.");
 }
-const configuredCafe = process.env.CAFE_ADDRESS;
-const configuredCoffee = process.env.COFFEE_ADDRESS;
+// Existing token addresses are a Sepolia-only migration input. Never reuse
+// them on BSC, where the deployment must create chain-local token contracts.
+const configuredCafe = chainId === 11155111 ? process.env.CAFE_ADDRESS : undefined;
+const configuredCoffee = chainId === 11155111 ? process.env.COFFEE_ADDRESS : undefined;
+const configuredFaucet = process.env.FAUCET_ADDRESS ?? (chainId === 11155111 ? "0xBD1517529BB0BA20c43b4E39323C70058FADe86D" : undefined);
+const rewardAmount = parseEther(process.env.REWARD_AMOUNT ?? "100000");
+
+if (chainId === 11155111 && (!configuredCafe || !configuredCoffee)) {
+  throw new Error("Ethereum Sepolia deployment requires both CAFE_ADDRESS and COFFEE_ADDRESS; the existing legacy tokens must never be replaced.");
+}
 
 const cafe = configuredCafe
   ? await viem.getContractAt("TestCafeToken", configuredCafe as `0x${string}`)
@@ -24,7 +33,9 @@ const coffee = configuredCoffee
   : await viem.deployContract("TestCoffeeToken", [admin, parseEther("1000000000")]);
 const vault = await viem.deployContract("CafeLiquidStakingVault", [admin, cafe.address, coffee.address]);
 const vaultDeployBlock = await publicClient.getBlockNumber();
-const faucet = await viem.deployContract("CafeFaucet", [admin, cafe.address, parseEther("100"), 3600n]);
+const faucet = configuredFaucet
+  ? await viem.getContractAt("CafeFaucet", configuredFaucet as `0x${string}`)
+  : await viem.deployContract("CafeFaucet", [admin, cafe.address, parseEther("100"), 3600n]);
 
 if (!configuredCafe && !configuredCoffee) {
   const t1 = await deployer.writeContract({ address: cafe.address, abi: cafe.abi, functionName: "mint", args: [admin, parseEther("1000000")] });
@@ -34,9 +45,18 @@ if (!configuredCafe && !configuredCoffee) {
   const t3 = await deployer.writeContract({ address: cafe.address, abi: cafe.abi, functionName: "mint", args: [faucet.address, parseEther("100000")] });
   await publicClient.waitForTransactionReceipt({ hash: t3 });
 }
-const t4 = await deployer.writeContract({ address: coffee.address, abi: coffee.abi, functionName: "transfer", args: [vault.address, parseEther("100000")] });
+
+// The Sepolia legacy COFFEE contract is owner-mintable, and the deployment
+// wallet is checked against owner() before this script is run. Minting here
+// funds only the new vault schedule; it does not replace the legacy token.
+if (chainId === 11155111 && process.env.MINT_SEPOLIA_REWARDS !== "false") {
+  const mintRewards = await deployer.writeContract({ address: coffee.address, abi: coffee.abi, functionName: "mint", args: [admin, rewardAmount] });
+  await publicClient.waitForTransactionReceipt({ hash: mintRewards });
+}
+
+const t4 = await deployer.writeContract({ address: coffee.address, abi: coffee.abi, functionName: "transfer", args: [vault.address, rewardAmount] });
 await publicClient.waitForTransactionReceipt({ hash: t4 });
-const t5 = await deployer.writeContract({ address: vault.address, abi: vault.abi, functionName: "notifyRewardAmount", args: [parseEther("100000"), 30n * 24n * 60n * 60n] });
+const t5 = await deployer.writeContract({ address: vault.address, abi: vault.abi, functionName: "notifyRewardAmount", args: [rewardAmount, 30n * 24n * 60n * 60n] });
 await publicClient.waitForTransactionReceipt({ hash: t5 });
 
 const entryPoint = await viem.deployContract("EntryPointFixture");
@@ -69,9 +89,15 @@ const modularEnvironment = modularAccountsEnabled
     )
   : null;
 
-const rpcUrl = process.env.PUBLIC_RPC_URL ?? (chainId === 97 ? process.env.BSC_TESTNET_RPC_URL ?? "https://97.rpc.thirdweb.com" : "http://127.0.0.1:8545");
-const explorerBase = chainId === 97 ? "https://testnet.bscscan.com" : "http://127.0.0.1:8545";
-const displayName = chainId === 97 ? "BSC Testnet" : "Local EVM";
+const rpcUrl = process.env.PUBLIC_RPC_URL ?? (
+  chainId === 97
+    ? process.env.BSC_TESTNET_RPC_URL ?? "https://97.rpc.thirdweb.com"
+    : chainId === 11155111
+      ? process.env.ETHEREUM_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com"
+      : "http://127.0.0.1:8545"
+);
+const explorerBase = chainId === 97 ? "https://testnet.bscscan.com" : chainId === 11155111 ? "https://sepolia.etherscan.io" : "http://127.0.0.1:8545";
+const displayName = chainId === 97 ? "BSC Testnet" : chainId === 11155111 ? "Ethereum Sepolia" : "Local EVM";
 const manifest = {
   schemaVersion: 1,
   chainKey,
@@ -80,7 +106,7 @@ const manifest = {
   displayName,
   explorerAddressTemplate: `${explorerBase}/address/{0}`,
   explorerTransactionTemplate: `${explorerBase}/tx/{0}`,
-  nativeCurrency: chainId === 97 ? { name: "BNB", symbol: "tBNB", decimals: 18 } : { name: "Local Ether", symbol: "ETH", decimals: 18 },
+  nativeCurrency: chainId === 97 ? { name: "BNB", symbol: "tBNB", decimals: 18 } : { name: "Ether", symbol: "ETH", decimals: 18 },
   deployBlock: vaultDeployBlock.toString(),
   compiler: { solc: "0.8.24", optimizerRuns: 200, viaIR: true },
   deployedAtUtc: new Date().toISOString(),

@@ -8,6 +8,7 @@
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
     "deploy:ephemeral": "hardhat run scripts/deploy.ts --network hardhat",
     "deploy:bsc-testnet": "hardhat run scripts/deploy.ts --network bscTestnet",
+    "deploy:ethereum-sepolia": "hardhat run scripts/deploy.ts --network ethereumSepolia",
     "deploy:local:node": "hardhat node --chain-id 31337",
     "test:session-key:e2e": "hardhat run scripts/metamask-session-key-e2e.ts --network arbitrumLocal",
     "export:abi": "tsx scripts/export-abi.ts",

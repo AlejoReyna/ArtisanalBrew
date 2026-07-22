@@ -17,7 +17,7 @@ public sealed class ChainVisibilityTests(ThisCafeteriaWebApplicationFactory fact
         keys.Should().NotContain(new[]
         {
             "hedera-testnet", "avalanche-fuji", "linea-sepolia", "base-sepolia",
-            "bsc-testnet", "monad-testnet", "arbitrum-sepolia", "solana-testnet"
+            "bsc-testnet", "monad-testnet", "arbitrum-sepolia", "solana-devnet"
         });
     }
 }
