@@ -37,14 +37,23 @@ public sealed class SelectedChainAccessor(IChainRegistry registry, IHttpContextA
         cancellationToken.ThrowIfCancellationRequested();
         if (!registry.TryGet(chainKey, out var definition) || !definition.Enabled) return Task.FromResult(false);
         _selected = definition.Key;
-        httpContextAccessor.HttpContext?.Response.Cookies.Append(CookieName, definition.Key, new CookieOptions
+        // Once Blazor Server's interactive circuit takes over, the original request's response
+        // headers are already sent, so writing a cookie here would throw
+        // InvalidOperationException: "Headers are read-only, response has already started." and
+        // crash the circuit. The in-memory _selected field and the client-side localStorage persist
+        // (ChainSelector.razor's artisanalChainSelector.persist) already cover this case; the cookie
+        // only matters for picking the right chain on the *next* full page load's initial SSR render.
+        if (httpContextAccessor.HttpContext is { Response.HasStarted: false } context)
         {
-            HttpOnly = true,
-            IsEssential = true,
-            SameSite = SameSiteMode.Strict,
-            Secure = httpContextAccessor.HttpContext.Request.IsHttps,
-            MaxAge = TimeSpan.FromDays(30)
-        });
+            context.Response.Cookies.Append(CookieName, definition.Key, new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                SameSite = SameSiteMode.Strict,
+                Secure = context.Request.IsHttps,
+                MaxAge = TimeSpan.FromDays(30)
+            });
+        }
         Changed?.Invoke();
         return Task.FromResult(true);
     }
