@@ -53,10 +53,14 @@ string ReadString(string key) => doc.GetProperty(key).GetString()!;
 System.Numerics.BigInteger ReadBigInteger(string key) => System.Numerics.BigInteger.Parse(doc.GetProperty(key).GetString()!);
 
 // Hardhat's first well-known development account and its published private key. Neither is a
-// secret — they control nothing outside a local test node — and are used here only because this
-// harness never touches a real chain.
-const string Owner = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
-const string DevSignerKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+// secret — they control nothing outside a local test node — and are the default because most
+// invocations of this harness never touch a real chain. A real network (e.g. Sepolia) overrides
+// both via environment variables rather than a code change: the owner is whatever address the
+// calling script derived the counterfactual account for, and the verifying-signer key is whatever
+// key the real deployed VerifyingPaymaster actually trusts (deploy.ts uses the network's own
+// deployer account for both roles — see docs/agentic-commerce-stack-plan.md's Sepolia handoff).
+var Owner = Environment.GetEnvironmentVariable("CROSSSTACK_OWNER_ADDRESS") ?? "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
+var DevSignerKey = Environment.GetEnvironmentVariable("CROSSSTACK_VERIFYING_SIGNER_KEY") ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 var target = ReadString("target");
 var selector = ReadString("selector");
@@ -65,12 +69,13 @@ var selector = ReadString("selector");
 // allowlist at an address the operation does NOT call.
 var allowedTarget = mode == "wrongtarget" ? "0x000000000000000000000000000000000000dead" : target;
 
+var evmChainId = int.TryParse(Environment.GetEnvironmentVariable("CROSSSTACK_EVM_CHAIN_ID"), out var parsedChainId) ? parsedChainId : 31337;
 var chain = new ChainDefinition
 {
     Key = "evm-local",
     Family = ChainFamily.Evm,
-    EvmChainId = 31337,
-    EvmChainIdHex = "0x7a69",
+    EvmChainId = evmChainId,
+    EvmChainIdHex = $"0x{evmChainId:x}",
     // Set by the calling script (crossstack-sponsor-check.ts / crossstack-bundler-submit-check.ts)
     // to match whichever Hardhat network it connected to - this process has no Hardhat context of
     // its own. Defaults to 8545 for the README-documented manual `HARDHAT_NETWORK=localhost`
