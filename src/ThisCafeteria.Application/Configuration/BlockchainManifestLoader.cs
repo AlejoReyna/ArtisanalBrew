@@ -69,6 +69,10 @@ public static class BlockchainManifestLoader
                 NativeCurrencySymbol = nativeSymbol,
                 NativeCurrencyDecimals = nativeDecimals,
                 PublicRpcUrl = rpcUrl,
+                // Server-side-only ERC-4337 bundler endpoint. Kept out of `addresses` since it is
+                // an RPC URL, not a contract address, and out of the public chain-metadata surface
+                // (see ChainDefinition.BundlerRpcUrl) - never returned by /api/chains.
+                BundlerRpcUrl = Optional(root, "bundlerRpcUrl"),
                 ExplorerAddressTemplate = explorerAddress,
                 ExplorerTransactionTemplate = explorerTransaction,
                 SortOrder = chainId == 97 ? 6 : chainId == 11155111 ? 1 : 100,

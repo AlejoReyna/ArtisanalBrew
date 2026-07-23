@@ -157,6 +157,7 @@ if (hasDatabase)
     {
         client.Timeout = TimeSpan.FromSeconds(30);
     });
+    builder.Services.AddScoped<IUserOperationSubmitter, UserOperationSubmitter>();
     builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
 }
 builder.Services.AddSingleton<IMigrationReadiness, MigrationReadiness>();

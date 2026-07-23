@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Numerics;
 using System.Text.Json;
@@ -28,12 +29,38 @@ public sealed class RundlerBundlerClient(HttpClient httpClient, IChainRegistry c
         return result;
     }
 
-    public Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, CancellationToken cancellationToken = default)
+    public async Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, CancellationToken cancellationToken = default)
     {
         var chain = GetChain(chainKey);
         if (!IsHash(userOperationHash)) throw new ArgumentException("A 32-byte UserOperation hash is required.", nameof(userOperationHash));
-        return CallAsync<BundlerReceipt?>(chain, "eth_getUserOperationReceipt", [userOperationHash], cancellationToken);
+        var result = await CallAsync<JsonElement?>(chain, "eth_getUserOperationReceipt", [userOperationHash], cancellationToken).ConfigureAwait(false);
+        return result is { ValueKind: JsonValueKind.Object } element ? ParseReceipt(element) : null;
     }
+
+    // The ERC-4337 bundler-spec receipt nests the mined transaction's hash under `receipt`
+    // (a standard transaction receipt) rather than at the top level, and uses `userOpHash`, not
+    // `userOperationHash` — confirmed against Rundler's actual eth_getUserOperationReceipt
+    // response, not assumed from BundlerReceipt's own field names. A flat-record Deserialize<T>
+    // here would silently leave TransactionHash empty on a real bundler response.
+    private static BundlerReceipt ParseReceipt(JsonElement element) => new()
+    {
+        UserOperationHash = GetString(element, "userOpHash"),
+        TransactionHash = element.TryGetProperty("receipt", out var receipt) ? GetString(receipt, "transactionHash") : string.Empty,
+        Sender = GetString(element, "sender"),
+        Nonce = element.TryGetProperty("nonce", out var nonce) && nonce.ValueKind == JsonValueKind.String
+            ? ParseHexQuantity(nonce.GetString())
+            : BigInteger.Zero,
+        Success = element.TryGetProperty("success", out var success) && success.ValueKind == JsonValueKind.True,
+        RevertReason = element.TryGetProperty("reason", out var reason) && reason.ValueKind == JsonValueKind.String ? reason.GetString() : null
+    };
+
+    private static string GetString(JsonElement element, string property) =>
+        element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
+
+    private static BigInteger ParseHexQuantity(string? hex) =>
+        !string.IsNullOrWhiteSpace(hex) && hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && BigInteger.TryParse("0" + hex[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : BigInteger.Zero;
 
     private async Task<T> CallAsync<T>(ChainDefinition chain, string method, object[] parameters, CancellationToken cancellationToken)
     {

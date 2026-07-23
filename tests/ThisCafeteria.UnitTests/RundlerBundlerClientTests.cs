@@ -47,6 +47,48 @@ public sealed class RundlerBundlerClientTests
     }
 
     [Fact]
+    public async Task Receipt_ParsesRealBundlerSpecShape_WithNestedTransactionHash()
+    {
+        // Real eth_getUserOperationReceipt responses (Rundler, and the ERC-4337 bundler spec in
+        // general) nest the mined transaction's hash under `receipt` and use `userOpHash`, not
+        // `userOperationHash` - this reproduces that exact shape rather than BundlerReceipt's own
+        // flat field names, which a naive Deserialize<BundlerReceipt> would silently mismatch.
+        const string txHash = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        using var http = new HttpClient(new Handler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(new
+            {
+                jsonrpc = "2.0",
+                id = 1,
+                result = new
+                {
+                    userOpHash = UserOpHash,
+                    sender = Sender,
+                    nonce = "0x2a",
+                    success = true,
+                    actualGasCost = "0x1",
+                    actualGasUsed = "0x1",
+                    receipt = new { transactionHash = txHash, status = "0x1" }
+                }
+            })
+        }));
+        var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
+        {
+            Key = ChainKey, Family = ChainFamily.Evm, BundlerRpcUrl = "http://bundler.test/rpc",
+            Deployment = new ChainDeployment { EntryPoint = EntryPoint }
+        }));
+
+        var receipt = await client.GetUserOperationReceiptAsync(ChainKey, UserOpHash);
+
+        receipt.Should().NotBeNull();
+        receipt!.UserOperationHash.Should().Be(UserOpHash);
+        receipt.TransactionHash.Should().Be(txHash);
+        receipt.Sender.Should().Be(Sender);
+        receipt.Nonce.Should().Be(42);
+        receipt.Success.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Receipt_ReturnsNullBeforeBundlerMinesOperation()
     {
         using var http = new HttpClient(new Handler(_ => new HttpResponseMessage(HttpStatusCode.OK)
