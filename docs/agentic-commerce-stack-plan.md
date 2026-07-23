@@ -123,8 +123,16 @@ above — never the committed manifest) to the real Pimlico URL, then run
 `ETHEREUM_SEPOLIA_DEPLOYER_PRIVATE_KEY=... SEPOLIA_BUNDLER_RPC_URL=... SEPOLIA_BROADCAST_AUTHORIZED=yes
 HARDHAT_NETWORK=ethereumSepolia npx tsx scripts/sepolia-bundler-submit-check.ts`, record the public
 UserOperation hash / transaction hash it prints, and only then consider Phase 4's negative-path gate
-(over-budget/wrong-target/wrong-selector/expired/revoked already unit-tested; not yet proven through
-the bundler path specifically) closed for real.
+closed for real.
+
+**One negative-path case is now proven through the real submission path while waiting on the
+above**: `scripts/crossstack-bundler-submit-denied-check.ts` (new) proves — through the actual
+`UserOperationSubmitter`/`RundlerBundlerClient` wiring, not `UserOperationSubmitterTests`' stubs —
+that an unapproved sponsorship never reaches the bundler at all, by pointing the bundler URL at a
+port nothing listens on and confirming a clean `Denied` result rather than a connection failure.
+Needs no live chain. The remaining negative cases (over-budget, wrong-target, wrong-selector,
+expired, revoked) are still only unit-tested at the policy layer, not proven through this specific
+bundler-submission path — lower priority than the Sepolia proof itself, not blocked on anything.
 
 ## Session handoff (2026-07-21) — read this first
 
