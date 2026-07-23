@@ -156,6 +156,37 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
+    public void BundlerRpcUrlOverride_WinsOverTheManifestAndIsKeyedPerChain()
+    {
+        var path = WriteEvmManifest();
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            // Only bsc-testnet's override variable is set - other chains must be untouched.
+            var overridden = BlockchainManifestLoader.ApplyBundlerRpcUrlOverrides(options, name =>
+                name == "ARTISANALBREW_BUNDLER_RPC_URL__BSC_TESTNET" ? "https://api.pimlico.io/v2/bsc-testnet/rpc?apikey=secret" : null);
+            var registry = new ChainRegistry(overridden);
+
+            registry.GetRequired("bsc-testnet").BundlerRpcUrl.Should().Be("https://api.pimlico.io/v2/bsc-testnet/rpc?apikey=secret");
+            registry.All.Where(c => c.Key != "bsc-testnet").Should().OnlyContain(c => string.IsNullOrEmpty(c.BundlerRpcUrl));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void BundlerRpcUrlOverride_LeavesChainsUnsetWhenNoEnvironmentVariableMatches()
+    {
+        var options = BlockchainOptions.CreateDefaults();
+
+        var overridden = BlockchainManifestLoader.ApplyBundlerRpcUrlOverrides(options, _ => null);
+
+        overridden.Chains.Should().OnlyContain(c => string.IsNullOrEmpty(c.BundlerRpcUrl));
+    }
+
+    [Fact]
     public void LoadsMultipleEvmDeploymentManifestsForOneApplication()
     {
         var bscPath = WriteEvmManifest();
