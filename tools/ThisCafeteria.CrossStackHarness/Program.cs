@@ -148,19 +148,32 @@ if (mode == "submit")
     // submitting to the EntryPoint itself, this process runs the REAL production
     // UserOperationSubmitter, which submits through a real bundler (Rundler, via
     // RundlerBundlerClient) and independently verifies the mined result on-chain.
-    using var httpClient = new System.Net.Http.HttpClient();
+    //
+    // Short timeout: a "denied" proof (see below) points the bundler URL at an address nothing
+    // listens on, specifically so a bug that skipped the approval check would surface as a fast,
+    // unambiguous connection failure rather than hanging.
+    using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(3) };
     var bundlerClient = new RundlerBundlerClient(httpClient, registry);
     var submitter = new UserOperationSubmitter(registry, bundlerClient, policy, TimeProvider.System, NullLogger<UserOperationSubmitter>.Instance);
 
-    var sponsorship = new SponsorshipSignature
-    {
-        Approved = true,
-        Reason = SponsorshipDenialReason.None,
-        PaymasterAndData = ReadString("paymasterAndData"),
-        CostUsd = doc.GetProperty("costUsd").GetDecimal()
-    };
+    // Negative-path proof (crossstack-bundler-submit-denied-check.ts): an op JSON with
+    // `"denied": true` builds an unapproved SponsorshipSignature instead of reading one from JSON,
+    // proving through this exact production code path - not a mocked unit test - that a denied
+    // sponsorship never reaches the bundler at all. Paired with a deliberately unreachable
+    // BundlerRpcUrl, any attempt to contact it surfaces as a fast, loud failure instead of silently
+    // passing.
+    var denied = doc.TryGetProperty("denied", out var deniedElement) && deniedElement.GetBoolean();
+    var sponsorship = denied
+        ? SponsorshipSignature.Deny(SponsorshipDenialReason.DisallowedTarget, "denied for cross-stack negative-path proof")
+        : new SponsorshipSignature
+        {
+            Approved = true,
+            Reason = SponsorshipDenialReason.None,
+            PaymasterAndData = ReadString("paymasterAndData"),
+            CostUsd = doc.GetProperty("costUsd").GetDecimal()
+        };
 
-    var submission = await submitter.SubmitAsync(operation, sponsorship, ReadString("signature"));
+    var submission = await submitter.SubmitAsync(operation, sponsorship, denied ? "0xdeadbeef" : ReadString("signature"));
 
     Console.WriteLine(JsonSerializer.Serialize(new
     {
@@ -171,7 +184,12 @@ if (mode == "submit")
         costUsd = submission.CostUsd
     }));
 
-    return submission.Status == UserOperationSubmissionStatus.Confirmed ? 0 : 1;
+    // Consistent with "approve"/"wrongtarget" mode below: this process's job is to report the real
+    // outcome, not to decide whether that outcome is the one the calling script wanted. A denial
+    // is the CORRECT result for crossstack-bundler-submit-denied-check.ts and would be the wrong
+    // one for crossstack-bundler-submit-check.ts - only the caller knows which. Always exit 0 here
+    // and let the caller inspect `status` itself, the same as it already does for `approved`.
+    return 0;
 }
 
 var result = await sponsor.SponsorAsync(operation);
