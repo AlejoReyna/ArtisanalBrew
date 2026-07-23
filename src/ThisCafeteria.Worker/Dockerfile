@@ -28,5 +28,12 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
+# The chain registry reads deployment manifests from ./deployments relative to
+# the working directory (/app). They live at the repo root, outside any project,
+# so publish never picks them up; copy them explicitly from the build context.
+# Without this the container finds no manifests and falls back to the addressless
+# default chain stub. Env vars (ARTISANALBREW_*_MANIFEST) can still override.
+COPY deployments/ ./deployments/
+
 USER $APP_UID
 ENTRYPOINT ["dotnet", "ThisCafeteria.Worker.dll"]
