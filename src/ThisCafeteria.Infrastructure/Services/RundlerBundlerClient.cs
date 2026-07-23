@@ -103,9 +103,16 @@ public sealed class RundlerBundlerClient(HttpClient httpClient, IChainRegistry c
             throw new ArgumentException("initCode must be empty or contain a 20-byte factory followed by factoryData.", nameof(operation));
     }
 
+    // Confirmed live against a real Rundler bundler (contracts/evm/scripts/crossstack-bundler-submit-check.ts):
+    // eth_sendUserOperation rejects the on-chain packed accountGasLimits/gasFees bytes32 fields
+    // outright ("data did not match any variant of untagged enum RpcUserOperation") - like
+    // initCode's factory/factoryData split, v0.7's JSON-RPC schema splits these into separate
+    // unpacked fields too; only the on-chain PackedUserOperation struct keeps them packed.
     private static object ToRpc(BundlerUserOperation operation)
     {
         var init = operation.InitCode.Length > 2 ? operation.InitCode : "0x";
+        var (verificationGasLimit, callGasLimit) = UnpackHiLo(operation.AccountGasLimits);
+        var (maxPriorityFeePerGas, maxFeePerGas) = UnpackHiLo(operation.GasFees);
         return new
         {
             sender = operation.Sender,
@@ -113,20 +120,45 @@ public sealed class RundlerBundlerClient(HttpClient httpClient, IChainRegistry c
             factory = init == "0x" ? null : $"0x{init[2..42]}",
             factoryData = init == "0x" ? null : $"0x{init[42..]}",
             callData = operation.CallData,
-            accountGasLimits = operation.AccountGasLimits,
+            callGasLimit = HexQuantity(callGasLimit),
+            verificationGasLimit = HexQuantity(verificationGasLimit),
             preVerificationGas = HexQuantity(operation.PreVerificationGas),
-            gasFees = operation.GasFees,
+            maxFeePerGas = HexQuantity(maxFeePerGas),
+            maxPriorityFeePerGas = HexQuantity(maxPriorityFeePerGas),
             paymaster = operation.PaymasterAndData == "0x" ? null : $"0x{operation.PaymasterAndData[2..42]}",
             paymasterVerificationGasLimit = operation.PaymasterAndData == "0x" ? null : $"0x{operation.PaymasterAndData[42..74]}",
             paymasterPostOpGasLimit = operation.PaymasterAndData == "0x" ? null : $"0x{operation.PaymasterAndData[74..106]}",
-            // paymaster(20) + verificationGasLimit(16) + postOpGasLimit(16) + validUntil(32)
-            // + validAfter(32) = 116 bytes / 232 hex characters, plus the 0x prefix.
-            paymasterData = operation.PaymasterAndData == "0x" ? null : $"0x{operation.PaymasterAndData[234..]}",
+            // paymasterData is everything AFTER paymaster+verificationGasLimit+postOpGasLimit (the
+            // first 52 bytes / 106 hex chars past "0x") - for VerifyingPaymaster that's
+            // abi.encode(validUntil, validAfter) (64 bytes) followed by the signature, not the
+            // signature alone. Confirmed live: slicing off validUntil/validAfter here reconstructs
+            // a corrupted paymasterAndData on Rundler's side and the paymaster's own
+            // validatePaymasterUserOp reverts with AA33 (empty revert data - ecrecover on a
+            // shifted/truncated signature).
+            paymasterData = operation.PaymasterAndData == "0x" ? null : $"0x{operation.PaymasterAndData[106..]}",
             signature = operation.Signature
         };
     }
 
-    private static string HexQuantity(BigInteger value) => $"0x{value.ToString("x")}";
+    /// <summary>Splits a packed bytes32 (hi 16 bytes | lo 16 bytes) the way v0.7 packs accountGasLimits and gasFees.</summary>
+    private static (BigInteger hi, BigInteger lo) UnpackHiLo(string bytes32Hex)
+    {
+        var hex = bytes32Hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? bytes32Hex[2..] : bytes32Hex;
+        var hi = BigInteger.Parse("0" + hex[..32], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        var lo = BigInteger.Parse("0" + hex[32..], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        return (hi, lo);
+    }
+
+    // BigInteger's own "x" format prepends a sign-disambiguation zero nibble whenever the most
+    // significant nibble's high bit is set (e.g. 1_000_000 -> "0f4240", not "f4240") - harmless
+    // numerically, but not the minimal-hex quantity encoding JSON-RPC "quantity" values are
+    // supposed to use, and not what this project's own test literals (or a real bundler's strict
+    // parser) expect.
+    private static string HexQuantity(BigInteger value)
+    {
+        var hex = value.ToString("x").TrimStart('0');
+        return hex.Length == 0 ? "0x0" : $"0x{hex}";
+    }
     private static bool IsHash(string value) => IsHex(value) && value.Length == 66;
     private static bool IsAddress(string value) => IsHex(value) && value.Length == 42;
     private static bool IsHex(string? value) => !string.IsNullOrWhiteSpace(value) && value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && value[2..].All(Uri.IsHexDigit);
