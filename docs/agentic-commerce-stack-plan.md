@@ -83,11 +83,46 @@ paying for a third-party account (Pimlico/Alchemy/StackUp) neither this session 
 has credentials for. Separately, and independent of that choice: broadcasting to Sepolia spends real
 (if valueless) testnet ETH and creates public, permanent transactions, which this project's own rules
 require Alexis's explicit authorization for, specific to the network and wallet. Neither blocker is
-something to resolve by guessing. Asked; not yet answered as of this handoff.
+something to resolve by guessing.
 
-**Next, once that's answered**: add the real `bundlerRpcUrl` to `deployments/ethereum-sepolia.json`,
-run the same submit-and-verify path this session proved locally against Sepolia, record the public
-UserOperation hash / transaction hash, and only then consider Phase 4's negative-path gate
+Asked Alexis directly: recommended, and picked, **Pimlico's hosted bundler** (free testnet tier —
+Alexis was explicit about not spending real money — real safe-mode validation, standard JSON-RPC
+schema already proven against Rundler). Still waiting on the actual API key and explicit go-ahead
+on which wallet broadcasts.
+
+**Everything short of actually broadcasting is now done, so this is genuinely a one-step-away
+state, not a stalled one:**
+- `scripts/sepolia-bundler-submit-check.ts` (new) is the Sepolia sibling of
+  `crossstack-bundler-submit-check.ts` — same real `UserOperationSubmitter` code path, targeting
+  Sepolia instead of local Hardhat. It refuses to broadcast anything unless
+  `SEPOLIA_BROADCAST_AUTHORIZED=yes` is set explicitly; without it, it only runs read-only checks
+  and prints what it would do.
+- `ThisCafeteria.CrossStackHarness` no longer hardcodes the Hardhat dev owner address / signer key /
+  chain ID — parametrized via `CROSSSTACK_OWNER_ADDRESS`/`CROSSSTACK_VERIFYING_SIGNER_KEY`/
+  `CROSSSTACK_EVM_CHAIN_ID` (defaulting to the existing local values, so local proofs are
+  unaffected — re-confirmed by re-running `crossstack-bundler-submit-check.ts` fresh after this
+  change).
+- **Read-only reconnaissance already run against live Sepolia** (no signing, no broadcast):
+  EntryPoint has real deployed bytecode at the pinned address; chain ID is `11155111` as expected;
+  the paymaster's EntryPoint deposit is currently **`0`** — it will need a small funding
+  transaction (a few thousandths of ETH) before any sponsorship can succeed; the deployer address
+  (`0x9d53...eceb`) already holds **~0.082 Sepolia ETH**, comfortably enough for that deposit plus
+  gas.
+- **Resolved what looked like a third missing credential**: read `deploy.ts` directly rather than
+  assuming — the deployed paymaster's trusted verifying signer is the *same* deployer account that
+  already deployed the pinned Sepolia contracts (`admin = deployer.account.address`, passed as
+  `VerifyingPaymaster`'s constructor argument for every network). So only two things are actually
+  needed: the Pimlico URL, and confirmation to use that same deployer key. Confirmed neither the
+  deployer key nor any equivalent secret is present anywhere in this session's environment (checked
+  without printing values) — broadcasting isn't just policy-blocked here, it's currently technically
+  impossible too.
+
+**Next, once the key and authorization land**: set
+`ARTISANALBREW_BUNDLER_RPC_URL__ETHEREUM_SEPOLIA` (the env-only override added this session — see
+above — never the committed manifest) to the real Pimlico URL, then run
+`ETHEREUM_SEPOLIA_DEPLOYER_PRIVATE_KEY=... SEPOLIA_BUNDLER_RPC_URL=... SEPOLIA_BROADCAST_AUTHORIZED=yes
+HARDHAT_NETWORK=ethereumSepolia npx tsx scripts/sepolia-bundler-submit-check.ts`, record the public
+UserOperation hash / transaction hash it prints, and only then consider Phase 4's negative-path gate
 (over-budget/wrong-target/wrong-selector/expired/revoked already unit-tested; not yet proven through
 the bundler path specifically) closed for real.
 
