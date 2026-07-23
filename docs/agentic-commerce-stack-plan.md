@@ -4,6 +4,93 @@ Date: 2026-07-18
 Status: implementation-ready design, dependent on the multichain foundation
 Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 
+## Session handoff (2026-07-22) — ERC-4337 sponsored submission, read this first
+
+Branch `agent/erc4337-sponsored-submission`, off `origin/main` (not the stale `agent/enable-solana-multichain`
+this doc otherwise still describes as current — that branch never merged; see its own PR status
+before trusting anything below it says about what's on `main`). Task: close the "no .NET code
+submits a UserOperation to a bundler" gap the 2026-07-21 handoff documented.
+
+**Recovered, not reimplemented**: commit `7553618` (`agent/enable-solana-multichain`, unpushed
+locally) already had `IBundlerClient`/`RundlerBundlerClient` — cherry-picked onto this branch
+cleanly, built and its 3 unit tests passed unmodified. Its own commit message and this doc's
+2026-07-21 entry both describe it as done. **It was not.** It had never once been run against a
+live bundler — every existing proof script either used a real bundler without a paymaster
+(`rundler-e2e-check.ts`) or a real paymaster without a bundler (`crossstack-sponsor-check.ts`,
+which calls `EntryPoint.handleOps` directly). Running it live, for the first time, surfaced three
+real bugs, none catchable by the mocked-transport unit tests that shipped with it:
+
+1. `eth_sendUserOperation` sent the on-chain **packed** `accountGasLimits`/`gasFees` bytes32
+   fields. Rundler's JSON-RPC schema wants them **unpacked** (`callGasLimit`,
+   `verificationGasLimit`, `maxFeePerGas`, `maxPriorityFeePerGas` as separate hex fields) — the
+   same kind of factory/factoryData split v0.7 applies to `initCode`, just never documented for
+   these fields anywhere this codebase had written down. Failed with `"data did not match any
+   variant of untagged enum RpcUserOperation"`.
+2. `HexQuantity` used `BigInteger.ToString("x")` directly, which prepends a sign-disambiguation
+   zero nibble whenever the top nibble's high bit is set (`1_000_000` → `"0f4240"`, not the
+   minimal `"f4240"` JSON-RPC quantities are supposed to use). Harmless numerically, but not what
+   a strict bundler parser — or this session's own test literals — expect.
+3. `paymasterData` was sliced to the signature alone, dropping the `abi.encode(validUntil,
+   validAfter)` bytes that precede it in `VerifyingPaymaster`'s own `paymasterAndData` layout.
+   Rundler reconstructs `paymasterAndData` from the split fields for its own simulation; the
+   truncated reconstruction shifted the signature bytes, surfacing as `"AA33 reverted"` (paymaster
+   validation revert, empty revert data — `ecrecover` on garbage).
+
+Each is fixed and locked in by a unit test built from the real failure (`RundlerBundlerClientTests`).
+`GetUserOperationReceiptAsync`'s deserialization was also silently wrong before any of this —
+`BundlerReceipt`'s flat field names (`TransactionHash`, `UserOperationHash`) don't match Rundler's
+actual nested response (`receipt.transactionHash`, `userOpHash`); a real bundler response would
+have left `TransactionHash` empty. Fixed and tested too.
+
+**New**: `IUserOperationSubmitter` / `UserOperationSubmitter` (Infrastructure) — the class that
+actually closes the gap. Takes an operation, an **already-approved** `SponsorshipSignature` (from a
+prior `IUserOperationSponsor.SponsorAsync` call — deliberately not re-derived internally; v0.7's
+UserOpHash covers a hash of `paymasterAndData`, which embeds a `validUntil` timestamp fixed at
+signing time, so re-sponsoring here would produce a different `paymasterAndData` than whatever the
+owner actually signed), and the owner's signature. Submits via `IBundlerClient.SendUserOperationAsync`
+(never `EntryPoint.handleOps` directly), polls `GetUserOperationReceiptAsync`, and — never trusting
+the bundler's own `success` flag alone — independently verifies by fetching the real mined
+transaction's receipt and decoding the canonical EntryPoint's own `UserOperationEvent`, matching
+sender and userOpHash exactly (the same event-decode-and-match pattern `EvmLiquidStakingGateway`
+uses for liquid-staking/escrow transactions). Only then debits `ISponsorshipPolicyService.RecordUsageAsync`.
+
+**Proven live, not just unit-tested**: `contracts/evm/scripts/crossstack-bundler-submit-check.ts`
+is the first proof that `ThisCafeteria.*` code itself submits through a bundler and gets it mined.
+It drives `ThisCafeteria.CrossStackHarness`'s new `"submit"` mode (alongside the existing
+`"approve"`/`"wrongtarget"`), which runs the **real** `UserOperationSubmitter` — not a stub —
+against a locally-running Rundler v0.11.0 (macOS arm64 build; the CI-pinned Linux x86_64 build
+won't run on Apple Silicon dev machines, same release, different asset). Result: account deployed
+via bundler-submitted `initCode`, account deposit spent `0` (fully sponsored), recipient balance
+increased by exactly the transferred amount, verified independently on-chain by this session's own
+new verification code — not `receipt.success` alone. Re-ran fresh alongside the two existing live
+proofs (`crossstack-sponsor-check.ts`, `rundler-e2e-check.ts`) to confirm no regression; all three
+pass. 238 unit tests pass (up from 229).
+
+**Manifest schema**: `BlockchainManifestLoader` now reads an optional `bundlerRpcUrl` from a
+deployment manifest's root into `ChainDefinition.BundlerRpcUrl` — kept out of `addresses` (it's an
+RPC endpoint, not a contract address) and out of the `/api/chains` public projection, the same
+treatment `EntryPoint`/`AccountFactory`/`VerifyingPaymaster` already get. `deployments/ethereum-sepolia.json`
+does not have this field set yet — see "Still open" below.
+
+**Still open, and why it stopped here**: proving this against Ethereum Sepolia (not just Hardhat)
+needs a bundler this app can actually reach on a public network, and the plan document's own
+recommended sequence (step 2) says this explicitly: *"Decide: self-hosted Rundler, or a third-party
+hosted bundler API... This is a real decision with cost/ops tradeoffs; don't default silently —
+flag it back to Alexis if it's not obvious which to pick."* It isn't obvious — self-hosting means
+deploying and operating a new service in `thiscafeteria-prod-rg` (or paying for one elsewhere) that
+this repo has never run outside ephemeral CI/local processes, and a hosted option means creating and
+paying for a third-party account (Pimlico/Alchemy/StackUp) neither this session nor its environment
+has credentials for. Separately, and independent of that choice: broadcasting to Sepolia spends real
+(if valueless) testnet ETH and creates public, permanent transactions, which this project's own rules
+require Alexis's explicit authorization for, specific to the network and wallet. Neither blocker is
+something to resolve by guessing. Asked; not yet answered as of this handoff.
+
+**Next, once that's answered**: add the real `bundlerRpcUrl` to `deployments/ethereum-sepolia.json`,
+run the same submit-and-verify path this session proved locally against Sepolia, record the public
+UserOperation hash / transaction hash, and only then consider Phase 4's negative-path gate
+(over-budget/wrong-target/wrong-selector/expired/revoked already unit-tested; not yet proven through
+the bundler path specifically) closed for real.
+
 ## Session handoff (2026-07-21) — read this first
 
 Branch `agent/enable-solana-multichain`, PR #54. All work below is pushed (check `git log` for the
@@ -155,6 +242,15 @@ pinned, unmodified canonical EntryPoint/factory — it does not prove storage-ac
 enforced, which no current local Hardhat-based setup (Alto or Rundler) can prove.
 
 ### App-layer bundler client (2026-07-22) — .NET transport for the chosen path
+
+**Correction (2026-07-22, later the same day — see the sponsored-submission handoff at the top of
+this file):** this section's own framing overclaimed. Writing this transport and its mocked-transport
+unit tests did not, by itself, "close the gap" — it had never been run against a live bundler, and
+doing so for the first time found three real bugs in exactly this code (packed vs. unpacked gas
+fields, a non-minimal hex quantity, and a truncated `paymasterData`). Treat the description below of
+what the client *does* as accurate (it does, now, after those fixes) but not the claim that it was
+proven before this correction — it wasn't. `contracts/evm/scripts/crossstack-bundler-submit-check.ts`
+is the actual proof.
 
 `scripts/rundler-e2e-check.ts` proved the bundler path from TypeScript; this closes the gap noted
 above ("no .NET code submits through it yet") with a real `ThisCafeteria.*` transport.
@@ -867,7 +963,7 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 ### Phase 4 — ERC-4337 user experience [IN PROGRESS]
 
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
-- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; a working local bundler (Rundler, `--unsafe` mode) is proven via `scripts/rundler-e2e-check.ts`, but no .NET code submits through it yet — see "Rundler investigation" in the session handoff at the top of this file**;
+- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; a working local bundler (Rundler, `--unsafe` mode) is proven via `scripts/rundler-e2e-check.ts`; real `ThisCafeteria.*` code (`UserOperationSubmitter`) now submits through it and is proven end-to-end via `scripts/crossstack-bundler-submit-check.ts` — see the sponsored-submission session handoff at the top of this file. Still open: the same proof against Ethereum Sepolia, blocked on a bundler-provider decision and broadcast authorization, both explicitly flagged to Alexis, not yet answered**;
 - ⬜ batch approval plus funding;
 - ✅ enforce sponsorship quotas and simulation — quota engine, signer, and canonical-EntryPoint gas simulation implemented and proven cross-stack (native-USD pricing is still a static config value, not an oracle);
 - 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
@@ -875,10 +971,15 @@ Gate: a normal wallet completes the local procurement lifecycle before smart-acc
 
 Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail.
 
-**The gate is not met.** Both sponsored and user-paid flows are proven *on-chain*, but the negative
-half of the gate is only partly covered (wrong-signature and unauthorised-sponsorship fail
-correctly; over-budget, wrong-target, wrong-selector, expired, and revoked are not yet tested), and
-**no .NET code submits through the now-working local bundler** — see the boundary note below.
+**The gate is still not met, but the biggest remaining piece of it is.** Both sponsored and user-paid
+flows are proven *on-chain*, and real `ThisCafeteria.*` code now submits a sponsored operation
+through a real bundler and independently verifies it mined (`UserOperationSubmitter`, proven by
+`scripts/crossstack-bundler-submit-check.ts` — see the top-of-file handoff). Still open: the negative
+half of the gate is only partly covered end-to-end (wrong-signature and unauthorised-sponsorship
+fail correctly at the policy layer and are unit-tested; over-budget, wrong-target, wrong-selector,
+expired, and revoked are unit-tested at the policy layer too, but not yet proven through the actual
+bundler-submission path specifically), and this has only ever run against local Hardhat — not
+Sepolia.
 
 #### Status of the pinned stack
 
@@ -908,9 +1009,12 @@ implementation instead.**
 Under ERC-4337 an account address is deterministic and usable before deployment, so returning the
 counterfactual address is correct rather than a stand-in. Actual deployment occurs when the first
 UserOperation carrying `initCode` is submitted through a bundler — `scripts/rundler-e2e-check.ts`
-proves this now works end-to-end against a real bundler (Rundler), **but no code in
-`ThisCafeteria.*` submits UserOperations yet; `SmartAccountService` still performs no submission at
-all.**
+proves the bundler path works end-to-end from TypeScript, and `scripts/crossstack-bundler-submit-check.ts`
+now proves real `ThisCafeteria.*` code (`UserOperationSubmitter`) does the same submission and
+independent on-chain verification. **`SmartAccountService` itself still performs no submission** —
+that responsibility lives in the new `IUserOperationSubmitter`, not `ISmartAccountService`;
+`SmartAccountService` was never the right layer for it (it holds no bundler client, sponsor, or
+policy dependency) and nothing here proposes changing that.
 
 Still fail-closed and throwing `NotSupportedException`: `RecordSponsorshipUsageAsync`,
 `RevokeSessionPermissionsAsync`. `HasSufficientSponsorshipQuotaAsync` returns `false` because no
