@@ -69,6 +69,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Capabilities.WalletLogin.Should().BeTrue();
             deployed.Capabilities.LiquidStaking.Should().BeTrue();
             deployed.SolanaCluster.Should().Be("devnet");
+            deployed.IconAsset.Should().Be("/images/solana_logo.svg");
         }
         finally
         {
@@ -91,6 +92,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Enabled.Should().BeTrue();
             deployed.EvmChainId.Should().Be(97);
             deployed.EvmChainIdHex.Should().Be("0x61");
+            deployed.IconAsset.Should().Be("/images/bnb_logo.svg");
             deployed.PublicRpcUrl.Should().Be("https://97.rpc.thirdweb.com");
             deployed.Deployment.LiquidVault.Should().Be(Address('A'));
             deployed.Deployment.AgenticEscrow.Should().Be(Address('E'));
@@ -198,8 +200,10 @@ public sealed class BlockchainManifestLoaderTests
             var registry = new ChainRegistry(options);
 
             registry.GetRequired("bsc-testnet").EvmChainId.Should().Be(97);
+            registry.GetRequired("bsc-testnet").IconAsset.Should().Be("/images/bnb_logo.svg");
             registry.GetRequired("ethereum-sepolia").EvmChainId.Should().Be(11155111);
             registry.GetRequired("ethereum-sepolia").PublicRpcUrl.Should().Be("https://ethereum-sepolia-rpc.publicnode.com");
+            registry.GetRequired("ethereum-sepolia").IconAsset.Should().Be("/images/eth_logo.png");
         }
         finally
         {

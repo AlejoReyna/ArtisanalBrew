@@ -1,0 +1,53 @@
+#idle-timeout-modal {
+    background-color: var(--surface, #fbf9f4);
+    color: var(--ink, #2d2421);
+    width: 22rem;
+    max-width: calc(100vw - 2rem);
+    margin: 20vh auto;
+    padding: 2rem;
+    border: 1px solid var(--line, #d8d0c4);
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
+}
+
+#idle-timeout-modal::backdrop {
+    background-color: rgba(31, 26, 24, 0.45);
+}
+
+.idle-timeout-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.idle-timeout-title {
+    font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+#idle-timeout-modal p {
+    margin: 0;
+    color: var(--muted, #746a63);
+}
+
+#idle-timeout-modal .idle-timeout-title {
+    color: var(--ink, #2d2421);
+}
+
+#idle-timeout-modal button {
+    border: 0;
+    background-color: var(--accent, #8d6f55);
+    color: var(--white, #fffdf9);
+    padding: 0.5rem 1.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    #idle-timeout-modal button:hover {
+        background-color: var(--charcoal, #1f1a18);
+    }

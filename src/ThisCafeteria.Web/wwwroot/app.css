@@ -191,6 +191,7 @@ p {
 }
 
 .content:has(.yield-dashboard),
+.content:has(.procurement-lab),
 .content:has(.journal-newsletter),
 .content:has(.cart-page) {
     margin-left: 0;
