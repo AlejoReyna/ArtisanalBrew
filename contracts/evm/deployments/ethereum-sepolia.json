@@ -11,24 +11,24 @@
     "symbol": "ETH",
     "decimals": 18
   },
-  "deployBlock": "11324863",
+  "deployBlock": "11331412",
   "compiler": {
     "solc": "0.8.24",
     "optimizerRuns": 200,
     "viaIR": true
   },
-  "deployedAtUtc": "2026-07-22T06:18:13.689Z",
+  "deployedAtUtc": "2026-07-23T04:42:03.438Z",
   "addresses": {
     "cafe": "0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A",
     "coffee": "0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C",
-    "liquidVault": "0x0a7b7d7eb39ca835ef5854875bb97885d23d1df3",
+    "liquidVault": "0x492132c5ec8b70a4d44fa365604d4c365b1d1a9f",
     "faucet": "0xBD1517529BB0BA20c43b4E39323C70058FADe86D",
-    "entryPoint": "0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217",
-    "accountFactory": "0x78fc122eb0bf03d8dd0c51ef726066f0d2821061",
-    "verifyingPaymaster": "0x8fd124964ecd13f46b7ea15cfbdcb8ea808692b8",
-    "erc8004Registry": "0x45d9e43a0ce744eaa29982a31a5b5ad48d1d6106",
-    "erc7683Resolver": "0xb5bf1af688316d724f1fec07b6867c770cab82e6",
-    "erc8183Escrow": "0x44f97d09090e27962d2665f0b95a753273a89350"
+    "entryPoint": "0xdd9a61064ef9e2d9612da1f1307e168b85fe43a6",
+    "accountFactory": "0x03e558b6af3e871f1884b670bd10d785b414e3fb",
+    "verifyingPaymaster": "0x35409fae884605c1ab9a1dcd561d3cb39da6619f",
+    "erc8004Registry": "0x44315b44555ca20d98eccd95720827a5b4bbdab6",
+    "erc7683Resolver": "0xfdc86171e50f848fe539e74efafc9f34d471ff9f",
+    "erc8183Escrow": "0x78dd528ceb6f3de28365727270be865ff6840dea"
   },
   "accountAbstraction": {
     "entryPointVersion": "0.7",

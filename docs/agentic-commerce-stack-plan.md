@@ -4,7 +4,124 @@ Date: 2026-07-18
 Status: implementation-ready design, dependent on the multichain foundation
 Standards: x402 v2, ERC-4337, ERC-8004, ERC-8183, ERC-7683
 
+## Session handoff (2026-07-24, later) — receipt-endpoint root cause found and fixed in app code, read this first
+
+**Root cause of the `-32603 internal error: rpc provider error` receipt failure — confirmed with
+evidence, not hypothesized.** Read-only diagnostics were run against the self-hosted node/bundler
+(`thiscafeteria-sepolia-aa`, `thiscafeteria-prod-rg`) via the Azure guest agent (no SSH, no secrets
+printed, no service mutated):
+
+- The VM is healthy: Geth reports `eth_syncing: false` at block `0xad0ce4`; Rundler advertises the
+  correct EntryPoint `0xdD9A61064eF9E2d9612dA1f1307E168B85fE43A6`. Geth is bound to `127.0.0.1:8545`
+  (via docker-proxy) and was not exposed.
+- Reproduced the failure read-only: Rundler `eth_getUserOperationReceipt` for the public hash still
+  returns `-32603 internal error: rpc provider error`.
+- **Isolated it to an unbounded log scan.** A direct node `eth_getLogs` for the EntryPoint's
+  `UserOperationEvent` over the **full range `0x0..latest`** returns Geth's own
+  `-32002 request timed out` — that is precisely the upstream error Rundler re-wraps as its generic
+  `-32603 ... rpc provider error`. The **same query bounded** to the mined block (`0xad0cae` =
+  11340974), or to a recent window (`latest-2000..latest`), returns the exact `UserOperationEvent`
+  immediately: topics `userOpHash 0x87d8…c5c0`, sender `0x8bfc…c00c` (the salt-1 account), paymaster
+  `0x3540…619f`. The mined transaction receipt is present on the node too.
+- **Why Rundler scans the whole chain:** its process was launched with only `--chain_spec
+  --node_http --rpc.port` and no `user_operation_event_block_distance`, so its receipt lookup
+  defaults to searching from genesis — intractable for a full Sepolia node.
+
+So the node is fine; the receipt endpoint breaks because Rundler asks Geth for an unbounded getLogs.
+**Operator remediation (not applied here — restarting the live bundler is a service mutation that
+also needs its signer secret, which is out of scope without explicit authorization):** relaunch
+Rundler with a bounded `--user_operation_event_block_distance` (e.g. `10000`) so its receipt lookup
+scans only a recent window. This was verified indirectly — bounded getLogs works; unbounded does
+not.
+
+**Application fix (done, and the durable one): confirmation no longer depends on the bundler's
+receipt endpoint at all.** The previous `UserOperationSubmitter` polled
+`GetUserOperationReceiptAsync` and let any receipt-endpoint error or `HttpClient` timeout propagate
+out of `SubmitAsync` unhandled — which is exactly how an already-mined operation got misreported as a
+raw transport failure. The canonical confirmation source was always the EntryPoint's own
+`UserOperationEvent`, not the bundler receipt, so the receipt endpoint was only ever a convenience.
+Changes:
+
+- **New `IEntryPointConfirmationReader` / `EntryPointConfirmationReader`** (Application interface +
+  Infrastructure impl). Reads the trusted EntryPoint's `UserOperationEvent` directly from the node,
+  read-only. Given a transaction-hash hint (from a bundler receipt when one is available) it verifies
+  that transaction's real receipt; without a hint — or when the bundler receipt endpoint is down — it
+  locates the event independently by an **indexed-topic `eth_getLogs` over a bounded recent window**
+  (`EventLookbackBlocks = 10000`, exactly the shape proven to work above), then verifies the mined
+  transaction receipt. Both paths match EntryPoint address, sender, and userOpHash exactly (the same
+  event-decode-and-match pattern `EvmLiquidStakingGateway` uses).
+- **`UserOperationSubmitter` now catches transient bundler/RPC failures** (`HttpRequestException`,
+  `InvalidOperationException` — which is how `RundlerBundlerClient` surfaces `-32603` — `JsonException`,
+  an `HttpClient`-timeout `OperationCanceledException` whose token is not the caller's, and
+  `TimeoutException`) during the poll, logs them, and confirms from the EntryPoint event instead of
+  crashing. A genuine caller cancellation is still re-thrown. The security rule is preserved and
+  arguably strengthened: usage is debited only after the canonical EntryPoint event confirms
+  `success=true`, and the bundler's own `success` flag is never trusted.
+- **Regression coverage** in `UserOperationSubmitterTests`: a broken receipt endpoint (throwing the
+  real `-32603` message) with a mined operation now returns `Confirmed` (usage recorded) rather than
+  throwing; the same broken endpoint with an unmined operation fails closed as `TimedOut` without
+  recording usage; a mined-but-reverted inner call is `Reverted` without usage; the healthy-receipt
+  happy path passes its transaction hash through as the reader's hint. The reader's live-chain
+  implementation stays in the cross-stack/live category, the same split the other submitter/sponsor
+  tests already document. **244 unit tests pass** (was 238).
+- Wiring: registered in `ThisCafeteria.Web/Program.cs` DI and constructed in
+  `ThisCafeteria.CrossStackHarness/Program.cs` (both alongside the existing bundler client).
+
+**Does the public receipt RPC now return the known receipt?** No — Rundler was intentionally not
+restarted (see remediation above), so `eth_getUserOperationReceipt` still returns `-32603`. What
+changed is that the application no longer needs it: the same mined operation is now confirmable — and
+was confirmed read-only during diagnosis — directly from the EntryPoint event over a bounded log
+query. Applying the bundler `user_operation_event_block_distance` fix would additionally repair the
+raw RPC endpoint, and requires new authorization (a live-service restart involving its signer).
+
+**No new public-chain operation was created.** All diagnostics were read-only; no UserOperation,
+funding, or deployment was broadcast.
+
 ## Session handoff (2026-07-22) — ERC-4337 sponsored submission, read this first
+
+**Latest Sepolia result (2026-07-24): sponsored ERC-4337 UserOperation mined successfully.** The
+self-hosted Geth + Lighthouse Azure VM completed Sepolia sync (`eth_syncing: false`) and its
+safe-mode Rundler advertised the redeployed EntryPoint
+`0xdd9a61064ef9e2d9612da1f1307e168b85fe43a6`. The corresponding factory is
+`0x03e558b6af3e871f1884b670bd10d785b414e3fb`, verifying paymaster is
+`0x35409fae884605c1ab9a1dcd561d3cb39da6619f`, and counterfactual account (salt `1`) was
+`0x8BfC1139736B4b070a8DF903412Beb33C2E6c00c`. `UserOperationSponsor` approved the operation
+with a computed cost of `$9.09279`; its account was deployed and the canonical EntryPoint emitted
+the matching successful `UserOperationEvent` in Sepolia block `11340974`.
+
+**Funding and public evidence.** The paymaster required funding. The first `0.005 ETH` deposit
+([transaction](https://sepolia.etherscan.io/tx/0x0835fce9c1c0e2267cf2eff02a1c17ae096fe35c81424b5ac4f1fcd92d411e28))
+was below Rundler's `0.0064 ETH` admission floor, so the measured correction added a second
+`0.005 ETH` ([transaction](https://sepolia.etherscan.io/tx/0xe5f1d9d3f235c57cf2eba093170f1b4536721722eee81cdea65cccea7961fda0)),
+for a `0.01 ETH` total deposit. Public UserOperation hash:
+`0x87d8f80711508c7be740ee136e7909c4449276486321f21dbd221f4efb96c5c0`. Mined transaction:
+[`0xb945492fc894b7a2d9defa7245120fe9b7bf2a9fb83b09de3cf49a4c79dbf5bb`](https://sepolia.etherscan.io/tx/0xb945492fc894b7a2d9defa7245120fe9b7bf2a9fb83b09de3cf49a4c79dbf5bb).
+The event reports `success=true`, actual gas cost `1642518000000000 wei`, and actual gas used
+`821259`.
+
+**Bundler behavior observed.** Hosted Pimlico would not advertise or accept this custom
+EntryPoint, while self-hosted Rundler accepted and mined it in safe mode. After mining, Rundler's
+`eth_getUserOperationReceipt` endpoint returned `-32603 internal error: rpc provider error`; the
+CrossStackHarness's former three-second HTTP timeout therefore threw while polling even though the
+operation was already on-chain. The harness timeout is now `20` seconds and the Sepolia script
+prints its calculated UserOperation hash before submission for recovery. The confirmed result above
+was independently recovered from the EntryPoint event; do not resubmit this nonce-zero operation.
+
+**Previous Sepolia attempt (2026-07-22): blocked before broadcast.** The repository-approved
+`sepolia-bundler-submit-check.ts` was run exactly once with the required authorization and the
+exported deployer/bundler credentials. Read-only checks passed: chain ID `11155111`, deployed
+EntryPoint bytecode present at `0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217`, paymaster deposit
+`0 wei`, and deployer balance `82249158694450830 wei`. Pimlico reported support for canonical
+EntryPoint addresses, but not this deployment's EntryPoint. The script stopped at line 108 with:
+`FAIL: configured bundler does not support our EntryPoint 0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217.`
+No paymaster funding transaction or UserOperation was broadcast; consequently there is no deposit
+transaction hash, UserOperation hash, or mined transaction hash. Do not retry blindly or deploy
+replacement contracts. The remaining blocker is bundler compatibility with the existing custom
+Sepolia EntryPoint (or an explicitly approved compatible bundler). **Self-hosted path prepared:**
+`contracts/evm/rundler/` pins Rundler v0.11.0 and
+`scripts/rundler-chain-spec-sepolia.toml` declares this exact EntryPoint; the Azure Container Apps
+and Key Vault wiring is documented in `docs/sepolia-rundler-deployment.md`. It still requires a
+tracer-capable Sepolia node RPC URL and a distinct funded bundler signer before deployment.
 
 Branch `agent/erc4337-sponsored-submission`, off `origin/main` (not the stale `agent/enable-solana-multichain`
 this doc otherwise still describes as current — that branch never merged; see its own PR status

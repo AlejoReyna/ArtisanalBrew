@@ -10,10 +10,12 @@ namespace ThisCafeteria.UnitTests;
 
 /// <summary>
 /// Fail-closed orchestration of <see cref="UserOperationSubmitter"/>: denial, bundler rejection, and
-/// timeout never reach the bundler unnecessarily or debit the sponsorship grant. The "mined and
-/// independently verified against the EntryPoint's own event log" happy path needs a live chain (the
-/// verification step reads a real transaction receipt) and is proven cross-stack instead, the same
-/// split UserOperationSponsorTests documents for its own live-chain boundary.
+/// timeout never reach the bundler unnecessarily or debit the sponsorship grant. Confirmation is the
+/// canonical EntryPoint event (behind <see cref="IEntryPointConfirmationReader"/>), never the
+/// bundler's own receipt endpoint — so a mined operation is confirmed even when that endpoint errors
+/// or times out. The reader's live-chain implementation (<see cref="EntryPointConfirmationReader"/>)
+/// is exercised cross-stack instead, the same split <see cref="UserOperationSponsorTests"/> documents
+/// for its own live-chain boundary; here it is stubbed so the orchestration itself is fully covered.
 /// </summary>
 public sealed class UserOperationSubmitterTests
 {
@@ -24,6 +26,7 @@ public sealed class UserOperationSubmitterTests
     private const string Target = "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0";
     private const string Selector = "0xb61d27f6";
     private const string Signature = "0xdeadbeef";
+    private const string TxHash = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 7, 22, 12, 0, 0, TimeSpan.Zero));
 
@@ -32,7 +35,7 @@ public sealed class UserOperationSubmitterTests
     {
         var bundler = new StubBundler(send: _ => throw new InvalidOperationException("must not be called"));
         var policy = new StubPolicy();
-        var submitter = Build(bundler, policy);
+        var submitter = Build(bundler, new StubReader(), policy);
 
         var result = await submitter.SubmitAsync(Operation(), Approved(), signature: "");
 
@@ -45,7 +48,7 @@ public sealed class UserOperationSubmitterTests
     {
         var bundler = new StubBundler(send: _ => throw new InvalidOperationException("must not be called"));
         var policy = new StubPolicy();
-        var submitter = Build(bundler, policy);
+        var submitter = Build(bundler, new StubReader(), policy);
 
         var result = await submitter.SubmitAsync(Operation(), SponsorshipSignature.Deny(SponsorshipDenialReason.DisallowedTarget, "target not allowed"), Signature);
 
@@ -59,7 +62,7 @@ public sealed class UserOperationSubmitterTests
     {
         var bundler = new StubBundler(send: _ => throw new InvalidOperationException("Bundler does not support the trusted EntryPoint."));
         var policy = new StubPolicy();
-        var submitter = Build(bundler, policy);
+        var submitter = Build(bundler, new StubReader(), policy);
 
         var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
 
@@ -68,17 +71,18 @@ public sealed class UserOperationSubmitterTests
     }
 
     [Fact]
-    public async Task NoReceiptWithinThePollWindow_TimesOutWithoutRecordingUsage()
+    public async Task NoConfirmationWithinThePollWindow_TimesOutWithoutRecordingUsage()
     {
-        // The stub advances the fake clock past the poll deadline on its very first receipt poll,
-        // so the submitter's own deadline check fires without needing a real 60s wait.
+        // The bundler never returns a receipt and the EntryPoint never yields a matching event; the
+        // stub advances the fake clock past the poll deadline on its first receipt poll, so the
+        // submitter's own deadline check fires without a real 60s wait.
         var bundler = new StubBundler(receipt: () =>
         {
             _time.Advance(TimeSpan.FromMinutes(2));
             return null;
         });
         var policy = new StubPolicy();
-        var submitter = Build(bundler, policy);
+        var submitter = Build(bundler, new StubReader(), policy);
 
         var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
 
@@ -87,8 +91,85 @@ public sealed class UserOperationSubmitterTests
         policy.RecordedRequests.Should().BeEmpty();
     }
 
-    private UserOperationSubmitter Build(IBundlerClient bundler, ISponsorshipPolicyService policy) =>
-        new(new StubChainRegistry(Chain()), bundler, policy, _time, NullLogger<UserOperationSubmitter>.Instance);
+    [Fact]
+    public async Task ConfirmedFromBundlerReceiptHint_RecordsUsageAndPassesTheHintThrough()
+    {
+        // Happy path with a healthy bundler receipt: the receipt's transaction hash is passed to the
+        // reader as a hint, and the canonical EntryPoint event confirms success.
+        var bundler = new StubBundler(receipt: () => new BundlerReceipt { TransactionHash = TxHash, Success = true });
+        var reader = new StubReader(hint => new EntryPointConfirmation { TransactionHash = hint ?? TxHash, Success = true });
+        var policy = new StubPolicy();
+        var submitter = Build(bundler, reader, policy);
+
+        var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
+
+        result.Status.Should().Be(UserOperationSubmissionStatus.Confirmed);
+        result.TransactionHash.Should().Be(TxHash);
+        result.CostUsd.Should().Be(1.23m);
+        reader.Hints.Should().ContainSingle().Which.Should().Be(TxHash);
+        policy.RecordedRequests.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task BundlerReceiptEndpointErrors_ButOperationIsMined_ConfirmsFromEntryPointEvent()
+    {
+        // The exact regression: self-hosted Rundler's eth_getUserOperationReceipt returns
+        // "-32603 internal error: rpc provider error" AFTER the operation is mined. That must not
+        // escape as an unhandled transport failure; the canonical EntryPoint event confirms it, and
+        // the reader is asked with a null hint (there was no usable receipt).
+        var bundler = new StubBundler(receipt: () =>
+            throw new InvalidOperationException("Bundler eth_getUserOperationReceipt failed: {\"code\":-32603,\"message\":\"internal error: rpc provider error\"}"));
+        var reader = new StubReader(_ => new EntryPointConfirmation { TransactionHash = TxHash, Success = true });
+        var policy = new StubPolicy();
+        var submitter = Build(bundler, reader, policy);
+
+        var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
+
+        result.Status.Should().Be(UserOperationSubmissionStatus.Confirmed);
+        result.UserOperationHash.Should().Be("0xhash");
+        result.TransactionHash.Should().Be(TxHash);
+        reader.Hints.Should().ContainSingle().Which.Should().BeNull();
+        policy.RecordedRequests.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task BundlerReceiptEndpointErrors_AndNotMinedYet_TimesOutWithoutCrashingOrRecordingUsage()
+    {
+        // Same broken receipt endpoint, but the operation is genuinely not on-chain: the exception is
+        // swallowed, the reader finds nothing, and the submitter fails closed with TimedOut rather
+        // than propagating the transport error.
+        var bundler = new StubBundler(receipt: () =>
+        {
+            _time.Advance(TimeSpan.FromMinutes(2));
+            throw new InvalidOperationException("Bundler eth_getUserOperationReceipt failed: rpc provider error");
+        });
+        var policy = new StubPolicy();
+        var submitter = Build(bundler, new StubReader(), policy);
+
+        var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
+
+        result.Status.Should().Be(UserOperationSubmissionStatus.TimedOut);
+        result.UserOperationHash.Should().Be("0xhash");
+        policy.RecordedRequests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task MinedButInnerCallReverted_IsRevertedWithoutRecordingUsage()
+    {
+        var bundler = new StubBundler(receipt: () => new BundlerReceipt { TransactionHash = TxHash, Success = false });
+        var reader = new StubReader(_ => new EntryPointConfirmation { TransactionHash = TxHash, Success = false });
+        var policy = new StubPolicy();
+        var submitter = Build(bundler, reader, policy);
+
+        var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
+
+        result.Status.Should().Be(UserOperationSubmissionStatus.Reverted);
+        result.TransactionHash.Should().Be(TxHash);
+        policy.RecordedRequests.Should().BeEmpty();
+    }
+
+    private UserOperationSubmitter Build(IBundlerClient bundler, IEntryPointConfirmationReader reader, ISponsorshipPolicyService policy) =>
+        new(new StubChainRegistry(Chain()), bundler, reader, policy, _time, NullLogger<UserOperationSubmitter>.Instance);
 
     private static SponsoredUserOperation Operation() => new()
     {
@@ -141,6 +222,17 @@ public sealed class UserOperationSubmitterTests
 
         public Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, CancellationToken cancellationToken = default) =>
             Task.FromResult(receipt is null ? null : receipt());
+    }
+
+    private sealed class StubReader(Func<string?, EntryPointConfirmation?>? find = null) : IEntryPointConfirmationReader
+    {
+        public List<string?> Hints { get; } = [];
+
+        public Task<EntryPointConfirmation?> FindConfirmationAsync(string chainKey, string sender, string userOpHash, string? transactionHashHint, CancellationToken cancellationToken = default)
+        {
+            Hints.Add(transactionHashHint);
+            return Task.FromResult(find?.Invoke(transactionHashHint));
+        }
     }
 
     private sealed class StubPolicy : ISponsorshipPolicyService

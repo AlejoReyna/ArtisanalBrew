@@ -149,12 +149,13 @@ if (mode == "submit")
     // UserOperationSubmitter, which submits through a real bundler (Rundler, via
     // RundlerBundlerClient) and independently verifies the mined result on-chain.
     //
-    // Short timeout: a "denied" proof (see below) points the bundler URL at an address nothing
-    // listens on, specifically so a bug that skipped the approval check would surface as a fast,
-    // unambiguous connection failure rather than hanging.
-    using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+    // A remote bundler may take several seconds to serve a receipt while it waits on its upstream
+    // RPC. The denied proof never invokes this client (it returns before submission), so a
+    // realistic timeout here does not weaken its fast no-network assertion.
+    using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(20) };
     var bundlerClient = new RundlerBundlerClient(httpClient, registry);
-    var submitter = new UserOperationSubmitter(registry, bundlerClient, policy, TimeProvider.System, NullLogger<UserOperationSubmitter>.Instance);
+    var confirmations = new EntryPointConfirmationReader(registry);
+    var submitter = new UserOperationSubmitter(registry, bundlerClient, confirmations, policy, TimeProvider.System, NullLogger<UserOperationSubmitter>.Instance);
 
     // Negative-path proof (crossstack-bundler-submit-denied-check.ts): an op JSON with
     // `"denied": true` builds an unapproved SponsorshipSignature instead of reading one from JSON,

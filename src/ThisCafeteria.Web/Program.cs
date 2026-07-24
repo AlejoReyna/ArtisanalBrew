@@ -160,6 +160,7 @@ if (hasDatabase)
     {
         client.Timeout = TimeSpan.FromSeconds(30);
     });
+    builder.Services.AddScoped<IEntryPointConfirmationReader, EntryPointConfirmationReader>();
     builder.Services.AddScoped<IUserOperationSubmitter, UserOperationSubmitter>();
     builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
 }
