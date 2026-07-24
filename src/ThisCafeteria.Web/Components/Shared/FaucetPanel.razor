@@ -1,10 +1,11 @@
+@using ThisCafeteria.Application.Configuration
 <section class="faucet-panel @(Compact ? "faucet-panel--compact" : null)" aria-labelledby="faucet-panel-title">
     <div class="faucet-panel__head">
         <div>
             <p class="faucet-panel__eyebrow">Testnet gas</p>
-            <h3 id="faucet-panel-title" class="faucet-panel__title">Get free Sepolia ETH</h3>
+            <h3 id="faucet-panel-title" class="faucet-panel__title">Get free @(_displayFamily == ChainFamily.Solana ? "Devnet SOL" : "Sepolia ETH")</h3>
             <p class="faucet-panel__lede">
-                Every transaction on @NetworkName needs a little test ETH for gas — it has no real-world value.
+                Every transaction on @_displayNetworkName needs a little test @(_displayFamily == ChainFamily.Solana ? "SOL" : "ETH") for gas — it has no real-world value.
                 Grab some from a public faucet below, then come back and connect.
             </p>
         </div>
@@ -24,8 +25,8 @@
         </div>
     }
 
-    <ul class="faucet-panel__list">
-        @foreach (var faucet in Faucets)
+    <ul class="faucet-panel__list @_listCssClass">
+        @foreach (var faucet in ActiveFaucets)
         {
             <li>
                 <a class="faucet-panel__card" href="@faucet.Url" target="_blank" rel="noopener noreferrer">
@@ -40,10 +41,19 @@
                         </span>
                         <span class="faucet-panel__card-amount tabular">
                             <span class="faucet-panel__eth-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L5.5 12.5L12 15.5L18.5 12.5L12 2Z" fill="currentColor"/>
-                                    <path d="M12 15.5L5.5 12.5L12 22L18.5 12.5L12 15.5Z" fill="currentColor" opacity="0.7"/>
-                                </svg>
+                                @if (_displayFamily == ChainFamily.Solana)
+                                {
+                                    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4.09 17.65L5.7 15.22h14.21l-1.61 2.43H4.09zm0-8.87L5.7 6.35h14.21l-1.61 2.43H4.09zm14.21 2.01L16.69 13.2H2.48l1.61-2.43h14.21z"/>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2L5.5 12.5L12 15.5L18.5 12.5L12 2Z" fill="currentColor"/>
+                                        <path d="M12 15.5L5.5 12.5L12 22L18.5 12.5L12 15.5Z" fill="currentColor" opacity="0.7"/>
+                                    </svg>
+                                }
                             </span>
                             @faucet.Amount
                         </span>
@@ -74,7 +84,37 @@
     [Parameter]
     public EventCallback OnRefreshRequested { get; set; }
 
-    private static readonly FaucetLink[] Faucets =
+    [Parameter]
+    public ChainFamily Family { get; set; } = ChainFamily.Evm;
+
+    private ChainFamily _displayFamily;
+    private string _displayNetworkName = "";
+    private bool _isFadingOut;
+    private string _listCssClass => _isFadingOut ? "faucet-panel__list--fade-out" : "faucet-panel__list--fade-in";
+
+    protected override void OnInitialized()
+    {
+        _displayFamily = Family;
+        _displayNetworkName = NetworkName;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_displayFamily != Family || _displayNetworkName != NetworkName)
+        {
+            _isFadingOut = true;
+            StateHasChanged();
+            await Task.Delay(250);
+            
+            _displayFamily = Family;
+            _displayNetworkName = NetworkName;
+            _isFadingOut = false;
+        }
+    }
+
+    private FaucetLink[] ActiveFaucets => _displayFamily == ChainFamily.Solana ? SolanaFaucets : EvmFaucets;
+
+    private static readonly FaucetLink[] EvmFaucets =
     [
         new(
             "Google Cloud Web3",
@@ -100,6 +140,38 @@
             "https://www.google.com/s2/favicons?domain=quicknode.com&sz=64",
             "0.05 ETH / drip",
             "Requires 0.001 ETH on Ethereum mainnet."),
+    ];
+
+    private static readonly FaucetLink[] SolanaFaucets =
+    [
+        new(
+            "Solana Faucet",
+            "https://faucet.solana.com/",
+            "https://www.google.com/s2/favicons?domain=solana.com&sz=64",
+            "1 SOL / drip",
+            "Request Devnet SOL directly from Solana."
+        ),
+        new(
+            "QuickNode",
+            "https://faucet.quicknode.com/solana/devnet",
+            "https://www.google.com/s2/favicons?domain=quicknode.com&sz=64",
+            "1 SOL / drip",
+            "Requires mainnet balance or tweet."
+        ),
+        new(
+            "Alchemy",
+            "https://www.alchemy.com/faucets/solana-devnet",
+            "https://www.google.com/s2/favicons?domain=alchemy.com&sz=64",
+            "1 SOL / day",
+            "Free Alchemy account required."
+        ),
+        new(
+            "Stakely",
+            "https://stakely.io/en/faucet/solana-sol",
+            "https://www.google.com/s2/favicons?domain=stakely.io&sz=64",
+            "0.1 SOL",
+            "Solve a captcha or post a tweet."
+        ),
     ];
 
     private sealed record FaucetLink(string Name, string Url, string LogoUrl, string Amount, string Requirement);

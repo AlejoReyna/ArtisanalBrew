@@ -14,13 +14,21 @@
         radial-gradient(circle at 75% 50%, rgba(143, 185, 155, 0.08) 0%, transparent 50%),
         #110d0a;
     background-size: 4rem 4rem, 4rem 4rem, 100% 100%, auto;
+    min-height: calc(100vh - 4.75rem);
+    overflow: hidden;
+}
+
+.staking-connect__desktop {
     display: grid;
     grid-template-columns: minmax(0, 50%) minmax(26rem, 50%);
     gap: clamp(1rem, 3vw, 4rem);
-    min-height: calc(100vh - 4.75rem);
     padding: 0 clamp(1.25rem, 3vw, 3rem);
     align-items: stretch;
-    overflow: hidden;
+    min-height: 100%;
+}
+
+.staking-connect__mobile {
+    display: none;
 }
 
 .staking-connect__left {
@@ -1010,20 +1018,207 @@
     }
 
     .staking-connect {
-        grid-template-columns: 1fr;
-        min-height: auto;
-        padding: clamp(1.5rem, 3vw, 2rem);
-        overflow: visible;
+        background-color: #110d0a;
+        background-image: url('/images/mobile_bg.png');
+        background-size: cover;
+        background-position: center bottom;
+        background-repeat: no-repeat;
+        min-height: calc(100vh - 2.42rem);
+        padding: 0 1rem 2rem;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .staking-connect__desktop {
+        display: none !important;
+    }
+
+    .staking-connect__mobile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1.5rem;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .staking-connect__mobile .mobile-top-bar {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.5rem;
+    }
+    
+    .staking-connect__mobile .mobile-title {
+        color: #F4EFE6;
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: 2.2rem;
+        font-weight: 500;
+        margin: 0;
+        line-height: 1.15;
+        min-height: 2.6rem;
+        opacity: 0;
+        animation: heroTitleSlide 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes heroTitleSlide {
+        0% { opacity: 0; transform: translateY(2rem); }
+        35% { opacity: 1; transform: translateY(2rem); }
+        60% { opacity: 1; transform: translateY(2rem); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .staking-connect__mobile .mobile-desc {
+        color: rgba(244, 239, 230, 0.72);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin: -0.5rem 0 0 0;
+        min-height: 2.85rem;
+        max-width: 24rem;
+        opacity: 0;
+        animation: heroFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        animation-delay: 1.2s;
+    }
+
+    @keyframes heroFadeIn {
+        0% { opacity: 0; transform: translateY(10px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    .staking-connect__mobile .mobile-coin {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #E5C078 0%, #C89B6A 100%);
+        border: 4px solid rgba(244, 239, 230, 0.1);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), inset 0 4px 10px rgba(255, 255, 255, 0.4);
+        margin: 1.5rem auto;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        animation: heroFadeIn 0.8s forwards;
+        animation-delay: 1.4s;
+    }
+    .staking-connect__mobile .mobile-coin::after {
+        content: '';
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 2px dashed rgba(255, 255, 255, 0.4);
+    }
+    
+    .staking-connect__mobile .mobile-options-chain {
+        width: 100%;
+        margin-top: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: center;
+        opacity: 0;
+        animation: heroFadeIn 0.8s forwards;
+        animation-delay: 1.8s;
+    }
+
+    .staking-connect__mobile .mobile-connect-btn {
+        opacity: 0;
+        animation: heroFadeIn 0.8s forwards;
+        animation-delay: 1.6s;
     }
 
     .staking-connect__faucet {
-        margin-top: 2rem;
+        margin-top: 0.5rem;
+        width: 100%;
     }
 
-    .staking-connect__faucet ::deep .faucet-panel {
-        border: 1px solid rgba(244, 239, 230, 0.11);
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel {
+        background: transparent;
+        border: none;
+        padding: 0;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__head,
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__address {
+        display: none !important;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__list {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.75rem;
+        margin: 0;
+        padding: 0;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card {
+        aspect-ratio: 1;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 12px;
-        height: auto;
+        box-shadow: none !important;
+        text-decoration: none;
+    }
+    
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card::before {
+        display: none !important;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card-head {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__brand {
+        margin: 0;
+        padding: 0;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__logo {
+        box-shadow: none;
+        background: transparent;
+        border: none;
+        width: 50%;
+        height: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__brand-copy,
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card-note,
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card-cta,
+    .staking-connect__mobile .staking-connect__faucet ::deep .faucet-panel__card-amount {
+        display: none !important;
     }
 }
 

@@ -82,6 +82,18 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    transition: opacity 250ms ease, transform 250ms ease;
+}
+
+.faucet-panel__list--fade-out {
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+}
+
+.faucet-panel__list--fade-in {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .faucet-panel__card {
@@ -150,6 +162,29 @@
     height: 1.3rem;
     object-fit: contain;
     width: 1.3rem;
+    animation: faucet-logo-fade 4.8s ease-in-out infinite;
+}
+
+.faucet-panel__list li:nth-child(2) .faucet-panel__logo img {
+    animation-delay: 0.35s;
+}
+
+.faucet-panel__list li:nth-child(3) .faucet-panel__logo img {
+    animation-delay: 0.7s;
+}
+
+.faucet-panel__list li:nth-child(4) .faucet-panel__logo img {
+    animation-delay: 1.05s;
+}
+
+@keyframes faucet-logo-fade {
+    0%, 100% {
+        opacity: 0.45;
+    }
+
+    24%, 76% {
+        opacity: 1;
+    }
 }
 
 .faucet-panel__brand-copy {
@@ -230,6 +265,7 @@
     font-size: 0.82rem;
 }
 
+
 @media (max-width: 640px) {
     .faucet-panel__head {
         flex-direction: column;
@@ -237,5 +273,12 @@
 
     .faucet-panel__list {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .faucet-panel__logo img {
+        animation: none;
+        opacity: 1;
     }
 }
