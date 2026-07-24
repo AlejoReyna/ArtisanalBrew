@@ -87,6 +87,8 @@ public sealed record ChainDefinition
     public int NativeCurrencyDecimals { get; init; } = 18;
     public string PublicRpcUrl { get; init; } = string.Empty;
     public string? ServerRpcUrl { get; init; }
+    /// <summary>Trusted server-side ERC-4337 bundler endpoint. Never returned by public chain metadata.</summary>
+    public string? BundlerRpcUrl { get; init; }
     public string ExplorerAddressTemplate { get; init; } = string.Empty;
     public string ExplorerTransactionTemplate { get; init; } = string.Empty;
     public int MinimumConfirmations { get; init; } = 2;

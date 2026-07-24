@@ -11,6 +11,15 @@ main {
     padding-top: 4.75rem;
 }
 
+@media (max-width: 760px) {
+    .public-main {
+        /* .site-nav shrinks to a 2.42rem bar below 760px (NavMenu.razor.css);
+           this offset has to track it or the fixed header's real height falls
+           short of the reserved space, leaving a blank strip above the content. */
+        padding-top: 2.42rem;
+    }
+}
+
 .public-page:has(.editorial-hero) .public-main {
     padding-top: 0;
 }

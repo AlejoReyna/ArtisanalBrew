@@ -65,6 +65,32 @@ Solana Testnet becomes visible only after the program and token fixtures are dep
 
 The full orchestration design is documented in [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md). Operational commands and release controls live in [`docs/multichain-liquid-staking-operations.md`](docs/multichain-liquid-staking-operations.md) and [`docs/solana-local-manifest.md`](docs/solana-local-manifest.md).
 
+### Deployed contracts — Ethereum Sepolia (chain id 11155111)
+
+The server resolves these addresses from [`contracts/evm/deployments/ethereum-sepolia.json`](contracts/evm/deployments/ethereum-sepolia.json); the browser never chooses them. Compiled with solc `0.8.24` (optimizer runs 200, viaIR).
+
+Liquid staking and tokens:
+
+| Contract | Address |
+|---|---|
+| CAFE token | [`0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A`](https://sepolia.etherscan.io/address/0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A) |
+| COFFEE reward token | [`0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C`](https://sepolia.etherscan.io/address/0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C) |
+| Liquid vault (stCAFE, ERC-4626) | [`0x492132c5ec8b70a4d44fa365604d4c365b1d1a9f`](https://sepolia.etherscan.io/address/0x492132c5ec8b70a4d44fa365604d4c365b1d1a9f) |
+| CAFE faucet | [`0xBD1517529BB0BA20c43b4E39323C70058FADe86D`](https://sepolia.etherscan.io/address/0xBD1517529BB0BA20c43b4E39323C70058FADe86D) |
+
+Agentic-commerce and account abstraction:
+
+| Contract | Address |
+|---|---|
+| ERC-4337 EntryPoint (v0.7) | [`0xdd9a61064ef9e2d9612da1f1307e168b85fe43a6`](https://sepolia.etherscan.io/address/0xdd9a61064ef9e2d9612da1f1307e168b85fe43a6) |
+| Account factory | [`0x03e558b6af3e871f1884b670bd10d785b414e3fb`](https://sepolia.etherscan.io/address/0x03e558b6af3e871f1884b670bd10d785b414e3fb) |
+| Verifying paymaster | [`0x35409fae884605c1ab9a1dcd561d3cb39da6619f`](https://sepolia.etherscan.io/address/0x35409fae884605c1ab9a1dcd561d3cb39da6619f) |
+| ERC-8004 identity registry | [`0x44315b44555ca20d98eccd95720827a5b4bbdab6`](https://sepolia.etherscan.io/address/0x44315b44555ca20d98eccd95720827a5b4bbdab6) |
+| ERC-7683 resolver | [`0xfdc86171e50f848fe539e74efafc9f34d471ff9f`](https://sepolia.etherscan.io/address/0xfdc86171e50f848fe539e74efafc9f34d471ff9f) |
+| ERC-8183 escrow | [`0x78dd528ceb6f3de28365727270be865ff6840dea`](https://sepolia.etherscan.io/address/0x78dd528ceb6f3de28365727270be865ff6840dea) |
+
+A sponsored ERC-4337 UserOperation has been mined successfully through this EntryPoint and paymaster (self-hosted Rundler v0.11.0, safe mode): UserOperation `0x87d8f80711508c7be740ee136e7909c4449276486321f21dbd221f4efb96c5c0`, mined in [transaction `0xb945492fc894b7a2d9defa7245120fe9b7bf2a9fb83b09de3cf49a4c79dbf5bb`](https://sepolia.etherscan.io/tx/0xb945492fc894b7a2d9defa7245120fe9b7bf2a9fb83b09de3cf49a4c79dbf5bb).
+
 ### What is implemented
 
 - A validated, immutable chain registry with family, network, deployment, and capability metadata.

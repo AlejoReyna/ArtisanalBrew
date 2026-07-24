@@ -42,6 +42,9 @@ blockchainOptions = BlockchainManifestLoader.LoadDeploymentManifests(
     // Development and would otherwise make the env var override permanently unreachable.
     Environment.GetEnvironmentVariable("ARTISANALBREW_EVM_MANIFEST") ?? builder.Configuration["Blockchain:LocalEvmManifest"],
     Environment.GetEnvironmentVariable("ARTISANALBREW_SOLANA_MANIFEST") ?? builder.Configuration["Blockchain:SolanaDeploymentManifest"] ?? builder.Configuration["Blockchain:LocalSolanaManifest"]);
+// A hosted bundler's URL typically embeds a live API key - never committed to a deployment
+// manifest. Sourced the same way Sponsorship__VerifyingSignerPrivateKey is: environment-variable-only.
+blockchainOptions = BlockchainManifestLoader.ApplyBundlerRpcUrlOverrides(blockchainOptions, Environment.GetEnvironmentVariable);
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
@@ -153,6 +156,12 @@ if (hasDatabase)
     builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();
     builder.Services.AddScoped<ISponsorshipPolicyService, SponsorshipPolicyService>();
     builder.Services.AddScoped<IUserOperationSponsor, UserOperationSponsor>();
+    builder.Services.AddHttpClient<IBundlerClient, RundlerBundlerClient>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
+    builder.Services.AddScoped<IEntryPointConfirmationReader, EntryPointConfirmationReader>();
+    builder.Services.AddScoped<IUserOperationSubmitter, UserOperationSubmitter>();
     builder.Services.AddScoped<ISmartAccountService, SmartAccountService>();
 }
 builder.Services.AddSingleton<IMigrationReadiness, MigrationReadiness>();

@@ -550,6 +550,47 @@ body.product-detail-view .product-detail-card__title h1 {
     border-bottom-color: #d8d0c4;
 }
 
+/* Procurement Lab continues its dark console surface into the browser and
+   navigation chrome. Keep every foreground control readable on that ground. */
+body:has(.procurement-lab) .public-header,
+body:has(.procurement-lab) .public-header.public-header--solid {
+    background-color: #171714;
+    backdrop-filter: none;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+body:has(.procurement-lab) .public-header .navbar-brand {
+    color: #ffffff;
+}
+
+body:has(.procurement-lab) .public-header .nav-link {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+body:has(.procurement-lab) .public-header .nav-link:hover,
+body:has(.procurement-lab) .public-header .nav-link.active {
+    border-bottom-color: #ffffff;
+    color: #ffffff;
+}
+
+body:has(.procurement-lab) .public-header .nav-cart,
+body:has(.procurement-lab) .public-header .nav-wallet {
+    color: #ffffff;
+}
+
+body:has(.procurement-lab) .public-header .nav-wallet {
+    border-color: rgba(255, 255, 255, 0.38);
+}
+
+body:has(.procurement-lab) .public-header .navbar-toggler {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+body:has(.procurement-lab) .public-header .navbar-toggler span {
+    background: #ffffff;
+}
+
 .public-page:has(.editorial-hero) .public-header:not(.public-header--solid),
 .public-page:has(.journal-hero) .public-header:not(.public-header--solid) {
     background-color: transparent;

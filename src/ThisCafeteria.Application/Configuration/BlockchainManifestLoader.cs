@@ -18,6 +18,28 @@ public static class BlockchainManifestLoader
         return new BlockchainOptions { DefaultChainKey = options.DefaultChainKey, Chains = chains };
     }
 
+    /// <summary>
+    /// Applies a server-side-only bundler RPC URL override per chain, sourced from environment
+    /// variables named <c>ARTISANALBREW_BUNDLER_RPC_URL__{CHAIN_KEY}</c> (chain key upper-cased,
+    /// hyphens replaced with underscores - e.g. <c>ARTISANALBREW_BUNDLER_RPC_URL__ETHEREUM_SEPOLIA</c>).
+    /// This mirrors how <c>Sponsorship__VerifyingSignerPrivateKey</c> is already sourced: a hosted
+    /// bundler's URL typically embeds a live API key, and a committed deployment manifest is not
+    /// where that belongs - it would leak into git history. Call this after
+    /// <see cref="LoadDeploymentManifests"/> so the override wins over whatever the manifest set
+    /// (including an absent/empty field), letting a chain pick up a bundler endpoint the committed
+    /// manifest deliberately doesn't carry.
+    /// </summary>
+    public static BlockchainOptions ApplyBundlerRpcUrlOverrides(BlockchainOptions options, Func<string, string?> lookupEnvironmentVariable)
+    {
+        var chains = options.Chains.Select(chain =>
+        {
+            var variableName = $"ARTISANALBREW_BUNDLER_RPC_URL__{chain.Key.ToUpperInvariant().Replace('-', '_')}";
+            var overrideUrl = lookupEnvironmentVariable(variableName);
+            return string.IsNullOrWhiteSpace(overrideUrl) ? chain : chain with { BundlerRpcUrl = overrideUrl };
+        }).ToList();
+        return new BlockchainOptions { DefaultChainKey = options.DefaultChainKey, Chains = chains };
+    }
+
     private static IEnumerable<string> SplitManifestPaths(string? value) =>
         (value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
@@ -70,6 +92,10 @@ public static class BlockchainManifestLoader
                 NativeCurrencySymbol = nativeSymbol,
                 NativeCurrencyDecimals = nativeDecimals,
                 PublicRpcUrl = rpcUrl,
+                // Server-side-only ERC-4337 bundler endpoint. Kept out of `addresses` since it is
+                // an RPC URL, not a contract address, and out of the public chain-metadata surface
+                // (see ChainDefinition.BundlerRpcUrl) - never returned by /api/chains.
+                BundlerRpcUrl = Optional(root, "bundlerRpcUrl"),
                 ExplorerAddressTemplate = explorerAddress,
                 ExplorerTransactionTemplate = explorerTransaction,
                 SortOrder = chainId == 97 ? 6 : chainId == 11155111 ? 1 : 100,
