@@ -182,58 +182,6 @@
     text-align: center;
 }
 
-/* frosted testnet notice: no real crypto here, only faucet ETH */
-.products-shop__testnet {
-    align-items: center;
-    backdrop-filter: blur(8px);
-    background: rgba(20, 14, 11, 0.52);
-    border: 1px solid rgba(251, 249, 244, 0.16);
-    border-radius: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    margin: 1.15rem auto 0;
-    max-width: 24rem;
-    padding: 0.7rem 1rem 0.8rem;
-}
-
-.products-shop__testnet-badge {
-    align-items: center;
-    background: #627ee9;
-    border-radius: 999px;
-    color: #fbf9f4;
-    display: inline-flex;
-    font-family: var(--font-sans);
-    font-size: 0.58rem;
-    font-weight: 700;
-    gap: 0.32rem;
-    letter-spacing: 0.14em;
-    padding: 0.28rem 0.7rem;
-    text-transform: uppercase;
-}
-
-.products-shop__testnet-copy {
-    color: rgba(251, 249, 244, 0.85);
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 400;
-    line-height: 1.55;
-    margin: 0;
-    text-align: center;
-}
-
-.products-shop__testnet-copy a {
-    color: #ecc79c;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    transition: color 160ms ease;
-}
-
-.products-shop__testnet-copy a:hover {
-    color: #fbf9f4;
-}
-
 .marketplace-card__wishlist {
     align-items: center;
     background: rgba(251, 249, 244, 0.85);
@@ -496,23 +444,6 @@
     .products-shop__lede {
         font-size: 0.92rem;
         max-width: 30rem;
-    }
-
-    .products-shop__testnet {
-        flex-direction: row;
-        gap: 0.85rem;
-        margin-top: 1.5rem;
-        max-width: 42rem;
-        padding: 0.7rem 1.15rem;
-        text-align: left;
-    }
-
-    .products-shop__testnet-badge {
-        flex: none;
-    }
-
-    .products-shop__testnet-copy {
-        text-align: left;
     }
 
     .category-filter {

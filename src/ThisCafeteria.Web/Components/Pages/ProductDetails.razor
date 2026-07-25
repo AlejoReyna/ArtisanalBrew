@@ -36,9 +36,7 @@ else
     <section class="product-detail-card" data-product-detail="@product.Slug">
         <div class="product-detail-card__media" data-product-detail-media>
             <img class="product-detail-card__image"
-                 src="@(string.IsNullOrWhiteSpace(product.RegionImageSrc)
-                     ? "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=80"
-                     : product.RegionImageSrc)"
+                 src="@ImageSrc(product)"
                  alt="@product.Name product photography"
                  data-product-detail-image
                  loading="eager" />
@@ -66,8 +64,53 @@ else
                 </div>
             </div>
 
+            <div class="product-detail-card__stamp">
+                <span class="product-detail-card__stamp-icon" aria-hidden="true">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                </span>
+                <span class="product-detail-card__stamp-label">@StampLabelFor(_product.Category)</span>
+            </div>
+
             <p class="product-detail-card__desc">@product.Description</p>
 
+            @{ var allergenLabel = AllergenLabelFor(_product.Category); }
+            @if (allergenLabel is not null)
+            {
+                <p class="product-detail-card__allergens">@allergenLabel</p>
+            }
+
+            <div class="product-detail-card__badges">
+                @foreach (var badge in CertBadgesFor(_product.Category))
+                {
+                    <span class="product-detail-card__cert-badge">@badge</span>
+                }
+                @if (IsTopSellerCategory(_product.Category))
+                {
+                    <span class="product-detail-card__pill">
+                        <svg class="product-detail-card__pill-icon" aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l2.9 6.9L22 9.3l-5.5 4.8L18 21l-6-3.6L6 21l1.5-6.9L2 9.3l7.1-.4L12 2z" />
+                        </svg>
+                        Top seller
+                    </span>
+                }
+            </div>
+
+            <hr class="product-detail-card__divider" />
+
+            <a class="product-detail-card__media-row" href="@product.BrewGuideHref">
+                <p class="product-detail-card__media-row-label">Discover how @product.Name is made.</p>
+                <span class="product-detail-card__media-row-thumb" style="background-image:url('@ImageSrc(product)')">
+                    <span class="product-detail-card__media-row-play" aria-hidden="true">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                    </span>
+                </span>
+            </a>
+
+            <hr class="product-detail-card__divider" />
+
+            <h2 class="product-detail-card__section-header">Tasting Notes</h2>
             <div class="product-detail-card__highlights">
                 @for (var i = 0; i < product.FlavorNotes.Count; i++)
                 {
@@ -318,6 +361,34 @@ else
             ProductCategory.CeramicsAndGoods => ["Hand-thrown", "Small-batch made", "Built for daily use"],
             _ => ["100% Arabica", "Grown organically", "Small-batch roasted"]
         };
+
+    private const string FallbackImageUrl = "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=80";
+
+    private static string ImageSrc(MarketplaceProductDetail product) =>
+        string.IsNullOrWhiteSpace(product.RegionImageSrc) ? FallbackImageUrl : product.RegionImageSrc;
+
+    private static string StampLabelFor(ProductCategory category) =>
+        category switch
+        {
+            ProductCategory.Beans => "+1 Stamp · Roaster's Circle",
+            ProductCategory.BrewingEquipment => "+1 Stamp · Brew Ritual Circle",
+            ProductCategory.CeramicsAndGoods => "+1 Stamp · Studio Circle",
+            _ => "+1 Stamp · Roaster's Circle"
+        };
+
+    private static string? AllergenLabelFor(ProductCategory category) =>
+        category == ProductCategory.Beans ? "Contains: Caffeine" : null;
+
+    private static IReadOnlyList<string> CertBadgesFor(ProductCategory category) =>
+        category switch
+        {
+            ProductCategory.Beans => ["ORG", "FT"],
+            ProductCategory.BrewingEquipment => ["QC"],
+            ProductCategory.CeramicsAndGoods => ["HM"],
+            _ => ["ORG"]
+        };
+
+    private static bool IsTopSellerCategory(ProductCategory category) => category == ProductCategory.Beans;
 
     private static string SectionLabel(ProductCategory category) =>
         category switch

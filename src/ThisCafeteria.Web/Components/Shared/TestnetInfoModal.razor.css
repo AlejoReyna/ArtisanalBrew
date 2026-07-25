@@ -1,0 +1,106 @@
+#testnet-info-modal {
+    background-color: var(--white, #fffdf9);
+    color: var(--ink, #2d2421);
+    width: 26rem;
+    max-width: calc(100vw - 2rem);
+    margin: 12vh auto;
+    padding: 2.5rem 2.25rem 2.25rem;
+    border: 1px solid var(--line, #d8d0c4);
+    border-radius: 1rem;
+    box-shadow: 0 24px 48px rgba(31, 26, 24, 0.22);
+    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
+    position: relative;
+}
+
+#testnet-info-modal::backdrop {
+    background-color: rgba(31, 26, 24, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.testnet-info-close {
+    align-items: center;
+    background: var(--surface, #fbf9f4);
+    border: 1px solid var(--line, #d8d0c4);
+    border-radius: 999px;
+    color: var(--ink, #2d2421);
+    cursor: pointer;
+    display: flex;
+    height: 1.75rem;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    width: 1.75rem;
+}
+
+    .testnet-info-close:hover {
+        background: var(--surface-deep, #f2eee5);
+    }
+
+.testnet-info-container {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    text-align: center;
+}
+
+.testnet-info-badge {
+    align-items: center;
+    background: #627ee9;
+    border-radius: 999px;
+    color: #fbf9f4;
+    display: inline-flex;
+    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
+    font-size: 0.62rem;
+    font-weight: 700;
+    gap: 0.35rem;
+    letter-spacing: 0.14em;
+    padding: 0.3rem 0.75rem;
+    text-transform: uppercase;
+}
+
+.testnet-info-title {
+    color: var(--ink, #2d2421);
+    font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.testnet-info-copy {
+    color: var(--muted, #746a63);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+    .testnet-info-copy a {
+        color: var(--accent, #8d6f55);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        transition: color 160ms ease;
+    }
+
+        .testnet-info-copy a:hover {
+            color: var(--charcoal, #1f1a18);
+        }
+
+.testnet-info-button {
+    background-color: var(--ink, #2d2421);
+    border: 0;
+    border-radius: 999px;
+    color: var(--white, #fffdf9);
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-top: 0.4rem;
+    padding: 0.65rem 2.25rem;
+    transition: background-color 160ms ease;
+}
+
+    .testnet-info-button:hover {
+        background-color: var(--accent, #8d6f55);
+    }
