@@ -83,10 +83,19 @@ public sealed class UserOperationSubmitter(
 
         if (!confirmation.Success)
         {
+            // The operation was MINED, so the EntryPoint charged the paymaster for its gas even
+            // though the inner call reverted. There is no successful operation to price against the
+            // budget, but this is emphatically not free, and leaving it unmetered would let a holder
+            // of a valid grant drain the paymaster deposit without ever spending its own budget.
+            var revoked = await policy.RecordRevertedOperationAsync(
+                operation.ChainKey, operation.OwnerAddress, cancellationToken).ConfigureAwait(false);
+
             return new UserOperationSubmissionResult
             {
                 Status = UserOperationSubmissionStatus.Reverted,
-                Detail = "The UserOperation was mined but its inner call reverted.",
+                Detail = revoked
+                    ? "The UserOperation was mined but its inner call reverted. The sponsorship grant has been revoked after too many reverted operations."
+                    : "The UserOperation was mined but its inner call reverted.",
                 UserOperationHash = userOpHash,
                 TransactionHash = confirmation.TransactionHash
             };

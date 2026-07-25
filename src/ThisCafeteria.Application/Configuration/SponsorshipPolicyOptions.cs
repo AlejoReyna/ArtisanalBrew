@@ -54,6 +54,18 @@ public sealed record SponsorshipPolicyOptions
     /// <summary>How long a produced sponsorship signature remains valid.</summary>
     public TimeSpan SignatureValidity { get; init; } = TimeSpan.FromMinutes(15);
 
+    /// <summary>
+    /// How many mined-but-reverted sponsored operations a grant may accumulate before it is
+    /// automatically revoked. Zero disables the check.
+    ///
+    /// A reverted operation still costs the paymaster gas but debits nothing from the USD budget,
+    /// so without this the budget is only a spend control against an honest grant-holder. The
+    /// default is deliberately low: a handful of reverts is an integration bug worth interrupting,
+    /// and revocation is recoverable by issuing a new grant, whereas a drained paymaster deposit
+    /// stops sponsorship for everyone.
+    /// </summary>
+    public int MaxRevertedOperations { get; init; } = 5;
+
     /// <summary>Signing requires the policy enabled, a signer key, and a usable gas price.</summary>
     public bool CanSign => Enabled
         && !string.IsNullOrWhiteSpace(VerifyingSignerPrivateKey)

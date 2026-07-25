@@ -262,6 +262,12 @@
     padding: 1.6rem 1.75rem;
 }
 
+/* Sits full-width above the grid: which authority is about to sign is context for every panel
+   below it, not one column's concern. */
+.projection-panel--permission {
+    margin-bottom: 1.25rem;
+}
+
 .projection-panel__heading {
     display: flex;
     justify-content: space-between;

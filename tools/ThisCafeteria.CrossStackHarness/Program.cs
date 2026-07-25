@@ -33,15 +33,25 @@ using ThisCafeteria.Infrastructure.Services;
 // real EntryPoint, paymaster, and (for "submit") bundler are the arbiters, and C# and Solidity/the
 // bundler have to agree with THEM, not with each other.
 //
+// In "negative" mode (contracts/evm/scripts/crossstack-bundler-submit-negative-check.ts), the
+// REAL SponsorshipPolicyService is configured to genuinely deny the operation for one specific
+// reason named by CROSSSTACK_NEGATIVE_CASE, the REAL UserOperationSponsor is asked to sponsor it,
+// and whatever unapproved SponsorshipSignature that actually produces is handed to the REAL
+// UserOperationSubmitter. This is the difference from the fabricated SponsorshipSignature.Deny(...)
+// the "submit" mode's `denied` flag uses: here the denial is produced by the policy engine under
+// test rather than asserted by the test, so it proves the policy reason AND the submitter's refusal
+// in one path, which is what the plan's Phase 4 gate actually asks for.
+//
 // This is not wired into `dotnet test` because it requires a live Hardhat node with the canonical
 // EntryPoint/factory/paymaster already deployed (and, for "submit", a running Rundler bundler).
 // Run it via the Hardhat scripts:
 //   HARDHAT_NETWORK=localhost npx tsx scripts/crossstack-sponsor-check.ts
 //   HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/crossstack-bundler-submit-check.ts
+//   HARDHAT_NETWORK=arbitrumLocal npx tsx scripts/crossstack-bundler-submit-negative-check.ts
 
 if (args.Length < 1)
 {
-    Console.Error.WriteLine("Usage: ThisCafeteria.CrossStackHarness <path-to-op-description.json> [approve|wrongtarget|submit]");
+    Console.Error.WriteLine("Usage: ThisCafeteria.CrossStackHarness <path-to-op-description.json> [approve|wrongtarget|submit|negative]");
     return 1;
 }
 
@@ -65,9 +75,20 @@ var DevSignerKey = Environment.GetEnvironmentVariable("CROSSSTACK_VERIFYING_SIGN
 var target = ReadString("target");
 var selector = ReadString("selector");
 
+// "negative" mode's specific denial to provoke. Each case below rigs exactly ONE input so the
+// resulting SponsorshipDenialReason is unambiguous - if a case ever started denying for a
+// different reason than the one it rigs, the calling script's reason assertion catches it rather
+// than accepting "some denial happened" as proof.
+var negativeCase = (Environment.GetEnvironmentVariable("CROSSSTACK_NEGATIVE_CASE") ?? string.Empty).ToLowerInvariant();
+
 // "wrongtarget" mode proves a policy denial yields no signature at all, by pointing the
 // allowlist at an address the operation does NOT call.
-var allowedTarget = mode == "wrongtarget" ? "0x000000000000000000000000000000000000dead" : target;
+var allowedTarget = mode == "wrongtarget" || negativeCase == "wrongtarget"
+    ? "0x000000000000000000000000000000000000dead"
+    : target;
+
+// The selector equivalent: an allowlisted selector the operation's callData does NOT begin with.
+var allowedSelector = negativeCase == "wrongselector" ? "0xdeadbeef" : selector;
 
 var evmChainId = int.TryParse(Environment.GetEnvironmentVariable("CROSSSTACK_EVM_CHAIN_ID"), out var parsedChainId) ? parsedChainId : 31337;
 var chain = new ChainDefinition
@@ -95,29 +116,61 @@ var options = new SponsorshipPolicyOptions
 {
     Enabled = true,
     AllowedTargets = [allowedTarget],
-    AllowedSelectors = [selector],
+    AllowedSelectors = [allowedSelector],
     VerifyingSignerPrivateKey = DevSignerKey,
-    NativeCurrencyUsdRate = 3000m
+    NativeCurrencyUsdRate = 3000m,
+    // Mined-but-reverted sponsored operations tolerated before the grant is auto-revoked. Kept
+    // overridable so crossstack-sponsored-delegation-check.ts can reach the threshold in a couple
+    // of operations instead of paying for the production default's worth of reverts.
+    MaxRevertedOperations = int.TryParse(Environment.GetEnvironmentVariable("CROSSSTACK_MAX_REVERTED_OPERATIONS"), out var parsedMaxReverted)
+        ? parsedMaxReverted
+        : new SponsorshipPolicyOptions().MaxRevertedOperations
 };
 
-using var connection = new SqliteConnection("DataSource=:memory:");
+// In-memory by default: every invocation is independent, which is what the single-shot proofs want.
+// CROSSSTACK_DB_PATH switches to a file so grant state SURVIVES across invocations - required by
+// crossstack-sponsored-delegation-check.ts's revocation case, which has to submit several
+// operations through separate harness processes and watch one grant accumulate reverts.
+var dbPath = Environment.GetEnvironmentVariable("CROSSSTACK_DB_PATH");
+using var connection = new SqliteConnection(
+    string.IsNullOrWhiteSpace(dbPath) ? "DataSource=:memory:" : $"DataSource={dbPath}");
 connection.Open();
 using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
 db.Database.EnsureCreated();
-db.SponsorshipGrants.Add(new SponsorshipGrant
+// A budget far above any plausible local gas cost, and a validity window comfortably around now,
+// so that in every mode except the "negative" cases that deliberately rig one of them, the grant
+// itself is never the reason anything fails.
+var grantNow = DateTime.UtcNow;
+// Seed once. With a persistent CROSSSTACK_DB_PATH a re-seed would wipe the accumulated
+// RevertedOperationCount the revocation proof is trying to observe.
+var grantOwner = Owner.ToLowerInvariant();
+if (!db.SponsorshipGrants.Any(g => g.ChainKey == "evm-local" && g.OwnerAddress == grantOwner))
 {
-    ChainKey = "evm-local",
-    OwnerAddress = Owner,
-    BudgetUsd = 100m,
-    SpentUsd = 0m,
-    MaxOperationCostUsd = 0m,
-    ValidFromUtc = DateTime.UtcNow.AddDays(-1),
-    ValidUntilUtc = DateTime.UtcNow.AddDays(1)
-});
-db.SaveChanges();
+    db.SponsorshipGrants.Add(new SponsorshipGrant
+    {
+        ChainKey = "evm-local",
+        OwnerAddress = grantOwner,
+        // A cost measured by real simulation always exceeds a sub-cent budget, so "overbudget" denies
+        // on the measured figure rather than on a number this harness chose.
+        BudgetUsd = negativeCase == "overbudget" ? 0.000001m : 100m,
+        SpentUsd = 0m,
+        // Zero means "no per-operation cap" (see SponsorshipPolicyService.EvaluateGrant).
+        MaxOperationCostUsd = negativeCase == "overcap" ? 0.000001m : 0m,
+        ValidFromUtc = negativeCase == "expired" ? grantNow.AddDays(-2) : grantNow.AddDays(-1),
+        ValidUntilUtc = negativeCase == "expired" ? grantNow.AddDays(-1) : grantNow.AddDays(1)
+    });
+    db.SaveChanges();
+}
 
 var registry = new SingleChainRegistry(chain);
 var policy = new SponsorshipPolicyService(db, registry, options, TimeProvider.System, NullLogger<SponsorshipPolicyService>.Instance);
+
+if (negativeCase == "revoked")
+{
+    // Revoke through the real service rather than setting RevokedAtUtc by hand, so the proof
+    // covers the revocation path itself and not just a hand-written database column value.
+    await policy.RevokeAsync("evm-local", Owner);
+}
 
 // The real UserOperationSimulator — the same class the production Web app registers via DI —
 // running the same eth_call state-override recipe against the live Hardhat node.
@@ -176,13 +229,21 @@ if (mode == "submit")
 
     var submission = await submitter.SubmitAsync(operation, sponsorship, denied ? "0xdeadbeef" : ReadString("signature"));
 
+    // Grant state is reported alongside the submission so a caller using a persistent
+    // CROSSSTACK_DB_PATH can observe reverts accumulating and the grant being auto-revoked, without
+    // reading the harness's database itself.
+    var finalGrant = db.SponsorshipGrants.FirstOrDefault(g => g.ChainKey == "evm-local" && g.OwnerAddress == grantOwner);
+
     Console.WriteLine(JsonSerializer.Serialize(new
     {
         status = submission.Status.ToString(),
         detail = submission.Detail,
         userOpHash = submission.UserOperationHash,
         transactionHash = submission.TransactionHash,
-        costUsd = submission.CostUsd
+        costUsd = submission.CostUsd,
+        grantRevertedCount = finalGrant?.RevertedOperationCount ?? 0,
+        grantRevoked = finalGrant?.RevokedAtUtc is not null,
+        grantSpentUsd = finalGrant?.SpentUsd ?? 0m
     }));
 
     // Consistent with "approve"/"wrongtarget" mode below: this process's job is to report the real
@@ -194,6 +255,36 @@ if (mode == "submit")
 }
 
 var result = await sponsor.SponsorAsync(operation);
+
+if (mode == "negative")
+{
+    // The whole point: the SponsorshipSignature handed to the submitter below is the one the real
+    // policy engine just produced for the rigged case - never a fabricated Deny(...). If the policy
+    // wrongly APPROVED a case it should have denied, this still forwards that real approval to the
+    // submitter, and the resulting submission attempt against an unreachable bundler fails loudly
+    // instead of quietly reporting a denial the test wanted to see.
+    using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+    var bundlerClient = new RundlerBundlerClient(httpClient, registry);
+    var confirmations = new EntryPointConfirmationReader(registry);
+    var submitter = new UserOperationSubmitter(registry, bundlerClient, confirmations, policy, TimeProvider.System, NullLogger<UserOperationSubmitter>.Instance);
+
+    // A well-formed owner signature, so that a `Denied` result can only come from the sponsorship
+    // check and never from SubmitAsync's separate malformed-signature guard.
+    var ownerSignature = $"0x{new string('a', 130)}";
+    var submission = await submitter.SubmitAsync(operation, result, ownerSignature);
+
+    Console.WriteLine(JsonSerializer.Serialize(new
+    {
+        negativeCase,
+        approved = result.Approved,
+        reason = result.Reason.ToString(),
+        detail = result.Detail,
+        submissionStatus = submission.Status.ToString(),
+        submissionDetail = submission.Detail
+    }));
+
+    return 0;
+}
 
 Console.WriteLine(JsonSerializer.Serialize(new
 {

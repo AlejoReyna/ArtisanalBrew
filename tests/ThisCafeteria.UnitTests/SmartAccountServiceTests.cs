@@ -121,6 +121,9 @@ public class SmartAccountServiceTests : IDisposable
             RevokeCalled = true;
             return Task.CompletedTask;
         }
+
+        public Task<bool> RecordRevertedOperationAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
     }
 
     private SmartAccountService CreateService(ISponsorshipPolicyService? sponsorship = null, params ChainDefinition[] extraChains) => new(
