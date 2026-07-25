@@ -96,4 +96,17 @@ public interface ISponsorshipPolicyService
 
     /// <summary>Revokes the owner's grant. Idempotent; revoking an absent grant is a no-op.</summary>
     Task RevokeAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Records that a sponsored operation was mined but its inner call reverted, and revokes the
+    /// grant once <c>SponsorshipPolicyOptions.MaxRevertedOperations</c> is reached.
+    ///
+    /// Deliberately separate from <see cref="RecordUsageAsync"/>: a revert has no successful
+    /// operation to price, but it is not free — the paymaster was still charged. Metering it is
+    /// what stops a valid grant from being used to drain the paymaster deposit at no cost to its
+    /// own budget. Unlike <see cref="RecordUsageAsync"/> this never throws on an absent or already
+    /// revoked grant; it is called on a failure path and must not convert one failure into two.
+    /// </summary>
+    /// <returns>True when this revert caused the grant to be revoked.</returns>
+    Task<bool> RecordRevertedOperationAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default);
 }

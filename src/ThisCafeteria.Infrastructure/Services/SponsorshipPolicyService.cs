@@ -112,6 +112,47 @@ public sealed class SponsorshipPolicyService(
         logger.LogWarning("Revoked sponsorship grant for {OwnerAddress} on {ChainKey}.", ownerAddress, chainKey);
     }
 
+    public async Task<bool> RecordRevertedOperationAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default)
+    {
+        var grant = await FindGrantAsync(chainKey, ownerAddress, cancellationToken).ConfigureAwait(false);
+        if (grant is null || grant.RevokedAtUtc is not null)
+        {
+            // Nothing to meter. Called on a failure path, so this must stay quiet rather than
+            // turning a reverted operation into a second, unrelated exception.
+            return false;
+        }
+
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        grant.RevertedOperationCount++;
+        grant.UpdatedAtUtc = now;
+        grant.ConcurrencyToken++;
+
+        var shouldRevoke = options.MaxRevertedOperations > 0
+            && grant.RevertedOperationCount >= options.MaxRevertedOperations;
+
+        if (shouldRevoke)
+        {
+            grant.RevokedAtUtc = now;
+        }
+
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (shouldRevoke)
+        {
+            logger.LogWarning(
+                "Revoked sponsorship grant for {OwnerAddress} on {ChainKey}: {RevertedCount} sponsored operations reverted, reaching the limit of {MaxReverted}. Each cost the paymaster gas without debiting the grant's budget.",
+                grant.OwnerAddress, grant.ChainKey, grant.RevertedOperationCount, options.MaxRevertedOperations);
+        }
+        else
+        {
+            logger.LogWarning(
+                "Sponsored operation for {OwnerAddress} on {ChainKey} reverted after being mined; the paymaster paid but no budget was debited. {RevertedCount} of {MaxReverted} before this grant is revoked.",
+                grant.OwnerAddress, grant.ChainKey, grant.RevertedOperationCount, options.MaxRevertedOperations);
+        }
+
+        return shouldRevoke;
+    }
+
     private SponsorshipDecision EvaluateGrant(SponsorshipGrant grant, decimal estimatedCostUsd)
     {
         if (grant.RevokedAtUtc is not null)
