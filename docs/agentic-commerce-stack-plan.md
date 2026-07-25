@@ -302,7 +302,10 @@ pair only (no multi-pair support). Phase 6 untouched.
     ```
     Wiring these into CI is still open — see "Next" below.
 
-### What's still missing for the Phase 4 gate
+### Phase 4 caveats that outlived the gate
+
+The gate itself was met 2026-07-25 (see the Phase 4 section). These are the limitations that remain
+true anyway, and none of them block the gate:
 
 - **Bundler now works against the local Hardhat node (Rundler, `--unsafe` mode) — see "Rundler
   investigation" below.** The caveat: `--unsafe` mode skips ERC-4337 storage-access-rule
@@ -1126,7 +1129,7 @@ Gate: an unauthenticated paid request returns 402, a valid payment returns the d
 
 Gate: a normal wallet completes the local procurement lifecycle before smart-account abstraction is required.
 
-### Phase 4 — ERC-4337 user experience [IN PROGRESS — gate met 2026-07-25; two bullets unstarted]
+### Phase 4 — ERC-4337 user experience [COMPLETE — gate met 2026-07-25]
 
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
 - ✅ add bundler and paymaster clients — **paymaster deployed and proven; a working local bundler (Rundler, `--unsafe` mode) is proven via `scripts/rundler-e2e-check.ts`; real `ThisCafeteria.*` code (`UserOperationSubmitter`) submits through it, proven end-to-end via `scripts/crossstack-bundler-submit-check.ts` (re-verified 2026-07-25) and on public Sepolia by the mined operation recorded in the top-of-file handoff**;
@@ -1202,7 +1205,7 @@ may well be the application's own bug; the grant model already expresses "this a
 used badly enough to withdraw it", so that is what the fix uses.
 
 - `SponsorshipGrant.RevertedOperationCount` — new column (migration
-  `20260725063847_AddSponsorshipRevertedOperationCount`, one `int` defaulted to `0`).
+  `20260725072157_AddSponsorshipRevertedOperationCount`, one `int` defaulted to `0`).
 - `SponsorshipPolicyOptions.MaxRevertedOperations` — default `5`; `0` disables revocation while
   still counting. Revocation is recoverable by issuing a new grant, whereas a drained paymaster
   deposit stops sponsorship for everyone, so the default is deliberately low.
@@ -1214,8 +1217,9 @@ used badly enough to withdraw it", so that is what the fix uses.
 
 Proven live in case 3 of the same script, with the limit lowered to `2`: second revert →
 `revertedCount=2, revoked=true` → the next sponsorship request is refused with `Revoked`. Also
-covered by five unit tests in `SponsorshipPolicyServiceTests` and two in
-`UserOperationSubmitterTests` (268 unit tests pass, up from 262).
+covered by five new unit tests in `SponsorshipPolicyServiceTests` and one in
+`UserOperationSubmitterTests`, plus a strengthened assertion on that file's existing revert test
+(250 unit tests pass, up from 244 on `origin/main`).
 
 Remaining limitation, not addressed: the count is per grant, so revocation is the only lever. There
 is no rate limiting, and a legitimate integration bug will burn through the allowance the same way an
@@ -1274,8 +1278,10 @@ live chain, not just unit-tested:
   path. See its section below for what makes it a real proof rather than a restatement of the policy
   unit tests.
 
-Note this is the *gate*, not the whole phase: batch approval-plus-funding and constrained session
-permissions are still unstarted bullets above.
+Note this is the *gate* specifically. The two bullets this paragraph used to call unstarted — batch
+approval-plus-funding and constrained session permissions — were already implemented by commit
+`1cea130`; see "Session-key permissions" above. That stale sentence is exactly the claim rot this
+document keeps accumulating, in the under-claiming direction.
 
 #### Negative-path gate proof (2026-07-25)
 

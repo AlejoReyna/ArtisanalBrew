@@ -200,9 +200,9 @@ public static class BlockchainManifestLoader
                     CoffeeDecimals = coffeeDecimals,
                     StartBlockOrSlot = root.GetProperty("deploymentSlot").GetInt64()
                 },
-                // Faucet is read from the manifest (single source of truth). ChainRegistry.Validate
-                // fails closed if it is on without the CAFE mint + administrator authority a devnet
-                // CAFE mint needs behind it.
+                // Faucet is read from the manifest (single source of truth) rather than hardcoded off.
+                // ChainRegistry.Validate fails closed if it is on without the CAFE mint + administrator
+                // authority that minting under a mint authority requires.
                 Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true, Faucet = ReadCapabilityFlag(root, "faucet") }
             };
             return true;

@@ -1,0 +1,13 @@
+{
+  "name": "thiscafeteria-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Client-side build tooling for the storefront (Tailwind CSS).",
+  "scripts": {
+    "build:catalog-css": "tailwindcss -i Styles/catalog.input.css -o wwwroot/css/catalog.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

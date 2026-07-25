@@ -52,8 +52,8 @@ public sealed class ChainRegistry : IChainRegistry
             // a manifest that turns the flag on while carrying neither fails closed.
             if (chain.Capabilities.MarketplacePayment && chain.Family == ChainFamily.Evm && string.IsNullOrWhiteSpace(chain.Deployment.AgenticEscrow) && string.IsNullOrWhiteSpace(chain.Deployment.LegacyPool)) throw new InvalidOperationException($"Chain '{chain.Key}' enables marketplace payment without an escrow or legacy pool deployment.");
             if (chain.Family == ChainFamily.Solana && chain.Capabilities.LiquidStaking && string.IsNullOrWhiteSpace(chain.Deployment.Program)) throw new InvalidOperationException($"Solana chain '{chain.Key}' enables staking without a program deployment.");
-            // A Solana CAFE faucet mints the CAFE token under its mint authority, so it needs both the
-            // CAFE mint and the administrator authority that is allowed to mint. See docs/solana faucet.
+            // A Solana CAFE faucet mints under the CAFE mint authority, so it needs both the CAFE mint and
+            // the administrator authority allowed to mint it. See docs/solana-devnet-faucet.md.
             if (chain.Family == ChainFamily.Solana && chain.Capabilities.Faucet && (string.IsNullOrWhiteSpace(chain.Deployment.Cafe) || string.IsNullOrWhiteSpace(chain.Deployment.Admin))) throw new InvalidOperationException($"Solana chain '{chain.Key}' enables the faucet without a CAFE mint and administrator authority.");
             if (chain.Enabled && chain.Family == ChainFamily.Solana && chain.Capabilities.LiquidStaking)
             {
