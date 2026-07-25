@@ -27,10 +27,13 @@ public sealed class RundlerBundlerClientTests
             calls++;
             object result = calls == 1 ? new[] { EntryPoint } : UserOpHash;
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { jsonrpc = "2.0", id = 1, result }) };
-        })) { BaseAddress = new Uri("http://bundler.test") };
+        }))
+        { BaseAddress = new Uri("http://bundler.test") };
         var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
         {
-            Key = ChainKey, Family = ChainFamily.Evm, BundlerRpcUrl = "http://bundler.test/rpc",
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
             Deployment = new ChainDeployment { EntryPoint = EntryPoint }
         }));
 
@@ -80,10 +83,13 @@ public sealed class RundlerBundlerClientTests
                 ? new[] { EntryPoint }
                 : UserOpHash;
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { jsonrpc = "2.0", id = 1, result }) };
-        })) { BaseAddress = new Uri("http://bundler.test") };
+        }))
+        { BaseAddress = new Uri("http://bundler.test") };
         var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
         {
-            Key = ChainKey, Family = ChainFamily.Evm, BundlerRpcUrl = "http://bundler.test/rpc",
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
             Deployment = new ChainDeployment { EntryPoint = EntryPoint }
         }));
 
@@ -124,7 +130,9 @@ public sealed class RundlerBundlerClientTests
         }));
         var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
         {
-            Key = ChainKey, Family = ChainFamily.Evm, BundlerRpcUrl = "http://bundler.test/rpc",
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
             Deployment = new ChainDeployment { EntryPoint = EntryPoint }
         }));
 
@@ -147,7 +155,9 @@ public sealed class RundlerBundlerClientTests
         }));
         var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
         {
-            Key = ChainKey, Family = ChainFamily.Evm, BundlerRpcUrl = "http://bundler.test/rpc",
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
             Deployment = new ChainDeployment { EntryPoint = EntryPoint }
         }));
 
@@ -168,9 +178,14 @@ public sealed class RundlerBundlerClientTests
 
     private static BundlerUserOperation Operation(string initCode) => new()
     {
-        Sender = Sender, Nonce = 42, InitCode = initCode, CallData = "0x12345678",
-        AccountGasLimits = PackHiLo(1_000_000, 100_000), PreVerificationGas = 100,
-        GasFees = PackHiLo(1_000_000_000, 2_000_000_000), Signature = "0xdeadbeef"
+        Sender = Sender,
+        Nonce = 42,
+        InitCode = initCode,
+        CallData = "0x12345678",
+        AccountGasLimits = PackHiLo(1_000_000, 100_000),
+        PreVerificationGas = 100,
+        GasFees = PackHiLo(1_000_000_000, 2_000_000_000),
+        Signature = "0xdeadbeef"
     };
 
     /// <summary>bytes32: hi (16 bytes) | lo (16 bytes) - the same packing v0.7 uses for accountGasLimits/gasFees.</summary>

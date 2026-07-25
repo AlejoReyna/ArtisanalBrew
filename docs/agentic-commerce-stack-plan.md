@@ -247,9 +247,13 @@ above**: `scripts/crossstack-bundler-submit-denied-check.ts` (new) proves — th
 `UserOperationSubmitter`/`RundlerBundlerClient` wiring, not `UserOperationSubmitterTests`' stubs —
 that an unapproved sponsorship never reaches the bundler at all, by pointing the bundler URL at a
 port nothing listens on and confirming a clean `Denied` result rather than a connection failure.
-Needs no live chain. The remaining negative cases (over-budget, wrong-target, wrong-selector,
-expired, revoked) are still only unit-tested at the policy layer, not proven through this specific
-bundler-submission path — lower priority than the Sepolia proof itself, not blocked on anything.
+Needs no live chain.
+
+**Update (2026-07-25): the remaining negative cases are now proven too**, by
+`scripts/crossstack-bundler-submit-negative-check.ts` — over-budget, wrong-target, wrong-selector,
+expired, and revoked each provoked from the real policy engine (not fabricated) and refused by the
+real submitter. With that, **Phase 4's gate is met**; see the Phase 4 section for the evidence and
+for what remains unstarted in the phase itself.
 
 ## Session handoff (2026-07-21) — read this first
 
@@ -307,9 +311,11 @@ pair only (no multi-pair support). Phase 6 untouched.
   below) is the first `ThisCafeteria.*` code to call `eth_sendUserOperation`, submitting through
   the chosen Rundler path rather than calling `EntryPoint.handleOps` directly.
 - **`NativeCurrencyUsdRate` is a static config number, not a live oracle.**
-- No batch approval+funding, no session-key permissions, no fallback/revocation beyond
-  sponsorship-grant revocation (`RevokeSessionPermissionsAsync` currently just revokes the
-  sponsorship grant, not a real session-key module — there isn't one yet).
+- ~~No batch approval+funding, no session-key permissions, no fallback/revocation beyond
+  sponsorship-grant revocation.~~ **Superseded 2026-07-21 by commit `1cea130` and re-verified
+  2026-07-25** — see "Session-key permissions" below. The MetaMask Delegation Framework v1.3.0
+  path implements all three: `RevokeSessionPermissionsAsync` now reconciles against the on-chain
+  nonce epoch, and batch approval+funding is covered by the two-delegation redemption.
 - The cross-stack proof scripts are not wired into CI/automated tests.
 
 ### Bundler investigation (2026-07-21) — real attempt, real finding, not a deferral
@@ -1033,7 +1039,7 @@ The repository now contains a structurally verified foundation for agentic comme
 **Test-Verified and Implemented:**
 - **x402 Gateway:** Clean TypeScript build, successful integration tests proving idempotency binding to request/payment metadata, and replay-protection against double-charging (Priority 2 & 3).
 - **Escrow Reconciliation:** Event syncing is implemented via `AgenticCommerceReconciliationWorker`. Integration tests prove idempotent state transitions, deferred-event recording for out-of-order prerequisites, and concurrency checks. EF Core configuration enforces correct on-chain identities (`ChainKey` + `ContractAddress` + `OnChainJobId`).
-- **Smart Account Scaffolding:** as of Phase 4 (in progress) `SmartAccountService` implements configuration discovery and counterfactual account derivation against the pinned canonical v0.7.0 factory. Sponsorship and session operations still fail closed (`NotSupportedException`, or `false` for quota), preventing spoofed implementations until a paymaster, bundler, and audited permissions module exist. See the Phase 4 section for detail.
+- **Smart Account Scaffolding:** `SmartAccountService` implements configuration discovery and counterfactual account derivation against the pinned canonical v0.7.0 factory. **Superseded in part:** the "sponsorship and session operations still fail closed until a paymaster, bundler, and audited permissions module exist" caveat recorded here on 2026-07-20 no longer holds — all three now exist (canonical `VerifyingPaymaster`, Rundler v0.11.0, MetaMask Delegation Framework v1.3.0), and the session-permission methods are implemented. See the Phase 4 section for detail.
 - **Verification Command:** `dotnet test tests/ThisCafeteria.UnitTests` (155 passing), `npm test` in gateway (11 passing) plus `npm run build` (clean), `npm test` in EVM contracts (24 passing).
 
 - **Phase 3 Acceptance:** ✅ **VERIFIED** — `ACCEPTANCE_ISOLATED=1 ./run-acceptance.sh` exited 0 on
@@ -1120,26 +1126,190 @@ Gate: an unauthenticated paid request returns 402, a valid payment returns the d
 
 Gate: a normal wallet completes the local procurement lifecycle before smart-account abstraction is required.
 
-### Phase 4 — ERC-4337 user experience [IN PROGRESS]
+### Phase 4 — ERC-4337 user experience [IN PROGRESS — gate met 2026-07-25; two bullets unstarted]
 
 - ✅ integrate smart-account creation/discovery through a pinned established stack;
-- 🟡 add bundler and paymaster clients — **paymaster deployed and proven; a working local bundler (Rundler, `--unsafe` mode) is proven via `scripts/rundler-e2e-check.ts`; real `ThisCafeteria.*` code (`UserOperationSubmitter`) now submits through it and is proven end-to-end via `scripts/crossstack-bundler-submit-check.ts` — see the sponsored-submission session handoff at the top of this file. Still open: the same proof against Ethereum Sepolia, blocked on a bundler-provider decision and broadcast authorization, both explicitly flagged to Alexis, not yet answered**;
-- ⬜ batch approval plus funding;
+- ✅ add bundler and paymaster clients — **paymaster deployed and proven; a working local bundler (Rundler, `--unsafe` mode) is proven via `scripts/rundler-e2e-check.ts`; real `ThisCafeteria.*` code (`UserOperationSubmitter`) submits through it, proven end-to-end via `scripts/crossstack-bundler-submit-check.ts` (re-verified 2026-07-25) and on public Sepolia by the mined operation recorded in the top-of-file handoff**;
+- ✅ batch approval plus funding — **covered by the MetaMask v1.3.0 path: one exact `approve` and one exact `escrow.fund` delegation, redeemed together in a single operation. See "Session-key permissions" below**;
 - ✅ enforce sponsorship quotas and simulation — quota engine, signer, and canonical-EntryPoint gas simulation implemented and proven cross-stack (native-USD pricing is still a static config value, not an oracle);
-- 🟡 add explicit fallback and permission revocation — **sponsorship revocation implemented; session keys not**;
-- ⬜ add constrained session permissions only with an audited compatible module.
+- ✅ add explicit fallback and permission revocation — **sponsorship revocation implemented; session-key revocation implemented on top of `NonceEnforcer` epochs and reconciled against the on-chain nonce**;
+- ✅ add constrained session permissions only with an audited compatible module — **MetaMask Delegation Framework v1.3.0 (`HybridDeleGator`), audit provenance recorded in [`erc4337-session-key-provenance.md`](erc4337-session-key-provenance.md)**.
+
+#### Session-key permissions (commit `1cea130`, re-verified 2026-07-25)
+
+Earlier revisions of this document said session keys were unimplemented and that no audited module
+had been chosen. **Both statements were stale**, and stale in the direction this project keeps
+getting wrong — under-claiming here, over-claiming elsewhere. The implemented state:
+
+- **Module:** MetaMask Delegation Framework v1.3.0 (`HybridDeleGator`, `DelegationManager`,
+  `SimpleFactory`) at commit `bfbdf979`, with per-component audit scope (Consensys Aug 2024, Cyfrin
+  Feb + Mar 2025) recorded in [`erc4337-session-key-provenance.md`](erc4337-session-key-provenance.md).
+  Existing `SimpleAccount` users stay on the unchanged reference-account path.
+- **Authority shape:** two epoch-bound, one-use delegations (exact `approve`, exact `escrow.fund`)
+  scoped by `AllowedTargets`/`AllowedMethods`/`ExactCalldata` + `LimitedCalls(1)` + `Timestamp` +
+  `Nonce` enforcers. Only `SingleDefault` execution mode is accepted.
+- **Revocation:** `SmartAccountService.RevokeSessionPermissionsAsync` marks an epoch revoked *only
+  after* the on-chain nonce has actually moved past it, so the database cannot claim a revocation
+  the chain does not back.
+- **Acceptance:** `scripts/metamask-session-key-e2e.ts`, re-run 2026-07-25 against a live Hardhat
+  node and pinned Rundler v0.11.0 — `METAMASK_SESSION_KEY_E2E=PASS`, with all eleven on-chain
+  rejections firing (not-installed, wrong-target, wrong-token, wrong-selector, wrong-amount,
+  non-default/batch/delegatecall execution modes, exhausted quota, expired, revoked), plus
+  `RECONCILIATION_JOB_FUNDED=1` and `SIMPLE_ACCOUNT_PATH=UNCHANGED`.
+- ~~**Known gap:** that acceptance is entirely user-paid.~~ **Closed 2026-07-25** — see below.
+
+#### Sponsored delegation (2026-07-25)
+
+`scripts/crossstack-sponsored-delegation-check.ts` proves the session-key path and the paymaster
+path working **together**: an agent holding no gas money spends exactly what it was delegated, on
+the paymaster's money, through the real `UserOperationSponsor` → `UserOperationSubmitter` →
+Rundler chain. The agent account is deliberately funded with only `0.001 ETH` so a success cannot be
+explained by it paying for itself.
+
+The claim that actually needed proving is not "it works" but **"paying an agent's gas does not let
+it make a payment its delegation forbids."** The script proves that by showing the sponsorship layer
+genuinely cannot tell the two apart:
+
+| | in-scope redemption | out-of-scope redemption (wrong amount) |
+|---|---|---|
+| sender / target / selector | agent / `DelegationManager` / `redeemDelegations` | **identical** |
+| sponsorship decision | approved, `costUsd 12.337788` | **approved**, `costUsd 9.28479` |
+| outcome | `Confirmed`, `JobFunded(jobId=1, client=owner, amount=10e18)` | `Reverted`; allowance stayed `0` |
+
+The out-of-scope case being **approved by the sponsorship policy** is the point, not a defect. If the
+policy had rejected it, the boundary would be a configuration accident, and widening the sponsorship
+allowlist would silently widen the agent's spending authority. What stops the payment is the on-chain
+`ExactCalldata` caveat — a different layer, with a different key holder. Verified independently:
+agent EntryPoint deposit `0`, agent native balance unchanged, paymaster deposit decreased by
+`2727024000000000 wei`.
+
+##### Finding: reverted sponsored operations cost real money and debit no budget — found, then fixed
+
+Discovered by the case-2 measurement, not predicted. A `Reverted` result means the operation **was
+mined** — so under EntryPoint v0.7 the paymaster pays for the gas — but `UserOperationSubmitter`
+returned at the `Reverted` branch *before* `RecordUsageAsync`, so the owner's USD grant was never
+debited. Measured: the failed attempt cost the paymaster `1705558000000000 wei` (~0.0017 ETH) while
+the grant's `SpentUsd` stayed put.
+
+That is a griefing vector. A holder of a *valid* grant could submit always-reverting operations and
+drain the paymaster's deposit without ever exhausting its own budget: the quota engine meters
+successful operations only, making it a spend control against an honest grant-holder but not an
+adversarial one.
+
+**Fixed 2026-07-25** by metering reverts separately from spend, rather than by pricing them into the
+USD budget. Debiting actual gas on a revert was rejected because it bills a user for a failure that
+may well be the application's own bug; the grant model already expresses "this authority has been
+used badly enough to withdraw it", so that is what the fix uses.
+
+- `SponsorshipGrant.RevertedOperationCount` — new column (migration
+  `20260725063847_AddSponsorshipRevertedOperationCount`, one `int` defaulted to `0`).
+- `SponsorshipPolicyOptions.MaxRevertedOperations` — default `5`; `0` disables revocation while
+  still counting. Revocation is recoverable by issuing a new grant, whereas a drained paymaster
+  deposit stops sponsorship for everyone, so the default is deliberately low.
+- `ISponsorshipPolicyService.RecordRevertedOperationAsync` — increments the count and revokes at the
+  threshold. Deliberately never throws on a missing or already-revoked grant: it runs on a failure
+  path and must not turn one failure into two.
+- `UserOperationSubmitter` calls it on the `Reverted` branch and surfaces revocation in `Detail`, so
+  a caller learns its grant is gone rather than just that one operation failed.
+
+Proven live in case 3 of the same script, with the limit lowered to `2`: second revert →
+`revertedCount=2, revoked=true` → the next sponsorship request is refused with `Revoked`. Also
+covered by five unit tests in `SponsorshipPolicyServiceTests` and two in
+`UserOperationSubmitterTests` (268 unit tests pass, up from 262).
+
+Remaining limitation, not addressed: the count is per grant, so revocation is the only lever. There
+is no rate limiting, and a legitimate integration bug will burn through the allowance the same way an
+adversary would — the difference is intent, which this layer cannot see.
+
+#### Procurement Lab session-key surface (2026-07-25)
+
+Until now `SmartAccountPanel` lived only on `Profile.razor`, so the page where procurement actually
+happens gave no indication of which authority was about to sign — a job funded by a scoped agent and
+one funded by the owner's own wallet are very different acts, and the difference was invisible.
+
+`ProcurementLab.razor` now carries an "Agent permissions" panel above the projection grid showing the
+delegating account, authorised agent, expiry, and scoped-call count, with a revoke control. Its
+revoke path reports honestly: `RevokeSessionPermissionsAsync` only marks an epoch revoked once the
+chain agrees the nonce has moved past it, so when the epoch is still current the UI says the
+permission remains usable rather than implying it is gone.
+
+Per fundable job it distinguishes "Agent may fund this" from "Wallet-signed only" by checking the
+installed grants against the chain's configured escrow address. That check is deliberately strict —
+an epoch that *exists* is not one that *covers this escrow*, and claiming otherwise for a permission
+that would revert on-chain would be worse than showing nothing.
+
+##### Blocked: installing a permission from the browser
+
+Granting a new permission from the Lab is **not** implemented, and the blocker is architectural
+rather than effort. Activating an epoch requires `NonceEnforcer.incrementNonce(delegationManager)` to
+be executed *by the delegator account* — the nonce is keyed by (manager, account), so an EOA calling
+it directly increments the wrong counter. That means an owner UserOperation through a bundler, and
+`BundlerRpcUrl` is deliberately server-side only, excluded from the `/api/chains` public projection
+exactly like `EntryPoint`/`AccountFactory`/`VerifyingPaymaster`.
+
+Two ways forward, and they differ in what gets exposed:
+
+1. hand the bundler URL to the browser — rejected here; it undoes a deliberate boundary;
+2. add a server endpoint that accepts the owner's *already-signed* UserOperation and forwards it
+   through the existing `UserOperationSubmitter`. The server already holds the bundler URL and the
+   submission path, so this adds no new secret exposure and reuses proven code.
+
+Option 2 is the natural fit. Not chosen unilaterally because it adds a new authenticated
+state-changing endpoint, which is a security-review surface rather than a UI detail. The browser half
+(`smartAccountRegistration.js`) currently derives addresses only — it does not sign delegations yet
+either, so both halves of the install flow remain to be built.
 
 Gate: sponsored and user-paid flows both work; over-budget, wrong-target, wrong-selector, expired, and revoked operations fail.
 
-**The gate is still not met, but the biggest remaining piece of it is.** Both sponsored and user-paid
-flows are proven *on-chain*, and real `ThisCafeteria.*` code now submits a sponsored operation
-through a real bundler and independently verifies it mined (`UserOperationSubmitter`, proven by
-`scripts/crossstack-bundler-submit-check.ts` — see the top-of-file handoff). Still open: the negative
-half of the gate is only partly covered end-to-end (wrong-signature and unauthorised-sponsorship
-fail correctly at the policy layer and are unit-tested; over-budget, wrong-target, wrong-selector,
-expired, and revoked are unit-tested at the policy layer too, but not yet proven through the actual
-bundler-submission path specifically), and this has only ever run against local Hardhat — not
-Sepolia.
+**The gate is now met (2026-07-25).** Both halves are proven through real production code against a
+live chain, not just unit-tested:
+
+- *Positive half.* Sponsored and user-paid flows both work on-chain, and real `ThisCafeteria.*` code
+  submits a sponsored operation through a real bundler and independently verifies it mined
+  (`UserOperationSubmitter`, proven locally by `scripts/crossstack-bundler-submit-check.ts` and on
+  public Sepolia by the mined operation recorded in the top-of-file handoff).
+- *Negative half.* `scripts/crossstack-bundler-submit-negative-check.ts` (new) proves all five gate
+  cases — over-budget, wrong-target, wrong-selector, expired, revoked — plus the per-operation cost
+  cap, through the real `UserOperationSponsor` + `SponsorshipPolicyService` + `UserOperationSubmitter`
+  path. See its section below for what makes it a real proof rather than a restatement of the policy
+  unit tests.
+
+Note this is the *gate*, not the whole phase: batch approval-plus-funding and constrained session
+permissions are still unstarted bullets above.
+
+#### Negative-path gate proof (2026-07-25)
+
+`scripts/crossstack-bundler-submit-negative-check.ts` exists because neither prior artefact actually
+proved the negative half:
+
+- `SponsorshipPolicyServiceTests` proves each *rule* in isolation, but never touches
+  `UserOperationSponsor`, a real chain, or the submitter — so it proves the rule exists, not that it
+  is reached and honoured in the path that really runs.
+- `scripts/crossstack-bundler-submit-denied-check.ts` **fabricates** its denial with
+  `SponsorshipSignature.Deny(...)`. That proves the submitter refuses an unapproved signature, and
+  proves nothing about which conditions actually produce one.
+
+The new script rigs exactly one real input per case (an allowlist entry, a grant budget, a
+per-operation cap, a validity window, a revocation — the last performed through the real
+`RevokeAsync`, not a hand-written column), runs the real sponsor with real gas simulation, and feeds
+whatever `SponsorshipSignature` that genuinely produces to the real `UserOperationSubmitter`. Per
+case it asserts denial, the *specific* expected `SponsorshipDenialReason` (so a case that starts
+failing for an unrelated reason is caught rather than counted as a pass), and a `Denied` submission.
+
+Two properties make it hard to pass vacuously:
+
+1. **A baseline assertion.** The same unrigged operation must first be *approved* — otherwise every
+   denial below could be explained by a broken operation rather than by the rule under test. A
+   `SimulationFailed` reason is rejected explicitly for the same purpose.
+2. **A structurally unreachable bundler** (`127.0.0.1:1`). "Never contacted the bundler" is not
+   asserted, it is enforced: any submission attempt is a connection failure, not a pass.
+
+Verified 2026-07-25 against a live Hardhat node (`--port 8546`, `arbitrumLocal` deployment): baseline
+approved at a measured `costUsd` of `9.140508`, then all six cases denied for their own reason with
+`submissionStatus=Denied`. The falsification control was run too — the same harness mode with nothing
+rigged approves and then dies with connection-refused inside
+`RundlerBundlerClient.SendUserOperationAsync`, confirming the six passes mean what they claim.
+Requires a live node (the sponsor simulates before it evaluates policy) but **no** running bundler.
 
 #### Status of the pinned stack
 

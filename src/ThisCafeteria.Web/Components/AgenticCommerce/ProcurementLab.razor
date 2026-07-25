@@ -8,36 +8,52 @@
 @inject IAgenticJobService JobService
 @inject IChainRegistry ChainRegistry
 @inject ISelectedChainAccessor SelectedChainAccessor
+@inject ISmartAccountService SmartAccountService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JSRuntime
+@inject ILogger<ProcurementLab> Logger
 
-<div class="procurement-lab container mt-5" data-page-theme-color="#171714">
+<div class="procurement-lab" data-page-theme-color="#171714">
+  <div class="procurement-lab__inner">
     <div class="procurement-lab__header">
-        <div>
-            <span class="procurement-lab__eyebrow">Agentic commerce / live projection</span>
+        <div class="procurement-lab__intro">
+            <span class="procurement-lab__eyebrow">Agentic commerce · live projection</span>
             <h1>Procurement Lab</h1>
-            <p>Inspect the state currently known to ArtisanalBrew. This view reads persisted projections; it does not manufacture on-chain progress.</p>
+            <p>Inspect the state currently known to ArtisanalBrew. This view reads persisted projections — it does not manufacture on-chain progress.</p>
         </div>
-        
-        <div class="procurement-lab__actions">
+
+        <div class="procurement-lab__aside">
+            <div class="procurement-lab__source" title="Chain the projection is read from">
+                <span class="crypto-dot crypto-dot--pulse"></span>
+                <span class="procurement-lab__source-name">@SelectedChainAccessor.SelectedChain.ShortName</span>
+                <span class="procurement-lab__source-label">Reading projections</span>
+            </div>
             @if (_walletAddress != null)
             {
-                <button class="btn btn-outline-primary" @onclick="CreateTestJob">Simulate new Job</button>
+                <div class="procurement-lab__actions">
+                    <button class="pl-btn pl-btn--primary" @onclick="CreateTestJob">
+                        <span class="pl-btn__glyph">＋</span> Simulate new job
+                    </button>
+                </div>
             }
-        </div>
-
-        <div class="procurement-lab__source">
-            <span class="procurement-lab__source-dot"></span>
-            <span>@SelectedChainAccessor.SelectedChain.ShortName</span>
-            <small>selected chain</small>
         </div>
     </div>
 
     <section class="procurement-lab__summary" aria-label="Projection summary">
-        <div class="state-metric"><span class="state-metric__value">@(Agents?.Count ?? 0)</span><span class="state-metric__label">Indexed agents</span></div>
-        <div class="state-metric"><span class="state-metric__value">@(Jobs?.Count ?? 0)</span><span class="state-metric__label">Observed jobs</span></div>
-        <div class="state-metric"><span class="state-metric__value">@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</span><span class="state-metric__label">Terminal jobs</span></div>
-        <div class="state-metric state-metric--muted"><span class="state-metric__value">@(_walletAddress is null ? "—" : ShortAddress(_walletAddress))</span><span class="state-metric__label">Wallet scope</span></div>
+        <div class="state-metric state-metric--agents"><span class="state-metric__value">@(Agents?.Count ?? 0)</span><span class="state-metric__label">Indexed agents</span></div>
+        <div class="state-metric state-metric--jobs"><span class="state-metric__value">@(Jobs?.Count ?? 0)</span><span class="state-metric__label">Observed jobs</span></div>
+        <div class="state-metric state-metric--terminal"><span class="state-metric__value">@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</span><span class="state-metric__label">Terminal jobs</span></div>
+        <div class="state-metric state-metric--wallet">
+            @if (_walletAddress is null)
+            {
+                <span class="state-metric__value">—</span>
+            }
+            else
+            {
+                <button type="button" class="pl-copy state-metric__value @(_copiedKey == "wallet" ? "is-copied" : null)" title="Copy @_walletAddress" @onclick='() => Copy("wallet", _walletAddress)'>@ShortAddress(_walletAddress)<span class="pl-copy__flag">Copied</span></button>
+            }
+            <span class="state-metric__label">Wallet scope</span>
+        </div>
     </section>
 
     @if (_walletAddress is null)
@@ -52,20 +68,83 @@
     }
     else if (_loading)
     {
-        <section class="projection-empty" role="status"><div class="projection-empty__pulse"></div><p>Loading the selected chain projection…</p></section>
+        <section class="projection-empty projection-empty--loading" role="status"><div class="projection-empty__pulse"></div><p>Loading the selected chain projection…</p></section>
     }
     else
     {
+        <section class="projection-panel projection-panel--permission">
+            <div class="projection-panel__heading">
+                <div><span class="panel-kicker">Authority layer · ERC-4337 session keys</span><h2>Agent permissions</h2></div>
+                @if (_activeEpoch is not null)
+                {
+                    <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>Active</span>
+                }
+            </div>
+
+            @if (!_modularStackConfigured)
+            {
+                <p class="panel-note">
+                    @SelectedChainAccessor.SelectedChain.ShortName has no modular (session-key capable) account stack deployed,
+                    so agent-delegated funding is unavailable here. Funding falls back to signing with your own wallet.
+                </p>
+            }
+            else if (_modularAccountAddress is null)
+            {
+                <div class="panel-empty">
+                    <span class="panel-empty__icon">⬡</span>
+                    <p class="panel-empty__lede">No modular account registered on this chain.</p>
+                    <p class="panel-empty__hint">Register one from your profile to let a scoped agent fund jobs on your behalf.</p>
+                </div>
+            }
+            else if (_activeEpoch is null)
+            {
+                <div class="panel-empty">
+                    <span class="panel-empty__icon">◇</span>
+                    <p class="panel-empty__lede">No agent permission is installed.</p>
+                    <p class="panel-empty__hint">
+                        Your modular account @ShortAddress(_modularAccountAddress) exists, but has granted no agent any authority.
+                        Every action below is signed by your own wallet.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <dl class="job-card__roles">
+                    <div><dt>Delegating account</dt><dd>@RoleAddress(-1, "delegator", _activeEpoch.DelegatorAddress)</dd></div>
+                    <div><dt>Authorised agent</dt><dd>@RoleAddress(-1, "agent", _activeEpoch.AgentAddress)</dd></div>
+                    <div><dt>Expires</dt><dd>@_activeEpoch.ValidBeforeUtc.ToLocalTime().ToString("MMM d, HH:mm")</dd></div>
+                    <div><dt>Scoped calls</dt><dd>@_activeEpoch.Grants.Count</dd></div>
+                </dl>
+                <p class="panel-note">
+                    The agent may make exactly these calls and nothing else — target, selector, and calldata are fixed on-chain,
+                    each usable once. Gas may be sponsored; that never widens what the agent can spend.
+                </p>
+                <div class="job-card__actions">
+                    <button class="pl-btn pl-btn--sm pl-btn--reject" disabled="@_isRevoking" @onclick="RevokeAgentPermissionAsync">
+                        @(_isRevoking ? "Revoking…" : "Revoke agent permission")
+                    </button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_permissionNotice))
+                {
+                    <p class="panel-note">@_permissionNotice</p>
+                }
+            }
+        </section>
+
         <div class="procurement-lab__grid">
             <section class="projection-panel">
                 <div class="projection-panel__heading"><div><span class="panel-kicker">Identity layer</span><h2>Agent directory</h2></div><span class="panel-count">@(Agents?.Count ?? 0)</span></div>
             @if (Agents == null)
             {
-                <p>Loading agents...</p>
+                <p class="panel-note">Loading agents…</p>
             }
             else if (!Agents.Any())
             {
-                <p>No agents found. (Run the seeder or register via contract)</p>
+                <div class="panel-empty">
+                    <span class="panel-empty__icon">⬡</span>
+                    <p class="panel-empty__lede">No agents indexed yet.</p>
+                    <p class="panel-empty__hint">Run the seeder or register an agent through the escrow contract to populate the identity layer.</p>
+                </div>
             }
             else
             {
@@ -73,11 +152,14 @@
                     @foreach (var agent in Agents)
                     {
                         <li class="agent-list__item">
-                            <div>
+                            <span class="agent-avatar" style="--pl-hue:@(agent.AgentId * 47 % 360)">@(agent.AgentId % 100)</span>
+                            <div class="agent-list__id">
                                 <strong>Agent #@agent.AgentId</strong>
-                                <small>@ShortAddress(agent.OwnerAddress)</small>
+                                <button type="button" class="pl-copy agent-list__addr @(_copiedKey == $"agent-{agent.AgentId}" ? "is-copied" : null)" title="Copy @agent.OwnerAddress" @onclick='() => Copy($"agent-{agent.AgentId}", agent.OwnerAddress)'>@ShortAddress(agent.OwnerAddress)<span class="pl-copy__flag">Copied</span></button>
                             </div>
-                            <span class="state-pill state-pill--active">@(agent.IsActive ? "Active" : "Inactive")</span>
+                            <span class="state-pill @(agent.IsActive ? "state-pill--active" : "state-pill--idle")">
+                                <span class="state-pill__dot"></span>@(agent.IsActive ? "Active" : "Inactive")
+                            </span>
                         </li>
                     }
                 </ul>
@@ -88,11 +170,15 @@
                 <div class="projection-panel__heading"><div><span class="panel-kicker">Escrow projection</span><h2>My procurement state</h2></div><span class="panel-count">@(Jobs?.Count ?? 0)</span></div>
             @if (Jobs == null)
             {
-                <p>Loading jobs...</p>
+                <p class="panel-note">Loading jobs…</p>
             }
             else if (!Jobs.Any())
             {
-                <p>No jobs found.</p>
+                <div class="panel-empty">
+                    <span class="panel-empty__icon">◇</span>
+                    <p class="panel-empty__lede">No procurement jobs for this wallet.</p>
+                    <p class="panel-empty__hint">Simulate a job above to watch it move through the open → funded → submitted → settled escrow lifecycle.</p>
+                </div>
             }
             else
             {
@@ -112,22 +198,48 @@
                                     </div>
                                 }
                             </div>
-                            <dl class="job-card__roles"><div><dt>Client</dt><dd>@ShortAddress(job.ClientAddress)</dd></div><div><dt>Provider</dt><dd>@ShortAddress(job.ProviderAddress)</dd></div><div><dt>Evaluator</dt><dd>@ShortAddress(job.EvaluatorAddress)</dd></div></dl>
-                            <div class="job-card__commitment"><span>Commitment</span><code>@ShortCommitment(job.DescriptionCommitment)</code></div>
+                            <dl class="job-card__roles">
+                                <div><dt>Client</dt><dd>@RoleAddress(job.JobId, "client", job.ClientAddress)</dd></div>
+                                <div><dt>Provider</dt><dd>@RoleAddress(job.JobId, "provider", job.ProviderAddress)</dd></div>
+                                <div><dt>Evaluator</dt><dd>@RoleAddress(job.JobId, "evaluator", job.EvaluatorAddress)</dd></div>
+                            </dl>
+                            <div class="job-card__commitment">
+                                <span>Commitment</span>
+                                @if (string.IsNullOrWhiteSpace(job.DescriptionCommitment))
+                                {
+                                    <code>not recorded</code>
+                                }
+                                else
+                                {
+                                    <button type="button" class="pl-copy job-card__commitment-code @(_copiedKey == $"job-{job.JobId}-commit" ? "is-copied" : null)" title="Copy @job.DescriptionCommitment" @onclick='() => Copy($"job-{job.JobId}-commit", job.DescriptionCommitment)'><code>@ShortCommitment(job.DescriptionCommitment)</code><span class="pl-copy__flag">Copied</span></button>
+                                }
+                            </div>
                         
-                            <div class="job-card__actions mt-3">
+                            <div class="job-card__actions">
                                 @if (job.Status == "Open" && string.Equals(_walletAddress, job.ClientAddress, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button class="btn btn-sm btn-primary" @onclick="() => FundJob(job)">Fund Job</button>
+                                    <button class="pl-btn pl-btn--sm pl-btn--fund" @onclick="() => FundJob(job)">Fund job</button>
+                                    @if (CanAgentFund(job))
+                                    {
+                                        <span class="state-pill state-pill--active" title="Agent @_activeEpoch!.AgentAddress is delegated to fund this job">
+                                            <span class="state-pill__dot"></span>Agent may fund this
+                                        </span>
+                                    }
+                                    else if (_activeEpoch is not null)
+                                    {
+                                        <span class="state-pill state-pill--idle" title="The installed permission is not scoped to this job">
+                                            <span class="state-pill__dot"></span>Wallet-signed only
+                                        </span>
+                                    }
                                 }
                                 @if (job.Status == "Funded" && string.Equals(_walletAddress, job.ProviderAddress, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button class="btn btn-sm btn-success" @onclick="() => SubmitJob(job)">Submit Evidence</button>
+                                    <button class="pl-btn pl-btn--sm pl-btn--submit" @onclick="() => SubmitJob(job)">Submit evidence</button>
                                 }
                                 @if (job.Status == "Submitted" && string.Equals(_walletAddress, job.EvaluatorAddress, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button class="btn btn-sm btn-info" @onclick="() => CompleteJob(job)">Complete Job</button>
-                                    <button class="btn btn-sm btn-danger ms-2" @onclick="() => RejectJob(job)">Reject Job</button>
+                                    <button class="pl-btn pl-btn--sm pl-btn--complete" @onclick="() => CompleteJob(job)">Complete job</button>
+                                    <button class="pl-btn pl-btn--sm pl-btn--reject" @onclick="() => RejectJob(job)">Reject job</button>
                                 }
                             </div>
 
@@ -138,6 +250,7 @@
             </section>
         </div>
     }
+  </div>
 </div>
 
 @code {
@@ -147,6 +260,147 @@
     private List<AgenticJobProjection>? Jobs;
     private string? _walletAddress;
     private bool _loading = true;
+    private string? _copiedKey;
+
+    // --- Session-key authority state ---
+    // The Lab is where procurement actually happens, so which authority is about to sign belongs
+    // here rather than only on the profile page: a job funded by a scoped agent and one funded by
+    // the owner's own wallet are very different acts, and the difference was previously invisible.
+    private string? _modularAccountAddress;
+    private AgentPermissionEpochInfo? _activeEpoch;
+    private bool _isRevoking;
+    private string? _permissionNotice;
+
+    private bool _modularStackConfigured
+    {
+        get
+        {
+            var deployment = SelectedChainAccessor.SelectedChain.Deployment;
+            return !string.IsNullOrWhiteSpace(deployment.EntryPoint)
+                && !string.IsNullOrWhiteSpace(deployment.ModularAccountFactory)
+                && !string.IsNullOrWhiteSpace(deployment.DelegationManager);
+        }
+    }
+
+    /// <summary>
+    /// True when the installed permission actually authorises funding THIS job.
+    ///
+    /// Deliberately strict: a permission is scoped by exact target and selector, so an epoch that
+    /// exists is not the same as an epoch that covers this escrow. Showing "agent may fund this"
+    /// for a permission that would revert on-chain would be worse than showing nothing.
+    /// </summary>
+    private bool CanAgentFund(AgenticJobProjection job)
+    {
+        if (_activeEpoch is null) return false;
+
+        var escrow = SelectedChainAccessor.SelectedChain.Deployment.AgenticEscrow;
+        if (string.IsNullOrWhiteSpace(escrow)) return false;
+
+        return _activeEpoch.Grants.Any(grant =>
+            string.Equals(grant.TargetAddress, escrow, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task LoadPermissionStateAsync()
+    {
+        _modularAccountAddress = null;
+        _activeEpoch = null;
+
+        if (string.IsNullOrWhiteSpace(_walletAddress) || !_modularStackConfigured) return;
+
+        try
+        {
+            var chainKey = SelectedChainAccessor.SelectedChainKey;
+            var accounts = await SmartAccountService.DiscoverAccountsAsync(chainKey, _walletAddress);
+            var modular = accounts.FirstOrDefault(a => a.AccountType == SmartAccountType.ModularHybridDeleGator);
+            if (modular is null) return;
+
+            _modularAccountAddress = modular.AccountAddress;
+            _activeEpoch = await SmartAccountService.GetActivePermissionEpochAsync(chainKey, modular.AccountAddress);
+        }
+        catch (NotSupportedException)
+        {
+            // Chain has no modular stack configured; the unconfigured branch already explains this.
+        }
+        catch (Exception exception)
+        {
+            // Permission state is contextual, not load-bearing: the projections below must still
+            // render if this lookup fails.
+            Logger.LogWarning(exception, "Could not load agent permission state for {WalletAddress} on {ChainKey}.", _walletAddress, SelectedChainAccessor.SelectedChainKey);
+        }
+    }
+
+    private async Task RevokeAgentPermissionAsync()
+    {
+        _isRevoking = true;
+        _permissionNotice = null;
+        StateHasChanged();
+
+        try
+        {
+            await SmartAccountService.RevokeSessionPermissionsAsync(SelectedChainAccessor.SelectedChainKey, _walletAddress!);
+            await LoadPermissionStateAsync();
+
+            // RevokeSessionPermissionsAsync only marks the epoch revoked once the chain agrees the
+            // nonce has moved past it, so a still-present epoch here means the on-chain revocation
+            // has not happened yet — say so rather than implying the permission is gone.
+            _permissionNotice = _activeEpoch is null
+                ? "Agent permission revoked."
+                : "Sponsorship was revoked, but the on-chain permission epoch is still current. It stays usable until your account advances the NonceEnforcer epoch on-chain.";
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Failed to revoke agent permissions for {WalletAddress} on {ChainKey}.", _walletAddress, SelectedChainAccessor.SelectedChainKey);
+            _permissionNotice = "Could not revoke the agent permission. Try again shortly.";
+        }
+        finally
+        {
+            _isRevoking = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Copy(string key, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", value);
+        }
+        catch
+        {
+            // Clipboard is unavailable outside a secure context; fail quietly.
+            return;
+        }
+        _copiedKey = key;
+        StateHasChanged();
+        await Task.Delay(1200);
+        if (_copiedKey == key)
+        {
+            _copiedKey = null;
+            StateHasChanged();
+        }
+    }
+
+    private RenderFragment RoleAddress(long jobId, string role, string? address) => builder =>
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            builder.AddContent(0, "Not assigned");
+            return;
+        }
+        var key = $"job-{jobId}-{role}";
+        builder.OpenElement(1, "button");
+        builder.AddAttribute(2, "type", "button");
+        builder.AddAttribute(3, "class", _copiedKey == key ? "pl-copy is-copied" : "pl-copy");
+        builder.AddAttribute(4, "title", $"Copy {address}");
+        builder.AddAttribute(5, "onclick", EventCallback.Factory.Create(this, () => Copy(key, address)));
+        builder.AddContent(6, ShortAddress(address));
+        builder.OpenElement(7, "span");
+        builder.AddAttribute(8, "class", "pl-copy__flag");
+        builder.AddContent(9, "Copied");
+        builder.CloseElement();
+        builder.CloseElement();
+    };
 
     private IJSObjectReference? _agenticCommerce;
 
@@ -232,12 +486,13 @@
         _walletAddress = authentication.User.FindFirst("wallet_address")?.Value;
         Agents = await JobService.GetAgentsAsync(SelectedChainAccessor.SelectedChainKey);
         if (!string.IsNullOrWhiteSpace(_walletAddress)) Jobs = await JobService.GetJobsAsync(SelectedChainAccessor.SelectedChainKey, _walletAddress);
+        await LoadPermissionStateAsync();
         _loading = false;
     }
 
     private static bool IsTerminal(string? status) => status is "Completed" or "Rejected" or "Expired";
     private static string StatusTitle(string? status) => status switch { "Completed" => "Payment released", "Rejected" => "Refunded by evaluator", "Expired" => "Expired / refunded", "Submitted" => "Evidence submitted", "Funded" => "Awaiting delivery", _ => "Open proposal" };
-    private static string StatusClass(string? status) => status switch { "Completed" => "state-pill--complete", "Rejected" or "Expired" => "state-pill--attention", "Funded" or "Submitted" => "state-pill--progress", _ => "state-pill--open" };
+    private static string StatusClass(string? status) => status switch { "Completed" => "state-pill--complete", "Rejected" or "Expired" => "state-pill--attention", "Submitted" => "state-pill--submitted", "Funded" => "state-pill--funded", _ => "state-pill--open" };
     private static string StepState(string? status, string step) {
         var current = status switch { "Funded" => 2, "Submitted" => 3, "Completed" or "Rejected" or "Expired" => 4, _ => 1 };
         var target = step == "Open" ? 1 : step == "Funded" ? 2 : step == "Submitted" ? 3 : 4;

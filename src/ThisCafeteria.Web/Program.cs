@@ -140,6 +140,10 @@ builder.Services.AddSingleton(builder.Configuration
 builder.Services.AddScoped<ISolverPolicyService, SolverPolicyService>();
 builder.Services.AddScoped<IIntentQuoteService, IntentQuoteService>();
 
+// Solana devnet CAFE faucet policy (claim amount + cooldown). The mint-authority secret is read from
+// ARTISANALBREW_SOLANA_ADMIN_KEY at claim time, never from configuration or a manifest.
+builder.Services.Configure<SolanaFaucetOptions>(builder.Configuration.GetSection(SolanaFaucetOptions.SectionName));
+
 builder.Services.AddApplication(hasDatabase);
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -151,6 +155,7 @@ if (hasDatabase)
 {
     builder.Services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
     builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
+    builder.Services.AddScoped<ISolanaFaucetService, SolanaFaucetService>();
     builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
     builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
     builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();

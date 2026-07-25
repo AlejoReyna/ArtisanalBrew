@@ -37,14 +37,25 @@ public sealed class SelectedChainAccessor(IChainRegistry registry, IHttpContextA
         cancellationToken.ThrowIfCancellationRequested();
         if (!registry.TryGet(chainKey, out var definition) || !definition.Enabled) return Task.FromResult(false);
         _selected = definition.Key;
-        httpContextAccessor.HttpContext?.Response.Cookies.Append(CookieName, definition.Key, new CookieOptions
+        try
         {
-            HttpOnly = true,
-            IsEssential = true,
-            SameSite = SameSiteMode.Strict,
-            Secure = httpContextAccessor.HttpContext.Request.IsHttps,
-            MaxAge = TimeSpan.FromDays(30)
-        });
+            if (httpContextAccessor.HttpContext?.Response.HasStarted == false)
+            {
+                httpContextAccessor.HttpContext.Response.Cookies.Append(CookieName, definition.Key, new CookieOptions
+                {
+                    HttpOnly = true,
+                    IsEssential = true,
+                    SameSite = SameSiteMode.Strict,
+                    Secure = httpContextAccessor.HttpContext.Request.IsHttps,
+                    MaxAge = TimeSpan.FromDays(30)
+                });
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore if response has already started (common in Blazor Server / SignalR)
+        }
+        
         Changed?.Invoke();
         return Task.FromResult(true);
     }

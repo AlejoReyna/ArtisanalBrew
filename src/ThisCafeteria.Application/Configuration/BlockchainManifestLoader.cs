@@ -85,6 +85,7 @@ public static class BlockchainManifestLoader
                 ShortName = displayName,
                 Family = ChainFamily.Evm,
                 Enabled = true,
+                IconAsset = chainId == 97 ? "/images/bnb_logo.svg" : "/images/eth_logo.png",
                 EvmChainId = chainId,
                 EvmChainIdHex = $"0x{chainId:x}",
                 NativeCurrencyName = nativeName,
@@ -131,8 +132,13 @@ public static class BlockchainManifestLoader
                     LiquidStaking = true,
                     Faucet = true,
                     RewardMinting = true,
-                    AgenticCommerce = root.TryGetProperty("capabilities", out var caps) && caps.TryGetProperty("agenticCommerce", out var agenticCommerce) && agenticCommerce.GetBoolean(),
-                    AgenticSessionPayments = root.TryGetProperty("capabilities", out var caps2) && caps2.TryGetProperty("agenticSessionPayments", out var agenticSessionPayments) && agenticSessionPayments.GetBoolean()
+                    AgenticCommerce = ReadCapabilityFlag(root, "agenticCommerce"),
+                    AgenticSessionPayments = ReadCapabilityFlag(root, "agenticSessionPayments"),
+                    // Read from the manifest instead of hardcoding: the manifest is the single source of
+                    // truth. ChainRegistry.Validate fails closed if a flag is on without the deployment
+                    // address it requires (marketplacePayment -> AgenticEscrow, legacyExit -> LegacyPool).
+                    MarketplacePayment = ReadCapabilityFlag(root, "marketplacePayment"),
+                    LegacyExit = ReadCapabilityFlag(root, "legacyExit")
                 }
             };
             return true;
@@ -166,6 +172,7 @@ public static class BlockchainManifestLoader
                 ShortName = cluster switch { "localnet" => "Solana Localnet", "devnet" => "Solana Devnet", _ => "Solana Testnet" },
                 Family = ChainFamily.Solana,
                 Enabled = true,
+                IconAsset = "/images/solana_logo.svg",
                 SolanaCluster = cluster,
                 NativeCurrencyName = "Solana",
                 NativeCurrencySymbol = "SOL",
@@ -193,7 +200,10 @@ public static class BlockchainManifestLoader
                     CoffeeDecimals = coffeeDecimals,
                     StartBlockOrSlot = root.GetProperty("deploymentSlot").GetInt64()
                 },
-                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true }
+                // Faucet is read from the manifest (single source of truth). ChainRegistry.Validate
+                // fails closed if it is on without the CAFE mint + administrator authority a devnet
+                // CAFE mint needs behind it.
+                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true, Faucet = ReadCapabilityFlag(root, "faucet") }
             };
             return true;
         }
@@ -204,6 +214,17 @@ public static class BlockchainManifestLoader
         var value = root.GetProperty(name).GetString();
         return !string.IsNullOrWhiteSpace(value) ? value : throw new InvalidDataException($"Manifest property '{name}' is required.");
     }
+
+    /// <summary>
+    /// Reads a boolean flag from the manifest's <c>capabilities</c> object, defaulting to false when the
+    /// object or the named flag is absent. Non-boolean values throw, so a malformed manifest fails loudly
+    /// rather than silently disabling a capability.
+    /// </summary>
+    private static bool ReadCapabilityFlag(JsonElement root, string name) =>
+        root.TryGetProperty("capabilities", out var capabilities)
+        && capabilities.ValueKind == JsonValueKind.Object
+        && capabilities.TryGetProperty(name, out var flag)
+        && flag.GetBoolean();
 
     private static string? Optional(JsonElement root, string name) =>
         root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String

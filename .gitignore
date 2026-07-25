@@ -11,3 +11,7 @@ publish-ec2/
 *.nupkg
 appsettings.Local.json
 .env
+
+# Client build tooling (Tailwind CSS)
+node_modules/
+src/ThisCafeteria.Web/package-lock.json

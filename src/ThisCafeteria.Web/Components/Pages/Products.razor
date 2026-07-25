@@ -3,8 +3,8 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @inject IProductService ProductService
-@inject IShoppingCartService CartService
 @inject ICartMutationClient CartMutationClient
+@inject IWebHostEnvironment WebHostEnvironment
 @inject ILogger<Products> Logger
 @using ThisCafeteria.Domain.Enums
 @using ThisCafeteria.Web.Services.Cart
@@ -15,134 +15,185 @@
 <PageTitle>Shop | Artisanal Brew</PageTitle>
 
 <HeadContent>
-    @* Preloaded so switching categories never has to fetch these cold — avoids a blank flash while the image downloads. *@
+    <link rel="stylesheet" href="@Assets["css/catalog.css"]" />
+    @* Preloaded so the hero never has to fetch cold — avoids a blank flash while the image downloads. *@
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80" />
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80" />
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1200&q=80" />
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=1200&q=80" />
 </HeadContent>
 
-<section class="products-shop">
+<div class="products-catalog">
     @if (_isLoading)
     {
-        <section class="page-intro" data-animate="fade-up">
-            <p class="eyebrow">Shop</p>
-            <h1>Loading products.</h1>
-        </section>
+        <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+            <p class="text-xs font-semibold uppercase tracking-widest text-accent">Shop</p>
+            <h1 class="mt-2 text-4xl font-semibold tracking-tight text-ink">Loading products.</h1>
+        </div>
     }
     else if (!string.IsNullOrWhiteSpace(_loadError))
     {
-        <section class="page-intro" data-animate="fade-up">
-            <p class="eyebrow">Shop</p>
-            <h1>Products could not be loaded.</h1>
-            <p class="lede">@_loadError</p>
-        </section>
+        <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+            <p class="text-xs font-semibold uppercase tracking-widest text-accent">Shop</p>
+            <h1 class="mt-2 text-4xl font-semibold tracking-tight text-ink">Products could not be loaded.</h1>
+            <p class="mt-3 max-w-md text-sm text-mute">@_loadError</p>
+        </div>
     }
     else
     {
-        var visibleProducts = OrderProductsForDisplay(
-            displayedSection == AllSection
-                ? _products.Where(product => product.IsActive)
-                : _products.Where(product => product.IsActive && product.Category.ToString() == displayedSection));
+        <div class="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between" data-animate="fade-up">
+                <nav class="flex items-center gap-2 text-sm text-mute" aria-label="Breadcrumb">
+                    <a href="" class="flex items-center gap-2 transition-colors hover:text-ink">
+                        <LucideIcon Name="house" Size="14" />
+                    </a>
+                    <LucideIcon Name="chevron-right" Size="12" CssClass="text-faint" />
+                    <button type="button" class="transition-colors hover:text-ink" @onclick="ResetFilters">
+                        All categories
+                    </button>
+                    <LucideIcon Name="chevron-right" Size="12" CssClass="text-faint" />
+                    <span class="font-semibold text-ink">@CurrentSectionLabel</span>
+                </nav>
 
-        <header class="products-shop__header products-shop__header--@displayedSection" data-animate="fade-up">
-            <h1 class="products-shop__title">@((MarkupString)TitleFor(displayedSection).Replace("&", "<span class=\"products-shop__amp\">&amp;</span>"))</h1>
-            <p class="products-shop__lede">@LedeFor(displayedSection)</p>
-        </header>
+                <CatalogToolbar ListView="@_listView"
+                                ListViewChanged="value => _listView = value"
+                                Chips="@AppliedChips"
+                                OnRemoveChip="RemoveChip"
+                                Sort="@_sort"
+                                SortChanged="value => { _sort = value; _currentPage = 1; }" />
+            </div>
 
-        <TestnetInfoModal />
+            <TestnetInfoModal />
 
-        <ul class="category-filter" data-animate="fade-up" aria-label="Product categories">
-            @foreach (var section in Sections)
-            {
-                <li class="@(selectedSection == section.Key ? "active" : "")"
-                    aria-selected="@(selectedSection == section.Key ? "true" : "false")"
-                    role="tab"
-                    @onclick="() => SetSectionAsync(section.Key)">
-                    @section.Label
-                </li>
-            }
-        </ul>
+            <div class="mt-10 flex flex-col gap-8 lg:flex-row lg:items-start">
+                <div class="flex-shrink-0 lg:sticky lg:top-24 lg:w-[260px]">
+                    <FilterSidebar SearchText="@_searchText"
+                               SearchTextChanged="value => { _searchText = value; _currentPage = 1; }"
+                               AvailableOnly="@_availableOnly"
+                               AvailableOnlyChanged="value => { _availableOnly = value; _currentPage = 1; }"
+                               Categories="@CategoryOptions"
+                               SelectedCategory="@_selectedCategory"
+                               SelectedCategoryChanged="value => { _selectedCategory = value; _currentPage = 1; }"
+                               MinPrice="@_minPrice"
+                               MinPriceChanged="value => { _minPrice = value; _currentPage = 1; }"
+                               MaxPrice="@_maxPrice"
+                               MaxPriceChanged="value => { _maxPrice = value; _currentPage = 1; }"
+                               PriceFloor="@_priceFloor"
+                               PriceCeiling="@_priceCeiling" />
+                </div>
 
-        <div class="product-grid-wrapper @GetGridWrapperClass()">
-            <div @key="displayedSection" class="product-grid stagger-container" data-stagger>
-                @foreach (var product in visibleProducts)
-                {
-                    var quantity = GetQuantity(product.Slug);
-                    var isAdding = _addingSlug == product.Slug;
+                <div class="min-w-0 flex-1">
+                    @{
+                        var cards = VisibleCards();
+                    }
 
-                    <article class="marketplace-card @(_qtyExpanded.Contains(product.Slug) ? "marketplace-card--qty-expanded" : "")"
-                             data-animate="fade-up"
-                             data-product-card
-                             data-product-slug="@product.Slug">
-                        <a class="marketplace-card__link"
-                           href="@($"products/{product.Slug}")"
-                           @onclick:preventDefault="true"
-                           @onclick="() => NavigateToProductAsync(product)">
-                            <div class="image-frame @ImageClassFor(product.Category)"
-                                 style="@BackgroundImage(product.ImageUrl)"
-                                 data-product-image>
-                                <span class="marketplace-card__wishlist" aria-label="Save for later">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                                    </svg>
-                                </span>
-                            </div>
-                            <div class="marketplace-card__copy">
-                                <div class="marketplace-card__title-row">
-                                    <h3>@product.Name</h3>
-                                    <p class="price">@FormatPrice(product.Price)</p>
-                                </div>
-                            </div>
-                        </a>
-
-                        <div class="marketplace-card__footer">
-                            <div class="marketplace-card__actions">
-                                <ProductQuantityPicker Quantity="quantity"
-                                                       QuantityChanged="@(value => SetQuantity(product.Slug, value))" />
-                                <button type="button"
-                                        class="button button--dark marketplace-card__add"
-                                        disabled="@isAdding"
-                                        aria-label="Add @product.Name to cart"
-                                        @onclick="() => AddToCartAsync(product, quantity)">
-                                    @(isAdding ? "Adding…" : "Add to cart")
-                                </button>
-                            </div>
+                    @if (cards.Count == 0)
+                    {
+                        <div class="rounded-2xl bg-white p-10 text-center shadow-sm">
+                            <p class="text-sm text-mute">No products match the current filters.</p>
+                            <button type="button"
+                                    class="mt-4 rounded-full bg-ink px-5 py-2 text-sm text-white transition-colors hover:bg-accent"
+                                    @onclick="ResetFilters">
+                                Clear filters
+                            </button>
                         </div>
-                    </article>
-                }
+                    }
+                    else
+                    {
+                        <div class="grid gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
+                             data-animate="fade-up">
+                            @for (var i = 0; i < cards.Count; i++)
+                            {
+                                var card = cards[i];
+                                <ProductCard @key="card.Slug"
+                                             Card="@card"
+                                             Elevated="@(!_listView && cards.Count > 2 && i == 1)"
+                                             Horizontal="@_listView"
+                                             Adding="@(_addingSlug == card.Slug)"
+                                             OnNavigate="NavigateToProduct"
+                                             OnAddToCart="AddToCart" />
+                            }
+                        </div>
+
+                        @if (_totalFilteredCount > _pageSize)
+                        {
+                            var totalPages = (int)Math.Ceiling((double)_totalFilteredCount / _pageSize);
+                            <div class="mt-12 flex justify-center gap-2" data-animate="fade-up">
+                                @for (int p = 1; p <= totalPages; p++)
+                                {
+                                    var pageNum = p;
+                                    <button type="button"
+                                            class="flex h-10 w-10 items-center justify-center rounded-full border @(pageNum == _currentPage ? "border-accent bg-accent text-white" : "border-line bg-transparent text-ink hover:border-ink") text-sm font-medium transition-colors"
+                                            @onclick="() => { _currentPage = pageNum; }">
+                                        @pageNum
+                                    </button>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
             </div>
         </div>
     }
-</section>
+</div>
 
 @code {
-    private const string AllSection = "All";
-
-    private static readonly IReadOnlyList<ProductSection> Sections =
-    [
-        new(AllSection, "All Items"),
-        new(ProductCategory.Beans.ToString(), "Single Origin Beans"),
-        new(ProductCategory.BrewingEquipment.ToString(), "Brewing Equipment"),
-        new(ProductCategory.CeramicsAndGoods.ToString(), "Ceramics & Goods")
-    ];
-
     private IReadOnlyCollection<ProductDto> _products = [];
     private bool _isLoading = true;
+    private int _currentPage = 1;
+    private int _pageSize = 6;
+    private int _totalFilteredCount;
     private string? _loadError;
-    private string selectedSection = AllSection;
-    private string displayedSection = AllSection;
-    private string? _gridTransitionClass;
-    private bool _isTransitioning;
-    private bool shouldRefreshAnimations = true;
-    private const int CategoryFadeOutMs = 180;
-    private const int CategoryFadeInMs = 340;
-    private const int FrameDelayMs = 16;
-    private readonly Dictionary<string, int> _quantities = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _qtyExpanded = new(StringComparer.Ordinal);
+    private string _searchText = string.Empty;
+    private bool _availableOnly = true;
+    private string _selectedCategory = string.Empty;
+    private decimal _minPrice;
+    private decimal _maxPrice;
+    private decimal _priceFloor;
+    private decimal _priceCeiling;
+    private string _sort = CatalogToolbar.SortDefault;
+    private bool _listView;
     private string? _addingSlug;
     private string? _openingSlug;
     private PersistingComponentStateSubscription _subscription;
+
+    private string CurrentSectionLabel =>
+        string.IsNullOrEmpty(_selectedCategory)
+            ? "All items"
+            : CatalogProductCardMapper.LabelFor(Enum.Parse<ProductCategory>(_selectedCategory));
+
+    private IReadOnlyList<CatalogCategoryOption> CategoryOptions =>
+        _products
+            .Where(product => product.IsActive)
+            .GroupBy(product => product.Category)
+            .OrderBy(group => group.Key.ToString(), StringComparer.Ordinal)
+            .Select(group => new CatalogCategoryOption(
+                group.Key.ToString(),
+                CatalogProductCardMapper.LabelFor(group.Key),
+                group.Count()))
+            .ToList();
+
+    private IReadOnlyList<CatalogFilterChip> AppliedChips
+    {
+        get
+        {
+            var chips = new List<CatalogFilterChip>();
+
+            if (!string.IsNullOrEmpty(_selectedCategory))
+            {
+                chips.Add(new("category", CurrentSectionLabel));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                chips.Add(new("search", $"Search: {_searchText}"));
+            }
+
+            if (_minPrice > _priceFloor || _maxPrice < _priceCeiling)
+            {
+                chips.Add(new("price", $"{_minPrice:0} – {_maxPrice:0} $"));
+            }
+
+            return chips;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,6 +216,14 @@
             ApplicationState.TryTakeFromJson<string?>("productsLoadError", out _loadError);
         }
 
+        if (_products.Count > 0)
+        {
+            _priceFloor = Math.Floor(_products.Min(product => product.Price));
+            _priceCeiling = Math.Ceiling(_products.Max(product => product.Price));
+            _minPrice = _priceFloor;
+            _maxPrice = _priceCeiling;
+        }
+
         _isLoading = false;
     }
 
@@ -182,101 +241,148 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender || shouldRefreshAnimations)
+        if (firstRender)
         {
-            shouldRefreshAnimations = false;
             await JS.InvokeVoidAsync("queueAnimations");
         }
     }
 
-    private string GetGridWrapperClass()
+    private List<CatalogProductCard> VisibleCards()
     {
-        return _gridTransitionClass ?? string.Empty;
-    }
+        var query = _products
+            .Where(product => product.IsActive)
+            .Where(product => string.IsNullOrEmpty(_selectedCategory) || product.Category.ToString() == _selectedCategory)
+            .Where(product => !_availableOnly || product.StockQuantity > 0)
+            .Where(product => product.Price >= _minPrice && product.Price <= _maxPrice);
 
-    private async Task SetSectionAsync(string section)
-    {
-        if (section == selectedSection || _isTransitioning)
+        if (!string.IsNullOrWhiteSpace(_searchText))
         {
-            return;
+            query = query.Where(product =>
+                product.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
         }
 
-        selectedSection = section;
-        _qtyExpanded.Clear();
-        _isTransitioning = true;
-        _gridTransitionClass = "is-fading-out";
-        StateHasChanged();
+        var ordered = _sort switch
+        {
+            "price-asc" => query.OrderBy(product => product.Price),
+            "price-desc" => query.OrderByDescending(product => product.Price),
+            "rating" => query
+                .OrderByDescending(product => CatalogProductCardMapper.ToCard(product).Rating)
+                .ThenBy(product => product.Name, StringComparer.Ordinal),
+            _ => query
+                .OrderBy(product => product.Category.ToString(), StringComparer.Ordinal)
+                .ThenBy(product => product.Name, StringComparer.Ordinal)
+        };
 
-        await Task.Delay(CategoryFadeOutMs);
+        _totalFilteredCount = ordered.Count();
 
-        displayedSection = section;
-        shouldRefreshAnimations = true;
-        _gridTransitionClass = "is-fading-in";
-        StateHasChanged();
-
-        await Task.Delay(FrameDelayMs);
-
-        _gridTransitionClass = null;
-        StateHasChanged();
-
-        await Task.Delay(CategoryFadeInMs);
-
-        _isTransitioning = false;
+        return ordered
+            .Skip((_currentPage - 1) * _pageSize)
+            .Take(_pageSize)
+            .Select(product => CatalogProductCardMapper.ToCard(product) with { ImageUrl = ResolveImageUrl(product) })
+            .ToList();
     }
 
-    private int GetQuantity(string slug) =>
-        _quantities.TryGetValue(slug, out var quantity) ? quantity : 1;
+    // Seeded rows can point at /images/products/*.jpg assets that are not in wwwroot;
+    // the old grid hid those 404s behind CSS gradients, an <img> cannot. Fall back to a
+    // remote photo per product so the card always renders its beige image box with content.
+    private static readonly string[] FallbackImages =
+    [
+        "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
+    ];
 
-    private void SetQuantity(string slug, int quantity) =>
-        _quantities[slug] = Math.Clamp(quantity, 1, 99);
+    private string? ResolveImageUrl(ProductDto product)
+    {
+        if (!string.IsNullOrWhiteSpace(product.ImageUrl)
+            && (product.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                || File.Exists(Path.Combine(
+                    WebHostEnvironment.WebRootPath ?? string.Empty,
+                    product.ImageUrl.TrimStart('/')))))
+        {
+            return product.ImageUrl;
+        }
 
-    private async Task NavigateToProductAsync(ProductDto product)
+        return FallbackImages[product.Slug.Sum(c => c) % FallbackImages.Length];
+    }
+
+    private void RemoveChip(string key)
+    {
+        _currentPage = 1;
+        switch (key)
+        {
+            case "category":
+                _selectedCategory = string.Empty;
+                break;
+            case "search":
+                _searchText = string.Empty;
+                break;
+            case "price":
+                _minPrice = _priceFloor;
+                _maxPrice = _priceCeiling;
+                break;
+        }
+    }
+
+    private void ResetFilters()
+    {
+        _selectedCategory = string.Empty;
+        _searchText = string.Empty;
+        _availableOnly = true;
+        _minPrice = _priceFloor;
+        _maxPrice = _priceCeiling;
+        _currentPage = 1;
+    }
+
+    private async Task NavigateToProduct(string slug)
     {
         if (_openingSlug is not null)
         {
             return;
         }
 
-        _openingSlug = product.Slug;
+        _openingSlug = slug;
 
         try
         {
-            await JS.InvokeVoidAsync("productTransition.playFromCard", product.Slug);
+            await JS.InvokeVoidAsync("productTransition.playFromCard", slug);
         }
         catch (JSException)
         {
         }
         finally
         {
-            Navigation.NavigateTo($"/products/{product.Slug}");
+            Navigation.NavigateTo($"/products/{slug}");
         }
     }
 
-    private async Task AddToCartAsync(ProductDto product, int quantity)
+    private async Task AddToCart(string slug)
     {
         if (_addingSlug is not null)
         {
             return;
         }
 
-        _addingSlug = product.Slug;
+        var product = _products.FirstOrDefault(candidate => candidate.Slug == slug);
+        if (product is null)
+        {
+            return;
+        }
+
+        _addingSlug = slug;
 
         try
         {
-            await CartMutationClient.AddAsync(product.Slug, quantity);
-            _qtyExpanded.Add(product.Slug);
-            var label = quantity == 1
-                ? $"{product.Name} added to cart."
-                : $"{quantity} × {product.Name} added to cart.";
-            await ShowCartToastAsync(label);
+            await CartMutationClient.AddAsync(slug, 1);
+            await ShowCartToastAsync($"{product.Name} added to cart.");
         }
         catch (Exception exception)
         {
             Logger.LogError(
                 exception,
-                "Add to cart failed on shop page. Slug={Slug}, Quantity={Quantity}, ProductName={ProductName}",
-                product.Slug,
-                quantity,
+                "Add to cart failed on shop page. Slug={Slug}, ProductName={ProductName}",
+                slug,
                 product.Name);
             await ShowCartToastAsync("This product could not be added.", "error");
         }
@@ -296,51 +402,4 @@
         {
         }
     }
-
-    private static IEnumerable<ProductDto> OrderProductsForDisplay(IEnumerable<ProductDto> products) =>
-        products
-            .OrderBy(product => CategorySortOrder(product.Category))
-            .ThenBy(product => product.Name, StringComparer.Ordinal);
-
-    private static int CategorySortOrder(ProductCategory category) =>
-        category switch
-        {
-            ProductCategory.Beans => 0,
-            ProductCategory.BrewingEquipment => 1,
-            ProductCategory.CeramicsAndGoods => 2,
-            _ => int.MaxValue
-        };
-
-    private static string TitleFor(string section) =>
-        section switch
-        {
-            "Beans" => "Single Origin Beans",
-            "BrewingEquipment" => "Brewing Equipment",
-            "CeramicsAndGoods" => "Ceramics & Goods",
-            _ => "Coffee & Goods"
-        };
-
-    private static string LedeFor(string section) =>
-        section switch
-        {
-            "Beans" => "Single-origin lots, roasted in small batches every week.",
-            "BrewingEquipment" => "Precision tools for pour-over, espresso, and slow brews.",
-            "CeramicsAndGoods" => "Hand-thrown ceramics and goods made for the table.",
-            _ => "Small-batch roasts, brew tools, and ceramics for your daily ritual. Free shipping on every order."
-        };
-
-    private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
-
-    private static string ImageClassFor(ProductCategory category) =>
-        category switch
-        {
-            ProductCategory.BrewingEquipment => "image-frame--equipment",
-            ProductCategory.CeramicsAndGoods => "image-frame--ceramics",
-            _ => "image-frame--coldbrew"
-        };
-
-    private static string? BackgroundImage(string? imageUrl) =>
-        string.IsNullOrWhiteSpace(imageUrl) ? null : $"background-image: url('{imageUrl}');";
-
-    private sealed record ProductSection(string Key, string Label);
 }

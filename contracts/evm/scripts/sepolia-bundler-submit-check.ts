@@ -45,6 +45,8 @@ import { writeFileSync } from "node:fs";
 import { network } from "hardhat";
 import { concat, encodeFunctionData, type Address, type Hex } from "viem";
 import manifest from "../deployments/ethereum-sepolia.json" with { type: "json" };
+import entryPointArtifact from "../artifacts/contracts/EntryPointFixture.sol/EntryPointFixture.json" with { type: "json" };
+import factoryArtifact from "../artifacts/contracts/AccountAbstractionCanonical.sol/CanonicalSimpleAccountFactory.json" with { type: "json" };
 
 const SPONSOR_PROJECT = "../../tools/ThisCafeteria.CrossStackHarness";
 const RPC_URL = process.env.ETHEREUM_SEPOLIA_RPC_URL ?? "https://ethereum-sepolia-rpc.publicnode.com";
@@ -72,8 +74,10 @@ const entryPointCode = await publicClient.getCode({ address: entryPoint });
 console.log(`EntryPoint (${entryPoint}) has code: ${!!entryPointCode && entryPointCode !== "0x"}`);
 if (!entryPointCode || entryPointCode === "0x") throw new Error("FAIL: EntryPoint has no deployed code on this network.");
 
-const entryPointAbi = (await viem.deployContract("EntryPointFixture")).abi;
-const factoryAbi = (await viem.deployContract("CanonicalSimpleAccountFactory", [entryPoint])).abi;
+// Read ABIs from compiled artifacts. Calling deployContract here would broadcast
+// deployments before the authorization gate, violating the read-only phase.
+const entryPointAbi = entryPointArtifact.abi;
+const factoryAbi = factoryArtifact.abi;
 
 const paymasterDeposit = (await publicClient.readContract({
   address: entryPoint, abi: entryPointAbi, functionName: "balanceOf", args: [paymaster]
@@ -105,7 +109,9 @@ if (!supported.map((a: string) => a.toLowerCase()).includes(entryPoint.toLowerCa
 }
 
 // Minimum deposit to sponsor a handful of small operations - not a real spend, but real Sepolia ETH.
-const MIN_DEPOSIT = 5_000_000_000_000_000n; // 0.005 ETH
+// Rundler safe-mode validation requires at least 0.0064 ETH for this proof operation.
+// Keep a small buffer so the approved first submission does not fail on a near-threshold deposit.
+const MIN_DEPOSIT = 10_000_000_000_000_000n; // 0.01 ETH
 const SALT = BigInt(process.env.SEPOLIA_SUBMIT_CHECK_SALT ?? "1");
 
 const sender = (await publicClient.readContract({
@@ -199,6 +205,7 @@ const userOpHash = (await publicClient.readContract({
 const signature = await owner.signMessage({ message: { raw: userOpHash } });
 
 console.log("--- step 2: submit through the hosted bundler (real UserOperationSubmitter) ---");
+console.log(`computed userOpHash: ${userOpHash}`);
 writeFileSync(opPath, JSON.stringify({ ...opDescription, paymasterAndData: sponsored.paymasterAndData, costUsd: sponsored.costUsd, signature }, null, 2));
 const submission = runHarness("submit", { CROSSSTACK_BUNDLER_RPC_URL: BUNDLER_URL });
 console.log(`status=${submission.status} userOpHash=${submission.userOpHash} tx=${submission.transactionHash}`);

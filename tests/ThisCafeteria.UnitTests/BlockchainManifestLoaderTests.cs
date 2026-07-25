@@ -69,6 +69,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Capabilities.WalletLogin.Should().BeTrue();
             deployed.Capabilities.LiquidStaking.Should().BeTrue();
             deployed.SolanaCluster.Should().Be("devnet");
+            deployed.IconAsset.Should().Be("/images/solana_logo.svg");
         }
         finally
         {
@@ -91,6 +92,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Enabled.Should().BeTrue();
             deployed.EvmChainId.Should().Be(97);
             deployed.EvmChainIdHex.Should().Be("0x61");
+            deployed.IconAsset.Should().Be("/images/bnb_logo.svg");
             deployed.PublicRpcUrl.Should().Be("https://97.rpc.thirdweb.com");
             deployed.Deployment.LiquidVault.Should().Be(Address('A'));
             deployed.Deployment.AgenticEscrow.Should().Be(Address('E'));
@@ -112,6 +114,49 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Deployment.TimestampEnforcer.Should().Be(Address('6'));
             deployed.Deployment.ModularAccountType.Should().Be("metamask-hybrid-delegator-v1.3.0");
             deployed.Deployment.ModularFrameworkRevision.Should().Be("bfbdf9795a976833ed2fa000baf42fbb83958b03");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ReadsMarketplacePaymentFromTheManifestInsteadOfHardcodingIt()
+    {
+        // Manifest is the single source of truth: with the flag off (the WriteEvmManifest default)
+        // the capability is off even though the escrow address is present...
+        var offPath = WriteEvmManifest();
+        // ...and with the flag on plus the required escrow address, the capability lights up.
+        var onPath = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(onPath, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true));
+        try
+        {
+            var off = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), offPath, null)).GetRequired("bsc-testnet");
+            off.Capabilities.MarketplacePayment.Should().BeFalse();
+
+            var on = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), onPath, null)).GetRequired("bsc-testnet");
+            on.Capabilities.MarketplacePayment.Should().BeTrue();
+            on.Deployment.AgenticEscrow.Should().Be(Address('E'));
+        }
+        finally
+        {
+            File.Delete(offPath);
+            File.Delete(onPath);
+        }
+    }
+
+    [Fact]
+    public void RejectsAMarketplacePaymentManifestThatOmitsTheEscrowDeployment()
+    {
+        // Inconsistent manifest: marketplacePayment on, but no erc8183Escrow address to settle against.
+        // Validation must fail closed rather than advertise a capability with no contract behind it.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true, includeEscrow: false));
+        try
+        {
+            var action = () => new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null));
+            action.Should().Throw<InvalidOperationException>().WithMessage("*marketplace payment*");
         }
         finally
         {
@@ -198,8 +243,10 @@ public sealed class BlockchainManifestLoaderTests
             var registry = new ChainRegistry(options);
 
             registry.GetRequired("bsc-testnet").EvmChainId.Should().Be(97);
+            registry.GetRequired("bsc-testnet").IconAsset.Should().Be("/images/bnb_logo.svg");
             registry.GetRequired("ethereum-sepolia").EvmChainId.Should().Be(11155111);
             registry.GetRequired("ethereum-sepolia").PublicRpcUrl.Should().Be("https://ethereum-sepolia-rpc.publicnode.com");
+            registry.GetRequired("ethereum-sepolia").IconAsset.Should().Be("/images/eth_logo.png");
         }
         finally
         {
@@ -208,7 +255,7 @@ public sealed class BlockchainManifestLoaderTests
         }
     }
 
-    private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899")
+    private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899", bool faucet = false)
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-solana-manifest-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, $$"""
@@ -231,10 +278,33 @@ public sealed class BlockchainManifestLoaderTests
           "token2022Program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
           "cafeDecimals": {{cafeDecimals}},
           "stCafeDecimals": {{stCafeDecimals}},
-          "coffeeDecimals": {{coffeeDecimals}}
+          "coffeeDecimals": {{coffeeDecimals}},
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": {{(faucet ? "true" : "false")}} }
         }
         """);
         return path;
+    }
+
+    [Fact]
+    public void ReadsTheFaucetCapabilityFromTheSolanaManifestInsteadOfHardcodingItOff()
+    {
+        // Off by default (no flag / flag false), on when the manifest declares it. The CAFE mint and
+        // administrator authority a devnet mint needs are always present in a valid Solana manifest.
+        var offPath = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com");
+        var onPath = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com", faucet: true);
+        try
+        {
+            var off = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, offPath)).GetRequired("solana-devnet");
+            off.Capabilities.Faucet.Should().BeFalse();
+
+            var on = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, onPath)).GetRequired("solana-devnet");
+            on.Capabilities.Faucet.Should().BeTrue();
+        }
+        finally
+        {
+            File.Delete(offPath);
+            File.Delete(onPath);
+        }
     }
 
     [Fact]
@@ -280,7 +350,7 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
-    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null) =>
+    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true) =>
         $$"""
         {
           "schemaVersion": 1,
@@ -295,7 +365,7 @@ public sealed class BlockchainManifestLoaderTests
             "coffee": "{{Address('B')}}",
             "liquidVault": "{{Address('A')}}",
             "faucet": "{{Address('F')}}",
-            "erc8183Escrow": "{{Address('E')}}",
+            {{(includeEscrow ? $"\"erc8183Escrow\": \"{Address('E')}\"," : "")}}
             "entryPoint": "{{Address('P')}}",
             "erc8004Registry": "{{Address('R')}}",
             "erc7683Resolver": "{{Address('S')}}",
@@ -314,7 +384,7 @@ public sealed class BlockchainManifestLoaderTests
             "modularAccountType": "metamask-hybrid-delegator-v1.3.0",
             "modularFrameworkRevision": "bfbdf9795a976833ed2fa000baf42fbb83958b03"
           },
-          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true }
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true, "marketplacePayment": {{(marketplacePayment ? "true" : "false")}} }
         }
         """;
 

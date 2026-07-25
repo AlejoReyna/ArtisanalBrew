@@ -26,6 +26,13 @@ param postgresAdminLogin = 'thiscafeteria_admin'
 param webImage = 'thiscafeteriaprodacr3m7beebrmubaa.azurecr.io/thiscafeteria-web:latest'
 param workerImage = 'thiscafeteriaprodacr3m7beebrmubaa.azurecr.io/thiscafeteria-worker:latest'
 
+// Stays off until a safe-mode-capable Sepolia RPC URL and a dedicated funded bundler signer are
+// supplied from the deployment environment.
+param enableSepoliaBundler = false
+param sepoliaBundlerImage = 'thiscafeteriaprodacr3m7beebrmubaa.azurecr.io/thiscafeteria-rundler:latest'
+param sepoliaBundlerNodeRpcUrl = readEnvironmentVariable('SEPOLIA_BUNDLER_NODE_RPC_URL', '')
+param sepoliaBundlerSignerPrivateKey = readEnvironmentVariable('SEPOLIA_BUNDLER_SIGNER_PRIVATE_KEY', '')
+
 // Secrets: never hardcode real values here. Export these as environment variables
 // before running `az deployment sub create`, e.g.:
 //   export POSTGRES_ADMIN_PASSWORD='...'

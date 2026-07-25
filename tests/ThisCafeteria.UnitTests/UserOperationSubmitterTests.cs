@@ -166,6 +166,25 @@ public sealed class UserOperationSubmitterTests
         result.Status.Should().Be(UserOperationSubmissionStatus.Reverted);
         result.TransactionHash.Should().Be(TxHash);
         policy.RecordedRequests.Should().BeEmpty();
+
+        // ...but the paymaster was still charged for the mined operation, so the revert has to be
+        // metered even though no budget is debited. Unmetered, a valid grant could drain the
+        // paymaster deposit indefinitely at no cost to itself.
+        policy.RecordedReverts.Should().ContainSingle().Which.Should().Be(Owner);
+    }
+
+    [Fact]
+    public async Task MinedButInnerCallReverted_ReportsWhenTheGrantWasRevoked()
+    {
+        var bundler = new StubBundler(receipt: () => new BundlerReceipt { TransactionHash = TxHash, Success = false });
+        var reader = new StubReader(_ => new EntryPointConfirmation { TransactionHash = TxHash, Success = false });
+        var policy = new StubPolicy { RevertRevokesGrant = true };
+        var submitter = Build(bundler, reader, policy);
+
+        var result = await submitter.SubmitAsync(Operation(), Approved(), Signature);
+
+        result.Status.Should().Be(UserOperationSubmissionStatus.Reverted);
+        result.Detail.Should().Contain("revoked", "the caller needs to know its grant is gone, not just that one operation failed");
     }
 
     private UserOperationSubmitter Build(IBundlerClient bundler, IEntryPointConfirmationReader reader, ISponsorshipPolicyService policy) =>
@@ -238,6 +257,10 @@ public sealed class UserOperationSubmitterTests
     private sealed class StubPolicy : ISponsorshipPolicyService
     {
         public List<SponsorshipRequest> RecordedRequests { get; } = [];
+        public List<string> RecordedReverts { get; } = [];
+
+        /// <summary>Set to make the stub report that a revert tripped the revocation threshold.</summary>
+        public bool RevertRevokesGrant { get; init; }
 
         public Task<SponsorshipDecision> EvaluateAsync(SponsorshipRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult(SponsorshipDecision.Approve(0m));
@@ -250,5 +273,11 @@ public sealed class UserOperationSubmitterTests
 
         public Task RevokeAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        public Task<bool> RecordRevertedOperationAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default)
+        {
+            RecordedReverts.Add(ownerAddress);
+            return Task.FromResult(RevertRevokesGrant);
+        }
     }
 }
