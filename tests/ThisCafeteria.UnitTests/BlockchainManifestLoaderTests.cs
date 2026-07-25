@@ -212,7 +212,7 @@ public sealed class BlockchainManifestLoaderTests
         }
     }
 
-    private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899")
+    private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899", bool faucet = false)
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-solana-manifest-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, $$"""
@@ -235,10 +235,33 @@ public sealed class BlockchainManifestLoaderTests
           "token2022Program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
           "cafeDecimals": {{cafeDecimals}},
           "stCafeDecimals": {{stCafeDecimals}},
-          "coffeeDecimals": {{coffeeDecimals}}
+          "coffeeDecimals": {{coffeeDecimals}},
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": {{(faucet ? "true" : "false")}} }
         }
         """);
         return path;
+    }
+
+    [Fact]
+    public void ReadsTheFaucetCapabilityFromTheSolanaManifestInsteadOfHardcodingItOff()
+    {
+        // Off by default (no flag / flag false), on when the manifest declares it. The CAFE mint and
+        // administrator authority a devnet mint needs are always present in a valid Solana manifest.
+        var offPath = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com");
+        var onPath = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com", faucet: true);
+        try
+        {
+            var off = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, offPath)).GetRequired("solana-devnet");
+            off.Capabilities.Faucet.Should().BeFalse();
+
+            var on = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, onPath)).GetRequired("solana-devnet");
+            on.Capabilities.Faucet.Should().BeTrue();
+        }
+        finally
+        {
+            File.Delete(offPath);
+            File.Delete(onPath);
+        }
     }
 
     [Fact]

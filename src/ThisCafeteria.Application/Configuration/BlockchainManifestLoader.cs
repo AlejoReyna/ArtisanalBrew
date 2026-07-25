@@ -195,7 +195,10 @@ public static class BlockchainManifestLoader
                     CoffeeDecimals = coffeeDecimals,
                     StartBlockOrSlot = root.GetProperty("deploymentSlot").GetInt64()
                 },
-                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true }
+                // Faucet is read from the manifest (single source of truth) rather than hardcoded off.
+                // ChainRegistry.Validate fails closed if it is on without the CAFE mint + administrator
+                // authority that minting under a mint authority requires.
+                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true, Faucet = ReadCapabilityFlag(root, "faucet") }
             };
             return true;
         }
@@ -206,6 +209,17 @@ public static class BlockchainManifestLoader
         var value = root.GetProperty(name).GetString();
         return !string.IsNullOrWhiteSpace(value) ? value : throw new InvalidDataException($"Manifest property '{name}' is required.");
     }
+
+    /// <summary>
+    /// Reads a boolean flag from the manifest's <c>capabilities</c> object, defaulting to false when the
+    /// object or the named flag is absent. Non-boolean values throw, so a malformed manifest fails loudly
+    /// rather than silently disabling a capability.
+    /// </summary>
+    private static bool ReadCapabilityFlag(JsonElement root, string name) =>
+        root.TryGetProperty("capabilities", out var capabilities)
+        && capabilities.ValueKind == JsonValueKind.Object
+        && capabilities.TryGetProperty(name, out var flag)
+        && flag.GetBoolean();
 
     private static string? Optional(JsonElement root, string name) =>
         root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String

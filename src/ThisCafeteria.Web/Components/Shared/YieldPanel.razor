@@ -25,6 +25,7 @@
 @inject NavigationManager Navigation
 @inject IEthUsdPriceService EthUsdPriceService
 @inject WalletDashboardState DashboardState
+@inject ISolanaFaucetService SolanaFaucet
 
 @if (!_isConnected)
 {
@@ -214,7 +215,7 @@ else
                 </div>
             }
 
-            @if (_cafeFaucetConfigured)
+            @if (_cafeFaucetConfigured || _isSolanaFaucet)
             {
                 <section class="yield-faucet-cafe" aria-label="Test CAFE faucet">
                     <div class="yield-faucet-cafe__body">
@@ -222,14 +223,42 @@ else
                         <h2 class="yield-faucet-cafe__title">Claim @FormatAmount(_faucetStatus.ClaimAmount) CAFE</h2>
                         <p class="yield-faucet-cafe__desc">@FaucetStatusLabel()</p>
                     </div>
-                    <button type="button"
-                            class="yield-cta-btn yield-cta-btn--dark btn-claim-cafe-faucet"
-                            disabled="@(!_faucetStatus.CanClaim)">
-                        Claim CAFE
-                    </button>
-                    @if (_activeTx?.Flow == "cafe-faucet")
+                    @if (_isSolanaFaucet)
                     {
-                        <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                        @* Solana faucet mints server-side under the administrator authority; the wallet
+                           never signs, so this is a server @onclick rather than a client contract call. *@
+                        <button type="button"
+                                class="yield-cta-btn yield-cta-btn--dark"
+                                disabled="@(_solanaFaucetClaiming || !_faucetStatus.CanClaim)"
+                                @onclick="ClaimSolanaFaucetAsync">
+                            @(_solanaFaucetClaiming ? "Minting…" : "Claim CAFE")
+                        </button>
+                        @if (_solanaFaucetError is not null)
+                        {
+                            <p class="yield-faucet-cafe__desc" role="alert">@_solanaFaucetError</p>
+                        }
+                        else if (_solanaFaucetMessage is not null)
+                        {
+                            <p class="yield-faucet-cafe__desc">
+                                @_solanaFaucetMessage
+                                @if (_solanaFaucetExplorerUrl is not null)
+                                {
+                                    <a href="@_solanaFaucetExplorerUrl" target="_blank" rel="noopener noreferrer">View transaction</a>
+                                }
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="yield-cta-btn yield-cta-btn--dark btn-claim-cafe-faucet"
+                                disabled="@(!_faucetStatus.CanClaim)">
+                            Claim CAFE
+                        </button>
+                        @if (_activeTx?.Flow == "cafe-faucet")
+                        {
+                            <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                        }
                     }
                 </section>
             }
@@ -435,6 +464,11 @@ else
     private bool _stakingConfigured;
     private bool _legacyExitConfigured;
     private bool _cafeFaucetConfigured;
+    private bool _isSolanaFaucet;
+    private bool _solanaFaucetClaiming;
+    private string? _solanaFaucetMessage;
+    private string? _solanaFaucetError;
+    private string? _solanaFaucetExplorerUrl;
     private CafeFaucetStatus _faucetStatus = new();
     private string? _connectError;
     private string? _dashboardError;
@@ -448,6 +482,8 @@ else
     private TxStepper.Model? _activeTx;
     private string? _stakeInputError;
     private string? _unstakeInputError;
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -499,8 +535,12 @@ else
         }
     }
 
+
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
+
         if (_isConnected && _isLoading && !_dashboardLoadStarted)
         {
             await LoadDashboardAsync();
@@ -661,7 +701,9 @@ else
             var ethUsdPriceTask = EthUsdPriceService.GetEthUsdPriceAsync(timeout.Token);
             var faucetStatusTask = _cafeFaucetConfigured
                 ? Web3Service.GetCafeFaucetStatusAsync(_dashboard.WalletAddress, timeout.Token)
-                : Task.FromResult(new CafeFaucetStatus());
+                : _isSolanaFaucet
+                    ? SolanaFaucet.GetStatusAsync(SelectedChain.Key, _dashboard.WalletAddress, timeout.Token)
+                    : Task.FromResult(new CafeFaucetStatus());
 
             if (SelectedChain.Key == "ethereum-sepolia")
             {
@@ -721,11 +763,20 @@ else
         _legacyExitConfigured = SelectedChain.Key == "ethereum-sepolia" && SelectedChain.Capabilities.LegacyExit &&
             WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
 
-        // The existing faucet adapter is Sepolia-specific until a chain-specific
-        // faucet adapter is configured; do not advertise it on other chains.
+        // The existing EVM faucet adapter (client-side contract call via coffeeStaking.js) is
+        // Sepolia-specific until a chain-specific faucet adapter is configured; do not advertise it on
+        // other EVM chains.
         _cafeFaucetConfigured = SelectedChain.Key == "ethereum-sepolia" &&
             SelectedChain.Capabilities.Faucet &&
             WalletAddressRules.IsConfiguredAddress(_chain.CafeFaucetContract);
+
+        // The Solana faucet is a server-side authorized mint (no client contract call); the server, not
+        // the browser, decides eligibility from the registry capability. Actual claimability still
+        // depends on the mint-authority secret being configured, resolved in the status load.
+        _isSolanaFaucet = SelectedChain.Family == ChainFamily.Solana && SelectedChain.Capabilities.Faucet;
+        _solanaFaucetMessage = null;
+        _solanaFaucetError = null;
+        _solanaFaucetExplorerUrl = null;
     }
 
     private async Task<string?> ResolveWalletAddressAsync()
@@ -930,6 +981,44 @@ else
         _isLoading || _dashboard.AprIsContractDerived
             ? "Contract Annual Yield"
             : "Indicative Annual Yield (configured, not contract-enforced)";
+
+    private async Task ClaimSolanaFaucetAsync()
+    {
+        if (!_isSolanaFaucet || _solanaFaucetClaiming || string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        {
+            return;
+        }
+
+        _solanaFaucetClaiming = true;
+        _solanaFaucetError = null;
+        _solanaFaucetMessage = null;
+        _solanaFaucetExplorerUrl = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var result = await SolanaFaucet.ClaimAsync(SelectedChain.Key, _dashboard.WalletAddress);
+            if (result.Success)
+            {
+                _solanaFaucetMessage = $"Minted {FormatAmount(result.Amount)} CAFE to your wallet.";
+                _solanaFaucetExplorerUrl = result.ExplorerUrl;
+            }
+            else
+            {
+                _solanaFaucetError = result.Error ?? "The CAFE faucet claim could not be completed.";
+            }
+
+            _faucetStatus = await SolanaFaucet.GetStatusAsync(SelectedChain.Key, _dashboard.WalletAddress);
+        }
+        catch (Exception ex)
+        {
+            _solanaFaucetError = ex.Message;
+        }
+        finally
+        {
+            _solanaFaucetClaiming = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
     private string FaucetStatusLabel()
     {
