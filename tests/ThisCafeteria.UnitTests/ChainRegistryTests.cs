@@ -36,6 +36,25 @@ public sealed class ChainRegistryTests
     }
 
     [Fact]
+    public void RejectsSolanaFaucetWithoutMintAndAdministrator()
+    {
+        var options = new BlockchainOptions
+        {
+            DefaultChainKey = "solana-devnet",
+            Chains = [new ChainDefinition
+            {
+                Key = "solana-devnet", DisplayName = "Solana Devnet", Family = ChainFamily.Solana, SolanaCluster = "devnet",
+                PublicRpcUrl = "https://api.devnet.solana.com",
+                // Faucet on, but no CAFE mint / administrator authority to mint under.
+                Capabilities = new ChainCapabilities { Faucet = true }
+            }]
+        };
+
+        var action = () => new ChainRegistry(options);
+        action.Should().Throw<InvalidOperationException>().WithMessage("*faucet*");
+    }
+
+    [Fact]
     public void DoesNotExposeServerRpcThroughThePublicDefinitionContract()
     {
         var definition = new ChainDefinition { Key = "test", PublicRpcUrl = "https://public.example", ServerRpcUrl = "https://user:secret@private.example" };
