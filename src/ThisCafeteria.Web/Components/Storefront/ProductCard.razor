@@ -1,0 +1,82 @@
+@* Storefront product card. Mirrors the reference: white rounded-2xl card, beige image box,
+ * floating wishlist button, rating stars, brand, two-line name, price + compare-at. *@
+<article class="@CardCss"
+         data-product-card
+         data-product-slug="@Card.Slug">
+    <a class="@(Horizontal ? "block w-44 shrink-0 sm:w-56" : "block")"
+       href="@($"products/{Card.Slug}")"
+       @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
+       @onclick:preventDefault="true">
+        <div class="relative aspect-[4/3] overflow-hidden rounded-xl bg-sand">
+            @if (!string.IsNullOrWhiteSpace(Card.ImageUrl))
+            {
+                <img src="@Card.ImageUrl"
+                     alt="@Card.Name"
+                     loading="lazy"
+                     class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            }
+        </div>
+    </a>
+
+    <button type="button"
+            class="absolute @(Horizontal ? "left-auto" : "") right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink shadow-sm transition-colors hover:text-accent"
+            aria-label="Save @Card.Name for later">
+        <LucideIcon Name="heart" Size="16" StrokeWidth="1.75" />
+    </button>
+
+    <div class="flex flex-1 flex-col gap-1 px-2 pb-2 pt-3">
+        <RatingStars Rating="@Card.Rating" />
+        <span class="mt-1 text-xs text-mute">@Card.Brand</span>
+        <a href="@($"products/{Card.Slug}")"
+           @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
+           @onclick:preventDefault="true">
+            <h3 class="line-clamp-2 min-h-[2.75em] text-[15px] font-medium leading-snug text-ink">
+                @Card.Name
+            </h3>
+        </a>
+
+        <div class="mt-auto flex items-end justify-between pt-1">
+            <div class="flex items-baseline gap-2">
+                <span class="text-lg font-semibold tracking-tight text-ink">@FormatPrice(Card.Price)</span>
+                @if (Card.CompareAtPrice is { } compareAt)
+                {
+                    <span class="text-sm text-faint line-through">@FormatPrice(compareAt)</span>
+                }
+            </div>
+            <button type="button"
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-white transition-colors hover:bg-accent disabled:opacity-60"
+                    disabled="@(Adding || !Card.IsAvailable)"
+                    aria-label="Add @Card.Name to cart"
+                    @onclick="() => OnAddToCart.InvokeAsync(Card.Slug)">
+                <LucideIcon Name="shopping-bag" Size="15" StrokeWidth="1.75" />
+            </button>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public CatalogProductCard Card { get; set; } = default!;
+    [Parameter] public bool Elevated { get; set; }
+    [Parameter] public bool Horizontal { get; set; }
+    [Parameter] public bool Adding { get; set; }
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+    [Parameter] public EventCallback<string> OnAddToCart { get; set; }
+
+    private string CardCss
+    {
+        get
+        {
+            var layout = Horizontal ? "flex-row gap-5 items-stretch" : "flex-col";
+            // The elevated state is the reference's interactive central card: lifted,
+            // slightly scaled, soft deep shadow. Hover reaches the same state.
+            var elevation = Elevated
+                ? "z-10 -translate-y-1 scale-[1.05] shadow-[0_24px_48px_-12px_rgba(28,27,26,0.28)]"
+                : "shadow-sm hover:z-10 hover:-translate-y-1 hover:shadow-xl hover:shadow-ink/10";
+
+            return $"group relative flex {layout} rounded-2xl bg-white p-3 {elevation} " +
+                   "transition-all duration-300";
+        }
+    }
+
+    private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+}

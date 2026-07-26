@@ -132,8 +132,13 @@ public static class BlockchainManifestLoader
                     LiquidStaking = true,
                     Faucet = true,
                     RewardMinting = true,
-                    AgenticCommerce = root.TryGetProperty("capabilities", out var caps) && caps.TryGetProperty("agenticCommerce", out var agenticCommerce) && agenticCommerce.GetBoolean(),
-                    AgenticSessionPayments = root.TryGetProperty("capabilities", out var caps2) && caps2.TryGetProperty("agenticSessionPayments", out var agenticSessionPayments) && agenticSessionPayments.GetBoolean()
+                    AgenticCommerce = ReadCapabilityFlag(root, "agenticCommerce"),
+                    AgenticSessionPayments = ReadCapabilityFlag(root, "agenticSessionPayments"),
+                    // Read from the manifest instead of hardcoding: the manifest is the single source of
+                    // truth. ChainRegistry.Validate fails closed if a flag is on without the deployment
+                    // address it requires (marketplacePayment -> AgenticEscrow, legacyExit -> LegacyPool).
+                    MarketplacePayment = ReadCapabilityFlag(root, "marketplacePayment"),
+                    LegacyExit = ReadCapabilityFlag(root, "legacyExit")
                 }
             };
             return true;

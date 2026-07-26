@@ -1,0 +1,65 @@
+@* Listing toolbar: grid/list view toggle, applied-filter chips, sort dropdown. *@
+<div class="flex flex-wrap items-center gap-x-4 gap-y-3">
+    <div class="flex items-center gap-1.5" role="group" aria-label="View mode">
+        <button type="button"
+                class="@ViewButtonCss(!ListView)"
+                aria-label="Grid view"
+                aria-pressed="@(!ListView)"
+                @onclick="() => ListViewChanged.InvokeAsync(false)">
+            <LucideIcon Name="layout-grid" Size="16" />
+        </button>
+        <button type="button"
+                class="@ViewButtonCss(ListView)"
+                aria-label="List view"
+                aria-pressed="@ListView"
+                @onclick="() => ListViewChanged.InvokeAsync(true)">
+            <LucideIcon Name="list" Size="16" />
+        </button>
+    </div>
+
+    @if (Chips.Count > 0)
+    {
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm text-mute">Filters applied:</span>
+            @foreach (var chip in Chips)
+            {
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-white py-1 pl-3 pr-2 text-xs text-ink">
+                    @chip.Label
+                    <button type="button"
+                            class="flex h-4 w-4 items-center justify-center rounded-full text-mute transition-colors hover:text-ink"
+                            aria-label="Remove filter @chip.Label"
+                            @onclick="() => OnRemoveChip.InvokeAsync(chip.Key)">
+                        <LucideIcon Name="x" Size="11" />
+                    </button>
+                </span>
+            }
+        </div>
+    }
+
+    <div class="ml-auto flex items-center gap-2">
+        <label for="catalog-sort" class="text-sm text-mute">Sort by:</label>
+        <select id="catalog-sort"
+                class="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                value="@Sort"
+                @onchange="args => SortChanged.InvokeAsync(args.Value?.ToString() ?? SortDefault)">
+            <option value="@SortDefault">Default</option>
+            <option value="price-asc">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="rating">Top rated</option>
+        </select>
+    </div>
+</div>
+
+@code {
+    public const string SortDefault = "default";
+
+    [Parameter] public bool ListView { get; set; }
+    [Parameter] public EventCallback<bool> ListViewChanged { get; set; }
+    [Parameter] public IReadOnlyList<CatalogFilterChip> Chips { get; set; } = [];
+    [Parameter] public EventCallback<string> OnRemoveChip { get; set; }
+    [Parameter] public string Sort { get; set; } = SortDefault;
+    [Parameter] public EventCallback<string> SortChanged { get; set; }
+
+    private static string ViewButtonCss(bool active) =>
+        $"flex h-8 w-8 items-center justify-center rounded-lg transition-colors {(active ? "text-ink" : "text-faint hover:text-mute")}";
+}

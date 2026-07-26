@@ -57,16 +57,15 @@
         </NavLink>
 
         <div class="nav-utilities">
-            <ChainSelector Compact="true" OnChainChanged="HandleChainChangedAsync" />
             <AuthorizeView>
                 <Authorized>
-                    <button class="@UserToggleCssClass"
+                    <button class="@UserToggleCssClass nav-login--authorized"
                             type="button"
                             aria-haspopup="dialog"
                             aria-expanded="@_isUserMenuOpen"
                             aria-label="Open account menu"
                             @onclick="ToggleUserMenu">
-                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
+                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
                         <span class="nav-login__text-stack">
                             <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
                             <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
@@ -84,7 +83,8 @@
                     <button class="nav-login"
                             type="button"
                             aria-haspopup="dialog"
-                            @onclick="OpenWalletModal">
+                            @onclick="OpenWalletModal"
+                            style="--chain-hover: @GetChainHoverBackground();">
                         <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
                         <span class="nav-login__label">Login</span>
                     </button>
@@ -330,15 +330,39 @@
                  aria-labelledby="wallet-modal-title"
                  @onclick:stopPropagation="true">
             <div class="wallet-modal__header">
+                <div class="network-selector-wrapper" style="position: absolute; top: 0; left: 0; margin-top: 0;">
+                    <button type="button" class="network-selector-btn" @onclick="ToggleNetworkDropdown">
+                        <img src="@SelectedChain.IconAsset" width="14" height="14" alt="" style="border-radius: 50%;" />
+                        <span class="network-name">@SelectedChain.DisplayName</span>
+                        <span class="network-dropdown-icon">▼</span>
+                    </button>
+                    
+                    @if (_isNetworkDropdownOpen)
+                    {
+                        <div class="network-dropdown-backdrop" @onclick="ToggleNetworkDropdown" style="position: fixed; inset: 0; z-index: 99; cursor: default;"></div>
+                        <ul class="network-dropdown-menu">
+                            @foreach (var chain in ChainRegistry.All.Where(c => c.Enabled))
+                            {
+                                <li>
+                                    <button type="button" @onclick="() => SelectNetworkAsync(chain.Key)" style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <img src="@chain.IconAsset" width="16" height="16" alt="" style="border-radius: 50%;" />
+                                        @chain.DisplayName
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+                
                 <div class="wallet-modal__title-group">
-                    <h2 id="wallet-modal-title">Connect a wallet</h2>
-                    <ChainBadge NetworkName="@SelectedChain.DisplayName" ChainId="@SelectedChain.EvmChainId" Connected="false" Compact="true" />
+                    <h2 id="wallet-modal-title">Connect your wallet</h2>
+                    <hr class="wallet-modal__divider" />
+                    <p class="wallet-modal__description">Even this is an open-source project, I encourage to test the site with a temporal hot wallet</p>
                 </div>
                 <button class="wallet-modal__close"
                         type="button"
                         aria-label="Close wallet selection"
                         @onclick="CloseWalletModal">
-                    ×
                 </button>
             </div>
 
@@ -354,10 +378,6 @@
                             <span class="wallet-option__icon wallet-option__icon--phantom" aria-hidden="true">
                                 <img src="images/phantom-wallet.svg" alt="" loading="lazy" />
                             </span>
-                            <span class="wallet-option__copy">
-                                <span class="wallet-option__name">Phantom · Solana Wallet Standard</span>
-                            </span>
-                            <span class="wallet-option__arrow">›</span>
                         </button>
                     }
                     else
@@ -374,10 +394,6 @@
                     <span class="wallet-option__icon wallet-option__icon--metamask" aria-hidden="true">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">MetaMask</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
                 <button class="wallet-option"
@@ -387,10 +403,6 @@
                     <span class="wallet-option__icon wallet-option__icon--phantom" aria-hidden="true">
                         <img src="images/phantom-wallet.svg" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Phantom</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
                 <button class="wallet-option"
@@ -400,10 +412,6 @@
                     <span class="wallet-option__icon wallet-option__icon--coinbase" aria-hidden="true">
                         <img src="https://avatars.githubusercontent.com/u/18060234?s=200&amp;v=4" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Coinbase Wallet</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
                 <button class="wallet-option"
@@ -413,26 +421,13 @@
                     <span class="wallet-option__icon wallet-option__icon--brave" aria-hidden="true">
                         <img src="https://logodownload.org/wp-content/uploads/2022/04/brave-logo-5.png" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Brave Wallet</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
-                <button class="wallet-option"
-                        type="button"
-                        disabled="@_isConnecting"
-                        @onclick='() => ConnectWalletAsync("Other wallet")'>
-                    <span class="wallet-option__icon wallet-option__icon--other" aria-hidden="true"></span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Other wallet</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
-                </button>
+
                 }
             </div>
 
-            <p class="wallet-modal__note">A signature may be requested to verify ownership.</p>
+
 
             @if (!string.IsNullOrWhiteSpace(_statusMessage))
             {
@@ -466,6 +461,24 @@
     private string? _deleteAccountError;
     private const int UserMenuTransitionMilliseconds = 360;
 
+    private bool _isNetworkDropdownOpen = false;
+
+    private void ToggleNetworkDropdown()
+    {
+        _isNetworkDropdownOpen = !_isNetworkDropdownOpen;
+    }
+
+    private async Task SelectNetworkAsync(string key)
+    {
+        _isNetworkDropdownOpen = false;
+        StateHasChanged();
+        
+        if (string.IsNullOrWhiteSpace(key) || !await SelectedChainAccessor.SelectAsync(key)) return;
+        
+        await JsRuntime.InvokeVoidAsync("artisanalChainSelector.persist", key);
+        await HandleChainChangedAsync(SelectedChainAccessor.SelectedChain);
+    }
+
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
 
     private string UserToggleCssClass => _isUserMenuOpen ? "nav-login active" : "nav-login";
@@ -497,6 +510,19 @@
         _walletSnapshot?.PendingStakingRewards is { } pendingRewards
             ? $"{pendingRewards:0.####} COFFEE"
             : "—";
+
+    private string GetChainHoverBackground()
+    {
+        if (SelectedChain.Family == ChainFamily.Solana)
+        {
+            return "linear-gradient(260deg, #14F195 0%, #9945FF 100%)";
+        }
+        if (SelectedChain.Key.Contains("bsc", StringComparison.OrdinalIgnoreCase))
+        {
+            return "#F3BA2F";
+        }
+        return "#627ee9";
+    }
 
     protected override async Task OnInitializedAsync()
     {

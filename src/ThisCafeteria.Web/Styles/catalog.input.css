@@ -1,0 +1,133 @@
+/*
+ * Storefront catalog styles (Tailwind CSS v4, utilities-only — preflight is skipped on
+ * purpose so the rest of the site's global styles stay untouched).
+ *
+ * Deliberately UNLAYERED: app.css is unlayered too, and unlayered rules beat any
+ * @layer in the cascade — importing Tailwind with layers would let the site's global
+ * h1/h2/h3 rules override every utility here.
+ *
+ * Resets below use :where(.products-catalog) so they sit at (0,0,1): they beat the UA
+ * stylesheet and app.css element rules by source order, but always lose to Tailwind
+ * utility classes (0,1,0).
+ *
+ * Rebuild after changing any Components/Storefront markup:
+ *   cd src/ThisCafeteria.Web && npm run build:catalog-css
+ */
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+
+@theme {
+    /* Palette captured from the storefront reference (see docs: ecluso PLP). */
+    --color-cream: #F5F2EC;
+    --color-sand: #ECE7DD;
+    --color-ink: #1C1B1A;
+    --color-mute: #8B8880;
+    --color-faint: #A9A49B;
+    --color-accent: #E8781E;
+    --color-line: #E5E0D8;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Full-bleed cream canvas: the layout wrapper stays as-is, the page paints its own bg. */
+body:has(.products-catalog) {
+    background-color: #F5F2EC;
+}
+
+.products-catalog {
+    background-color: #F5F2EC;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    min-height: calc(100vh - 3.325rem);
+    /* Tailwind's translate utilities read both axes; without a registered initial
+     * value the unset axis invalidates the whole `translate` property. */
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+}
+
+
+
+/* Number inputs: hide the native spinners, they eat the little width these have. */
+.products-catalog input[type="number"]::-webkit-outer-spin-button,
+.products-catalog input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.products-catalog input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* The reference uses a geometric sans everywhere — undo the site's serif display font. */
+:where(.products-catalog) h1,
+:where(.products-catalog) h2,
+:where(.products-catalog) h3,
+:where(.products-catalog) h4 {
+    font-family: var(--font-sans);
+    font-style: normal;
+}
+
+:where(.products-catalog) a {
+    color: inherit;
+    text-decoration: none;
+}
+
+:where(.products-catalog) button {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+:where(.products-catalog) ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Soft pastel glow behind the hero, as in the reference. */
+.products-catalog__glow {
+    background:
+        radial-gradient(55% 70% at 18% 12%, rgba(244, 186, 168, 0.35), transparent 70%),
+        radial-gradient(45% 60% at 78% 8%, rgba(238, 214, 190, 0.4), transparent 70%);
+}
+
+/* Dual price-range slider: the track/fill are plain divs, the two range inputs only
+ * contribute their (orange-ringed) thumbs. */
+.catalog-range {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 1.25rem;
+    margin: 0;
+    background: transparent;
+}
+
+.catalog-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: auto;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid #E8781E;
+    box-shadow: 0 1px 2px rgba(28, 27, 26, 0.2);
+    cursor: pointer;
+}
+
+.catalog-range::-moz-range-thumb {
+    pointer-events: auto;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid #E8781E;
+    box-shadow: 0 1px 2px rgba(28, 27, 26, 0.2);
+    cursor: pointer;
+}

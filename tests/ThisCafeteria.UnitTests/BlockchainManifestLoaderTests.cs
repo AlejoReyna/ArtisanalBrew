@@ -122,6 +122,49 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
+    public void ReadsMarketplacePaymentFromTheManifestInsteadOfHardcodingIt()
+    {
+        // Manifest is the single source of truth: with the flag off (the WriteEvmManifest default)
+        // the capability is off even though the escrow address is present...
+        var offPath = WriteEvmManifest();
+        // ...and with the flag on plus the required escrow address, the capability lights up.
+        var onPath = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(onPath, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true));
+        try
+        {
+            var off = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), offPath, null)).GetRequired("bsc-testnet");
+            off.Capabilities.MarketplacePayment.Should().BeFalse();
+
+            var on = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), onPath, null)).GetRequired("bsc-testnet");
+            on.Capabilities.MarketplacePayment.Should().BeTrue();
+            on.Deployment.AgenticEscrow.Should().Be(Address('E'));
+        }
+        finally
+        {
+            File.Delete(offPath);
+            File.Delete(onPath);
+        }
+    }
+
+    [Fact]
+    public void RejectsAMarketplacePaymentManifestThatOmitsTheEscrowDeployment()
+    {
+        // Inconsistent manifest: marketplacePayment on, but no erc8183Escrow address to settle against.
+        // Validation must fail closed rather than advertise a capability with no contract behind it.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true, includeEscrow: false));
+        try
+        {
+            var action = () => new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null));
+            action.Should().Throw<InvalidOperationException>().WithMessage("*marketplace payment*");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void LeavesBundlerRpcUrlUnsetWhenTheManifestOmitsIt()
     {
         var path = WriteEvmManifest();
@@ -307,7 +350,7 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
-    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null) =>
+    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true) =>
         $$"""
         {
           "schemaVersion": 1,
@@ -322,7 +365,7 @@ public sealed class BlockchainManifestLoaderTests
             "coffee": "{{Address('B')}}",
             "liquidVault": "{{Address('A')}}",
             "faucet": "{{Address('F')}}",
-            "erc8183Escrow": "{{Address('E')}}",
+            {{(includeEscrow ? $"\"erc8183Escrow\": \"{Address('E')}\"," : "")}}
             "entryPoint": "{{Address('P')}}",
             "erc8004Registry": "{{Address('R')}}",
             "erc7683Resolver": "{{Address('S')}}",
@@ -341,7 +384,7 @@ public sealed class BlockchainManifestLoaderTests
             "modularAccountType": "metamask-hybrid-delegator-v1.3.0",
             "modularFrameworkRevision": "bfbdf9795a976833ed2fa000baf42fbb83958b03"
           },
-          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true }
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true, "marketplacePayment": {{(marketplacePayment ? "true" : "false")}} }
         }
         """;
 

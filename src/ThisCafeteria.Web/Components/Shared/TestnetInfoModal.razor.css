@@ -1,0 +1,206 @@
+#testnet-info-modal {
+    background-color: #333333;
+    color: #ffffff;
+    width: 28rem;
+    max-width: calc(100vw - 2rem);
+    margin: auto;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+}
+
+#testnet-info-modal[open] {
+    animation: modal-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#testnet-info-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+}
+
+#testnet-info-modal[open]::backdrop {
+    animation: backdrop-reveal 0.5s ease forwards;
+}
+
+@keyframes modal-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes backdrop-reveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes content-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+.testnet-info-hero {
+    background-color: #4a4a4a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem 2rem;
+    position: relative;
+}
+
+.testnet-info-icon {
+    width: 90px;
+    height: 90px;
+    color: #ffffff;
+    opacity: 0.9;
+}
+
+.testnet-info-close {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.6);
+    border: none;
+    border-radius: 50%;
+    color: #1a1a1a;
+    cursor: pointer;
+    display: flex;
+    height: 2rem;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    position: absolute;
+    right: 1.25rem;
+    top: 1.25rem;
+    width: 2rem;
+    z-index: 10;
+    transition: background 160ms ease, transform 160ms ease;
+}
+
+.testnet-info-close:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: scale(1.05);
+}
+
+.testnet-info-content {
+    padding: 2rem 2.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: left;
+}
+
+.testnet-info-badge {
+    align-items: center;
+    background: #0e4a7a;
+    border-radius: 6px;
+    color: #a4c8f5;
+    display: inline-flex;
+    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+    align-self: flex-start;
+}
+
+.testnet-info-title {
+    color: #ffffff;
+    font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+    font-size: 1.75rem;
+    line-height: 1.2;
+    margin: 0;
+    font-weight: 600;
+}
+
+.testnet-info-copy {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.testnet-info-copy a {
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 160ms ease;
+}
+
+.testnet-info-copy a:hover {
+    opacity: 0.8;
+}
+
+.testnet-info-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+.testnet-info-button {
+    background-color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    color: #1a1a1a;
+    cursor: pointer;
+    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.testnet-info-button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+/* Staggered animation delays for content */
+#testnet-info-modal[open] .testnet-info-hero,
+#testnet-info-modal[open] .testnet-info-content > * {
+    opacity: 0;
+    animation: content-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#testnet-info-modal[open] .testnet-info-hero {
+    animation-delay: 0.15s;
+}
+
+#testnet-info-modal[open] .testnet-info-badge {
+    animation-delay: 0.25s;
+}
+
+#testnet-info-modal[open] .testnet-info-title {
+    animation-delay: 0.35s;
+}
+
+#testnet-info-modal[open] .testnet-info-copy {
+    animation-delay: 0.45s;
+}
+
+#testnet-info-modal[open] .testnet-info-actions {
+    animation-delay: 0.55s;
+}
+
+#testnet-info-modal[open] .testnet-info-close {
+    opacity: 0;
+    animation: content-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: 0.6s;
+}
+

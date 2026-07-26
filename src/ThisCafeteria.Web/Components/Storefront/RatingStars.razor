@@ -1,0 +1,13 @@
+<div class="flex items-center gap-0.5" role="img" aria-label="Rated @Rating out of 5">
+    @for (var i = 1; i <= 5; i++)
+    {
+        <LucideIcon Name="star"
+                    Size="14"
+                    Filled="true"
+                    CssClass="@(i <= Rating ? "text-accent" : "text-line")" />
+    }
+</div>
+
+@code {
+    [Parameter] public int Rating { get; set; } = 5;
+}

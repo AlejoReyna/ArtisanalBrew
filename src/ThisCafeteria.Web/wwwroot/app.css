@@ -193,7 +193,8 @@ p {
 .content:has(.yield-dashboard),
 .content:has(.procurement-lab),
 .content:has(.journal-newsletter),
-.content:has(.cart-page) {
+.content:has(.cart-page),
+.content:has(.products-catalog) {
     margin-left: 0;
     margin-right: 0;
     max-width: none;
@@ -701,13 +702,13 @@ body:has(.procurement-lab) .public-header .navbar-toggler span {
 
 /* Connect-wallet CTA: flip from the site-wide dark-on-cream button to a
    cream-on-dark fill so it stays the brightest object on the page. */
-.yield-page .staking-connect__content .button--dark {
+.yield-page .staking-intro__cta.button--dark {
     background: var(--stake-ink);
     border-color: var(--stake-ink);
     color: var(--stake-bg);
 }
 
-.yield-page .staking-connect__content .button--dark:hover {
+.yield-page .staking-intro__cta.button--dark:hover {
     background: var(--stake-green);
     border-color: var(--stake-green);
     color: var(--stake-bg);
@@ -762,6 +763,12 @@ body:has(.procurement-lab) .public-header .navbar-toggler span {
 /* 20% taller than the base pill (3.4rem -> 4.08rem), scaled uniformly */
 .public-page:has(.editorial-hero--coffee) .public-header .site-nav {
     min-height: 4.08rem;
+}
+
+@media (max-width: 760px) {
+    .public-page:has(.editorial-hero--coffee) .public-header .site-nav {
+        min-height: 2.42rem;
+    }
 }
 
 .public-page:has(.editorial-hero--coffee) .public-header .nav-links {

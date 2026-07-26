@@ -22,7 +22,10 @@
             }
         }
     </script>
-    <link rel="icon" type="image/svg+xml" href="images/green_bean.svg" />
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <!-- In <head>, and deliberately blocking: it marks <html> before the hero markup is
+         parsed, so the headline is never painted in full before it types itself out. -->
+    <script src="js/heroType.js"></script>
     <HeadOutlet />
 </head>
 
@@ -200,6 +203,16 @@
             });
         };
 
+        window.queueHeroType = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.heroTypewriter) {
+                        window.heroTypewriter.init();
+                    }
+                });
+            });
+        };
+
         // Some mobile browsers (notably iOS Safari under Low Power Mode, or when
         // the <video> wasn't fully buffered the instant the autoplay attribute was
         // evaluated) silently ignore attribute-only autoplay. A muted video is always
@@ -229,6 +242,7 @@
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
         document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
         document.addEventListener('DOMContentLoaded', window.queueHeroVideo);
+        document.addEventListener('DOMContentLoaded', window.queueHeroType);
 
         const onEnhancedLoad = () => {
             window.queueAnimations(true);
@@ -236,6 +250,7 @@
             window.queueRecruiterMotion();
             window.queueHeroWebGL();
             window.queueHeroVideo();
+            window.queueHeroType();
         };
 
         if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {

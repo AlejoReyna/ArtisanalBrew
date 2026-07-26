@@ -29,34 +29,67 @@
 
 @if (!_isConnected)
 {
-    <section class="staking-connect" data-animate="fade-up">
-        <div class="staking-connect__left">
-            <img src="/images/coffee-coin.png" class="staking-connect__bg-coin" alt="Coffee Coin" aria-hidden="true" />
-            <div class="staking-connect__content">
-                <div class="staking-connect__chain-wrapper">
-                    <ChainSelector OnChainChanged="HandleChainChangedAsync" />
-                </div>
-                <h2>Connect your wallet to deposit CAFE, receive stCAFE, and earn COFFEE.</h2>
-                <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
-                @if (!string.IsNullOrWhiteSpace(_connectError))
-                {
-                    <p class="text-danger">@_connectError</p>
-                }
-                <button type="button" class="button button--dark button--glow" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+    <section class="staking-intro" data-animate="fade-up">
+        <div class="staking-intro__inner">
+            <div class="staking-intro__chain">
+                <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+            </div>
+
+            <p class="staking-intro__eyebrow">Testnet demo · no real money</p>
+            <h1 class="staking-intro__title">Stake CAFE, earn COFFEE.</h1>
+            <p class="staking-intro__lede">
+                Deposit CAFE into the vault and get back stCAFE — a transferable token that tracks your
+                position while it accrues COFFEE rewards. Everything runs on @SelectedChain.DisplayName
+                with test tokens, so nothing here costs real money.
+            </p>
+
+            <ol class="staking-intro__steps">
+                <li class="staking-intro__step">
+                    <p class="staking-intro__step-title">Connect a wallet</p>
+                    <p class="staking-intro__step-body">@WalletStepBody</p>
+                </li>
+                <li class="staking-intro__step">
+                    <p class="staking-intro__step-title">Get test tokens</p>
+                    <p class="staking-intro__step-body">@TokenStepBody</p>
+                </li>
+                <li class="staking-intro__step">
+                    <p class="staking-intro__step-title">Deposit and earn</p>
+                    <p class="staking-intro__step-body">
+                        Swap CAFE for stCAFE, watch COFFEE rewards accrue, then claim them or redeem your
+                        CAFE whenever you want. Nothing is locked.
+                    </p>
+                </li>
+            </ol>
+
+            @if (!string.IsNullOrWhiteSpace(_connectError))
+            {
+                <p class="staking-intro__error" role="alert">@_connectError</p>
+            }
+
+            <div class="staking-intro__actions">
+                <button type="button" class="button button--dark staking-intro__cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
                     @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
                 </button>
                 @if (OnBackToProfile.HasDelegate)
                 {
-                    <button type="button" class="yield-back yield-back--center" @onclick="OnBackToProfile">
+                    <button type="button" class="yield-back" @onclick="OnBackToProfile">
                         <span aria-hidden="true">&larr;</span> Back to Profile
                     </button>
                 }
             </div>
-        </div>
-        <div class="staking-connect__right">
-            <div class="staking-connect__faucet">
-                <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" />
-            </div>
+
+            @* The gas faucet list is Sepolia-specific, and it's a step-two concern — collapsed here so
+               the page opens with the explanation rather than a wall of third-party links. *@
+            @if (SelectedChain.Family == ChainFamily.Evm)
+            {
+                <details class="yield-faucet staking-intro__faucet">
+                    <summary class="yield-faucet__summary">
+                        <span class="yield-faucet__summary-label">Need test ETH for gas?</span>
+                        <span class="yield-faucet__summary-chevron" aria-hidden="true">▾</span>
+                    </summary>
+                    <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" Compact="true" />
+                </details>
+            }
         </div>
     </section>
 }
@@ -482,6 +515,14 @@ else
     private TxStepper.Model? _activeTx;
     private string? _stakeInputError;
     private string? _unstakeInputError;
+
+    private string WalletStepBody => SelectedChain.Family == ChainFamily.Solana
+        ? $"Phantom, or any Solana wallet set to {SelectedChain.DisplayName}. Signing in from the nav bar links the wallet to your account; connecting here starts an allocation-only session."
+        : $"MetaMask, or any browser wallet set to {SelectedChain.DisplayName}. Signing in from the nav bar links the wallet to your account; connecting here starts an allocation-only session.";
+
+    private string TokenStepBody => SelectedChain.Family == ChainFamily.Solana
+        ? "CAFE comes free from the faucet on the dashboard. Fees are paid in devnet SOL, which you can get from any public Solana devnet faucet."
+        : "CAFE comes free from the faucet on the dashboard. You also need a little test ETH to pay gas — the faucets below hand it out.";
 
 
 

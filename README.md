@@ -46,22 +46,18 @@ This is liquid staking of the application's CAFE asset. It is not validator stak
 
 ### Network roadmap and visibility
 
-The registry contains all nine requested test networks, but the public API and both selectors only expose entries whose deployment and capability gates are satisfied.
+The registry ships nine chain definitions, disabled by default. A committed deployment manifest under [`deployments/`](deployments/) promotes a chain to enabled by replacing its definition (`BlockchainManifestLoader`); the public `/api/chains` endpoint and both selectors then expose it, because `ChainsController` filters on `Enabled`. Three chains are live today: their manifests are present and wired through `appsettings.json` for both Web and Worker (`Blockchain:LocalEvmManifest`, `Blockchain:SolanaDeploymentManifest`).
 
-| Network | Registry state | User-visible behavior |
-|---|---|---|
-| Ethereum Sepolia | Enabled legacy deployment | Wallet login, CAFE faucet, marketplace payment, legacy claim/exit; new legacy deposits remain disabled |
-| Solana Localnet | Enabled by a validated runtime manifest | Wallet Standard login, liquid deposit/redeem/claim, reward funding, RPC dashboard reads, and reconciliation |
-| Solana Testnet | Planned; disabled without a verified public manifest | Hidden |
-| Hedera Testnet | Planned; contracts not deployed | Hidden |
-| Avalanche Fuji | Planned; contracts not deployed | Hidden |
-| Linea Sepolia | Planned; contracts not deployed | Hidden |
-| Base Sepolia | Planned; contracts not deployed | Hidden |
-| BNB Smart Chain Testnet | Planned; contracts not deployed | Hidden |
-| Monad Testnet | Planned; contracts not deployed | Hidden |
-| Arbitrum Sepolia | Planned; contracts not deployed | Hidden |
+| Network | Runtime state | Enabled capabilities | Not yet enabled |
+|---|---|---|---|
+| Ethereum Sepolia (11155111) | Enabled — `deployments/ethereum-sepolia.json` | Wallet login, CAFE faucet, liquid deposit/redeem/claim, reward minting, agentic commerce (ERC-8004 / ERC-7683 / ERC-8183) | Session-key payments, marketplace payment, legacy exit |
+| BNB Smart Chain Testnet (97) | Enabled — `deployments/bsc-testnet.json` | Wallet login, CAFE faucet, liquid deposit/redeem/claim, reward minting, agentic commerce | Session-key payments, marketplace payment |
+| Solana Devnet | Enabled — `deployments/solana-devnet.json` | Wallet Standard login, liquid deposit/redeem/claim, reward funding, RPC dashboard reads, reconciliation | CAFE faucet, agentic commerce |
+| Hedera Testnet, Avalanche Fuji, Linea Sepolia, Base Sepolia, Monad Testnet, Arbitrum Sepolia | Disabled — no manifest | — | Hidden until contracts are deployed and a validated manifest is supplied |
 
-Solana Testnet becomes visible only after the program and token fixtures are deployed, the public smoke scenario passes, and a validated `solana-testnet` manifest is supplied to both Web and Worker. The same manifest rule prevents an unfinished or mismatched connection from being advertised accidentally.
+A local Solana run adds `solana-localnet`, and a validated public `solana-testnet` manifest adds `solana-testnet`, by the same replace-on-manifest rule; neither is wired into the committed appsettings. The manifest rule prevents an unfinished or mismatched connection from being advertised accidentally.
+
+One capability nuance is deliberate today: for EVM chains the manifest loader grants a fixed set (wallet login, liquid staking, faucet, reward minting) and reads `agenticCommerce`, `agenticSessionPayments`, `marketplacePayment`, and `legacyExit` from the manifest's `capabilities` object — the manifest is the single source of truth. A flag only takes effect when the deployment it needs is present: `marketplacePayment` requires an escrow (or the legacy pool) and `legacyExit` requires a legacy pool, or `ChainRegistry.Validate` rejects the manifest. The committed liquid-chain manifests do not yet declare `marketplacePayment`/`legacyExit`, so those stay off until their contracts are deployed and addressed — see the capability roadmap in [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md).
 
 The full orchestration design is documented in [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md). Operational commands and release controls live in [`docs/multichain-liquid-staking-operations.md`](docs/multichain-liquid-staking-operations.md) and [`docs/solana-local-manifest.md`](docs/solana-local-manifest.md).
 
@@ -234,6 +230,39 @@ dotnet run --project src/ThisCafeteria.Worker
 ```
 
 The worker connects to Azure Service Bus and processes messages from the `order-processing` queue via a real `ServiceBusProcessor`.
+
+## What “the node” means
+
+This project has two different things that may be called a node:
+
+1. **The production application runtime** is not an AWS EC2 node. It is split into two containerized Azure Container Apps:
+   - `ThisCafeteria.Web` serves the Blazor application and HTTP/API endpoints.
+   - `ThisCafeteria.Worker` runs background order-processing and reconciliation jobs.
+
+   The container images are built from this repository, pushed to Azure Container Registry, and deployed by GitHub Actions. The containers are stateless and may be restarted or replaced by Azure; application data is not stored on the container filesystem.
+
+2. **A local blockchain node** is a temporary Hardhat JSON-RPC process used for development, contract deployment, and acceptance tests. It runs on the developer machine or CI runner, usually on ports `8545`, `8546`, or `8547`. Its chain state lives only in the process/workspace and is intentionally disposable. Local deployment addresses are recorded in `contracts/evm/deployments/evm-local.json`.
+
+### Where data is stored
+
+The application stores durable state in managed services rather than inside a node or container:
+
+| Data | Location | How it is used |
+|---|---|---|
+| Users, orders, ledger, projections, and application records | Azure Database for PostgreSQL Flexible Server | Accessed by Web and Worker through Entity Framework Core/Npgsql. Migrations create and update the schema. |
+| Receipt files and ASP.NET data-protection keys | Azure Blob Storage (`receipts` and `dataprotection-keys`) | Accessed through the app’s managed identity; blob public access is disabled. |
+| Wallet-status and order-processing events | Azure Service Bus queues | Web publishes messages; Worker consumes them. |
+| Passwords, connection strings, and provider credentials | Azure Key Vault | Injected into the Container Apps at runtime; they are not committed to this repository. |
+| Source code, infrastructure definitions, and deployment metadata | This Git repository | Bicep lives in `infra/`; public contract addresses live in `deployments/` and `contracts/*/deployments/`. |
+
+The old AWS design used an EC2 `t3.micro` application server with RDS, SQS, and S3. That footprint is retired and is not the current production path. The AWS implementation is preserved only on the `aws_legacy` branch; the `t3.micro` reservation screen should therefore not be treated as the runtime architecture documented below.
+
+### How it is operated
+
+- **Local app:** start PostgreSQL with `scripts/apple-container-postgres.sh`, run the Web project, and optionally run the Worker in a second terminal.
+- **Local blockchain:** start Hardhat through the commands in [Local blockchain manifests](#local-blockchain-manifests); deploy scripts write a manifest containing public addresses.
+- **Production:** merge to the deployment branch; GitHub Actions authenticates to Azure with OIDC, builds and pushes the Web/Worker images, applies the Container Apps revisions, and runs database migration/deployment steps as configured in `.github/workflows/ci.yml`.
+- **Secrets:** supply them through `.env` locally or Azure Key Vault in production. Do not put private keys, passwords, or provider API keys in source control.
 
 ## Azure Infrastructure
 

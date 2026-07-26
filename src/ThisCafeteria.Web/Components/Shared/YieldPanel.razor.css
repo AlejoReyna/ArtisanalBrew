@@ -7,195 +7,147 @@
     transform: none;
 }
 
-.staking-connect {
+.staking-intro {
     background:
-        linear-gradient(90deg, rgba(143, 185, 155, 0.05) 0 1px, transparent 1px 100%),
-        linear-gradient(180deg, rgba(143, 185, 155, 0.04) 0 1px, transparent 1px 100%),
-        radial-gradient(circle at 75% 50%, rgba(143, 185, 155, 0.08) 0%, transparent 50%),
-        #110d0a;
-    background-size: 4rem 4rem, 4rem 4rem, 100% 100%, auto;
-    display: grid;
-    grid-template-columns: minmax(0, 50%) minmax(26rem, 50%);
-    gap: clamp(1rem, 3vw, 4rem);
+        radial-gradient(circle at 50% -10%, rgba(143, 185, 155, 0.09) 0%, transparent 55%),
+        var(--stake-bg-deep, #100D0B);
+    display: flex;
+    justify-content: center;
     min-height: calc(100vh - 4.75rem);
-    padding: 0 clamp(1.25rem, 3vw, 3rem);
-    align-items: stretch;
-    overflow: hidden;
+    padding: clamp(1.75rem, 5vh, 3.5rem) clamp(1.25rem, 4vw, 3rem) clamp(2.5rem, 7vh, 4rem);
 }
 
-.staking-connect__left {
-    position: relative;
+.staking-intro__inner {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: clamp(2rem, 4vh, 4rem) clamp(2rem, 3vw, 3rem);
-    z-index: 10;
+    gap: clamp(0.75rem, 1.6vh, 1.1rem);
+    max-width: 44rem;
+    width: 100%;
 }
 
-.staking-connect__bg-coin {
-    position: absolute;
-    top: 50%;
-    left: 45%;
-    width: 140%;
-    height: 140%;
-    transform: translate(-50%, -50%);
-    object-fit: contain;
-    z-index: -2;
-    animation: floatToken 8s ease-in-out infinite;
-    opacity: 0.8;
-    pointer-events: none;
-    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+.staking-intro__chain {
+    margin-bottom: clamp(0.25rem, 0.8vh, 0.55rem);
+    /* keeps the selector from stretching to the column width */
+    margin-right: auto;
 }
 
-@keyframes floatToken {
-    0% { transform: translate(-50%, -50%) translateY(0px); }
-    50% { transform: translate(-50%, -50%) translateY(-25px); }
-    100% { transform: translate(-50%, -50%) translateY(0px); }
-}
-
-.staking-connect__right {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: clamp(1rem, 2vh, 1.5rem) 0;
-    position: relative;
-    z-index: 10;
-}
-
-.staking-connect__content {
-    align-items: flex-start;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    position: relative;
-    text-align: left;
-}
-
-.staking-connect__chain-wrapper {
-    margin-bottom: 2rem;
-    display: inline-block;
-    background: rgba(23, 19, 16, 0.6);
-    border: 1px solid rgba(244, 239, 230, 0.12);
-    border-radius: 999px;
-    backdrop-filter: blur(8px);
-}
-
-.staking-connect__content::before {
-    background: linear-gradient(180deg, rgba(143, 185, 155, 0), rgba(143, 185, 155, 0.5), rgba(143, 185, 155, 0));
-    content: "";
-    height: min(26rem, 68%);
-    left: 0;
-    opacity: 0.38;
-    position: absolute;
-    top: 16%;
-    width: 1px;
-}
-
-.staking-connect__module {
-    display: grid;
-    gap: clamp(1rem, 2.2vh, 1.55rem);
-    max-width: 48rem;
-    padding-left: clamp(1.2rem, 2.4vw, 2.2rem);
-    position: relative;
-    width: min(100%, 48rem);
-}
-
-.staking-connect__module::before {
-    background: #8FB99B;
-    border-radius: 999px;
-    box-shadow: 0 0 0 5px rgba(143, 185, 155, 0.16), 0 0 14px rgba(143, 185, 155, 0.45);
-    content: "";
-    height: 0.5rem;
-    left: -0.25rem;
-    position: absolute;
-    top: 0.45rem;
-    width: 0.5rem;
-}
-
-.staking-connect__meta {
+.staking-intro__eyebrow {
     align-items: center;
+    color: var(--stake-faint, rgba(244, 239, 230, 0.4));
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.staking-connect__meta span {
-    background: #1F1915;
-    border: 1px solid rgba(244, 239, 230, 0.14);
-    border-radius: 999px;
-    color: rgba(244, 239, 230, 0.62);
     font-family: var(--crypto-mono);
-    font-size: 0.62rem;
+    font-size: 0.66rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    line-height: 1;
-    padding: 0.42rem 0.62rem;
+    gap: 0.6rem;
+    letter-spacing: 0.14em;
+    margin: 0;
     text-transform: uppercase;
 }
 
-.staking-connect h1,
-.staking-connect h2 {
-    color: #F4EFE6;
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(2.45rem, 4.85vw, 4.55rem);
-    line-height: 1.05;
-    margin: 0;
-    max-width: 47rem;
-    background: linear-gradient(135deg, #FFF 0%, #D8C3A5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0px 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.staking-connect .lede {
-    color: rgba(244, 239, 230, 0.72);
-    font-size: clamp(1rem, 1.75vw, 1.22rem);
-    line-height: 1.68;
-    margin: 0;
-    max-width: 43rem;
-}
-
-.staking-connect__content .button {
-    align-items: center;
+.staking-intro__eyebrow::before {
+    background: var(--stake-green, #8FB99B);
     border-radius: 999px;
-    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
-    display: inline-flex;
-    justify-content: center;
-    margin-left: clamp(1.2rem, 2.4vw, 2.2rem);
-    margin-top: clamp(1.25rem, 3vh, 2.25rem);
-    max-width: 34rem;
-    min-height: 3.9rem;
+    box-shadow: 0 0 0 4px var(--stake-green-dim, rgba(143, 185, 155, 0.14));
+    content: "";
+    height: 0.36rem;
+    width: 0.36rem;
+}
+
+.staking-intro__title {
+    color: var(--stake-ink, #F4EFE6);
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(1.95rem, 4vw, 2.8rem);
+    letter-spacing: -0.015em;
+    line-height: 1.06;
+    margin: 0;
+}
+
+.staking-intro__lede {
+    color: var(--stake-muted, rgba(244, 239, 230, 0.58));
+    font-size: clamp(0.98rem, 1.35vw, 1.08rem);
+    line-height: 1.6;
+    margin: 0;
+    max-width: 42rem;
+}
+
+.staking-intro__steps {
+    counter-reset: staking-step;
+    display: grid;
+    gap: 0.55rem;
+    list-style: none;
+    margin: clamp(0.3rem, 1vh, 0.7rem) 0 0;
+    padding: 0;
+}
+
+.staking-intro__step {
+    background: var(--stake-surface, #1F1915);
+    border: 1px solid var(--stake-line, rgba(244, 239, 230, 0.1));
+    border-radius: 14px;
+    padding: 0.8rem 1.2rem 0.85rem 3.4rem;
     position: relative;
-    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    width: calc(100% - clamp(1.2rem, 2.4vw, 2.2rem));
 }
 
-.staking-connect__content .button--glow {
-    background: linear-gradient(135deg, #F4EFE6 0%, #E0D5B5 100%);
-    color: #110d0a;
+.staking-intro__step::before {
+    align-items: center;
+    background: var(--stake-green-dim, rgba(143, 185, 155, 0.14));
+    border-radius: 999px;
+    color: var(--stake-green, #8FB99B);
+    content: counter(staking-step);
+    counter-increment: staking-step;
+    display: flex;
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    border: none;
-    box-shadow: 0 8px 32px rgba(244, 239, 230, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
-.staking-connect__content .button:hover:not(:disabled) {
-    box-shadow: 0 12px 40px rgba(244, 239, 230, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    transform: translateY(-2px) scale(1.02);
-}
-
-.staking-connect__content .button::after {
-    content: "→";
-    font-size: 1rem;
+    height: 1.6rem;
+    justify-content: center;
+    left: 1.05rem;
     position: absolute;
-    right: 1.45rem;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: transform 250ms ease;
+    top: 0.82rem;
+    width: 1.6rem;
 }
 
-.staking-connect__content .button:hover:not(:disabled)::after {
-    transform: translate(4px, -50%);
+.staking-intro__step-title {
+    color: var(--stake-ink, #F4EFE6);
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.22rem;
+}
+
+.staking-intro__step-body {
+    color: var(--stake-muted, rgba(244, 239, 230, 0.58));
+    font-size: 0.87rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.staking-intro__error {
+    color: #E59880;
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+.staking-intro__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.1rem;
+    margin-top: clamp(0.35rem, 1.2vh, 0.8rem);
+}
+
+.staking-intro__cta {
+    border-radius: 999px;
+    min-height: 3.15rem;
+    padding-inline: 2rem;
+    transition: background-color 200ms ease, border-color 200ms ease, transform 160ms ease-out;
+}
+
+.staking-intro__cta:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.staking-intro__faucet {
+    margin-top: clamp(0.5rem, 1.6vh, 1.1rem);
 }
 
 .yield-back {
@@ -225,10 +177,6 @@
 .yield-back:hover {
     color: var(--yield-muted);
     transform: translateX(-2px);
-}
-
-.yield-back--center {
-    margin: 1.5rem auto 0;
 }
 
 .yield-allocate-link:disabled {
@@ -315,11 +263,6 @@
     white-space: nowrap;
 }
 
-.staking-connect__badge {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.1rem;
-}
 
 .yield-stat-row {
     display: grid;
@@ -480,106 +423,22 @@
     text-transform: uppercase;
 }
 
-/* ── Faucet ── */
 
-.staking-connect__faucet {
-    align-items: center;
-    align-self: stretch;
-    display: flex;
-    margin: 0;
-    max-width: none;
-    min-height: 0;
-}
 
-.staking-connect__faucet ::deep .faucet-panel {
-    align-content: center;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-    color: #171310;
-    gap: clamp(0.7rem, 1.25vh, 0.95rem);
-    height: 100%;
-    min-height: 0;
-    padding: clamp(1.1rem, 2.6vh, 2rem) clamp(1.25rem, 2vw, 2rem) clamp(0.45rem, 1vh, 0.85rem);
-    width: 100%;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__title,
-.staking-connect__faucet ::deep .faucet-panel__lede,
-.staking-connect__faucet ::deep .faucet-panel__eyebrow {
-    color: #171310;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__lede {
-    opacity: 0.75;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    color: #171310;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card:hover {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.1);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card-note {
-    color: rgba(23, 19, 16, 0.6);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card-amount {
-    color: #0d47a1;
-    font-weight: 700;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__list {
-    gap: clamp(0.65rem, 1.4vh, 0.9rem);
-    grid-template-columns: 1fr;
-    margin-top: clamp(0.25rem, 0.8vh, 0.55rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__eyebrow {
-    display: none;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__title {
-    font-size: clamp(1.45rem, 3.2vh, 1.95rem);
-    margin-bottom: clamp(0.35rem, 0.8vh, 0.5rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__lede {
-    font-size: clamp(0.78rem, 1.55vh, 0.95rem);
-    line-height: 1.42;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card {
-    gap: clamp(0.25rem, 0.5vh, 0.4rem);
-    padding: clamp(0.58rem, 1.05vh, 0.82rem) clamp(0.85rem, 1.5vw, 1rem) clamp(0.62rem, 1.15vh, 0.86rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__logo {
-    height: clamp(1.6rem, 3.4vh, 2rem);
-    width: clamp(1.6rem, 3.4vh, 2rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__logo img {
-    height: clamp(1rem, 2.3vh, 1.3rem);
-    width: clamp(1rem, 2.3vh, 1.3rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card-note {
-    font-size: clamp(0.68rem, 1.35vh, 0.76rem);
-    line-height: 1.28;
-}
-
-.staking-connect__faucet ::deep .faucet-panel__card-cta {
-    padding-top: clamp(0.1rem, 0.5vh, 0.25rem);
-}
 
 .yield-faucet {
     border: 1px solid rgba(244, 239, 230, 0.11);
@@ -1009,21 +868,8 @@
         grid-template-columns: 1fr;
     }
 
-    .staking-connect {
-        grid-template-columns: 1fr;
+    .staking-intro {
         min-height: auto;
-        padding: clamp(1.5rem, 3vw, 2rem);
-        overflow: visible;
-    }
-
-    .staking-connect__faucet {
-        margin-top: 2rem;
-    }
-
-    .staking-connect__faucet ::deep .faucet-panel {
-        border: 1px solid rgba(244, 239, 230, 0.11);
-        border-radius: 12px;
-        height: auto;
     }
 }
 

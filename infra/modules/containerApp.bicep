@@ -19,6 +19,9 @@ param image string
 @description('Whether this Container App exposes external HTTP ingress (true for Web, false for Worker)')
 param enableIngress bool
 
+@description('Whether enabled HTTP ingress is public. Internal ingress remains reachable only inside the Container Apps environment.')
+param externalIngress bool = true
+
 @description('Target port the container listens on; ignored when enableIngress is false')
 param targetPort int = 8080
 
@@ -80,7 +83,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       ]
       secrets: secrets
       ingress: enableIngress ? {
-        external: true
+        external: externalIngress
         targetPort: targetPort
         transport: 'auto'
         allowInsecure: false
