@@ -38,8 +38,8 @@
     }
     else
     {
-        <div class="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
-            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between" data-animate="fade-up">
+        <div class="products-catalog__panel max-w-7xl p-4">
+            @* <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between" data-animate="fade-up">
                 <nav class="flex items-center gap-2 text-sm text-mute" aria-label="Breadcrumb">
                     <a href="" class="flex items-center gap-2 transition-colors hover:text-ink">
                         <LucideIcon Name="house" Size="14" />
@@ -58,12 +58,12 @@
                                 OnRemoveChip="RemoveChip"
                                 Sort="@_sort"
                                 SortChanged="value => { _sort = value; _currentPage = 1; }" />
-            </div>
+            </div> *@
 
             <TestnetInfoModal />
 
-            <div class="mt-10 flex flex-col gap-8 lg:flex-row lg:items-start">
-                <div class="flex-shrink-0 lg:sticky lg:top-24 lg:w-[260px]">
+            <div class="products-catalog__layout mt-6 flex flex-col gap-8 lg:flex-row lg:items-start">
+                @* <div class="flex-shrink-0 lg:sticky lg:top-24 lg:w-[260px]">
                     <FilterSidebar SearchText="@_searchText"
                                SearchTextChanged="value => { _searchText = value; _currentPage = 1; }"
                                AvailableOnly="@_availableOnly"
@@ -77,9 +77,9 @@
                                MaxPriceChanged="value => { _maxPrice = value; _currentPage = 1; }"
                                PriceFloor="@_priceFloor"
                                PriceCeiling="@_priceCeiling" />
-                </div>
+                </div> *@
 
-                <div class="min-w-0 flex-1">
+                <div class="products-catalog__results min-w-0 flex-1">
                     @{
                         var cards = VisibleCards();
                     }
@@ -97,7 +97,7 @@
                     }
                     else
                     {
-                        <div class="grid gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
+                        <div class="@(_listView ? "grid gap-6 grid-cols-1" : "products-catalog__grid grid gap-6 sm:grid-cols-2 xl:grid-cols-3")"
                              data-animate="fade-up">
                             @for (var i = 0; i < cards.Count; i++)
                             {
@@ -115,7 +115,7 @@
                         @if (_totalFilteredCount > _pageSize)
                         {
                             var totalPages = (int)Math.Ceiling((double)_totalFilteredCount / _pageSize);
-                            <div class="mt-12 flex justify-center gap-2" data-animate="fade-up">
+                            <div class="products-catalog__pagination mt-6 flex justify-center gap-2" data-animate="fade-up">
                                 @for (int p = 1; p <= totalPages; p++)
                                 {
                                     var pageNum = p;

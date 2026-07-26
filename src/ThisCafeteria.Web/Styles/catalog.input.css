@@ -44,6 +44,87 @@ body:has(.products-catalog) {
     --tw-translate-y: 0;
 }
 
+/* ── Single-viewport lock ───────────────────────────────────────────────────
+ * /products must fit one viewport (100dvh) with zero vertical scroll: nav,
+ * grid and pagination all visible, nothing clipped. The lock only engages on
+ * wide AND tall-enough screens; below 1024px width or 700px height the page
+ * keeps normal document flow and scrolling (6 stacked cards cannot fit a
+ * phone viewport no matter the spacing — mobile is exempt by design).
+ *
+ * Height budget @1440x900 (dvh = 900px):
+ *   fixed nav (.site-nav, min-height 4rem)            64px
+ *   catalog height = 900 - 64                        836px
+ *   panel p-4 (top + bottom)                          32px
+ *   layout mt-6                                       24px
+ *   pagination mt-6 + h-10 buttons                    64px
+ *   grid = 836 - 120 = 716px -> 2 rows of (716-24)/2 = 346px per card
+ *   card text block (p-3, stars, brand, 2-line name, price row) ~= 160px
+ *   -> image well ~= 186px (was 282px at aspect-[4/3])
+ * @1920x1080: grid = 1016 - 120 = 896px -> rows of 436px -> image ~= 276px.
+ * _pageSize stays 6: exactly 2 rows x 3 columns. */
+@media (min-width: 1024px) and (min-height: 700px) {
+    .products-catalog {
+        display: flex;
+        flex-direction: column;
+        height: calc(100dvh - 4rem);
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .products-catalog__panel {
+        box-sizing: border-box;
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .products-catalog__layout {
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .products-catalog__results {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    /* Unlayered rules beat Tailwind's layered utilities, so this also upgrades
+     * the sm:grid-cols-2 track to 3 columns at lg widths: 6 cards = 2 rows. */
+    .products-catalog__grid {
+        flex: 1 1 0;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        min-height: 0;
+    }
+
+    .products-catalog__grid [data-product-card] {
+        box-sizing: border-box;
+        height: 100%;
+    }
+
+    .products-catalog__grid [data-product-card] > a {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    /* The image gives up its 4:3 ratio and absorbs whatever vertical space the
+     * text block leaves — this is what lets each row shrink to fit the budget. */
+    .products-catalog__grid .product-card__media {
+        aspect-ratio: auto;
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .products-catalog__pagination {
+        flex-shrink: 0;
+    }
+}
+
 
 
 /* Number inputs: hide the native spinners, they eat the little width these have. */

@@ -32,6 +32,37 @@ body.product-detail-view .public-main {
     padding-top: 0;
 }
 
+/* /products: single-viewport catalog lock (height budget lives in
+   Styles/catalog.input.css). Scoped to the same media query as the lock so
+   every other breakpoint — and every other route — keeps its normal flow. */
+@media (min-width: 1024px) and (min-height: 700px) {
+    /* main's content-box min-height: 100vh stacks ON TOP of the 3.325rem
+       padding-top, which would overflow the viewport by itself. */
+    .public-page:has(.products-catalog) .public-main {
+        min-height: 0;
+    }
+
+    /* .content's clamp(1.25rem, 3vw, 3rem) block padding is page chrome the
+       catalog already budgets for internally (panel p-4). */
+    .public-page:has(.products-catalog) .public-content {
+        padding-bottom: 0;
+        padding-top: 0;
+    }
+
+    /* The footer can't share a no-scroll viewport; it stays on every other
+       route and on mobile, where the catalog scrolls normally. */
+    .public-page:has(.products-catalog) .journal-footer {
+        display: none;
+    }
+
+    /* Hard guarantee: nothing on this route may produce a scrollbar. */
+    .public-page:has(.products-catalog) {
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+    }
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;

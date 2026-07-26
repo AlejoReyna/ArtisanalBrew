@@ -7,7 +7,7 @@
        href="@($"products/{Card.Slug}")"
        @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
        @onclick:preventDefault="true">
-        <div class="relative aspect-[4/3] overflow-hidden rounded-xl bg-sand">
+        <div class="product-card__media relative aspect-[4/3] overflow-hidden rounded-xl bg-sand">
             @if (!string.IsNullOrWhiteSpace(Card.ImageUrl))
             {
                 <img src="@Card.ImageUrl"
