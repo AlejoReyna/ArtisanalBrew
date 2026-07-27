@@ -33,14 +33,12 @@
     transition: background-color 0.3s ease;
 }
 
-/* /staking blends the bar into its own dark ground instead of the usual plate.
-   Pinned to --stake-bg-deep (the same token StakingLayout.razor.css paints
-   .page with) rather than literal transparent: transparent just shows
-   whatever is behind the fixed header, which doesn't reliably match the
-   yield page's own background and reads as a seam. */
+/* StakingLayout paints its background from the top of the page, behind the
+   fixed navbar. Yield and Lab therefore expose that same ground directly:
+   there is no separate navbar plate and no dividing rule. */
 .public-header--transparent {
-    background: var(--stake-bg-deep, transparent);
-    border-bottom-color: transparent;
+    background: transparent;
+    border-bottom: 0;
 }
 
 /* Three tracks so the link row sits on the page's centre line rather than

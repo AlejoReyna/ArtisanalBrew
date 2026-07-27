@@ -1,6 +1,9 @@
 @page "/procurement-lab"
+@layout StakingLayout
+@rendermode InteractiveServer
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Extensions.Options
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Application.Services
 @using ThisCafeteria.Domain.Entities
@@ -11,33 +14,118 @@
 @inject ISmartAccountService SmartAccountService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JSRuntime
+@inject IOptions<BlockchainNetworkOptions> ChainOptions
+@inject NavigationManager Navigation
 @inject ILogger<ProcurementLab> Logger
 
 <div class="procurement-lab" data-page-theme-color="#171714">
+    @* Full-screen sky: sparse pixel stars and coffee-colored planets span the whole
+       page behind the content. Decorative only. *@
+    <div class="pl-sky" aria-hidden="true">
+        <span class="pl-star pl-star--one"></span>
+        <span class="pl-star pl-star--two"></span>
+        <span class="pl-star pl-star--three"></span>
+        <span class="pl-star pl-star--four"></span>
+        <span class="pl-star pl-star--five"></span>
+        <span class="pl-star pl-star--six"></span>
+        <span class="pl-star pl-star--seven"></span>
+        <span class="pl-star pl-star--eight"></span>
+        <img class="pl-sky__planet pl-sky__planet--one" src="images/pl-planet.png" alt="" />
+        <img class="pl-sky__planet pl-sky__planet--two" src="images/pl-planet-ringed.png" alt="" />
+    </div>
+
   <div class="procurement-lab__inner">
-    <div class="procurement-lab__header">
-        <div class="procurement-lab__intro">
-            <span class="procurement-lab__eyebrow">Agentic commerce · live projection</span>
-            <h1>Procurement Lab</h1>
-            <p>Inspect the state currently known to ArtisanalBrew. This view reads persisted projections — it does not manufacture on-chain progress.</p>
+    @* Hero: centered editorial copy, robot escrow station, action, then mission
+       telemetry. Decorative pixel work is hidden from screen readers; the lifecycle
+       is told by the robots and the live panels below — no workflow bar. *@
+    <section class="pl-hero" aria-labelledby="pl-hero-title">
+        <div class="pl-hero__copy">
+            <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
+            <p class="pl-hero__lede">
+                Track registered agents, limited permissions, and escrowed procurement jobs
+                across the selected chain.
+            </p>
         </div>
 
-        <div class="procurement-lab__aside">
-            <div class="procurement-lab__source" title="Chain the projection is read from">
-                <span class="crypto-dot crypto-dot--pulse"></span>
-                <span class="procurement-lab__source-name">@SelectedChainAccessor.SelectedChain.ShortName</span>
-                <span class="procurement-lab__source-label">Reading projections</span>
-            </div>
-            @if (_walletAddress != null)
-            {
-                <div class="procurement-lab__actions">
-                    <button class="pl-btn pl-btn--primary" @onclick="CreateTestJob">
-                        <span class="pl-btn__glyph">＋</span> Simulate new job
-                    </button>
+        <div class="pl-hero__scene">
+            <div class="pl-scene" role="img" aria-label="Pixel robots run a coffee escrow station in space: a scout searches for supplier planets, a buyer authorizes payment at a terminal, a courier carries a crate to the locked vault, and an inspector scans a delivered crate.">
+                @if (_loading)
+                {
+                    <img class="pl-scene__satellite" src="images/pl-satellite.png" alt="" />
+                    <span class="pl-signal pl-signal--one"></span>
+                    <span class="pl-signal pl-signal--two"></span>
+                    <span class="pl-signal pl-signal--three"></span>
+                }
+
+                <span class="pl-scene__deck" aria-hidden="true"></span>
+
+                <span class="pl-scene__actor pl-scene__actor--scout" aria-hidden="true"></span>
+                <span class="pl-scene__activity pl-scene__activity--scout" aria-hidden="true">Scanning suppliers</span>
+                <span class="pl-scene__scout-signal" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                </span>
+
+                <span class="pl-scene__actor pl-scene__actor--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true"></span>
+                <span class="pl-scene__activity pl-scene__activity--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true">
+                    @(_activeEpoch is not null ? "Authorizing" : "Awaiting key")
+                </span>
+                @if (_activeEpoch is not null)
+                {
+                    <img class="pl-scene__key" src="images/pl-key.png" alt="" />
+                }
+
+                <div class="pl-scene__vault">
+                    <span class="pl-scene__vault-glow" aria-hidden="true"></span>
+                    <img src="images/pl-vault.png" alt="" />
                 </div>
+
+                <span class="pl-scene__actor pl-scene__actor--courier" aria-hidden="true"></span>
+                <span class="pl-scene__activity pl-scene__activity--courier" aria-hidden="true">Delivering crate</span>
+
+                <span class="pl-scene__actor pl-scene__actor--inspector" aria-hidden="true"></span>
+                <span class="pl-scene__activity pl-scene__activity--inspector" aria-hidden="true">Inspecting proof</span>
+                <span class="pl-scene__scan" aria-hidden="true"></span>
+                <span class="pl-scene__controls @(Jobs?.Any(job => job.Status == "Submitted") == true ? "is-live" : null)" aria-hidden="true">
+                    <span class="pl-scene__control pl-scene__control--approve">✓</span>
+                    <span class="pl-scene__control pl-scene__control--return">✗</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="pl-hero__action">
+            @if (_walletAddress is null)
+            {
+                <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                    @(_isConnecting ? "Connecting…" : "Connect MetaMask")
+                </button>
+                @if (!string.IsNullOrWhiteSpace(_connectError))
+                {
+                    <p class="pl-hero__connect-error" role="alert">@_connectError</p>
+                }
+            }
+            else
+            {
+                <button type="button" class="pl-cta" @onclick="CreateTestJob">
+                    Create test mission — wallet signed
+                </button>
             }
         </div>
-    </div>
+
+        <dl class="pl-hero__telemetry" aria-label="Mission control telemetry">
+            <div>
+                <dt>Chain</dt>
+                <dd>@SelectedChainAccessor.SelectedChain.ShortName</dd>
+            </div>
+            <div>
+                <dt>Projection</dt>
+                <dd><span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>@(_loading ? "Syncing…" : "Reading projections")</dd>
+            </div>
+            <div>
+                <dt>Wallet</dt>
+                <dd>@(_walletAddress is null ? "Not linked" : ShortAddress(_walletAddress))</dd>
+            </div>
+        </dl>
+    </section>
 
     <section class="procurement-lab__summary" aria-label="Projection summary">
         <div class="state-metric state-metric--agents"><span class="state-metric__value">@(Agents?.Count ?? 0)</span><span class="state-metric__label">Indexed agents</span></div>
@@ -61,7 +149,7 @@
         <section class="projection-empty" role="status">
             <span class="projection-empty__icon">◎</span>
             <div>
-                <h2>Connect a wallet to see your procurement state</h2>
+                <h2>Connect a wallet to open your mission scope</h2>
                 <p>The directory can be public, but job projections are scoped to the authenticated wallet. No local demo address is substituted.</p>
             </div>
         </section>
@@ -77,7 +165,7 @@
                 <div><span class="panel-kicker">Authority layer · ERC-4337 session keys</span><h2>Agent permissions</h2></div>
                 @if (_activeEpoch is not null)
                 {
-                    <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>Active</span>
+                    <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>Permission available</span>
                 }
             </div>
 
@@ -176,8 +264,8 @@
             {
                 <div class="panel-empty">
                     <span class="panel-empty__icon">◇</span>
-                    <p class="panel-empty__lede">No procurement jobs for this wallet.</p>
-                    <p class="panel-empty__hint">Simulate a job above to watch it move through the open → funded → submitted → settled escrow lifecycle.</p>
+                    <p class="panel-empty__lede">No missions on record for this wallet.</p>
+                    <p class="panel-empty__hint">Create a test mission above to watch it move through the open → funded → submitted → settled escrow lifecycle.</p>
                 </div>
             }
             else
@@ -221,8 +309,8 @@
                                     <button class="pl-btn pl-btn--sm pl-btn--fund" @onclick="() => FundJob(job)">Fund job</button>
                                     @if (CanAgentFund(job))
                                     {
-                                        <span class="state-pill state-pill--active" title="Agent @_activeEpoch!.AgentAddress is delegated to fund this job">
-                                            <span class="state-pill__dot"></span>Agent may fund this
+                                        <span class="state-pill state-pill--active" title="Agent @_activeEpoch!.AgentAddress holds a recorded permission scoped to this escrow">
+                                            <span class="state-pill__dot"></span>Permission recorded for this escrow
                                         </span>
                                     }
                                     else if (_activeEpoch is not null)
@@ -403,6 +491,53 @@
     };
 
     private IJSObjectReference? _agenticCommerce;
+    private IJSObjectReference? _stakingModule;
+    private bool _isConnecting;
+    private string? _connectError;
+
+    /// <summary>
+    /// Same wallet-auth flow as the /staking connect button: MetaMask signs the
+    /// challenge, the server issues the wallet session, and a full reload picks
+    /// up the new wallet_address claim for this circuit.
+    /// </summary>
+    private async Task ConnectWalletAsync()
+    {
+        _isConnecting = true;
+        _connectError = null;
+
+        try
+        {
+            var chain = ChainOptions.Value;
+            _stakingModule ??= await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/coffeeStaking.js");
+            var wallet = await _stakingModule.InvokeAsync<string>(
+                "connectWalletForStaking",
+                new
+                {
+                    chainId = chain.ChainId,
+                    chainIdHex = chain.ChainIdHex,
+                    networkName = chain.NetworkName,
+                    rpcUrl = chain.RpcUrl,
+                    currencyName = chain.CurrencyName,
+                    currencySymbol = chain.CurrencySymbol,
+                    currencyDecimals = chain.CurrencyDecimals,
+                    explorerUrl = chain.ExplorerUrl,
+                    isWalletAuthenticated = _walletAddress is not null
+                });
+
+            if (!string.IsNullOrWhiteSpace(wallet))
+            {
+                Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+            }
+        }
+        catch (Exception exception)
+        {
+            _connectError = exception.Message;
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

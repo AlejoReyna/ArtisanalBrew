@@ -495,6 +495,9 @@
 }
 
 @code {
+    [Parameter]
+    public bool TransparentHeader { get; set; }
+
     private bool _isNavOpen;
     private int _cartItemCount;
     private CoffeeDashboardModel? _walletSnapshot;
@@ -552,10 +555,11 @@
 
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
 
-    // /staking sits on the dark "yield" ground, so the bar reads better blended
-    // into the page instead of the usual dark-on-dark plate every other route gets.
+    // The staking layout paints one continuous ground behind its fixed header,
+    // so both /staking and /procurement-lab can let that page background show
+    // through instead of rendering a separate navbar plate.
     private string HeaderCssClass =>
-        Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/').Equals("staking", StringComparison.OrdinalIgnoreCase)
+        TransparentHeader
             ? "public-header public-header--transparent"
             : "public-header";
 
