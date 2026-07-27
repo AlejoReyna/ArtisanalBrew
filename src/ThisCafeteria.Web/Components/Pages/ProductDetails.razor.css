@@ -1,21 +1,31 @@
 :host, .product-detail-card {
+    /* Catalog design line — mirrors Styles/catalog.input.css @theme's --color-*
+       values, which is only linked on Products.razor, so this page declares its
+       own copy. Keep these in sync by hand with catalog.input.css; do not
+       repoint them at app.css's --ink/--surface/etc., which is a different,
+       intentionally-distinct palette (see the comment in catalog.input.css).
+       --card-bg (#ffffff) has no catalog equivalent — it's this page's own
+       "white card on cream page" surface, one step lighter than --card-surface. */
     --card-bg: #ffffff;
-    --card-ink: #2d2421;
-    --card-muted: #8a8078;
-    --card-accent: #c2a47d;
-    --card-meta: rgba(45, 36, 33, 0.5);
+    --card-surface: #f5f2ec;
+    --card-ink: #1c1b1a;
+    --card-muted: #8b8880;
+    --card-faint: #a9a49b;
+    --card-accent: #e8781e;
+    --card-line: #e5e0d8;
+    --card-meta: rgba(28, 27, 26, 0.5);
     --card-positive: #47614e;
 }
 
 :has(.product-detail-card) .content {
-    background: #ffffff;
+    background: var(--card-surface);
     height: calc(100dvh - 4.75rem);
     overflow: hidden;
     padding: 0;
 }
 
 .product-detail-card {
-    background: #ffffff;
+    background: var(--card-bg);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -32,8 +42,8 @@
     background: rgba(255, 255, 255, 0.82);
     border: none;
     border-radius: 50%;
-    box-shadow: 0 2px 10px rgba(45, 36, 33, 0.12);
-    color: #2d2421;
+    box-shadow: 0 2px 10px rgba(28, 27, 26, 0.12);
+    color: var(--card-ink);
     cursor: pointer;
     display: inline-flex;
     height: 2.5rem;
@@ -82,7 +92,7 @@
 }
 
 .product-detail-card__name {
-    color: #2d2421;
+    color: var(--card-ink);
     font-family: 'Inter', sans-serif;
     font-size: 1.6rem;
     font-weight: 800;
@@ -94,7 +104,7 @@
 }
 
 .product-detail-card__tag {
-    color: #a89c8f;
+    color: var(--card-faint);
     font-family: 'Inter', sans-serif;
     font-size: 0.66rem;
     font-weight: 600;
@@ -104,6 +114,7 @@
 }
 
 .product-detail-card__media {
+    background: var(--card-surface);
     flex-shrink: 0;
     padding: 0;
     position: relative;
@@ -116,13 +127,14 @@
     width: 100%;
 }
 
+/* Rhythm is per-block, not a uniform flex gap: tight inside logical groups
+   (title → stamp → desc → allergens), larger between groups. */
 .product-detail-card__sheet {
-    background: #ffffff;
+    background: var(--card-bg);
     border-radius: 1.5rem 1.5rem 0 0;
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 1.1rem;
     margin-top: -1.5rem;
     padding: 1.75rem 1.5rem 1.5rem;
     position: relative;
@@ -130,7 +142,7 @@
 }
 
 .product-detail-card__price {
-    color: #2d2421;
+    color: var(--card-ink);
     font-family: 'Inter', sans-serif;
     line-height: 1;
     margin: 0;
@@ -138,7 +150,7 @@
 }
 
 .product-detail-card__price-symbol {
-    color: #c2a47d;
+    color: var(--card-accent);
     font-size: 0.85rem;
     font-weight: 600;
     margin-right: 0.05em;
@@ -161,12 +173,12 @@
     align-items: center;
     display: inline-flex;
     gap: 0.5rem;
-    margin: 0.6rem 0 0.1rem;
+    margin: 1.25rem 0 0;
 }
 
 .product-detail-card__stamp-icon {
     align-items: center;
-    background: var(--card-positive, #47614e);
+    background: var(--card-positive);
     border-radius: 50%;
     color: #fffdf9;
     display: inline-flex;
@@ -177,26 +189,26 @@
 }
 
 .product-detail-card__stamp-label {
-    color: var(--card-ink, #2d2421);
+    color: var(--card-ink);
     font-family: 'Inter', sans-serif;
     font-size: 0.82rem;
     font-weight: 500;
 }
 
 .product-detail-card__desc {
-    color: #8a8078;
+    color: var(--card-muted);
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     font-weight: 400;
     line-height: 1.6;
-    margin: 0;
+    margin: 0.6rem 0 0;
 }
 
 .product-detail-card__allergens {
-    color: var(--card-meta, rgba(45, 36, 33, 0.5));
+    color: var(--card-meta);
     font-family: 'Inter', sans-serif;
     font-size: 0.76rem;
-    margin: 0.6rem 0 0;
+    margin: 0.5rem 0 0;
 }
 
 .product-detail-card__badges {
@@ -209,9 +221,9 @@
 
 .product-detail-card__cert-badge {
     align-items: center;
-    border: 1.5px solid var(--card-ink, #2d2421);
+    border: 1.5px solid var(--card-ink);
     border-radius: 0.5rem;
-    color: var(--card-ink, #2d2421);
+    color: var(--card-ink);
     display: inline-flex;
     flex-shrink: 0;
     font-family: 'Inter', sans-serif;
@@ -224,10 +236,10 @@
 
 .product-detail-card__pill {
     align-items: center;
-    background: #ffffff;
-    border: 1px solid var(--card-ink, #2d2421);
+    background: var(--card-bg);
+    border: 1px solid var(--card-ink);
     border-radius: 999px;
-    color: var(--card-ink, #2d2421);
+    color: var(--card-ink);
     display: inline-flex;
     font-family: 'Inter', sans-serif;
     font-size: 0.75rem;
@@ -241,10 +253,10 @@
 }
 
 .product-detail-card__divider {
-    background: rgba(45, 36, 33, 0.08);
+    background: var(--card-line);
     border: none;
     height: 1px;
-    margin: 1.4rem 0;
+    margin: 1.5rem 0;
 }
 
 .product-detail-card__media-row {
@@ -257,7 +269,7 @@
 }
 
 .product-detail-card__media-row-label {
-    color: var(--card-ink, #2d2421);
+    color: var(--card-ink);
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     line-height: 1.35;
@@ -267,7 +279,7 @@
 
 .product-detail-card__media-row-thumb {
     align-items: center;
-    background-color: var(--card-accent, #c2a47d);
+    background-color: var(--card-accent);
     background-position: center;
     background-size: cover;
     border-radius: 0.75rem;
@@ -283,7 +295,7 @@
     align-items: center;
     background: rgba(255, 255, 255, 0.92);
     border-radius: 50%;
-    color: var(--card-ink, #2d2421);
+    color: var(--card-ink);
     display: inline-flex;
     height: 1.65rem;
     justify-content: center;
@@ -291,7 +303,7 @@
 }
 
 .product-detail-card__section-header {
-    color: var(--card-ink, #2d2421);
+    color: var(--card-ink);
     font-family: 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 800;
@@ -305,11 +317,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin: 0.75rem 0 0;
+    margin: 0;
 }
 
 .product-detail-card__highlight {
-    color: #2d2421;
+    color: var(--card-muted);
     font-family: 'Inter', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
@@ -317,16 +329,16 @@
 }
 
 .product-detail-card__highlight-divider {
-    color: #a89c8f;
+    color: var(--card-faint);
 }
 
 /* Action bar sits just below the copy, kept clear of the screen edge */
 .product-detail-card__buybar {
     align-items: stretch;
-    border-top: 1px solid rgba(45, 36, 33, 0.08);
+    border-top: 1px solid var(--card-line);
     display: flex;
     gap: 0.75rem;
-    margin-top: 0.5rem;
+    margin-top: 1.5rem;
     padding-top: 1.25rem;
 }
 
@@ -336,62 +348,61 @@
     flex-shrink: 0;
 }
 
+/* Pill stepper to match .btn-add-cart and the catalog's rounded-full buttons */
 .quantity-selector {
     align-items: center;
+    border: 1px solid var(--card-ink);
+    border-radius: 999px;
     display: inline-flex;
-    gap: 0;
+    height: 3.2rem;
+    overflow: hidden;
 }
 
 .quantity-btn {
     align-items: center;
     background: transparent;
-    border: 1px solid #2d2421;
-    border-radius: 0;
-    color: #2d2421;
+    border: none;
+    color: var(--card-ink);
     cursor: pointer;
     display: inline-flex;
     font-family: 'Inter', sans-serif;
     font-size: 1rem;
     font-weight: 300;
-    height: 3.2rem;
+    height: 100%;
     justify-content: center;
     line-height: 1;
     padding: 0;
-    transition: background 180ms ease, border-color 180ms ease;
-    width: 2.6rem;
+    transition: background 180ms ease;
+    width: 2.4rem;
 }
 
 .quantity-btn:hover:not(:disabled) {
-    background: rgba(45, 36, 33, 0.06);
-    border-color: #2d2421;
+    background: rgba(28, 27, 26, 0.06);
 }
 
 .quantity-btn:disabled {
-    border-color: #2d2421;
-    color: rgba(45, 36, 33, 0.28);
+    color: rgba(28, 27, 26, 0.28);
     cursor: not-allowed;
     opacity: 0.45;
 }
 
 .quantity-value {
     align-items: center;
-    border-bottom: 1px solid #2d2421;
-    border-top: 1px solid #2d2421;
-    color: #2d2421;
+    color: var(--card-ink);
     display: inline-flex;
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
-    height: 3.2rem;
+    height: 100%;
     justify-content: center;
-    min-width: 2.6rem;
-    padding: 0 0.5rem;
+    min-width: 1.8rem;
+    padding: 0 0.25rem;
 }
 
 .btn-add-cart {
     align-items: center;
-    background: #2d2421;
-    border: 1px solid #2d2421;
+    background: var(--card-ink);
+    border: 1px solid var(--card-ink);
     border-radius: 999px;
     color: #f5f3ee;
     cursor: pointer;
@@ -410,8 +421,8 @@
 }
 
 .btn-add-cart:hover:not(:disabled) {
-    background: #1a1715;
-    border-color: #1a1715;
+    background: var(--card-accent);
+    border-color: var(--card-accent);
     transform: translateY(-1px);
 }
 
@@ -421,39 +432,65 @@
 }
 
 .product-detail--empty h1 {
-    color: #2d2421;
+    color: var(--card-ink);
     font-size: clamp(2rem, 4vw, 3rem);
     margin-bottom: 1rem;
 }
 
 .product-detail--empty .lede {
-    color: #8a8078;
+    color: var(--card-muted);
 }
 
-/* Entry animations from card transition */
-.product-detail-hero--from-card .product-detail-card__media,
-.product-detail-hero--from-card .product-detail-card__sheet {
+/* Entry animations from card transition. The clone from productTransition.js
+   lands exactly on the media panel and cross-fades into the real image, so
+   only the sheet's copy blocks animate — staggered, one item at a time. */
+.product-detail-hero--from-card .product-detail-card__sheet > * {
     opacity: 0;
 }
 
-.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__media {
-    animation: product-detail-media-in 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
-    transform-origin: center center;
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > * {
+    animation: product-detail-item-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet {
-    animation: product-detail-copy-in 620ms 110ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(1) { animation-delay: 120ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(2) { animation-delay: 160ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(3) { animation-delay: 200ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(4) { animation-delay: 240ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(5) { animation-delay: 280ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(6) { animation-delay: 320ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(7) { animation-delay: 360ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(8) { animation-delay: 400ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(9) { animation-delay: 440ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(10) { animation-delay: 480ms; }
+.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(11) { animation-delay: 520ms; }
+
+@keyframes product-detail-item-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.75rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Mobile */
 @media (max-width: 960px) {
     .product-detail-card {
         /* Pin the sheet to the viewport so it is not clipped by the parent
-           .content container and stays independent of header/layout shifts. */
-        height: 100dvh;
-        inset: 0;
-        min-height: 100dvh;
+           .content container and stays independent of header/layout shifts.
+           Covers almost the full height, rounded top — the same sheet metaphor
+           as the filter receipt on /products. */
+        border-radius: 1.25rem 1.25rem 0 0;
+        bottom: 0;
+        box-shadow: 0 -16px 48px rgba(28, 27, 26, 0.2);
+        height: 94dvh;
+        left: 0;
+        min-height: 94dvh;
         position: fixed;
+        right: 0;
         width: 100%;
         z-index: 100;
     }
@@ -468,11 +505,12 @@
         padding-bottom: calc(max(2rem, env(safe-area-inset-bottom)) + 4.5rem);
     }
 
-    /* Bottom-sheet entry: the card grows up from the bottom on mount.
-       Pure CSS (not a JS-added class) so the very first painted frame is
-       already translated down — no flash of the resting position. */
+    /* Bottom-sheet entry: same appear motion as the filter receipt sheet
+       (drawer curve, 440ms). Pure CSS (not a JS-added class) so the very
+       first painted frame is already translated down — no flash of the
+       resting position. */
     .product-detail-card:not(.product-detail-sheet-dismiss-clone) {
-        animation: pd-sheet-enter 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: pd-sheet-enter 440ms cubic-bezier(0.32, 0.72, 0, 1) both;
         will-change: transform;
     }
 }
@@ -488,19 +526,21 @@
 }
 
 /* Overlay snapshot used to dismiss the sheet downward while the list
-   renders behind it (cloned to <body>, so it carries the scope attribute). */
+   renders behind it (cloned to <body>, so it carries the scope attribute).
+   Mirrors the mobile sheet geometry: almost full height, rounded top. */
 .product-detail-sheet-dismiss-clone {
-    background: #ffffff;
-    bottom: auto;
-    height: 100dvh;
-    inset: 0;
+    background: var(--card-bg);
+    border-radius: 1.25rem 1.25rem 0 0;
+    bottom: 0;
+    box-shadow: 0 -16px 48px rgba(28, 27, 26, 0.2);
+    height: 94dvh;
     left: 0;
-    min-height: 100dvh;
+    min-height: 94dvh;
     overflow: hidden;
     pointer-events: none;
     position: fixed;
     right: 0;
-    top: 0;
+    top: auto;
     will-change: transform;
     z-index: 1000;
 }
@@ -546,10 +586,9 @@
 
     .product-detail-card__sheet {
         align-items: center;
-        border-left: 1px solid rgba(45, 36, 33, 0.08);
+        border-left: 1px solid var(--card-line);
         border-radius: 0;
         flex: 1 1 42%;
-        gap: 1.4rem;
         justify-content: center;
         margin-top: 0;
         min-width: 0;
@@ -620,38 +659,12 @@
     }
 
     .product-detail-card__buybar {
-        margin-top: 0.75rem;
         padding-top: 1.75rem;
     }
 }
 
-@keyframes product-detail-copy-in {
-    from {
-        opacity: 0;
-        transform: translateY(1.5rem);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes product-detail-media-in {
-    from {
-        opacity: 0;
-        transform: scale(0.94);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .product-detail-hero--from-card .product-detail-card__media,
-    .product-detail-hero--from-card .product-detail-card__sheet,
+    .product-detail-hero--from-card .product-detail-card__sheet > *,
     .product-detail-card:not(.product-detail-sheet-dismiss-clone) {
         animation: none;
         opacity: 1;

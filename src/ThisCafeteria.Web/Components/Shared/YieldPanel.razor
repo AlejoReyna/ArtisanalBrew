@@ -30,66 +30,141 @@
 @if (!_isConnected)
 {
     <section class="staking-intro" data-animate="fade-up">
+        <div class="staking-intro__space" aria-hidden="true">
+            <img class="staking-space__coin staking-space__coin--one" src="images/coffee-coin-pixel.png" alt="" />
+            <img class="staking-space__coin staking-space__coin--two" src="images/coffee-coin-pixel.png" alt="" />
+            <img class="staking-space__coin staking-space__coin--three" src="images/coffee-coin-pixel.png" alt="" />
+            <img class="staking-space__coin staking-space__coin--four" src="images/coffee-coin-pixel.png" alt="" />
+            <img class="staking-space__coin staking-space__coin--five" src="images/coffee-coin-pixel.png" alt="" />
+            <img class="staking-space__coin staking-space__coin--six" src="images/coffee-coin-pixel.png" alt="" />
+            <img class="staking-space__coin staking-space__coin--seven" src="images/coffee-coin-pixel.png" alt="" />
+
+            <span class="staking-space__star staking-space__star--one"></span>
+            <span class="staking-space__star staking-space__star--two"></span>
+            <span class="staking-space__star staking-space__star--three"></span>
+            <span class="staking-space__star staking-space__star--four"></span>
+            <span class="staking-space__star staking-space__star--five"></span>
+            <span class="staking-space__star staking-space__star--six"></span>
+            <span class="staking-space__star staking-space__star--seven"></span>
+            <span class="staking-space__star staking-space__star--eight"></span>
+        </div>
+
         <div class="staking-intro__inner">
-            <div class="staking-intro__chain">
-                <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+            <div class="staking-intro__hero">
+                @* Keep the headline and asset together, then make the wallet action the next step. *@
+                <div class="staking-intro__row staking-intro__row--title">
+                    <h1 class="staking-intro__title">Stake CAFE, earn COFFEE.</h1>
+                    <p class="staking-intro__subtitle">
+                        Deposit testnet CAFE and collect COFFEE rewards while your stake stays active.
+                    </p>
+                </div>
+
+                @* The hero token stays unframed so it reads as a small planet in the full-screen
+                   coffee constellation rather than an icon inside a UI badge. *@
+                <div class="staking-intro__row staking-intro__coins">
+                    <div class="coffee-orbit" aria-hidden="true">
+                        @* Stacked sprite layers fake the token's edge, so the 360° flip reads as a
+                           solid coin instead of a flat image. *@
+                        <div class="coffee-orbit__coin-scene">
+                            <div class="coffee-orbit__coin3d">
+                                <img class="coffee-orbit__coin-face" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                                <span class="coffee-orbit__coin-layer" style="--layer: 1"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 2"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 3"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 4"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 5"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 6"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 7"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 8"></span>
+                                <img class="coffee-orbit__coin-face coffee-orbit__coin-face--back" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                            </div>
+                        </div>
+                        <span class="coffee-orbit__star coffee-orbit__star--one"></span>
+                        <span class="coffee-orbit__star coffee-orbit__star--two"></span>
+                        <span class="coffee-orbit__star coffee-orbit__star--three"></span>
+                    </div>
+                </div>
+
+                <div class="staking-intro__row staking-intro__row--connect">
+                    @if (!string.IsNullOrWhiteSpace(_connectError))
+                    {
+                        <p class="staking-intro__error" role="alert">@_connectError</p>
+                    }
+
+                    <div class="staking-intro__actions">
+                        <button type="button" class="button button--dark staking-intro__cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                            @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
+                        </button>
+                        @if (OnBackToProfile.HasDelegate)
+                        {
+                            <button type="button" class="yield-back" @onclick="OnBackToProfile">
+                                <span aria-hidden="true">&larr;</span> Back to Profile
+                            </button>
+                        }
+                    </div>
+                </div>
             </div>
 
-            <p class="staking-intro__eyebrow">Testnet demo · no real money</p>
-            <h1 class="staking-intro__title">Stake CAFE, earn COFFEE.</h1>
-            <p class="staking-intro__lede">
-                Deposit CAFE into the vault and get back stCAFE — a transferable token that tracks your
-                position while it accrues COFFEE rewards. Everything runs on @SelectedChain.DisplayName
-                with test tokens, so nothing here costs real money.
-            </p>
+            <div class="staking-intro__row staking-intro__description">
+                <h2 class="staking-intro__faucet-title">Need Testnet tokens? Check out these trusted providers to get some!</h2>
 
-            <ol class="staking-intro__steps">
-                <li class="staking-intro__step">
-                    <p class="staking-intro__step-title">Connect a wallet</p>
-                    <p class="staking-intro__step-body">@WalletStepBody</p>
-                </li>
-                <li class="staking-intro__step">
-                    <p class="staking-intro__step-title">Get test tokens</p>
-                    <p class="staking-intro__step-body">@TokenStepBody</p>
-                </li>
-                <li class="staking-intro__step">
-                    <p class="staking-intro__step-title">Deposit and earn</p>
-                    <p class="staking-intro__step-body">
-                        Swap CAFE for stCAFE, watch COFFEE rewards accrue, then claim them or redeem your
-                        CAFE whenever you want. Nothing is locked.
-                    </p>
-                </li>
-            </ol>
-
-            @if (!string.IsNullOrWhiteSpace(_connectError))
-            {
-                <p class="staking-intro__error" role="alert">@_connectError</p>
-            }
-
-            <div class="staking-intro__actions">
-                <button type="button" class="button button--dark staking-intro__cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                    @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
-                </button>
-                @if (OnBackToProfile.HasDelegate)
+                @if (SelectedChain.Family == ChainFamily.Evm)
                 {
-                    <button type="button" class="yield-back" @onclick="OnBackToProfile">
-                        <span aria-hidden="true">&larr;</span> Back to Profile
-                    </button>
+                    <div class="staking-intro__faucets" aria-label="Testnet ETH faucets">
+                        <a class="staking-intro__faucet-link" href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener noreferrer">
+                            <span class="staking-intro__faucet-logo">
+                                <img src="https://www.google.com/s2/favicons?domain=cloud.google.com&sz=64" alt="" loading="lazy" />
+                            </span>
+                            <span class="staking-intro__faucet-copy">
+                                <strong>Google Cloud Web3</strong>
+                                <small>0.05 ETH / day</small>
+                            </span>
+                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 17 17 7M8 7h9v9" />
+                            </svg>
+                        </a>
+                        <a class="staking-intro__faucet-link" href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" rel="noopener noreferrer">
+                            <span class="staking-intro__faucet-logo">
+                                <img src="https://www.google.com/s2/favicons?domain=alchemy.com&sz=64" alt="" loading="lazy" />
+                            </span>
+                            <span class="staking-intro__faucet-copy">
+                                <strong>Alchemy</strong>
+                                <small>0.1 ETH / day</small>
+                            </span>
+                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 17 17 7M8 7h9v9" />
+                            </svg>
+                        </a>
+                        <a class="staking-intro__faucet-link" href="https://faucet.chainstack.com/sepolia-testnet-faucet" target="_blank" rel="noopener noreferrer">
+                            <span class="staking-intro__faucet-logo">
+                                <img src="https://www.google.com/s2/favicons?domain=chainstack.com&sz=64" alt="" loading="lazy" />
+                            </span>
+                            <span class="staking-intro__faucet-copy">
+                                <strong>Chainstack</strong>
+                                <small>0.5 ETH / day</small>
+                            </span>
+                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 17 17 7M8 7h9v9" />
+                            </svg>
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="staking-intro__faucets" aria-label="Testnet SOL faucet">
+                        <a class="staking-intro__faucet-link" href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer">
+                            <span class="staking-intro__faucet-logo staking-intro__faucet-logo--solana" aria-hidden="true">S</span>
+                            <span class="staking-intro__faucet-copy">
+                                <strong>Solana Faucet</strong>
+                                <small>Get devnet SOL</small>
+                            </span>
+                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 17 17 7M8 7h9v9" />
+                            </svg>
+                        </a>
+                    </div>
                 }
             </div>
-
-            @* The gas faucet list is Sepolia-specific, and it's a step-two concern — collapsed here so
-               the page opens with the explanation rather than a wall of third-party links. *@
-            @if (SelectedChain.Family == ChainFamily.Evm)
-            {
-                <details class="yield-faucet staking-intro__faucet">
-                    <summary class="yield-faucet__summary">
-                        <span class="yield-faucet__summary-label">Need test ETH for gas?</span>
-                        <span class="yield-faucet__summary-chevron" aria-hidden="true">▾</span>
-                    </summary>
-                    <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" Compact="true" />
-                </details>
-            }
         </div>
     </section>
 }
@@ -515,16 +590,6 @@ else
     private TxStepper.Model? _activeTx;
     private string? _stakeInputError;
     private string? _unstakeInputError;
-
-    private string WalletStepBody => SelectedChain.Family == ChainFamily.Solana
-        ? $"Phantom, or any Solana wallet set to {SelectedChain.DisplayName}. Signing in from the nav bar links the wallet to your account; connecting here starts an allocation-only session."
-        : $"MetaMask, or any browser wallet set to {SelectedChain.DisplayName}. Signing in from the nav bar links the wallet to your account; connecting here starts an allocation-only session.";
-
-    private string TokenStepBody => SelectedChain.Family == ChainFamily.Solana
-        ? "CAFE comes free from the faucet on the dashboard. Fees are paid in devnet SOL, which you can get from any public Solana devnet faucet."
-        : "CAFE comes free from the faucet on the dashboard. You also need a little test ETH to pay gas — the faucets below hand it out.";
-
-
 
     protected override async Task OnInitializedAsync()
     {

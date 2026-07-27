@@ -18,7 +18,7 @@
     content: "▼";
     font-size: 0.6rem;
     margin-left: 8px;
-    color: rgba(244,239,230,0.6);
+    color: color-mix(in srgb, var(--stake-ink) 60%, transparent);
 }
 .chain-icon {
     object-fit: contain;
@@ -30,8 +30,8 @@
     left: 0;
     width: 100%;
     min-width: 200px;
-    background: #1f1915;
-    border: 1px solid rgba(244,239,230,.22);
+    background: var(--stake-surface);
+    border: 1px solid color-mix(in srgb, var(--stake-ink) 22%, transparent);
     border-radius: 12px;
     z-index: 100;
     overflow: hidden;
@@ -46,7 +46,7 @@
     padding: 10px 12px;
     background: transparent;
     border: none;
-    color: #f4efe6;
+    color: var(--stake-ink);
     font: 700 .72rem/1.2 Inter,sans-serif;
     cursor: pointer;
     text-align: left;
@@ -55,8 +55,8 @@
     white-space: nowrap;
 }
 .chain-selector__option:hover {
-    background: rgba(244,239,230,0.1);
+    background: color-mix(in srgb, var(--stake-ink) 10%, transparent);
 }
 .chain-selector__option.selected {
-    background: rgba(143,185,155,0.2);
+    background: color-mix(in srgb, var(--stake-green) 20%, transparent);
 }

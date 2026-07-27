@@ -177,8 +177,9 @@ window.initPublicHeader = () => {
     const conceptSection = document.getElementById('concept-section');
 
     if (brand) {
-        const HERO_COLOR = '#fbf9f4';
-        const CONCEPT_COLOR = '#000';
+        // The jump used to cover a color swap (cream over the hero, black over
+        // the concept section). The bar is dark on every section now, so the
+        // wordmark keeps its CSS color and this is just the section cue.
         let brandState = null;
 
         const setBrandState = (state) => {
@@ -195,10 +196,6 @@ window.initPublicHeader = () => {
             void brand.offsetWidth;
             brand.classList.add(state === 'concept' ? 'navbar-brand--jump-to-concept' : 'navbar-brand--jump-to-hero');
         };
-
-        brand.addEventListener('animationend', () => {
-            brand.style.color = brandState === 'concept' ? CONCEPT_COLOR : HERO_COLOR;
-        });
 
         if (conceptSection) {
             window.conceptSectionObserver = new IntersectionObserver(

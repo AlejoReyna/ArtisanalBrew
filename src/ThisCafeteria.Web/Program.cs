@@ -70,8 +70,15 @@ builder.Services.AddHealthChecks()
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
-    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        new[] { "application/javascript", "application/json", "text/css", "text/html" });
+    // text/css and application/javascript are deliberately left out: those are served by
+    // MapStaticAssets below via its SendFile fast path, which bypasses the Stream this
+    // middleware wraps the response in. Compressing them here doesn't just skip
+    // compression — it commits a Content-Encoding header for a body that never gets
+    // written through the wrapping stream, so the client receives an empty file. Because
+    // that only happens once the request carries Accept-Encoding, every real browser hit
+    // it while curl (no Accept-Encoding by default) didn't, which is what made this so easy
+    // to miss. MapStaticAssets compresses those file types itself at publish time.
+    options.MimeTypes = new[] { "application/json", "text/html" };
 });
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 

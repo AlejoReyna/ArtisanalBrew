@@ -1,29 +1,20 @@
 /* Procurement Lab — the agentic-commerce console lives in the "dark roast wing",
-   the same on-chain ground as /staking and /yield. Tokens mirror the shared
-   --stake-* set (which is scoped to .yield-page), redefined locally so the Lab
-   is self-contained. Semantic accents are mapped onto the escrow lifecycle. */
+   the same on-chain ground as /staking and /yield. app.css declares the shared
+   --stake-* palette on ".yield-page, .procurement-lab" (this selector is one of
+   the two) as direct literals — this file references var(--stake-x) directly
+   throughout rather than aliasing through its own --pl-* layer, because nested
+   custom-property indirection (--pl-x: var(--stake-x), then var(--pl-x)
+   elsewhere) was found not to resolve reliably. --pl-amber-dim/--pl-clay-dim
+   are the one exception: their own literal alpha (0.14) is intentionally a
+   touch stronger than --stake-amber-dim/--stake-clay-dim's 0.12, so they stay
+   as local direct-literal tokens (safe — no indirection involved). Semantic
+   accents are mapped onto the escrow lifecycle. */
 .procurement-lab {
-    --pl-bg: #100d0b;
-    --pl-surface: #1f1915;
-    --pl-surface-2: #2a211b;
-    --pl-line: rgba(244, 239, 230, 0.1);
-    --pl-line-strong: rgba(244, 239, 230, 0.18);
-    --pl-ink: #f4efe6;
-    --pl-muted: rgba(244, 239, 230, 0.58);
-    --pl-faint: rgba(244, 239, 230, 0.4);
-    --pl-green: #8fb99b;
-    --pl-green-dim: rgba(143, 185, 155, 0.14);
-    --pl-copper: #c89b6a;
-    --pl-copper-dim: rgba(200, 155, 106, 0.14);
-    --pl-amber: #e5c078;
     --pl-amber-dim: rgba(229, 192, 120, 0.14);
-    --pl-clay: #e59880;
     --pl-clay-dim: rgba(229, 152, 128, 0.14);
-    /* keep the shared spinner/dot tokens legible on the roast ground */
-    --crypto-positive: #8fb99b;
 
-    color: var(--pl-ink);
-    background-color: var(--pl-bg);
+    color: var(--stake-ink);
+    background-color: var(--stake-bg-deep);
     background-image:
         radial-gradient(circle at 78% 8%, rgba(143, 185, 155, 0.07) 0%, transparent 42%),
         radial-gradient(circle at 8% 92%, rgba(200, 155, 106, 0.06) 0%, transparent 45%),
@@ -33,6 +24,20 @@
     font-family: var(--font-sans);
     min-height: calc(100dvh - 4.75rem);
     padding: clamp(2.5rem, 5vw, 4.5rem) 0 6rem;
+}
+
+/* Lift the shared brand-green token so text/spinner states relying on
+   --crypto-positive stay legible against the roast ground — dark-mode only,
+   matching app.css's .yield-page: in light mode the site-wide default
+   (--crypto-positive: #47614e) already works fine here. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .procurement-lab {
+        --crypto-positive: #8fb99b;
+    }
+}
+
+:root[data-theme="dark"] .procurement-lab {
+    --crypto-positive: #8fb99b;
 }
 
 .procurement-lab__inner {
@@ -54,7 +59,7 @@
 
 .procurement-lab__eyebrow,
 .panel-kicker {
-    color: var(--pl-green);
+    color: var(--stake-green);
     text-transform: uppercase;
     letter-spacing: 0.16em;
     font-size: 0.68rem;
@@ -67,6 +72,25 @@
     font-weight: 500;
     line-height: 1.02;
     font-size: clamp(2.6rem, 5.5vw, 4.6rem);
+    /* Light-mode default: dark-ink-to-copper gradient. The white-to-tan
+       gradient below is dark-mode only — used unconditionally it's illegible
+       (near-white text) on the light background. */
+    background: linear-gradient(135deg, var(--stake-ink) 0%, var(--stake-copper) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .procurement-lab h1 {
+        background: linear-gradient(135deg, #fff 0%, #d8c3a5 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+}
+
+:root[data-theme="dark"] .procurement-lab h1 {
     background: linear-gradient(135deg, #fff 0%, #d8c3a5 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -74,7 +98,7 @@
 }
 
 .procurement-lab__intro p {
-    color: var(--pl-muted);
+    color: var(--stake-muted);
     max-width: 40rem;
     margin: 0;
     font-size: 0.95rem;
@@ -93,10 +117,10 @@
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    border: 1px solid var(--pl-line-strong);
+    border: 1px solid var(--stake-line-strong);
     border-radius: 999px;
     padding: 0.55rem 1rem;
-    background: rgba(31, 25, 21, 0.6);
+    background: color-mix(in srgb, var(--stake-surface) 60%, transparent);
     backdrop-filter: blur(8px);
     white-space: nowrap;
 }
@@ -107,12 +131,12 @@
 }
 
 .procurement-lab__source-label {
-    color: var(--pl-faint);
+    color: var(--stake-faint);
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     padding-left: 0.55rem;
-    border-left: 1px solid var(--pl-line);
+    border-left: 1px solid var(--stake-line);
 }
 
 /* ── Roast-native buttons ── */
@@ -161,9 +185,9 @@
 }
 
 .pl-btn--fund {
-    background: var(--pl-amber-dim);
+    background: var(--pl-amber-dim, rgba(229, 192, 120, 0.14));
     border-color: rgba(229, 192, 120, 0.4);
-    color: var(--pl-amber);
+    color: var(--stake-amber);
 }
 
 .pl-btn--fund:hover {
@@ -172,9 +196,9 @@
 
 .pl-btn--submit,
 .pl-btn--complete {
-    background: var(--pl-green-dim);
+    background: var(--stake-green-dim);
     border-color: rgba(143, 185, 155, 0.4);
-    color: var(--pl-green);
+    color: var(--stake-green);
 }
 
 .pl-btn--submit:hover,
@@ -183,9 +207,9 @@
 }
 
 .pl-btn--reject {
-    background: var(--pl-clay-dim);
+    background: var(--pl-clay-dim, rgba(229, 152, 128, 0.14));
     border-color: rgba(229, 152, 128, 0.38);
-    color: var(--pl-clay);
+    color: var(--stake-clay);
 }
 
 .pl-btn--reject:hover {
@@ -197,8 +221,8 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
-    background: var(--pl-line);
-    border: 1px solid var(--pl-line);
+    background: var(--stake-line);
+    border: 1px solid var(--stake-line);
     border-radius: 14px;
     overflow: hidden;
     margin-bottom: 1.25rem;
@@ -206,7 +230,7 @@
 
 .state-metric {
     position: relative;
-    background: var(--pl-surface);
+    background: var(--stake-surface);
     padding: 1.35rem 1.4rem 1.25rem;
     display: grid;
     gap: 0.4rem;
@@ -219,13 +243,13 @@
     left: 0;
     width: 2.25rem;
     height: 2px;
-    background: var(--pl-faint);
+    background: var(--stake-faint);
 }
 
-.state-metric--agents::before { background: var(--pl-green); }
-.state-metric--jobs::before { background: var(--pl-amber); }
-.state-metric--terminal::before { background: var(--pl-clay); }
-.state-metric--wallet::before { background: var(--pl-copper); }
+.state-metric--agents::before { background: var(--stake-green); }
+.state-metric--jobs::before { background: var(--stake-amber); }
+.state-metric--terminal::before { background: var(--stake-clay); }
+.state-metric--wallet::before { background: var(--stake-copper); }
 
 .state-metric__value {
     font-size: 1.6rem;
@@ -235,13 +259,13 @@
 }
 
 .state-metric--wallet .state-metric__value {
-    color: var(--pl-copper);
+    color: var(--stake-copper);
     font-family: var(--crypto-mono);
     font-size: 1.05rem;
 }
 
 .state-metric__label {
-    color: var(--pl-faint);
+    color: var(--stake-faint);
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.11em;
@@ -256,8 +280,8 @@
 
 .projection-panel,
 .projection-empty {
-    background: var(--pl-surface);
-    border: 1px solid var(--pl-line);
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
     border-radius: 14px;
     padding: 1.6rem 1.75rem;
 }
@@ -275,20 +299,20 @@
     gap: 1rem;
     margin-bottom: 1.4rem;
     padding-bottom: 1.1rem;
-    border-bottom: 1px solid var(--pl-line);
+    border-bottom: 1px solid var(--stake-line);
 }
 
 .projection-panel h2,
 .projection-empty h2 {
     margin: 0.3rem 0 0;
-    color: var(--pl-ink);
+    color: var(--stake-ink);
     font-family: var(--font-display);
     font-weight: 500;
     font-size: 1.7rem;
 }
 
 .panel-count {
-    color: var(--pl-green);
+    color: var(--stake-green);
     font-size: 1.5rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -296,7 +320,7 @@
 }
 
 .panel-note {
-    color: var(--pl-muted);
+    color: var(--stake-muted);
     font-size: 0.85rem;
 }
 
@@ -309,7 +333,7 @@
 }
 
 .panel-empty__icon {
-    color: var(--pl-green);
+    color: var(--stake-green);
     font-size: 1.6rem;
     opacity: 0.7;
     margin-bottom: 0.35rem;
@@ -317,14 +341,14 @@
 
 .panel-empty__lede {
     margin: 0;
-    color: var(--pl-ink);
+    color: var(--stake-ink);
     font-weight: 600;
     font-size: 0.95rem;
 }
 
 .panel-empty__hint {
     margin: 0;
-    color: var(--pl-muted);
+    color: var(--stake-muted);
     font-size: 0.82rem;
     line-height: 1.55;
     max-width: 34rem;
@@ -344,7 +368,7 @@
     align-items: center;
     gap: 0.85rem;
     padding: 0.85rem 0;
-    border-top: 1px solid var(--pl-line);
+    border-top: 1px solid var(--stake-line);
 }
 
 .agent-list__item:first-child {
@@ -382,7 +406,7 @@
 .agent-list__id small,
 .agent-list__addr {
     display: block;
-    color: var(--pl-faint);
+    color: var(--stake-faint);
     margin-top: 0.15rem;
     font-family: var(--crypto-mono);
     font-size: 0.72rem;
@@ -411,7 +435,7 @@
 }
 
 .pl-copy:hover {
-    color: var(--pl-ink);
+    color: var(--stake-ink);
 }
 
 .pl-copy:hover::after {
@@ -427,14 +451,14 @@
 .pl-copy.is-copied::after {
     content: "✓";
     opacity: 1;
-    color: var(--pl-green);
+    color: var(--stake-green);
 }
 
 .pl-copy__flag {
     position: absolute;
     left: 0;
     bottom: calc(100% + 0.4rem);
-    background: var(--pl-green);
+    background: var(--stake-green);
     color: #12100e;
     font-family: var(--font-sans);
     font-size: 0.58rem;
@@ -473,12 +497,12 @@
 }
 
 .state-pill--active,
-.state-pill--complete { color: #b7e6c5; background: var(--pl-green-dim); }
-.state-pill--submitted { color: var(--pl-green); background: var(--pl-green-dim); }
-.state-pill--funded { color: var(--pl-amber); background: var(--pl-amber-dim); }
-.state-pill--attention { color: var(--pl-clay); background: var(--pl-clay-dim); }
-.state-pill--open { color: var(--pl-copper); background: var(--pl-copper-dim); }
-.state-pill--idle { color: var(--pl-faint); background: rgba(244, 239, 230, 0.06); }
+.state-pill--complete { color: #b7e6c5; background: var(--stake-green-dim); }
+.state-pill--submitted { color: var(--stake-green); background: var(--stake-green-dim); }
+.state-pill--funded { color: var(--stake-amber); background: var(--pl-amber-dim, rgba(229, 192, 120, 0.14)); }
+.state-pill--attention { color: var(--stake-clay); background: var(--pl-clay-dim, rgba(229, 152, 128, 0.14)); }
+.state-pill--open { color: var(--stake-copper); background: var(--stake-copper-dim); }
+.state-pill--idle { color: var(--stake-faint); background: rgba(244, 239, 230, 0.06); }
 
 /* ── Job cards ── */
 .job-list {
@@ -490,15 +514,15 @@
 }
 
 .job-card {
-    border: 1px solid var(--pl-line);
+    border: 1px solid var(--stake-line);
     border-radius: 12px;
-    background: var(--pl-surface-2);
+    background: var(--stake-surface-2);
     padding: 1.35rem 1.45rem 1.5rem;
     transition: box-shadow 200ms ease, border-color 200ms ease;
 }
 
 .job-card:hover {
-    border-color: var(--pl-line-strong);
+    border-color: var(--stake-line-strong);
     box-shadow: 0 6px 26px rgba(0, 0, 0, 0.35);
 }
 
@@ -510,7 +534,7 @@
 }
 
 .job-card__id {
-    color: var(--pl-copper);
+    color: var(--stake-copper);
     font-family: var(--crypto-mono);
     font-size: 0.68rem;
     letter-spacing: 0.12em;
@@ -518,7 +542,7 @@
 
 .job-card h3 {
     margin: 0.35rem 0 0;
-    color: var(--pl-ink);
+    color: var(--stake-ink);
     font-family: var(--font-display);
     font-weight: 500;
     font-size: 1.4rem;
@@ -529,13 +553,13 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem 1.5rem;
-    color: var(--pl-muted);
+    color: var(--stake-muted);
     font-size: 0.76rem;
     margin: 1rem 0;
 }
 
 .job-card__meta strong {
-    color: var(--pl-ink);
+    color: var(--stake-ink);
     font-weight: 600;
 }
 
@@ -552,7 +576,7 @@
     gap: 0.5rem;
     justify-items: center;
     text-align: center;
-    color: var(--pl-faint);
+    color: var(--stake-faint);
     font-size: 0.68rem;
     font-weight: 500;
 }
@@ -564,7 +588,7 @@
     left: -50%;
     width: 100%;
     height: 2px;
-    background: var(--pl-line);
+    background: var(--stake-line);
     z-index: 0;
 }
 
@@ -578,34 +602,34 @@
     place-items: center;
     width: 1.75rem;
     height: 1.75rem;
-    border: 1px solid var(--pl-line-strong);
+    border: 1px solid var(--stake-line-strong);
     border-radius: 50%;
-    background: var(--pl-surface);
+    background: var(--stake-surface);
     font-size: 0.7rem;
     font-weight: 600;
     transition: all 200ms ease;
 }
 
 .job-flow__step.complete {
-    color: var(--pl-green);
+    color: var(--stake-green);
 }
 
 .job-flow__step.complete::before {
-    background: var(--pl-green);
+    background: var(--stake-green);
 }
 
 .job-flow__step.complete .job-flow__marker {
-    border-color: var(--pl-green);
+    border-color: var(--stake-green);
     background: rgba(143, 185, 155, 0.9);
     color: #14231a;
 }
 
 .job-flow__step.current {
-    color: var(--pl-ink);
+    color: var(--stake-ink);
 }
 
 .job-flow__step.current .job-flow__marker {
-    border-color: var(--pl-green);
+    border-color: var(--stake-green);
     background: #2f4a39;
     color: #fff;
     box-shadow: 0 0 0 4px rgba(143, 185, 155, 0.16), 0 0 14px rgba(143, 185, 155, 0.35);
@@ -622,7 +646,7 @@
 }
 
 .job-card__roles dt {
-    color: var(--pl-faint);
+    color: var(--stake-faint);
     font-size: 0.64rem;
     text-transform: uppercase;
     letter-spacing: 0.09em;
@@ -630,7 +654,7 @@
 
 .job-card__roles dd {
     margin: 0.3rem 0 0;
-    color: var(--pl-copper);
+    color: var(--stake-copper);
     font-family: var(--crypto-mono);
     font-size: 0.75rem;
 }
@@ -642,15 +666,15 @@
     gap: 1rem;
     margin-top: 1.25rem;
     padding-top: 0.9rem;
-    border-top: 1px dashed var(--pl-line);
-    color: var(--pl-faint);
+    border-top: 1px dashed var(--stake-line);
+    color: var(--stake-faint);
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.09em;
 }
 
 .job-card__commitment code {
-    color: var(--pl-copper);
+    color: var(--stake-copper);
     font-family: var(--crypto-mono);
     font-size: 0.75rem;
     text-transform: none;
@@ -670,11 +694,11 @@
     align-items: center;
     gap: 1.25rem;
     min-height: 10rem;
-    color: var(--pl-muted);
+    color: var(--stake-muted);
 }
 
 .projection-empty h2 {
-    color: var(--pl-ink);
+    color: var(--stake-ink);
 }
 
 .projection-empty p {
@@ -684,7 +708,7 @@
 }
 
 .projection-empty__icon {
-    color: var(--pl-green);
+    color: var(--stake-green);
     font-size: 2.25rem;
     flex: none;
 }
@@ -697,7 +721,7 @@
 .projection-empty__pulse {
     width: 1rem;
     height: 1rem;
-    border: 2px solid var(--pl-green);
+    border: 2px solid var(--stake-green);
     border-top-color: transparent;
     border-radius: 50%;
     animation: procurement-spin 0.8s linear infinite;
