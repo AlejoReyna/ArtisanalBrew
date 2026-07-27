@@ -17,7 +17,8 @@ public sealed record CatalogProductCard(
     int Rating,
     bool IsAvailable,
     string CategoryKey,
-    string CategoryLabel);
+    string CategoryLabel,
+    string Description);
 
 /// <summary>One selectable row in the filter sidebar category list.</summary>
 public sealed record CatalogCategoryOption(string Key, string Label, int Count);
@@ -44,7 +45,29 @@ public static class CatalogProductCardMapper
             Rating: 3 + hash % 3,
             IsAvailable: product.IsActive && product.StockQuantity > 0,
             product.Category.ToString(),
-            LabelFor(product.Category));
+            LabelFor(product.Category),
+            Teaser(product.Description));
+    }
+
+    // The card types its description out on hover, so the copy has to stay short enough
+    // that the animation reads as a beat rather than a wait — and short enough that the
+    // panel it grows into can't tower over the card. Catalog rows are free to hold a
+    // full product write-up; this trims one to a card-sized bite.
+    private const int TeaserLength = 150;
+
+    public static string Teaser(string? description)
+    {
+        var text = description?.Trim();
+
+        if (string.IsNullOrEmpty(text) || text.Length <= TeaserLength)
+        {
+            return text ?? string.Empty;
+        }
+
+        var cut = text.LastIndexOf(' ', TeaserLength);
+
+        // A single 150-character word is not a sentence anyone is reading — hard-cut it.
+        return string.Concat(text.AsSpan(0, cut > 0 ? cut : TeaserLength).TrimEnd(), "…");
     }
 
     public static string BrandFor(ProductCategory category) =>

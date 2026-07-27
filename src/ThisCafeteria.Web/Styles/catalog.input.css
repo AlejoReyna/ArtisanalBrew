@@ -46,6 +46,106 @@ body:has(.products-catalog) {
 
 
 
+/* Room for a title that wraps to two lines, so cards agree on a resting height whether
+   their product name wraps or not. The reserve is two lines of the 15px/1.375 title plus
+   the 8px Bootstrap puts under an <h3>: it used to live on the heading itself, and moving
+   it out here — where the description can grow into the slack a one-line name leaves —
+   must not change what the card measures at rest. */
+.product-card__title-block {
+    min-height: calc(2.75em + 0.5rem);
+}
+
+/* --- Product card hover blurb (see wwwroot/js/productCardBlurb.js) ---
+   Everything below is gated on .has-card-blurb, which the script sets on the root element
+   while it parses. No script, no hidden state: the description is ordinary card copy. */
+
+/* The 0fr → 1fr grid row is what animates: it interpolates against the panel's own
+   content height, so the card grows to exactly the description it holds without anyone
+   having to measure it in JS and pin a pixel value that goes stale on resize. */
+.has-card-blurb .product-card__blurb {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.has-card-blurb [data-product-card].is-blurb-open .product-card__blurb {
+    grid-template-rows: 1fr;
+}
+
+/* min-height:0 is what lets a grid item shrink below its content — without it the row
+   never actually collapses. */
+.has-card-blurb .product-card__blurb-clip {
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* The gap above the description belongs inside the clipped box, so the closed card gives
+   back the spacing along with the text. Kept tight — the description reads as a second
+   line of the title block, not as a separate paragraph parked below it. */
+.product-card__blurb-text {
+    margin: 0;
+    padding-top: 0.25rem;
+}
+
+/* Words are nowrap boxes so splitting the copy into per-character spans can't introduce
+   a break the browser wouldn't have taken anyway. */
+.product-card__word {
+    display: inline-block;
+}
+
+/* Spaces are ordinary collapsible spaces even though each one is its own span — the
+   splitter normalises runs of whitespace to one, so there is nothing to protect, and
+   `white-space: pre` here would preserve the space a line breaks on and indent every
+   wrapped line of the description by a few pixels. */
+.product-card__char--space {
+    white-space: normal;
+}
+
+/* Characters are laid out from the first frame and only their opacity changes, so the
+   panel animates to one known height instead of jumping a line at a time as the text
+   wraps. The short fade softens the leading edge at an 11ms cadence. */
+.has-card-blurb .product-card__char {
+    opacity: 0;
+    position: relative;
+    transition: opacity 90ms linear;
+}
+
+.has-card-blurb .product-card__char.is-typed {
+    opacity: 1;
+}
+
+/* The caret rides the character being typed, so it follows the text across line wraps
+   for free and costs no layout. */
+.has-card-blurb .product-card__char::after {
+    background: var(--color-accent);
+    bottom: 0.1em;
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    right: -0.08em;
+    top: 0.15em;
+    width: 1px;
+}
+
+.has-card-blurb .product-card__char.is-cursor::after {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .has-card-blurb .product-card__blurb {
+        transition: none;
+    }
+
+    .has-card-blurb .product-card__char {
+        transition: none;
+    }
+
+    .has-card-blurb .product-card__char::after {
+        display: none;
+    }
+}
+
 /* Number inputs: hide the native spinners, they eat the little width these have. */
 .products-catalog input[type="number"]::-webkit-outer-spin-button,
 .products-catalog input[type="number"]::-webkit-inner-spin-button {

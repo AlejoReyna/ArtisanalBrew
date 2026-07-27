@@ -1,28 +1,19 @@
-@* Filter sidebar: search, availability toggle, category list with counts, price range. *@
-<aside class="w-full shrink-0 self-start rounded-2xl bg-white p-5 shadow-sm lg:w-[260px]">
+@* Filter sidebar: sort order, category list with counts, price range. *@
+<aside class="w-full shrink-0 self-start rounded-2xl bg-white p-5 shadow-sm lg:w-[260px] lg:min-h-[calc(100vh-6rem)]">
     <h2 class="text-lg font-semibold text-ink">Filters</h2>
 
-    <div class="relative mt-4">
-        <input type="search"
-               class="w-full rounded-lg border border-line bg-white py-2 pl-3 pr-9 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
-               placeholder="Search products"
-               value="@SearchText"
-               @oninput="args => SearchTextChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty)" />
-        <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-mute">
-            <LucideIcon Name="search" Size="15" />
-        </span>
+    <div class="mt-4">
+        <label for="filter-sort" class="text-sm text-mute">Sort by:</label>
+        <select id="filter-sort"
+                class="mt-1.5 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                value="@Sort"
+                @onchange="args => SortChanged.InvokeAsync(args.Value?.ToString() ?? SortDefault)">
+            <option value="@SortDefault">Default</option>
+            <option value="price-asc">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="rating">Top rated</option>
+        </select>
     </div>
-
-    <button type="button"
-            role="switch"
-            aria-checked="@(AvailableOnly ? "true" : "false")"
-            class="mt-4 flex items-center gap-2.5 text-sm text-ink"
-            @onclick="() => AvailableOnlyChanged.InvokeAsync(!AvailableOnly)">
-        <span class="inline-flex h-5 w-9 items-center rounded-full px-0.5 transition-colors @(AvailableOnly ? "justify-end bg-accent" : "justify-start bg-line")">
-            <span class="h-4 w-4 rounded-full bg-white shadow"></span>
-        </span>
-        Available only
-    </button>
 
     <ul class="mt-5 space-y-1 border-t border-line pt-4">
         @foreach (var category in Categories)
@@ -42,60 +33,75 @@
     </ul>
 
     <div class="mt-5 border-t border-line pt-4">
-        <div class="flex items-center justify-between">
+        <button type="button"
+                class="flex w-full items-center justify-between text-left"
+                aria-expanded="@_priceRangeOpen"
+                @onclick="() => _priceRangeOpen = !_priceRangeOpen">
             <h3 class="text-sm font-semibold text-ink">Price range</h3>
-            <LucideIcon Name="chevron-down" Size="14" CssClass="text-faint" />
-        </div>
+            <LucideIcon Name="@(_priceRangeOpen ? "chevron-up" : "chevron-down")" Size="14" CssClass="text-mute" />
+        </button>
 
-        <div class="mt-3 flex items-center gap-2">
-            <label class="flex flex-1 items-center gap-1 rounded-lg border border-line px-2 py-1.5">
-                <input type="number"
-                       class="w-full min-w-0 bg-transparent text-sm text-ink focus:outline-none"
-                       min="@PriceFloor"
-                       max="@MaxPrice"
-                       value="@MinPrice"
-                       @onchange="args => SetMin(args.Value)" />
-                <span class="text-xs text-faint">$</span>
-            </label>
-            <span class="text-faint">&mdash;</span>
-            <label class="flex flex-1 items-center gap-1 rounded-lg border border-line px-2 py-1.5">
-                <input type="number"
-                       class="w-full min-w-0 bg-transparent text-sm text-ink focus:outline-none"
-                       min="@MinPrice"
-                       max="@PriceCeiling"
-                       value="@MaxPrice"
-                       @onchange="args => SetMax(args.Value)" />
-                <span class="text-xs text-faint">$</span>
-            </label>
-        </div>
+        @if (_priceRangeOpen)
+        {
+            <div class="mt-4 rounded-xl border border-line bg-sand/40 p-3">
+                <div class="flex items-center gap-2">
+                    <label class="flex flex-1 items-center gap-1 rounded-lg border border-line bg-white px-2 py-1.5 transition-colors focus-within:border-accent">
+                        <span class="text-xs text-faint">$</span>
+                        <input type="number"
+                               class="w-full min-w-0 bg-transparent text-sm text-ink focus:outline-none"
+                               min="@PriceFloor"
+                               max="@MaxPrice"
+                               value="@MinPrice"
+                               @onchange="args => SetMin(args.Value)" />
+                    </label>
+                    <span class="text-faint">&mdash;</span>
+                    <label class="flex flex-1 items-center gap-1 rounded-lg border border-line bg-white px-2 py-1.5 transition-colors focus-within:border-accent">
+                        <span class="text-xs text-faint">$</span>
+                        <input type="number"
+                               class="w-full min-w-0 bg-transparent text-sm text-ink focus:outline-none"
+                               min="@MinPrice"
+                               max="@PriceCeiling"
+                               value="@MaxPrice"
+                               @onchange="args => SetMax(args.Value)" />
+                    </label>
+                </div>
 
-        <div class="relative mt-4 h-5">
-            <div class="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line"></div>
-            <div class="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent"
-                 style="left: @Percent(MinPrice)%; right: @(100 - Percent(MaxPrice))%;"></div>
-            <input type="range"
-                   class="catalog-range"
-                   min="@PriceFloor"
-                   max="@PriceCeiling"
-                   step="1"
-                   value="@MinPrice"
-                   @oninput="args => SetMin(args.Value)" />
-            <input type="range"
-                   class="catalog-range"
-                   min="@PriceFloor"
-                   max="@PriceCeiling"
-                   step="1"
-                   value="@MaxPrice"
-                   @oninput="args => SetMax(args.Value)" />
-        </div>
+                <div class="relative mt-5 h-5">
+                    <div class="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line"></div>
+                    <div class="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent"
+                         style="left: @Percent(MinPrice)%; right: @(100 - Percent(MaxPrice))%;"></div>
+                    <input type="range"
+                           class="catalog-range"
+                           min="@PriceFloor"
+                           max="@PriceCeiling"
+                           step="1"
+                           value="@MinPrice"
+                           @oninput="args => SetMin(args.Value)" />
+                    <input type="range"
+                           class="catalog-range"
+                           min="@PriceFloor"
+                           max="@PriceCeiling"
+                           step="1"
+                           value="@MaxPrice"
+                           @oninput="args => SetMax(args.Value)" />
+                </div>
+
+                <div class="mt-2 flex items-center justify-between text-[11px] text-faint">
+                    <span>@PriceFloor.ToString("0")</span>
+                    <span>@PriceCeiling.ToString("0")</span>
+                </div>
+            </div>
+        }
     </div>
 </aside>
 
 @code {
-    [Parameter] public string SearchText { get; set; } = string.Empty;
-    [Parameter] public EventCallback<string> SearchTextChanged { get; set; }
-    [Parameter] public bool AvailableOnly { get; set; }
-    [Parameter] public EventCallback<bool> AvailableOnlyChanged { get; set; }
+    public const string SortDefault = "default";
+
+    private bool _priceRangeOpen;
+
+    [Parameter] public string Sort { get; set; } = SortDefault;
+    [Parameter] public EventCallback<string> SortChanged { get; set; }
     [Parameter] public IReadOnlyList<CatalogCategoryOption> Categories { get; set; } = [];
     [Parameter] public string SelectedCategory { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> SelectedCategoryChanged { get; set; }

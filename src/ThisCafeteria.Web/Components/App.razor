@@ -26,6 +26,9 @@
     <!-- In <head>, and deliberately blocking: it marks <html> before the hero markup is
          parsed, so the headline is never painted in full before it types itself out. -->
     <script src="js/heroType.js"></script>
+    <!-- Also blocking, for the same reason: it marks <html> before the product grid is
+         parsed, so the cards paint collapsed instead of snapping shut a frame later. -->
+    <script src="js/productCardBlurb.js"></script>
     <HeadOutlet />
 </head>
 

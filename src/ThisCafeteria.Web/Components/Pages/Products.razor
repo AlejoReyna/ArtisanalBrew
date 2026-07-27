@@ -39,6 +39,10 @@
     else
     {
         <div class="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+            @* Catalog header bar: breadcrumb trail (home / category / current section) on the left,
+               grid/list view toggle and "Sort by" dropdown on the right.
+               Commented out — Sort by now lives in FilterSidebar; grid/list view toggle and
+               breadcrumb reset are disabled along with it.
             <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between" data-animate="fade-up">
                 <nav class="flex items-center gap-2 text-sm text-mute" aria-label="Breadcrumb">
                     <a href="" class="flex items-center gap-2 transition-colors hover:text-ink">
@@ -59,15 +63,14 @@
                                 Sort="@_sort"
                                 SortChanged="value => { _sort = value; _currentPage = 1; }" />
             </div>
+            *@
 
             <TestnetInfoModal />
 
             <div class="mt-10 flex flex-col gap-8 lg:flex-row lg:items-start">
-                <div class="flex-shrink-0 lg:sticky lg:top-24 lg:w-[260px]">
-                    <FilterSidebar SearchText="@_searchText"
-                               SearchTextChanged="value => { _searchText = value; _currentPage = 1; }"
-                               AvailableOnly="@_availableOnly"
-                               AvailableOnlyChanged="value => { _availableOnly = value; _currentPage = 1; }"
+                <div class="flex-shrink-0 lg:w-[260px]">
+                    <FilterSidebar Sort="@_sort"
+                               SortChanged="value => { _sort = value; _currentPage = 1; }"
                                Categories="@CategoryOptions"
                                SelectedCategory="@_selectedCategory"
                                SelectedCategoryChanged="value => { _selectedCategory = value; _currentPage = 1; }"
@@ -97,7 +100,12 @@
                     }
                     else
                     {
-                        <div class="grid gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
+                        @* items-start keeps the hover blurb's growth to the card it belongs
+                           to: stretched grid items would all match the tallest in the row,
+                           so opening one description would drag its neighbours' prices down
+                           with it. The cards are a fixed composition and already share a
+                           height, so nothing changes at rest. *@
+                        <div class="grid items-start gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
                              data-animate="fade-up">
                             @for (var i = 0; i < cards.Count; i++)
                             {
@@ -141,8 +149,6 @@
     private int _pageSize = 6;
     private int _totalFilteredCount;
     private string? _loadError;
-    private string _searchText = string.Empty;
-    private bool _availableOnly = true;
     private string _selectedCategory = string.Empty;
     private decimal _minPrice;
     private decimal _maxPrice;
@@ -179,11 +185,6 @@
             if (!string.IsNullOrEmpty(_selectedCategory))
             {
                 chips.Add(new("category", CurrentSectionLabel));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_searchText))
-            {
-                chips.Add(new("search", $"Search: {_searchText}"));
             }
 
             if (_minPrice > _priceFloor || _maxPrice < _priceCeiling)
@@ -252,14 +253,8 @@
         var query = _products
             .Where(product => product.IsActive)
             .Where(product => string.IsNullOrEmpty(_selectedCategory) || product.Category.ToString() == _selectedCategory)
-            .Where(product => !_availableOnly || product.StockQuantity > 0)
+            .Where(product => product.StockQuantity > 0)
             .Where(product => product.Price >= _minPrice && product.Price <= _maxPrice);
-
-        if (!string.IsNullOrWhiteSpace(_searchText))
-        {
-            query = query.Where(product =>
-                product.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
-        }
 
         var ordered = _sort switch
         {
@@ -315,9 +310,6 @@
             case "category":
                 _selectedCategory = string.Empty;
                 break;
-            case "search":
-                _searchText = string.Empty;
-                break;
             case "price":
                 _minPrice = _priceFloor;
                 _maxPrice = _priceCeiling;
@@ -328,8 +320,6 @@
     private void ResetFilters()
     {
         _selectedCategory = string.Empty;
-        _searchText = string.Empty;
-        _availableOnly = true;
         _minPrice = _priceFloor;
         _maxPrice = _priceCeiling;
         _currentPage = 1;
