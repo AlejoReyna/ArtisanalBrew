@@ -1,11 +1,11 @@
 html, body {
-    background: #fbf9f4;
-    color: #2d2421;
-    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-sans);
 }
 
 a, .btn-link {
-    color: #2d2421;
+    color: var(--ink);
 }
 
 .btn-primary {
@@ -74,6 +74,17 @@ h1:focus {
     text-align: start;
 }
 
+/* Canonical site-wide light token set. Other stylesheets should reference these
+   (var(--ink), var(--surface), etc.) rather than re-declaring their own literals.
+   The canonical DARK palette (--stake-* / --yield-*, the "roast" theme built for
+   /staking and /profile) is declared below on ".yield-page, .procurement-lab"
+   rather than here on :root — several shared components (ChainBadge, AddressChip,
+   StatTile, etc.) deliberately use `var(--stake-x, <light-fallback>)` and rely on
+   --stake-* being UNDEFINED outside the dark wing to fall back to their light
+   styling on pages like NavMenu/Checkout. Making it global would silently force
+   those components dark everywhere. ProcurementLab.razor.css and Profile.razor.css
+   reference the scoped tokens directly rather than keeping their own duplicate
+   --pl-* / --dash-* copies. */
 :root {
     --surface: #fbf9f4;
     --surface-deep: #f2eee5;
@@ -88,6 +99,44 @@ h1:focus {
     --font-sidebar-display: 'EB Garamond', 'Times New Roman', Times, serif;
     --crypto-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
     --crypto-positive: #47614e;
+}
+
+/* Dark-mode switch — three-tier precedence, lowest to highest:
+   1. :root above — light defaults.
+   2. prefers-color-scheme below, only when no explicit choice is stored
+      (wwwroot/js/theme.js never set [data-theme] on <html> — the user hasn't
+      picked yet, or picked "System").
+   3. [data-theme="dark"] — explicit toggle override, wins regardless of the
+      OS setting. Choosing "Light" needs no rule of its own: the :root
+      defaults above already are light, so removing/never-setting the
+      attribute is enough; it only matters for overriding an OS dark
+      preference, which [data-theme] not being "dark" already does.
+   The mechanism is wired ahead of the values it will carry: both tiers below
+   currently mirror the :root defaults exactly, so toggling to "dark" doesn't
+   yet change the storefront look. Real dark values land in a later phase —
+   see docs/dark-mode-color-audit.md and the dark-mode plan. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --surface: #fbf9f4;
+        --surface-deep: #f2eee5;
+        --ink: #2d2421;
+        --muted: #746a63;
+        --line: #d8d0c4;
+        --accent: #8d6f55;
+        --charcoal: #1f1a18;
+        --white: #fffdf9;
+    }
+}
+
+:root[data-theme="dark"] {
+    --surface: #fbf9f4;
+    --surface-deep: #f2eee5;
+    --ink: #2d2421;
+    --muted: #746a63;
+    --line: #d8d0c4;
+    --accent: #8d6f55;
+    --charcoal: #1f1a18;
+    --white: #fffdf9;
 }
 
 .tabular {
@@ -148,14 +197,17 @@ h1:focus {
 }
 
 ::selection {
-    background: #2d2421;
-    color: #fbf9f4;
+    background: var(--ink);
+    color: var(--surface);
 }
 
+/* .navbar-brand used to ride along here; it now takes its color, face and
+   tracking from NavMenu.razor.css, which is the only place that knows the bar
+   is dark. Leaving it grouped with the headings meant an --ink (near-black)
+   color declaration that never applied. */
 h1,
 h2,
-h3,
-.navbar-brand {
+h3 {
     color: var(--ink);
     font-family: var(--font-display);
     letter-spacing: -0.035em;
@@ -208,10 +260,89 @@ p {
     }
 }
 
-.yield-page {
-    /* Dark roast wing — the staking/allocation dashboard inverts the café's
-       cream ground to a roasted near-black, so crossing into /staking or
-       /profile reads as entering the on-chain side of the product. */
+/* Dark roast wing — the staking/allocation dashboard and the agentic-commerce
+   procurement lab both invert the café's cream ground to a roasted near-black
+   in dark mode, so crossing into /staking, /profile, or /procurement-lab reads
+   as entering the on-chain side of the product. In LIGHT mode (the default
+   block below) these same tokens resolve to the site's normal light palette,
+   keeping the same green/copper/amber/clay accent identity — these pages used
+   to be permanently dark; this is the first time they render light at all, so
+   treat these light values as a first pass, not a settled design.
+   Shared between both selectors (rather than declared on :root) so components
+   using `var(--stake-x, <light-fallback>)` elsewhere in the app (e.g.
+   ChainBadge/AddressChip/StatTile, also used in NavMenu/Checkout) still
+   correctly fall back to their own light styling outside these two wings.
+   ProcurementLab.razor.css's --pl-* and Profile.razor.css's --dash-* alias
+   these tokens directly instead of keeping their own copies. */
+.yield-page,
+.procurement-lab {
+    /* Literals, not var(--ink) etc: nested custom-property indirection
+       (--stake-x: var(--y)) was observed to fail to resolve for descendants
+       in testing, while direct literals resolve reliably. These values are
+       kept in exact sync with :root's --surface/--ink/--muted/--line/--white/
+       --accent/--crypto-positive by hand. */
+    --yield-cream: #f2eee5;
+    --yield-espresso: #2d2421;
+    --yield-sand: #f2eee5;
+    --yield-sand-hover: #f2eee5;
+    --yield-line: #d8d0c4;
+    --yield-muted: #746a63;
+
+    --stake-bg: #fbf9f4;
+    --stake-bg-deep: #f2eee5;
+    --stake-surface: #fffdf9;
+    --stake-surface-2: #f2eee5;
+    --stake-line: #d8d0c4;
+    --stake-line-strong: rgba(45, 36, 33, 0.18);
+    --stake-ink: #2d2421;
+    --stake-muted: #746a63;
+    --stake-faint: rgba(45, 36, 33, 0.4);
+    --stake-green: #47614e;
+    --stake-green-dim: rgba(71, 97, 78, 0.12);
+    --stake-copper: #8d6f55;
+    --stake-copper-dim: rgba(141, 111, 85, 0.14);
+    --stake-amber: #9c7a2e;
+    --stake-amber-dim: rgba(156, 122, 46, 0.12);
+    --stake-clay: #9a3b2f;
+    --stake-clay-dim: rgba(154, 59, 47, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .yield-page,
+    :root:not([data-theme]) .procurement-lab {
+        --yield-cream: #100D0B;
+        --yield-espresso: #F4EFE6;
+        --yield-sand: #100D0B;
+        --yield-sand-hover: #2A211B;
+        --yield-line: rgba(244, 239, 230, 0.1);
+        --yield-muted: rgba(244, 239, 230, 0.58);
+
+        --stake-bg: #171310;
+        --stake-bg-deep: #100D0B;
+        --stake-surface: #1F1915;
+        --stake-surface-2: #2A211B;
+        --stake-line: rgba(244, 239, 230, 0.1);
+        --stake-line-strong: rgba(244, 239, 230, 0.18);
+        --stake-ink: #F4EFE6;
+        --stake-muted: rgba(244, 239, 230, 0.58);
+        --stake-faint: rgba(244, 239, 230, 0.4);
+        --stake-green: #8FB99B;
+        --stake-green-dim: rgba(143, 185, 155, 0.14);
+        --stake-copper: #C89B6A;
+        --stake-copper-dim: rgba(200, 155, 106, 0.14);
+        --stake-amber: #E5C078;
+        --stake-amber-dim: rgba(229, 192, 120, 0.12);
+        --stake-clay: #E59880;
+        --stake-clay-dim: rgba(229, 152, 128, 0.12);
+
+        /* Lift the shared brand-green token so text/spinner states relying on
+           --crypto-positive stay legible against the roast ground. */
+        --crypto-positive: #8FB99B;
+    }
+}
+
+:root[data-theme="dark"] .yield-page,
+:root[data-theme="dark"] .procurement-lab {
     --yield-cream: #100D0B;
     --yield-espresso: #F4EFE6;
     --yield-sand: #100D0B;
@@ -494,19 +625,18 @@ p {
     }
 }
 
+/* One navbar treatment for every route: a solid dark bar. The per-page recolors
+   this file used to carry (procurement lab, editorial/journal hero, the yield
+   wing, and the homepage's floating glass pill) are gone — NavMenu.razor.css
+   owns the bar's appearance now, and these two rules only keep it pinned. */
 .public-header {
-    background-color: rgba(251, 249, 244, 0.86);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid #d8d0c4;
+    background-color: #100e0d;
+    border-bottom: 1px solid rgba(251, 249, 244, 0.08);
     left: 0;
     position: fixed;
     right: 0;
     top: 0;
-    transition:
-        background-color 220ms ease,
-        backdrop-filter 220ms ease,
-        border-color 220ms ease,
-        transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 50;
 }
 
@@ -545,161 +675,6 @@ body.product-detail-view .product-detail-card__title h1 {
     line-height: 1.1 !important;
 }
 
-.public-header.public-header--solid {
-    background-color: #fbf9f4;
-    backdrop-filter: none;
-    border-bottom-color: #d8d0c4;
-}
-
-/* Procurement Lab continues its dark console surface into the browser and
-   navigation chrome. Keep every foreground control readable on that ground. */
-body:has(.procurement-lab) .public-header,
-body:has(.procurement-lab) .public-header.public-header--solid {
-    background-color: #171714;
-    backdrop-filter: none;
-    border-bottom-color: rgba(255, 255, 255, 0.12);
-}
-
-body:has(.procurement-lab) .public-header .navbar-brand {
-    color: #ffffff;
-}
-
-body:has(.procurement-lab) .public-header .nav-link {
-    color: rgba(255, 255, 255, 0.72);
-}
-
-body:has(.procurement-lab) .public-header .nav-link:hover,
-body:has(.procurement-lab) .public-header .nav-link.active {
-    border-bottom-color: #ffffff;
-    color: #ffffff;
-}
-
-body:has(.procurement-lab) .public-header .nav-cart,
-body:has(.procurement-lab) .public-header .nav-wallet {
-    color: #ffffff;
-}
-
-body:has(.procurement-lab) .public-header .nav-wallet {
-    border-color: rgba(255, 255, 255, 0.38);
-}
-
-body:has(.procurement-lab) .public-header .navbar-toggler {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.28);
-}
-
-body:has(.procurement-lab) .public-header .navbar-toggler span {
-    background: #ffffff;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid),
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) {
-    background-color: transparent;
-    backdrop-filter: none;
-    border-bottom: none;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-brand,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-brand {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-link,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-link {
-    color: rgba(251, 249, 244, 0.78);
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-link:hover,
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-link.active,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-link:hover,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-link.active {
-    border-bottom-color: #fbf9f4;
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-cart,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-cart {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-wallet,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-wallet {
-    border-color: rgba(251, 249, 244, 0.45);
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-wallet.active,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-wallet.active {
-    background: #fbf9f4;
-    color: #2d2421;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-login,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-login {
-    border-color: rgba(251, 249, 244, 0.45);
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-toggler,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-toggler {
-    background: rgba(0, 0, 0, 0.28);
-    border-color: rgba(255, 255, 255, 0.35);
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-toggler span,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-toggler span {
-    background: #fff;
-}
-
-/* Staking/profile wing — nav goes dark-roast to match the rest of the page,
-   in both the transparent (scrolled-to-top) and solid header states. */
-.yield-page .public-header,
-.yield-page .public-header.public-header--solid {
-    background-color: rgba(23, 19, 16, 0.86);
-    backdrop-filter: blur(18px);
-    border-bottom-color: rgba(244, 239, 230, 0.12);
-}
-
-.yield-page .public-header .navbar-brand {
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-link {
-    color: rgba(244, 239, 230, 0.72);
-}
-
-.yield-page .public-header .nav-link:hover,
-.yield-page .public-header .nav-link.active {
-    border-bottom-color: #F4EFE6;
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-cart {
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-wallet {
-    border-color: rgba(244, 239, 230, 0.35);
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-wallet.active {
-    background: #F4EFE6;
-    color: #171310;
-}
-
-.yield-page .public-header .nav-login {
-    border-color: rgba(244, 239, 230, 0.35);
-}
-
-.yield-page .public-header .navbar-toggler {
-    background: rgba(0, 0, 0, 0.3);
-    border-color: rgba(244, 239, 230, 0.3);
-}
-
-.yield-page .public-header .navbar-toggler span {
-    background: #F4EFE6;
-}
-
 /* Connect-wallet CTA: flip from the site-wide dark-on-cream button to a
    cream-on-dark fill so it stays the brightest object on the page. */
 .yield-page .staking-intro__cta.button--dark {
@@ -712,81 +687,6 @@ body:has(.procurement-lab) .public-header .navbar-toggler span {
     background: var(--stake-green);
     border-color: var(--stake-green);
     color: var(--stake-bg);
-}
-
-/* Homepage nav never goes solid — keep the transparent/dark hero look for
-   the whole page, not just while the hero is in view. */
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid {
-    background-color: transparent;
-    backdrop-filter: none;
-    border-bottom: none;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-brand {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link {
-    color: rgba(251, 249, 244, 0.78);
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link:hover,
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link.active {
-    border-bottom-color: #fbf9f4;
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-cart {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-wallet {
-    border-color: rgba(251, 249, 244, 0.45);
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-wallet.active {
-    background: #fbf9f4;
-    color: #2d2421;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-toggler {
-    background: rgba(0, 0, 0, 0.28);
-    border-color: rgba(255, 255, 255, 0.35);
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-toggler span {
-    background: #fff;
-}
-
-/* Floating glass-pill nav — homepage hero only, matches the "Orbit" reference composition */
-/* 20% taller than the base pill (3.4rem -> 4.08rem), scaled uniformly */
-.public-page:has(.editorial-hero--coffee) .public-header .site-nav {
-    min-height: 4.08rem;
-}
-
-@media (max-width: 760px) {
-    .public-page:has(.editorial-hero--coffee) .public-header .site-nav {
-        min-height: 2.42rem;
-    }
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header .nav-links {
-    background: rgba(20, 16, 13, 0.55);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(251, 249, 244, 0.14);
-    border-radius: 999px;
-    padding: 0.36rem 0.36rem 0.36rem 1.62rem;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header .nav-login {
-    padding: 0.36rem 0.84rem 0.36rem 0.48rem;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header .eth-mark {
-    height: 1.68rem;
-    width: 1.68rem;
 }
 
 .eyebrow {
@@ -2173,10 +2073,6 @@ body:has(.procurement-lab) .public-header .navbar-toggler span {
     }
 }
 
-.product-transition-active {
-    cursor: progress;
-}
-
 .product-transition-active .public-header,
 .product-transition-active .journal-footer {
     opacity: 0;
@@ -2198,17 +2094,6 @@ body:has(.procurement-lab) .public-header .navbar-toggler span {
     transition:
         opacity 220ms ease,
         transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.product-transition-source .eyebrow,
-.product-transition-source h3,
-.product-transition-source .price,
-.product-transition-source .marketplace-card__actions {
-    opacity: 0;
-    transform: translateX(-1rem);
-    transition:
-        opacity 220ms ease,
-        transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .product-transition-source-image {
@@ -3329,8 +3214,11 @@ body:has(.procurement-lab) .public-header .navbar-toggler span {
         transition: none !important;
     }
 }
-/* Shared multichain selector */
+/* Shared multichain selector. Global (unscoped) rule, not just used inside the
+   dark wing — also renders NavMenu's nav-drawer instance, where --stake-* is
+   undefined, so every var() here keeps its original literal as a fallback to
+   preserve that instance's existing look untouched. */
 .chain-selector { display: inline-flex; min-width: 0; }
-.chain-selector__control { appearance: auto; background: #1f1915; border: 1px solid rgba(244,239,230,.22); border-radius: 999px; color: #f4efe6; font: 700 .72rem/1.2 Inter,sans-serif; min-height: 2.4rem; padding: .55rem 2rem .55rem .8rem; }
+.chain-selector__control { appearance: none; -webkit-appearance: none; background: var(--stake-surface, #1f1915); border: 1px solid var(--stake-line-strong, rgba(244,239,230,.22)); border-radius: 999px; color: var(--stake-ink, #f4efe6); font: 700 .72rem/1.2 Inter,sans-serif; min-height: 2.4rem; padding: .55rem 2rem .55rem .8rem; }
 .chain-selector--compact .chain-selector__control { max-width: 10rem; min-height: 2.1rem; }
-.chain-selector__control:focus-visible { outline: 2px solid #8fb99b; outline-offset: 2px; }
+.chain-selector__control:focus-visible { outline: 2px solid var(--stake-green, #8fb99b); outline-offset: 2px; }

@@ -163,7 +163,7 @@
     }
 
     .admin-products__heading span {
-        color: #746a63;
+        color: var(--muted);
         font-weight: 700;
         white-space: nowrap;
     }
@@ -178,8 +178,8 @@
     }
 
     .admin-panel {
-        background: #fffdf9;
-        border: 1px solid #d8d0c4;
+        background: var(--white);
+        border: 1px solid var(--line);
         padding: clamp(1.25rem, 2vw, 2rem);
         overflow-y: auto;
         max-height: calc(100vh - 10rem); /* Ensure scrollable within screen height */
@@ -210,9 +210,9 @@
     .admin-product-form input,
     .admin-product-form textarea,
     .admin-product-form select {
-        background: #fbf9f4;
-        border: 1px solid #d8d0c4;
-        color: #2d2421;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--ink);
         min-height: 3rem;
         padding: 0.75rem 1rem;
         width: 100%;
@@ -238,7 +238,7 @@
     .admin-product-form__cancel {
         background: transparent;
         border: 0;
-        color: #746a63;
+        color: var(--muted);
         cursor: pointer;
         font-weight: 700;
         padding: 0;
@@ -257,21 +257,21 @@
 
     .admin-product-table th,
     .admin-product-table td {
-        border-bottom: 1px solid #d8d0c4;
+        border-bottom: 1px solid var(--line);
         padding: 0.85rem;
         text-align: left;
         vertical-align: top;
     }
 
     .admin-product-table th {
-        color: #8d6f55;
+        color: var(--accent);
         font-size: 0.72rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
     }
 
     .admin-product-table td span {
-        color: #746a63;
+        color: var(--muted);
         display: block;
         font-size: 0.85rem;
         margin-top: 0.25rem;
@@ -279,8 +279,8 @@
 
     .admin-product-table__button {
         background: transparent;
-        border: 1px solid #2d2421;
-        color: #2d2421;
+        border: 1px solid var(--ink);
+        color: var(--ink);
         cursor: pointer;
         font-weight: 700;
         min-height: 2.4rem;

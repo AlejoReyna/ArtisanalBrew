@@ -1,5 +1,10 @@
 #testnet-info-modal {
-    background-color: #333333;
+    /* Retinted from generic gray to the site's roast near-black for visual
+       consistency with the rest of the on-chain wing's dark surfaces. This
+       modal appears on the storefront (Products.razor), not the dark wing —
+       like NavMenu's wallet-connect modal, it's a deliberately always-dark
+       overlay regardless of the page/site theme, not theme-toggle-reactive. */
+    background-color: #1F1915;
     color: #ffffff;
     width: 28rem;
     max-width: calc(100vw - 2rem);
@@ -33,6 +38,7 @@
         opacity: 0;
         transform: translateY(20px) scale(0.95);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -40,8 +46,13 @@
 }
 
 @keyframes backdrop-reveal {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes content-reveal {
@@ -50,6 +61,7 @@
         transform: translateY(12px);
         filter: blur(4px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -57,21 +69,7 @@
     }
 }
 
-.testnet-info-hero {
-    background-color: #4a4a4a;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 4rem 2rem;
-    position: relative;
-}
 
-.testnet-info-icon {
-    width: 90px;
-    height: 90px;
-    color: #ffffff;
-    opacity: 0.9;
-}
 
 .testnet-info-close {
     align-items: center;
@@ -106,18 +104,7 @@
     text-align: left;
 }
 
-.testnet-info-badge {
-    align-items: center;
-    background: #0e4a7a;
-    border-radius: 6px;
-    color: #a4c8f5;
-    display: inline-flex;
-    font-family: var(--font-sans, 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif);
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.35rem 0.6rem;
-    align-self: flex-start;
-}
+
 
 .testnet-info-title {
     color: #ffffff;
@@ -147,10 +134,36 @@
     opacity: 0.8;
 }
 
-.testnet-info-actions {
+.testnet-info-eth-wrapper {
     display: flex;
     justify-content: flex-end;
     margin-top: 0.5rem;
+}
+
+.testnet-info-eth-icon {
+    width: auto;
+    height: 90px;
+    opacity: 0.9;
+    mix-blend-mode: screen;
+    animation: float-eth 4s ease-in-out infinite;
+}
+
+@keyframes float-eth {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.testnet-info-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
 }
 
 .testnet-info-button {
@@ -172,18 +185,9 @@
 }
 
 /* Staggered animation delays for content */
-#testnet-info-modal[open] .testnet-info-hero,
-#testnet-info-modal[open] .testnet-info-content > * {
+#testnet-info-modal[open] .testnet-info-content>* {
     opacity: 0;
     animation: content-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-#testnet-info-modal[open] .testnet-info-hero {
-    animation-delay: 0.15s;
-}
-
-#testnet-info-modal[open] .testnet-info-badge {
-    animation-delay: 0.25s;
 }
 
 #testnet-info-modal[open] .testnet-info-title {
@@ -203,4 +207,3 @@
     animation: content-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     animation-delay: 0.6s;
 }
-

@@ -1,6 +1,6 @@
 .stat-tile {
-    background: #1F1915;
-    border: 1px solid rgba(244, 239, 230, 0.11);
+    background: var(--stake-surface);
+    border: 1px solid color-mix(in srgb, var(--stake-ink) 11%, transparent);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -10,7 +10,7 @@
 }
 
 .stat-tile__label {
-    color: rgba(244, 239, 230, 0.58);
+    color: var(--stake-muted);
     font-family: var(--font-sans);
     font-size: 0.62rem;
     font-weight: 700;
@@ -20,7 +20,7 @@
 }
 
 .stat-tile__value {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-family: var(--font-sans);
     font-size: clamp(1.15rem, 1.8vw, 1.45rem);
     font-variant-numeric: tabular-nums;
@@ -34,11 +34,11 @@
 }
 
 .stat-tile--positive .stat-tile__value {
-    color: #8FB99B;
+    color: var(--stake-green);
 }
 
 .stat-tile__suffix {
-    color: rgba(244, 239, 230, 0.5);
+    color: color-mix(in srgb, var(--stake-ink) 50%, transparent);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -46,11 +46,11 @@
 }
 
 .stat-tile--positive .stat-tile__suffix {
-    color: rgba(143, 185, 155, 0.75);
+    color: color-mix(in srgb, var(--stake-green) 75%, transparent);
 }
 
 .stat-tile__hint {
-    color: rgba(244, 239, 230, 0.55);
+    color: color-mix(in srgb, var(--stake-ink) 55%, transparent);
     font-family: var(--font-sans);
     font-size: 0.74rem;
     font-variant-numeric: tabular-nums;
@@ -72,7 +72,7 @@
 
 .stat-tile__skeleton {
     animation: crypto-shimmer 1.4s ease-in-out infinite;
-    background: linear-gradient(90deg, rgba(244, 239, 230, 0.07) 25%, rgba(244, 239, 230, 0.14) 50%, rgba(244, 239, 230, 0.07) 75%);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--stake-ink) 7%, transparent) 25%, color-mix(in srgb, var(--stake-ink) 14%, transparent) 50%, color-mix(in srgb, var(--stake-ink) 7%, transparent) 75%);
     background-size: 200% 100%;
     border-radius: 6px;
     display: block;

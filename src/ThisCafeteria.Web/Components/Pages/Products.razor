@@ -38,7 +38,11 @@
     }
     else
     {
-        <div class="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8 catalog-shell">
+            @* Catalog header bar: breadcrumb trail (home / category / current section) on the left,
+               grid/list view toggle and "Sort by" dropdown on the right.
+               Commented out — Sort by now lives in FilterSidebar; grid/list view toggle and
+               breadcrumb reset are disabled along with it.
             <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between" data-animate="fade-up">
                 <nav class="flex items-center gap-2 text-sm text-mute" aria-label="Breadcrumb">
                     <a href="" class="flex items-center gap-2 transition-colors hover:text-ink">
@@ -59,15 +63,27 @@
                                 Sort="@_sort"
                                 SortChanged="value => { _sort = value; _currentPage = 1; }" />
             </div>
+            *@
 
             <TestnetInfoModal />
 
-            <div class="mt-10 flex flex-col gap-8 lg:flex-row lg:items-start">
-                <div class="flex-shrink-0 lg:sticky lg:top-24 lg:w-[260px]">
-                    <FilterSidebar SearchText="@_searchText"
-                               SearchTextChanged="value => { _searchText = value; _currentPage = 1; }"
-                               AvailableOnly="@_availableOnly"
-                               AvailableOnlyChanged="value => { _availableOnly = value; _currentPage = 1; }"
+            <div class="flex flex-col gap-8 lg:flex-row">
+                @* Below lg the sidebar leaves the flow and becomes a bottom sheet,
+                   opened from the filter bar above the grid — the old stacked layout
+                   pushed an entire filter panel ahead of the products on mobile. *@
+                <div class="catalog-filter-backdrop @(_filtersOpen ? "is-open" : null)"
+                     role="presentation"
+                     @onclick="CloseFilters"></div>
+                <div class="flex-shrink-0 lg:w-[260px] catalog-filter-sheet @(_filtersOpen ? "is-open" : null)"
+                     role="@(_filtersOpen ? "dialog" : null)"
+                     aria-modal="@(_filtersOpen ? "true" : null)"
+                     aria-label="Product filters">
+                    <div class="catalog-filter-sheet__header">
+                        <span class="catalog-filter-sheet__grabber" aria-hidden="true"></span>
+                        <button type="button" class="catalog-filter-sheet__done" @onclick="CloseFilters">Done</button>
+                    </div>
+                    <FilterSidebar Sort="@_sort"
+                               SortChanged="value => { _sort = value; _currentPage = 1; }"
                                Categories="@CategoryOptions"
                                SelectedCategory="@_selectedCategory"
                                SelectedCategoryChanged="value => { _selectedCategory = value; _currentPage = 1; }"
@@ -79,7 +95,22 @@
                                PriceCeiling="@_priceCeiling" />
                 </div>
 
-                <div class="min-w-0 flex-1">
+                <div class="min-w-0 flex-1 mt-10">
+                    <div class="catalog-filter-bar">
+                        <button type="button"
+                                class="catalog-filter-bar__trigger"
+                                aria-haspopup="dialog"
+                                aria-expanded="@_filtersOpen"
+                                @onclick="OpenFilters">
+                            <LucideIcon Name="sliders-horizontal" Size="14" />
+                            <span>Filters</span>
+                            @if (AppliedChips.Count > 0)
+                            {
+                                <span class="catalog-filter-bar__count">@AppliedChips.Count</span>
+                            }
+                        </button>
+                        <span class="catalog-filter-bar__section">@CurrentSectionLabel</span>
+                    </div>
                     @{
                         var cards = VisibleCards();
                     }
@@ -97,7 +128,12 @@
                     }
                     else
                     {
-                        <div class="grid gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
+                        @* items-start keeps the hover blurb's growth to the card it belongs
+                           to: stretched grid items would all match the tallest in the row,
+                           so opening one description would drag its neighbours' prices down
+                           with it. The cards are a fixed composition and already share a
+                           height, so nothing changes at rest. *@
+                        <div class="grid items-start gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
                              data-animate="fade-up">
                             @for (var i = 0; i < cards.Count; i++)
                             {
@@ -141,8 +177,6 @@
     private int _pageSize = 6;
     private int _totalFilteredCount;
     private string? _loadError;
-    private string _searchText = string.Empty;
-    private bool _availableOnly = true;
     private string _selectedCategory = string.Empty;
     private decimal _minPrice;
     private decimal _maxPrice;
@@ -150,9 +184,14 @@
     private decimal _priceCeiling;
     private string _sort = CatalogToolbar.SortDefault;
     private bool _listView;
+    private bool _filtersOpen;
     private string? _addingSlug;
     private string? _openingSlug;
     private PersistingComponentStateSubscription _subscription;
+
+    private void OpenFilters() => _filtersOpen = true;
+
+    private void CloseFilters() => _filtersOpen = false;
 
     private string CurrentSectionLabel =>
         string.IsNullOrEmpty(_selectedCategory)
@@ -179,11 +218,6 @@
             if (!string.IsNullOrEmpty(_selectedCategory))
             {
                 chips.Add(new("category", CurrentSectionLabel));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_searchText))
-            {
-                chips.Add(new("search", $"Search: {_searchText}"));
             }
 
             if (_minPrice > _priceFloor || _maxPrice < _priceCeiling)
@@ -252,14 +286,8 @@
         var query = _products
             .Where(product => product.IsActive)
             .Where(product => string.IsNullOrEmpty(_selectedCategory) || product.Category.ToString() == _selectedCategory)
-            .Where(product => !_availableOnly || product.StockQuantity > 0)
+            .Where(product => product.StockQuantity > 0)
             .Where(product => product.Price >= _minPrice && product.Price <= _maxPrice);
-
-        if (!string.IsNullOrWhiteSpace(_searchText))
-        {
-            query = query.Where(product =>
-                product.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase));
-        }
 
         var ordered = _sort switch
         {
@@ -315,9 +343,6 @@
             case "category":
                 _selectedCategory = string.Empty;
                 break;
-            case "search":
-                _searchText = string.Empty;
-                break;
             case "price":
                 _minPrice = _priceFloor;
                 _maxPrice = _priceCeiling;
@@ -328,8 +353,6 @@
     private void ResetFilters()
     {
         _selectedCategory = string.Empty;
-        _searchText = string.Empty;
-        _availableOnly = true;
         _minPrice = _priceFloor;
         _maxPrice = _priceCeiling;
         _currentPage = 1;

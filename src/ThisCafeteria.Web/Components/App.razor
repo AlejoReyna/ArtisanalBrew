@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#523d26" />
     <base href="/" />
+    <!-- Blocking, and deliberately first: applies the stored/OS-preferred
+         data-theme attribute to <html> before app.css is fetched, so the CSS
+         variable tiers in app.css resolve correctly on the very first paint
+         instead of flashing light-then-dark (or vice versa). -->
+    <script src="js/theme.js"></script>
     <ResourcePreloader />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,6 +31,9 @@
     <!-- In <head>, and deliberately blocking: it marks <html> before the hero markup is
          parsed, so the headline is never painted in full before it types itself out. -->
     <script src="js/heroType.js"></script>
+    <!-- Also blocking, for the same reason: it marks <html> before the product grid is
+         parsed, so the cards paint collapsed instead of snapping shut a frame later. -->
+    <script src="js/productCardBlurb.js"></script>
     <HeadOutlet />
 </head>
 
@@ -245,6 +253,14 @@
         document.addEventListener('DOMContentLoaded', window.queueHeroType);
 
         const onEnhancedLoad = () => {
+            // Blazor's enhanced navigation replaces <html>'s attributes with
+            // whatever the server rendered for the new page — which never
+            // includes data-theme, since only client-side JS (theme.js) knows
+            // the stored/OS-preferred choice. Confirmed via testing that this
+            // silently resets the theme on every route change without this
+            // reapply; the initial <head> bootstrap script only covers a full
+            // page load, not this SPA-style transition.
+            window.artisanalTheme.apply(window.artisanalTheme.getStored());
             window.queueAnimations(true);
             window.queuePublicHeader();
             window.queueRecruiterMotion();

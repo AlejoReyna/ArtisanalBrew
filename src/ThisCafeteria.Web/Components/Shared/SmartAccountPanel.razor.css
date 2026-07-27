@@ -180,3 +180,59 @@
         align-items: flex-start;
     }
 }
+
+/* Dark-mode override — see the matching comment in FaucetPanel.razor.css.
+   SmartAccountPanel only ever renders inside the on-chain wing; the light
+   "paper card" styling above stays as the light-mode default, this only
+   swaps structural surfaces/text so it doesn't look unstyled in dark mode. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .smart-account-panel,
+    :root:not([data-theme]) .smart-account-panel__option,
+    :root:not([data-theme]) .smart-account-panel__permission {
+        background: var(--stake-surface-2);
+        border-color: var(--stake-line);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__kicker,
+    :root:not([data-theme]) .smart-account-panel__empty,
+    :root:not([data-theme]) .smart-account-panel__status {
+        color: var(--stake-muted);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__permission-facts dt {
+        color: var(--stake-faint);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__permission-facts dd {
+        color: var(--stake-ink);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__option:hover {
+        border-color: color-mix(in srgb, var(--stake-green) 40%, transparent);
+    }
+}
+
+:root[data-theme="dark"] .smart-account-panel,
+:root[data-theme="dark"] .smart-account-panel__option,
+:root[data-theme="dark"] .smart-account-panel__permission {
+    background: var(--stake-surface-2);
+    border-color: var(--stake-line);
+}
+
+:root[data-theme="dark"] .smart-account-panel__kicker,
+:root[data-theme="dark"] .smart-account-panel__empty,
+:root[data-theme="dark"] .smart-account-panel__status {
+    color: var(--stake-muted);
+}
+
+:root[data-theme="dark"] .smart-account-panel__permission-facts dt {
+    color: var(--stake-faint);
+}
+
+:root[data-theme="dark"] .smart-account-panel__permission-facts dd {
+    color: var(--stake-ink);
+}
+
+:root[data-theme="dark"] .smart-account-panel__option:hover {
+    border-color: color-mix(in srgb, var(--stake-green) 40%, transparent);
+}

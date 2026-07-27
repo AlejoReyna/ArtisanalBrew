@@ -27,13 +27,37 @@
     <div class="flex flex-1 flex-col gap-1 px-5 pb-5 pt-3">
         <RatingStars Rating="@Card.Rating" />
         <span class="mt-1 text-xs text-mute">@Card.Brand</span>
-        <a href="@($"products/{Card.Slug}")"
-           @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
-           @onclick:preventDefault="true">
-            <h3 class="line-clamp-2 min-h-[2.75em] text-[15px] font-medium leading-snug text-ink">
-                @Card.Name
-            </h3>
-        </a>
+        @* The two-line reserve lives on this block rather than on the <h3> so that a
+           one-line name doesn't push the description down past the slack it isn't using:
+           the blurb opens directly under the title text and grows into the reserve first.
+           Cards still agree on a resting height whether their name wraps or not.
+           text-[15px] is repeated on the <h3> because the site's global heading rules set
+           an explicit size there — inheriting the block's is not enough. *@
+        <div class="product-card__title-block text-[15px]">
+            <a href="@($"products/{Card.Slug}")"
+               @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
+               @onclick:preventDefault="true">
+                <h3 class="line-clamp-2 text-[15px] font-medium leading-snug text-ink">
+                    @Card.Name
+                </h3>
+            </a>
+
+            @* Collapsed to nothing until the card is hovered or focused, then it opens and
+               types itself out — see wwwroot/js/productCardBlurb.js. The copy is real
+               markup, so with no script it is simply a visible line of description. *@
+            @if (!string.IsNullOrWhiteSpace(Card.Description))
+            {
+                <div class="product-card__blurb" data-card-blurb>
+                    @* The clip element carries no padding of its own — anything it did
+                       carry would survive the collapse and leave the closed card that
+                       much taller. *@
+                    <div class="product-card__blurb-clip">
+                        <p class="product-card__blurb-text text-[13px] leading-relaxed text-mute"
+                           data-card-blurb-text>@Card.Description</p>
+                    </div>
+                </div>
+            }
+        </div>
 
         <div class="mt-auto flex items-end justify-between pt-1">
             <div class="flex items-baseline gap-2">

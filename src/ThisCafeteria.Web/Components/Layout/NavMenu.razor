@@ -21,7 +21,7 @@
 @using ThisCafeteria.Web.Services.Cart
 @using System.Security.Claims
 
-<header class="public-header">
+<header class="@HeaderCssClass">
 <nav class="site-nav" aria-label="Primary navigation">
     <a class="navbar-brand" href="">Artisanal Brew</a>
 
@@ -55,42 +55,62 @@
         <NavLink class="nav-link nav-link--about" href="story" @onclick="CloseNav">
             About
         </NavLink>
+    </div>
 
-        <div class="nav-utilities">
-            <AuthorizeView>
-                <Authorized>
-                    <button class="@UserToggleCssClass nav-login--authorized"
-                            type="button"
-                            aria-haspopup="dialog"
-                            aria-expanded="@_isUserMenuOpen"
-                            aria-label="Open account menu"
-                            @onclick="ToggleUserMenu">
-                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
-                        <span class="nav-login__text-stack">
-                            <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
-                            <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
-                        </span>
-                    </button>
-                    <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
-                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        @if (_cartItemCount > 0)
-                        {
-                            <span class="nav-cart__badge">@_cartItemCount</span>
-                        }
-                    </a>
-                </Authorized>
-                <NotAuthorized>
-                    <button class="nav-login"
-                            type="button"
-                            aria-haspopup="dialog"
-                            @onclick="OpenWalletModal"
-                            style="--chain-hover: @GetChainHoverBackground();">
-                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
-                        <span class="nav-login__label">Login</span>
-                    </button>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
+    <div class="nav-utilities">
+        <button class="theme-toggle"
+                type="button"
+                aria-label="@ThemeToggleLabel"
+                title="@ThemeToggleLabel"
+                @onclick="CycleThemeAsync">
+            <span class="theme-toggle__icon" aria-hidden="true">
+                @if (_theme == "dark")
+                {
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                }
+                else if (_theme == "light")
+                {
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                }
+                else
+                {
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
+                }
+            </span>
+        </button>
+        <AuthorizeView>
+            <Authorized>
+                <button class="@UserToggleCssClass nav-login--authorized"
+                        type="button"
+                        aria-haspopup="dialog"
+                        aria-expanded="@_isUserMenuOpen"
+                        aria-label="Open account menu"
+                        @onclick="ToggleUserMenu">
+                    <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
+                    <span class="nav-login__text-stack">
+                        <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
+                        <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
+                    </span>
+                </button>
+                <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    @if (_cartItemCount > 0)
+                    {
+                        <span class="nav-cart__badge">@_cartItemCount</span>
+                    }
+                </a>
+            </Authorized>
+            <NotAuthorized>
+                <button class="nav-login"
+                        type="button"
+                        aria-haspopup="dialog"
+                        @onclick="OpenWalletModal"
+                        style="--chain-hover: @GetChainHoverBackground();">
+                    <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
+                    <span class="nav-login__label">Login</span>
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
     </div>
 </nav>
 </header>
@@ -188,8 +208,40 @@
                 <a href="cart" class="nav-drawer__cta nav-drawer__cta--outline" @onclick="CloseNav">Cart</a>
             </NotAuthorized>
         </AuthorizeView>
+        <button class="nav-drawer__theme-toggle" type="button" @onclick="CycleThemeAsync">
+            @ThemeToggleLabel
+        </button>
     </footer>
 </aside>
+
+@* Mobile-only bottom tab bar (CSS hides it above 760px). The Menu tab reuses the
+   existing drawer; the header's hamburger stays untouched. *@
+<nav class="mobile-tab-bar" aria-label="Mobile navigation">
+    <NavLink class="mobile-tab-bar__item" href="" Match="NavLinkMatch.All">
+        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="mobile-tab-bar__label">Home</span>
+    </NavLink>
+    <NavLink class="mobile-tab-bar__item" href="products" Match="NavLinkMatch.All">
+        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        <span class="mobile-tab-bar__label">Shop</span>
+    </NavLink>
+    <NavLink class="mobile-tab-bar__item mobile-tab-bar__item--cart" href="cart" Match="NavLinkMatch.All" aria-label="@CartAriaLabel">
+        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <span class="mobile-tab-bar__label">Cart</span>
+        @if (_cartItemCount > 0)
+        {
+            <span class="mobile-tab-bar__badge">@_cartItemCount</span>
+        }
+    </NavLink>
+    <button type="button"
+            class="mobile-tab-bar__item @(_isNavOpen ? "active" : null)"
+            aria-label="Toggle navigation menu"
+            aria-expanded="@_isNavOpen"
+            @onclick="ToggleNav">
+        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        <span class="mobile-tab-bar__label">Menu</span>
+    </button>
+</nav>
 
 <AuthorizeView>
     <Authorized>
@@ -463,6 +515,25 @@
 
     private bool _isNetworkDropdownOpen = false;
 
+    // Light/dark/system theme toggle. 'system' means no explicit choice is
+    // stored — the CSS prefers-color-scheme tier decides. The actual applied
+    // value lives in the `data-theme` attribute on <html>, set synchronously by
+    // the blocking script in App.razor's <head> before first paint; this field
+    // only mirrors it so the toggle button can show the right icon/label.
+    private string _theme = "system";
+
+    private string ThemeToggleLabel => _theme switch
+    {
+        "dark" => "Theme: Dark (click for Light)",
+        "light" => "Theme: Light (click for System)",
+        _ => "Theme: System (click for Dark)"
+    };
+
+    private async Task CycleThemeAsync()
+    {
+        _theme = await JsRuntime.InvokeAsync<string>("artisanalTheme.cycle");
+    }
+
     private void ToggleNetworkDropdown()
     {
         _isNetworkDropdownOpen = !_isNetworkDropdownOpen;
@@ -480,6 +551,13 @@
     }
 
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
+
+    // /staking sits on the dark "yield" ground, so the bar reads better blended
+    // into the page instead of the usual dark-on-dark plate every other route gets.
+    private string HeaderCssClass =>
+        Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/').Equals("staking", StringComparison.OrdinalIgnoreCase)
+            ? "public-header public-header--transparent"
+            : "public-header";
 
     private string UserToggleCssClass => _isUserMenuOpen ? "nav-login active" : "nav-login";
 
@@ -536,6 +614,15 @@
         Logger.LogInformation("NavMenu OnInitializedAsync END. CartItemCount={Count}", _cartItemCount);
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _theme = await JsRuntime.InvokeAsync<string>("artisanalTheme.current");
+            StateHasChanged();
+        }
+    }
+
     private void OnCartChanged() => _ = InvokeAsync(RefreshCartCountAsync);
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -543,7 +630,11 @@
         // Blazor Server's interactive routing swaps @Body without a page reload or an
         // "enhancedload" event, so the header's hero/scroll JS (bound once on first load)
         // never reruns and can leave stale inline styles (e.g. navbar-brand color) behind.
-        _ = InvokeAsync(async () => await JsRuntime.InvokeVoidAsync("queuePublicHeader"));
+        _ = InvokeAsync(async () =>
+        {
+            await JsRuntime.InvokeVoidAsync("queuePublicHeader");
+            StateHasChanged(); // recompute HeaderCssClass for the new route
+        });
     }
 
     private async Task RefreshCartCountAsync()

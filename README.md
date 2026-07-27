@@ -152,6 +152,39 @@ scripts/apple-container-postgres.sh stop
 
 The app requires `ConnectionStrings__DefaultConnection` from environment variables (`.env` for local development). No production password is embedded in source code.
 
+### Running the full stack with Apple Container instead of Docker
+
+`docker-compose.yml` describes the full stack (Postgres, pgadmin, Web, Worker) for Docker, but on a
+machine without Docker/Colima/OrbStack installed you can run the same Postgres service with Apple's
+native `container` CLI and run Web/Worker directly with `dotnet run` against it:
+
+```bash
+# Start the container runtime (one-time per session/reboot)
+container system start
+
+# Bring up Postgres matching docker-compose's credentials/port (5433 on the host)
+container run -d --name this-cafeteria-postgres \
+  -e POSTGRES_DB=this_cafeteria \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5433:5432 \
+  postgres:16-alpine
+
+# Point the app at it and run
+export ConnectionStrings__DefaultConnection="Host=localhost;Port=5433;Database=this_cafeteria;Username=postgres;Password=postgres"
+dotnet run --project src/ThisCafeteria.Web --urls http://localhost:5286
+```
+
+On a later run, the container already exists, so start it instead of re-creating it:
+
+```bash
+container start this-cafeteria-postgres
+```
+
+Stop it with `container stop this-cafeteria-postgres` when finished; `container list -a` shows all
+containers (state, IP, image) and `container system status` shows whether the Apple Container
+apiserver is running.
+
 ### Local blockchain manifests
 
 Build, test, and create the local EVM fixture:
