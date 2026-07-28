@@ -1,0 +1,112 @@
+.pixel-title {
+    --pixel-black: #080807;
+    --pixel-face: #fbfbf8;
+    --voxel: clamp(0.24rem, 0.72vw, 0.56rem);
+    display: grid;
+    filter: drop-shadow(0 0.9rem 1.4rem rgba(0, 0, 0, 0.42));
+    gap: calc(var(--voxel) + var(--voxel));
+    justify-items: center;
+    perspective: 72rem;
+}
+
+.pixel-title__line {
+    align-items: center;
+    display: flex;
+    gap: var(--voxel);
+    justify-content: center;
+    transform-style: preserve-3d;
+    white-space: nowrap;
+}
+
+.pixel-title__glyph {
+    display: inline-grid;
+    flex: none;
+    grid-template-columns: repeat(5, var(--voxel));
+    grid-template-rows: repeat(8, var(--voxel));
+    opacity: 0;
+    position: relative;
+    transform: rotateX(-5deg) rotateY(-82deg) scaleX(0.3);
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    animation: pixel-glyph-unfold 820ms steps(7, end) var(--glyph-delay) both;
+    will-change: opacity, transform;
+}
+
+.pixel-title__space {
+    flex: 0 0 calc(var(--voxel) + var(--voxel));
+}
+
+.pixel-title__pixel {
+    align-self: stretch;
+    border: 1px solid var(--pixel-black);
+    justify-self: stretch;
+    min-height: 0;
+    min-width: 0;
+}
+
+.pixel-title__pixel--depth {
+    background: var(--layer-shade);
+    transform: translate3d(
+        var(--layer-offset),
+        var(--layer-offset),
+        var(--layer-offset-negative)
+    );
+}
+
+.pixel-title__pixel--face {
+    background: var(--pixel-face);
+    box-shadow: inset -1px -1px 0 #c7c7c2;
+}
+
+@keyframes pixel-glyph-unfold {
+    0% {
+        opacity: 0;
+        transform: translate3d(-0.08em, 0, -1.2em) rotateX(-5deg) rotateY(-82deg) scaleX(0.3);
+    }
+
+    14% {
+        opacity: 1;
+    }
+
+    57% {
+        opacity: 1;
+        transform: translate3d(0, 0, -0.3em) rotateX(-5deg) rotateY(-38deg) scaleX(0.72);
+    }
+
+    86% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) rotateX(-5deg) rotateY(-6deg) scaleX(1.04);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) rotateX(-5deg) rotateY(-10deg) scaleX(1);
+    }
+}
+
+@media (max-width: 520px) {
+    .pixel-title {
+        --voxel: clamp(0.21rem, 0.95vw, 0.25rem);
+        gap: calc(var(--voxel) + var(--voxel) + var(--voxel));
+    }
+
+    .pixel-title__line {
+        gap: var(--voxel);
+    }
+
+    .pixel-title__pixel--depth {
+        transform: translate3d(
+            var(--layer-offset-compact),
+            var(--layer-offset-compact),
+            var(--layer-offset-compact-negative)
+        );
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pixel-title__glyph {
+        animation: none;
+        opacity: 1;
+        transform: rotateX(-5deg) rotateY(-10deg);
+    }
+}
