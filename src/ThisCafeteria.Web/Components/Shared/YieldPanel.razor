@@ -29,7 +29,7 @@
 
 @if (!_isConnected)
 {
-    <section class="staking-intro" data-animate="fade-up">
+    <section class="staking-intro" data-animate="fade-up" data-page-theme-color="#100D0B">
         <div class="staking-intro__space" aria-hidden="true">
             <img class="staking-space__coin staking-space__coin--one" src="images/coffee-coin-pixel.png" alt="" />
             <img class="staking-space__coin staking-space__coin--two" src="images/coffee-coin-pixel.png" alt="" />
@@ -93,7 +93,7 @@
 
                     <div class="staking-intro__actions">
                         <button type="button" class="button button--dark staking-intro__cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                            @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
+                            @(_isConnecting ? "Connecting..." : "Connect Wallet")
                         </button>
                         @if (OnBackToProfile.HasDelegate)
                         {
@@ -112,40 +112,25 @@
                 {
                     <div class="staking-intro__faucets" aria-label="Testnet ETH faucets">
                         <a class="staking-intro__faucet-link" href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Google Cloud Web3</strong>
                             <span class="staking-intro__faucet-logo">
                                 <img src="https://www.google.com/s2/favicons?domain=cloud.google.com&sz=64" alt="" loading="lazy" />
                             </span>
-                            <span class="staking-intro__faucet-copy">
-                                <strong>Google Cloud Web3</strong>
-                                <small>0.05 ETH / day</small>
-                            </span>
-                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M7 17 17 7M8 7h9v9" />
-                            </svg>
+                            <small class="staking-intro__faucet-amount">0.05 ETH / day</small>
                         </a>
                         <a class="staking-intro__faucet-link" href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Alchemy</strong>
                             <span class="staking-intro__faucet-logo">
                                 <img src="https://www.google.com/s2/favicons?domain=alchemy.com&sz=64" alt="" loading="lazy" />
                             </span>
-                            <span class="staking-intro__faucet-copy">
-                                <strong>Alchemy</strong>
-                                <small>0.1 ETH / day</small>
-                            </span>
-                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M7 17 17 7M8 7h9v9" />
-                            </svg>
+                            <small class="staking-intro__faucet-amount">0.1 ETH / day</small>
                         </a>
                         <a class="staking-intro__faucet-link" href="https://faucet.chainstack.com/sepolia-testnet-faucet" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Chainstack</strong>
                             <span class="staking-intro__faucet-logo">
                                 <img src="https://www.google.com/s2/favicons?domain=chainstack.com&sz=64" alt="" loading="lazy" />
                             </span>
-                            <span class="staking-intro__faucet-copy">
-                                <strong>Chainstack</strong>
-                                <small>0.5 ETH / day</small>
-                            </span>
-                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M7 17 17 7M8 7h9v9" />
-                            </svg>
+                            <small class="staking-intro__faucet-amount">0.5 ETH / day</small>
                         </a>
                     </div>
                 }
@@ -153,14 +138,9 @@
                 {
                     <div class="staking-intro__faucets" aria-label="Testnet SOL faucet">
                         <a class="staking-intro__faucet-link" href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Solana Faucet</strong>
                             <span class="staking-intro__faucet-logo staking-intro__faucet-logo--solana" aria-hidden="true">S</span>
-                            <span class="staking-intro__faucet-copy">
-                                <strong>Solana Faucet</strong>
-                                <small>Get devnet SOL</small>
-                            </span>
-                            <svg class="staking-intro__faucet-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M7 17 17 7M8 7h9v9" />
-                            </svg>
+                            <small class="staking-intro__faucet-amount">Get devnet SOL</small>
                         </a>
                     </div>
                 }
@@ -170,7 +150,7 @@
 }
 else
 {
-    <div class="yield-dashboard" data-animate="fade-up">
+    <div class="yield-dashboard" data-animate="fade-up" data-page-theme-color="#100D0B">
         <aside class="yield-sidebar" aria-label="Allocation account overview">
             @if (OnBackToProfile.HasDelegate)
             {

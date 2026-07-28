@@ -19,8 +19,12 @@
         radial-gradient(circle at 78% 8%, rgba(143, 185, 155, 0.07) 0%, transparent 42%),
         radial-gradient(circle at 8% 92%, rgba(200, 155, 106, 0.06) 0%, transparent 45%);
     font-family: var(--font-sans);
-    min-height: calc(100dvh - 4.75rem);
-    padding: clamp(2.5rem, 5vw, 4.5rem) 0 6rem;
+    min-height: 100dvh;
+    /* Header clearance now lives here instead of on the outer .yield-page-main
+       padding-top (removed in StakingLayout.razor.css for this route), so the
+       fixed transparent header floats over this element's own background
+       instead of a gap that exposed .page/main's flat swatch. */
+    padding: calc(4.75rem + clamp(2.5rem, 5vw, 4.5rem)) 0 6rem;
     position: relative;
 }
 
@@ -372,7 +376,7 @@
 }
 
 .pl-scene__actor--scout {
-    animation: pl-robot-work 3.2s steps(1, end) infinite;
+    animation: pl-scout-sweep 4.8s steps(1, end) infinite;
     background-image: url("images/pl-robot-scout.png");
     left: 1%;
     width: 15%;
@@ -385,14 +389,14 @@
 }
 
 .pl-scene__actor--courier {
-    animation: pl-robot-work 2.2s steps(1, end) infinite;
+    animation: pl-courier-walk 1.05s steps(1, end) infinite;
     background-image: url("images/pl-robot-courier.png");
     right: 25%;
     width: 15%;
 }
 
 .pl-scene__actor--inspector {
-    animation: pl-robot-work 2.8s steps(1, end) 0.35s infinite;
+    animation: pl-inspector-scan 3.8s steps(1, end) infinite;
     background-image: url("images/pl-robot-inspector.png");
     right: 1%;
     width: 17%;
@@ -406,7 +410,7 @@
 }
 
 .pl-scene__actor--buyer.is-live {
-    animation: pl-robot-work 2.6s steps(1, end) 0.2s infinite;
+    animation: pl-buyer-insert 3.4s steps(1, end) infinite;
     filter: drop-shadow(0 0 6px rgba(143, 185, 155, 0.35));
 }
 
@@ -508,7 +512,7 @@
 
 /* Inspector scan beam sweeping the delivered crate. */
 .pl-scene__scan {
-    animation: pl-scan-sweep 2.4s steps(5, end) infinite;
+    animation: pl-scan-sweep 3.8s steps(5, end) infinite;
     background: rgba(127, 212, 196, 0.85);
     bottom: 10%;
     height: 3px;
@@ -625,23 +629,40 @@
     50% { opacity: 0.95; }
 }
 
-@keyframes pl-robot-work {
-    0%, 22% {
-        background-position: 0 0;
-        transform: translate3d(-2px, 0, 0);
-    }
-    23%, 45% {
-        background-position: 33.333% 0;
-        transform: translate3d(2px, -1px, 0);
-    }
-    46%, 72% {
-        background-position: 66.667% 0;
-        transform: translate3d(0, 0, 0);
-    }
-    73%, 100% {
-        background-position: 100% 0;
-        transform: translate3d(0, -1px, 0);
-    }
+/* Scout: level watch → adjust → telescope rises → amber lock-on hold → reset.
+   Uneven holds (not even quarters) make the sweep read as deliberate. */
+@keyframes pl-scout-sweep {
+    0%, 30%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
+    31%, 46%  { background-position: 33.333% 0; transform: translate3d(0, 1px, 0); }
+    47%, 70%  { background-position: 66.667% 0; transform: translate3d(0, -1px, 0); }
+    71%, 92%  { background-position: 100% 0;    transform: translate3d(0, -1px, 0); }
+    93%, 100% { background-position: 0 0;       transform: translate3d(0, 0, 0); }
+}
+
+/* Buyer: arm back → approach the slot → key in → terminal lights, hold → reset. */
+@keyframes pl-buyer-insert {
+    0%, 24%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
+    25%, 49%  { background-position: 33.333% 0; transform: translate3d(1px, 0, 0); }
+    50%, 79%  { background-position: 66.667% 0; transform: translate3d(2px, 0, 0); }
+    80%, 96%  { background-position: 100% 0;    transform: translate3d(2px, 0, 0); }
+    97%, 100% { background-position: 0 0;       transform: translate3d(0, 0, 0); }
+}
+
+/* Courier: brisk 4-step gait — dips on each footfall, lifts between steps. */
+@keyframes pl-courier-walk {
+    0%, 24%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
+    25%, 49%  { background-position: 33.333% 0; transform: translate3d(1px, -1px, 0); }
+    50%, 74%  { background-position: 66.667% 0; transform: translate3d(0, 0, 0); }
+    75%, 100% { background-position: 100% 0;    transform: translate3d(1px, -1px, 0); }
+}
+
+/* Inspector: scanner on the crate → lift → scan pass → teal beep, hold → reset. */
+@keyframes pl-inspector-scan {
+    0%, 29%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
+    30%, 59%  { background-position: 33.333% 0; transform: translate3d(0, 0, 0); }
+    60%, 84%  { background-position: 66.667% 0; transform: translate3d(0, 1px, 0); }
+    85%, 97%  { background-position: 100% 0;    transform: translate3d(0, -1px, 0); }
+    98%, 100% { background-position: 0 0;       transform: translate3d(0, 0, 0); }
 }
 
 @keyframes pl-scan-sweep {

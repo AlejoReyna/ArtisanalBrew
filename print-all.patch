@@ -1,0 +1,31 @@
+--- src/ThisCafeteria.Worker/AgenticCommerceReconciliationWorker.cs
++++ src/ThisCafeteria.Worker/AgenticCommerceReconciliationWorker.cs
+@@ -142,6 +142,20 @@
+         checkpoint.UpdatedAtUtc = DateTime.UtcNow;
+ 
+         foreach (var entry in db.ChangeTracker.Entries())
+         {
++            logger.LogWarning("Entity: {Type} State: {State}", entry.Entity.GetType().Name, entry.State);
++            foreach (var prop in entry.CurrentValues.Properties)
++            {
++                var val = entry.CurrentValues[prop];
++                if (val != null)
++                {
++                    if (val is string s)
++                    {
++                        var hex = BitConverter.ToString(System.Text.Encoding.UTF8.GetBytes(s));
++                        logger.LogWarning("Prop {Name} (string): len={Len} hex={Hex}", prop.Name, s.Length, hex);
++                    }
++                    else
++                    {
++                        logger.LogWarning("Prop {Name} ({Type}): {Val}", prop.Name, prop.ClrType.Name, val);
++                    }
++                }
++                else
++                {
++                    logger.LogWarning("Prop {Name}: NULL", prop.Name);
++                }
++            }
++
+             foreach (var prop in entry.CurrentValues.Properties)
+             {

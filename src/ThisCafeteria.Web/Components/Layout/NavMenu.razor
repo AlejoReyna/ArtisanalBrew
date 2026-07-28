@@ -214,35 +214,6 @@
     </footer>
 </aside>
 
-@* Mobile-only bottom tab bar (CSS hides it above 760px). The Menu tab reuses the
-   existing drawer; the header's hamburger stays untouched. *@
-<nav class="mobile-tab-bar" aria-label="Mobile navigation">
-    <NavLink class="mobile-tab-bar__item" href="" Match="NavLinkMatch.All">
-        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span class="mobile-tab-bar__label">Home</span>
-    </NavLink>
-    <NavLink class="mobile-tab-bar__item" href="products" Match="NavLinkMatch.All">
-        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-        <span class="mobile-tab-bar__label">Shop</span>
-    </NavLink>
-    <NavLink class="mobile-tab-bar__item mobile-tab-bar__item--cart" href="cart" Match="NavLinkMatch.All" aria-label="@CartAriaLabel">
-        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-        <span class="mobile-tab-bar__label">Cart</span>
-        @if (_cartItemCount > 0)
-        {
-            <span class="mobile-tab-bar__badge">@_cartItemCount</span>
-        }
-    </NavLink>
-    <button type="button"
-            class="mobile-tab-bar__item @(_isNavOpen ? "active" : null)"
-            aria-label="Toggle navigation menu"
-            aria-expanded="@_isNavOpen"
-            @onclick="ToggleNav">
-        <svg aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        <span class="mobile-tab-bar__label">Menu</span>
-    </button>
-</nav>
-
 <AuthorizeView>
     <Authorized>
         @if (_isUserMenuRendered)

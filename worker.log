@@ -1,0 +1,399 @@
+Using launch settings from src/ThisCafeteria.Worker/Properties/launchSettings.json...
+Building...
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+[12:37:18 WRN] Order processing worker idle; Azure:ServiceBus:FullyQualifiedNamespace is not configured.
+[12:37:18 INF] Application started. Press Ctrl+C to shut down.
+[12:37:18 WRN] Staking ledger reconciliation worker idle; Blockchain:Network:StakingPoolContract is not configured.
+[12:37:18 INF] CrossChainSolverWorker is idle: CrossChainSolver is not fully configured (Enabled, chain keys, resolver addresses, and a signer key are all required). This is expected when no solver is deployed.
+[12:37:18 INF] Hosting environment: Development
+[12:37:18 INF] Content root path: /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker
+[12:37:18 INF] AgenticCommerceReconciliationWorker starting for 1 chain(s): evm-local
+[12:37:18 INF] Executed DbCommand (19ms) [Parameters=[@_8__locals1_chain_Key='?', @source='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."ChainKey", s."CursorType", s."Family", s."LastScannedBlock", s."LastScannedSignature", s."LastScannedSlot", s."SourceIdentifier", s."StakingPoolContract", s."UpdatedAtUtc"
+FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = @_8__locals1_chain_Key AND s."SourceIdentifier" = @source
+LIMIT 2
+[12:37:18 INF] Executed DbCommand (19ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:18 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=15, safeHead=13, fromBlock=3
+[12:37:18 INF] AgenticCommerceReconciliationWorker: scanning 3-13
+[12:37:18 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 3-13
+[12:37:18 INF] Executed DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?', @p3='?' (DbType = Int64), @p4='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AgenticCommerceCheckpoints" ("Id", "ChainKey", "EscrowAddress", "LastScannedBlock", "UpdatedAtUtc")
+VALUES (@p0, @p1, @p2, @p3, @p4);
+[12:37:20 INF] Executed DbCommand (2ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:20 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=15, safeHead=13, fromBlock=14
+[12:37:22 INF] Executed DbCommand (1ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:22 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=23, safeHead=21, fromBlock=14
+[12:37:22 INF] AgenticCommerceReconciliationWorker: scanning 14-21
+[12:37:22 INF] AgenticCommerceReconciliationWorker: found 1 registry events in 14-21
+[12:37:22 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:22 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:22 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:22 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @registryAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @registryAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:22 INF] Executed DbCommand (2ms) [Parameters=[@chain_Key='?', @evt_AgentId='?' (DbType = Int64), @registryAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgentDirectoryEntries" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."AgentId" = @evt_AgentId AND a."RegistryAddress" = @registryAddress)
+[12:37:22 INF] Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = Int64), @p2='?', @p3='?' (DbType = DateTime), @p4='?' (DbType = Boolean), @p5='?', @p6='?', @p7='?', @p8='?' (DbType = DateTime), @p11='?' (DbType = Guid), @p9='?' (DbType = Int64), @p10='?' (DbType = DateTime), @p12='?' (DbType = Guid), @p13='?' (DbType = DateTime), @p14='?', @p15='?', @p16='?' (DbType = Int32), @p17='?', @p18='?' (DbType = Guid), @p19='?' (DbType = DateTime), @p20='?', @p21='?', @p22='?' (DbType = Int32), @p23='?', @p24='?' (DbType = Guid), @p25='?' (DbType = Decimal), @p26='?' (DbType = Int64), @p27='?', @p28='?', @p29='?', @p30='?' (DbType = Int64), @p31='?', @p32='?' (DbType = DateTime), @p33='?', @p34='?', @p35='?', @p36='?', @p37='?', @p38='?', @p39='?' (DbType = Int64), @p40='?', @p41='?' (DbType = Int64), @p42='?' (DbType = Int64), @p43='?' (DbType = Int64), @p44='?', @p45='?', @p46='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AgentDirectoryEntries" ("Id", "AgentId", "ChainKey", "CreatedAtUtc", "IsActive", "MetadataUri", "OwnerAddress", "RegistryAddress", "UpdatedAtUtc")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p9, "UpdatedAtUtc" = @p10
+WHERE "Id" = @p11;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p12, @p13, @p14, @p15, @p16, @p17);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p18, @p19, @p20, @p21, @p22, @p23);
+INSERT INTO "AgenticJobs" ("Id", "Budget", "ChainId", "ChainKey", "ClientAddress", "CompletionTransactionHash", "ConcurrencyToken", "ContractAddress", "CreatedAtUtc", "CreationTransactionHash", "DecisionReason", "DeliverableCommitment", "DescriptionCommitment", "EscrowAddress", "EvaluatorAddress", "ExpiredAt", "FundedTransactionHash", "JobId", "LastReconciledBlock", "OnChainJobId", "ProviderAddress", "Status", "UpdatedAtUtc")
+VALUES (@p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46);
+[12:37:22 INF] Reconciled 1 escrow events and 1 registry events for evm-local in blocks 14-21
+[12:37:24 INF] Executed DbCommand (2ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:24 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=30, safeHead=28, fromBlock=22
+[12:37:24 INF] AgenticCommerceReconciliationWorker: scanning 22-28
+[12:37:24 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 22-28
+[12:37:24 INF] Executed DbCommand (2ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:24 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:24 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:24 INF] Executed DbCommand (1ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Int64), @p1='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?' (DbType = Int32), @p8='?', @p13='?' (DbType = Guid), @p9='?' (DbType = Int64), @p14='?' (DbType = Int64), @p10='?' (DbType = Int64), @p11='?', @p12='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p0, "UpdatedAtUtc" = @p1
+WHERE "Id" = @p2;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p3, @p4, @p5, @p6, @p7, @p8);
+UPDATE "AgenticJobs" SET "ConcurrencyToken" = @p9, "LastReconciledBlock" = @p10, "ProviderAddress" = @p11, "UpdatedAtUtc" = @p12
+WHERE "Id" = @p13 AND "ConcurrencyToken" = @p14;
+[12:37:24 INF] Reconciled 1 escrow events and 0 registry events for evm-local in blocks 22-28
+[12:37:26 INF] Executed DbCommand (2ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:26 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=38, safeHead=36, fromBlock=29
+[12:37:26 INF] AgenticCommerceReconciliationWorker: scanning 29-36
+[12:37:26 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 29-36
+[12:37:26 INF] Executed DbCommand (2ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:26 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:26 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:26 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:26 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:26 INF] Executed DbCommand (1ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Int64), @p1='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?' (DbType = Int32), @p8='?', @p9='?' (DbType = Guid), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?' (DbType = Int32), @p14='?', @p21='?' (DbType = Guid), @p15='?' (DbType = Decimal), @p16='?' (DbType = Int64), @p22='?' (DbType = Int64), @p17='?', @p18='?' (DbType = Int64), @p19='?', @p20='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p0, "UpdatedAtUtc" = @p1
+WHERE "Id" = @p2;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p3, @p4, @p5, @p6, @p7, @p8);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p9, @p10, @p11, @p12, @p13, @p14);
+UPDATE "AgenticJobs" SET "Budget" = @p15, "ConcurrencyToken" = @p16, "FundedTransactionHash" = @p17, "LastReconciledBlock" = @p18, "Status" = @p19, "UpdatedAtUtc" = @p20
+WHERE "Id" = @p21 AND "ConcurrencyToken" = @p22;
+[12:37:26 INF] Reconciled 2 escrow events and 0 registry events for evm-local in blocks 29-36
+[12:37:28 INF] Executed DbCommand (1ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:28 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=44, safeHead=42, fromBlock=37
+[12:37:28 INF] AgenticCommerceReconciliationWorker: scanning 37-42
+[12:37:28 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 37-42
+[12:37:28 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:28 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:28 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:28 INF] Executed DbCommand (1ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Int64), @p1='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?' (DbType = Int32), @p8='?', @p14='?' (DbType = Guid), @p9='?' (DbType = Int64), @p15='?' (DbType = Int64), @p10='?', @p11='?' (DbType = Int64), @p12='?', @p13='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p0, "UpdatedAtUtc" = @p1
+WHERE "Id" = @p2;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p3, @p4, @p5, @p6, @p7, @p8);
+UPDATE "AgenticJobs" SET "ConcurrencyToken" = @p9, "DeliverableCommitment" = @p10, "LastReconciledBlock" = @p11, "Status" = @p12, "UpdatedAtUtc" = @p13
+WHERE "Id" = @p14 AND "ConcurrencyToken" = @p15;
+[12:37:28 INF] Reconciled 1 escrow events and 0 registry events for evm-local in blocks 37-42
+[12:37:30 INF] Executed DbCommand (1ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:30 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=50, safeHead=48, fromBlock=43
+[12:37:30 INF] AgenticCommerceReconciliationWorker: scanning 43-48
+[12:37:30 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 43-48
+[12:37:30 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:30 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:30 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:30 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:30 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:30 INF] Executed DbCommand (1ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Int64), @p1='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?' (DbType = Int32), @p8='?', @p9='?' (DbType = Guid), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?' (DbType = Int32), @p14='?', @p21='?' (DbType = Guid), @p15='?', @p16='?' (DbType = Int64), @p22='?' (DbType = Int64), @p17='?', @p18='?' (DbType = Int64), @p19='?', @p20='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p0, "UpdatedAtUtc" = @p1
+WHERE "Id" = @p2;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p3, @p4, @p5, @p6, @p7, @p8);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p9, @p10, @p11, @p12, @p13, @p14);
+UPDATE "AgenticJobs" SET "CompletionTransactionHash" = @p15, "ConcurrencyToken" = @p16, "DecisionReason" = @p17, "LastReconciledBlock" = @p18, "Status" = @p19, "UpdatedAtUtc" = @p20
+WHERE "Id" = @p21 AND "ConcurrencyToken" = @p22;
+[12:37:30 INF] Reconciled 2 escrow events and 0 registry events for evm-local in blocks 43-48
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:32 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=60, safeHead=58, fromBlock=49
+[12:37:32 INF] AgenticCommerceReconciliationWorker: scanning 49-58
+[12:37:32 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 49-58
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:32 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:32 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:33 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:33 INF] Executed DbCommand (1ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Int64), @p1='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?' (DbType = Int32), @p8='?', @p9='?' (DbType = Guid), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?' (DbType = Int32), @p14='?', @p15='?' (DbType = Guid), @p16='?' (DbType = DateTime), @p17='?', @p18='?', @p19='?' (DbType = Int32), @p20='?', @p21='?' (DbType = Guid), @p22='?' (DbType = DateTime), @p23='?', @p24='?', @p25='?' (DbType = Int32), @p26='?', @p27='?' (DbType = Guid), @p28='?' (DbType = DateTime), @p29='?', @p30='?', @p31='?' (DbType = Int32), @p32='?', @p33='?' (DbType = Guid), @p34='?' (DbType = DateTime), @p35='?', @p36='?', @p37='?' (DbType = Int32), @p38='?', @p39='?' (DbType = Guid), @p40='?' (DbType = Decimal), @p41='?' (DbType = Int64), @p42='?', @p43='?', @p44='?', @p45='?' (DbType = Int64), @p46='?', @p47='?' (DbType = DateTime), @p48='?', @p49='?', @p50='?', @p51='?', @p52='?', @p53='?', @p54='?' (DbType = Int64), @p55='?', @p56='?' (DbType = Int64), @p57='?' (DbType = Int64), @p58='?' (DbType = Int64), @p59='?', @p60='?', @p61='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p0, "UpdatedAtUtc" = @p1
+WHERE "Id" = @p2;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p3, @p4, @p5, @p6, @p7, @p8);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p9, @p10, @p11, @p12, @p13, @p14);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p15, @p16, @p17, @p18, @p19, @p20);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p21, @p22, @p23, @p24, @p25, @p26);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p27, @p28, @p29, @p30, @p31, @p32);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p33, @p34, @p35, @p36, @p37, @p38);
+INSERT INTO "AgenticJobs" ("Id", "Budget", "ChainId", "ChainKey", "ClientAddress", "CompletionTransactionHash", "ConcurrencyToken", "ContractAddress", "CreatedAtUtc", "CreationTransactionHash", "DecisionReason", "DeliverableCommitment", "DescriptionCommitment", "EscrowAddress", "EvaluatorAddress", "ExpiredAt", "FundedTransactionHash", "JobId", "LastReconciledBlock", "OnChainJobId", "ProviderAddress", "Status", "UpdatedAtUtc")
+VALUES (@p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53, @p54, @p55, @p56, @p57, @p58, @p59, @p60, @p61);
+[12:37:33 INF] Reconciled 6 escrow events and 0 registry events for evm-local in blocks 49-58
+[12:37:35 INF] Executed DbCommand (1ms) [Parameters=[@_8__locals1_chain_Key='?', @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ChainKey", a."EscrowAddress", a."LastScannedBlock", a."UpdatedAtUtc"
+FROM "AgenticCommerceCheckpoints" AS a
+WHERE a."ChainKey" = @_8__locals1_chain_Key AND a."EscrowAddress" = @escrowAddress
+LIMIT 2
+[12:37:35 INF] AgenticCommerceReconciliationWorker: chain=evm-local, latest=71, safeHead=69, fromBlock=59
+[12:37:35 INF] AgenticCommerceReconciliationWorker: scanning 59-69
+[12:37:35 INF] AgenticCommerceReconciliationWorker: found 0 registry events in 59-69
+[12:37:35 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @onChainJobId='?' (DbType = Int64), @escrowAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."Budget", a."ChainId", a."ChainKey", a."ClientAddress", a."CompletionTransactionHash", a."ConcurrencyToken", a."ContractAddress", a."CreatedAtUtc", a."CreationTransactionHash", a."DecisionReason", a."DeliverableCommitment", a."DescriptionCommitment", a."EscrowAddress", a."EvaluatorAddress", a."ExpiredAt", a."FundedTransactionHash", a."JobId", a."LastReconciledBlock", a."OnChainJobId", a."ProviderAddress", a."Status", a."UpdatedAtUtc"
+FROM "AgenticJobs" AS a
+WHERE a."ChainKey" = @chainKey AND a."OnChainJobId" = @onChainJobId AND a."ContractAddress" = @escrowAddress
+LIMIT 1
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobAppliedEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @escrowAddress='?', @evt_TransactionHash='?', @evt_LogIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "AgenticJobDeferredEvents" AS a
+    WHERE a."ChainKey" = @chain_Key AND a."ContractAddress" = @escrowAddress AND a."TransactionHash" = @evt_TransactionHash AND a."LogIndex" = @evt_LogIndex)
+[12:37:35 INF] Executed DbCommand (1ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Int64), @p1='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?' (DbType = Int32), @p8='?', @p9='?' (DbType = Guid), @p10='?' (DbType = DateTime), @p11='?', @p12='?', @p13='?' (DbType = Int32), @p14='?', @p15='?' (DbType = Guid), @p16='?' (DbType = DateTime), @p17='?', @p18='?', @p19='?' (DbType = Int32), @p20='?', @p21='?' (DbType = Guid), @p22='?' (DbType = DateTime), @p23='?', @p24='?', @p25='?' (DbType = Int32), @p26='?', @p27='?' (DbType = Guid), @p28='?' (DbType = DateTime), @p29='?', @p30='?', @p31='?' (DbType = Int32), @p32='?', @p33='?' (DbType = Guid), @p34='?' (DbType = Decimal), @p35='?' (DbType = Int64), @p36='?', @p37='?', @p38='?', @p39='?' (DbType = Int64), @p40='?', @p41='?' (DbType = DateTime), @p42='?', @p43='?', @p44='?', @p45='?', @p46='?', @p47='?', @p48='?' (DbType = Int64), @p49='?', @p50='?' (DbType = Int64), @p51='?' (DbType = Int64), @p52='?' (DbType = Int64), @p53='?', @p54='?', @p55='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AgenticCommerceCheckpoints" SET "LastScannedBlock" = @p0, "UpdatedAtUtc" = @p1
+WHERE "Id" = @p2;
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p3, @p4, @p5, @p6, @p7, @p8);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p9, @p10, @p11, @p12, @p13, @p14);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p15, @p16, @p17, @p18, @p19, @p20);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p21, @p22, @p23, @p24, @p25, @p26);
+INSERT INTO "AgenticJobAppliedEvents" ("Id", "AppliedAtUtc", "ChainKey", "ContractAddress", "LogIndex", "TransactionHash")
+VALUES (@p27, @p28, @p29, @p30, @p31, @p32);
+INSERT INTO "AgenticJobs" ("Id", "Budget", "ChainId", "ChainKey", "ClientAddress", "CompletionTransactionHash", "ConcurrencyToken", "ContractAddress", "CreatedAtUtc", "CreationTransactionHash", "DecisionReason", "DeliverableCommitment", "DescriptionCommitment", "EscrowAddress", "EvaluatorAddress", "ExpiredAt", "FundedTransactionHash", "JobId", "LastReconciledBlock", "OnChainJobId", "ProviderAddress", "Status", "UpdatedAtUtc")
+VALUES (@p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41, @p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53, @p54, @p55);
+[12:37:35 INF] Reconciled 5 escrow events and 0 registry events for evm-local in blocks 59-69
+[12:37:35 INF] Application is shutting down...

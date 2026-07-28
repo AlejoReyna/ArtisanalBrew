@@ -653,6 +653,43 @@ body:has(.products-shop) .content {
     background: #ffffff;
 }
 
+/* NavMenu.razor.css's .public-header sets --nav-fg/--nav-fg-dim/--nav-line
+   for cream text over its default near-black --nav-bg. This route swaps the
+   bar to a light cream, so those text tokens have to flip dark too or the
+   wordmark/nav-links render as cream-on-cream. */
+body:has(.products-catalog) .public-header {
+    background: #f5f2ec;
+    border-bottom-color: rgba(45, 36, 33, 0.1);
+    --nav-fg: #2d2421;
+    --nav-fg-dim: rgba(45, 36, 33, 0.55);
+    --nav-line: rgba(45, 36, 33, 0.14);
+}
+
+/* Story keeps the default solid #100e0d bar rather than going transparent. The
+   bar and .story-hero are the same near-black, so it still reads as seamless
+   over the hero — but it stays opaque over the light sections below it, where a
+   transparent bar would have put cream nav text on a cream page. Only the text
+   tokens are restated here; the background deliberately falls through to
+   .public-header's own. */
+body:has(.story-hero) .public-header {
+    --nav-fg: #fbf9f4;
+    --nav-fg-dim: rgba(251, 249, 244, 0.62);
+    --nav-line: rgba(251, 249, 244, 0.14);
+}
+
+/* var(--surface), not a hardcoded hex like the two rules above: this is the
+   exact value Journal.razor's .journal-hero-screen already paints its own
+   background with, so the header can only ever match it, dark-mode included
+   (both currently resolve to the same light value — see the :root comment
+   a few hundred lines up). */
+body:has(.journal-hero) .public-header {
+    background: var(--surface);
+    border-bottom-color: rgba(45, 36, 33, 0.1);
+    --nav-fg: #2d2421;
+    --nav-fg-dim: rgba(45, 36, 33, 0.55);
+    --nav-line: rgba(45, 36, 33, 0.14);
+}
+
 body:has(.product-detail-card) .public-main {
     padding-top: 0 !important;
 }

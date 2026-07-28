@@ -17,14 +17,42 @@ main {
            this offset has to track it or the fixed header's real height falls
            short of the reserved space, leaving a blank strip above the content. */
         padding-top: 2.42rem;
-        /* Clear the fixed mobile tab bar (~3.6rem tall) so page footers and
-           end-of-list content are never hidden behind it. */
-        padding-bottom: calc(3.6rem + env(safe-area-inset-bottom));
     }
 }
 
-.public-page:has(.editorial-hero) .public-main {
+.public-page:has(.editorial-hero) .public-main,
+.public-page:has(.story-hero) .public-main {
     padding-top: 0;
+}
+
+/* The homepage hero already reserves its own header clearance and goes
+   full-bleed (see .editorial-hero's calc(4.75rem + ...) padding and negative
+   margins in app.css) — it was built for the fixed header to disappear over
+   it, matching the treatment StakingLayout.razor.css gives the Lab/Yield
+   heroes. NavMenu's TransparentHeader parameter defaults to false and
+   MainLayout never opts in, so this drops the plate purely in CSS instead,
+   scoped to pages that actually have the hero. ::deep is required because
+   .public-header is rendered by the child <NavMenu /> component, outside
+   MainLayout's own scoped markup.
+
+   .journal-hero does NOT get the same treatment: unlike .editorial-hero,
+   its slide images live in a .journal-hero-screen__frame that sits in normal
+   flex flow below the reserved top padding (see Journal.razor's own <style>
+   block) rather than bleeding under it — the reserved strip is genuinely
+   empty, painted only by .journal-hero-screen's own `background: var(--surface)`.
+   Making this header transparent would just expose that empty strip instead
+   of blending into anything. See app.css's body:has(.journal-hero) rule for
+   the treatment that actually fits: matching the header's solid color to
+   that same --surface token. */
+/* Story is deliberately NOT in this list. A transparent bar only works while the
+   whole document behind it is dark; /story is dark for the hero and light from
+   the fiction section down, so a transparent bar put cream nav text over a cream
+   page once you scrolled. It keeps .public-header's own #100e0d instead — the
+   same near-black as .story-hero, so it still blends over the hero and stays
+   legible over everything below it. */
+.public-page:has(.editorial-hero) ::deep .public-header {
+    background: transparent;
+    border-bottom: 0;
 }
 
 .public-page:has(.journal-hero) .public-main {
