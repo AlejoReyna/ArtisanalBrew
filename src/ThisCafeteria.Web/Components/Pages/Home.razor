@@ -1,34 +1,6 @@
 @page "/"
-@implements IAsyncDisposable
-@inject IJSRuntime JSRuntime
+@layout StakingLayout
 
-<PageTitle>Artisanal Brew Cafeteria</PageTitle>
+<PageTitle>Artisanal Brew — Coffee, on-chain</PageTitle>
 
-<Hero />
-<Concept />
-<Offerings />
-<Provenance />
-<StakingBand />
-<Journal />
-
-@code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.destroy");
-        }
-        catch
-        {
-            // JSRuntime may already be disconnected during navigation or prerender disposal.
-        }
-    }
-}
+<PixelHome />

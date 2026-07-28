@@ -23,15 +23,17 @@ main {
     }
 }
 
-/* Procurement Lab and the Yield/staking intro each paint their own gradient
-   ground and reserve header clearance themselves (see .procurement-lab's and
-   .staking-intro's padding-top in their own stylesheets), the same
-   full-bleed-under-the-fixed-header treatment app.css gives .editorial-hero/
-   .journal-hero. Without this override, the outer padding-top above leaves a
-   gap that exposes .page/main's flat --stake-bg-deep swatch behind the
-   transparent header instead of each page's own background. */
+/* Procurement Lab, the Yield/staking intro, and the PixelHome hero each paint
+   their own gradient ground and reserve header clearance themselves (see
+   .procurement-lab's, .staking-intro's, and .ph-hero's padding-top in their
+   own stylesheets), the same full-bleed-under-the-fixed-header treatment
+   app.css gives .editorial-hero/.journal-hero. Without this override, the
+   outer padding-top above leaves a gap that exposes .page/main's flat
+   --stake-bg-deep swatch behind the transparent header instead of each
+   page's own background. */
 .public-page:has(.procurement-lab) .yield-page-main,
-.public-page:has(.staking-intro) .yield-page-main {
+.public-page:has(.staking-intro) .yield-page-main,
+.public-page:has(.ph-page) .yield-page-main {
     padding-top: 0;
 }
 

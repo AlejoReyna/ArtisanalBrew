@@ -119,7 +119,35 @@ A sponsored ERC-4337 UserOperation has been mined successfully through this Entr
 - Complete the agent-commerce stack described in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md): ERC-4337, ERC-8004, and ERC-7683 are still outstanding.
 - The audited phase status and remaining gates are tracked in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md); the current Procurement Lab is a projection viewer, not a completed procurement workflow.
 
+## Homepage: a crew that learned its job
 
+The four pixel robots on the landing page are not running an animation. They run a small neural network that was trained to collect coffee coins, and the hero is the environment it was trained in.
+
+The scene used to be CSS keyframes: every robot rode a shared 90-second clock, and each coin sat at exactly one robot's roam destination so the two beats would coincide. Now each robot observes the field every frame — direction and distance to **its own claimed coin**, its own velocity, the four walls — and a 258-parameter network decides where to accelerate. Coins are claimed one robot each, so the crew never clumps on a single prize and no robot goes starved.
+
+The physics are tuned for weightlessness rather than efficiency: low thrust, low drag, so momentum carries a robot well past the point it stops accelerating. A full crossing of the scene takes about eight seconds. It is something you watch drift, not something that darts.
+
+Coffee bags are the difficulty layer. Unlike coins they are not always there — each one appears suddenly at a random spot, stays catchable for only 7–12 seconds, then vanishes whether or not anyone reached it. Catching one grants a **25% speed boost for six seconds**, which makes it a real decision: a bag is worth chasing only if the detour costs less than the boost earns back, and it may expire before the robot arrives. The trained crew catches about half of everything that appears and spends a fifth of its life caffeinated; the untrained one catches 2%.
+
+| | |
+|---|---|
+| Policy | 13 → 16 → 2 MLP, `tanh`, **258 parameters**, 7 KB shipped |
+| Training | OpenAI-style evolution strategies — mirrored sampling, rank-normalised returns |
+| Result | **1.8 → 27.4** coins per 30-second episode on held-out layouts |
+| Fairness | 6.0 / 7.2 / 7.4 / 6.2 coins per robot — a 0.81 min/max ratio |
+| Cost | **4.5 minutes**, one CPU core, zero dependencies |
+
+The one rule that makes it trustworthy: **the simulation lives in a single file that both sides import.** [`pixelCrewSim.js`](src/ThisCafeteria.Web/wwwroot/js/pixelCrewSim.js) holds the physics and the reward; the Node trainer imports it and so does the browser runtime. There is no second implementation to drift. Running the shipped weights through the shipped sim in the browser reproduces the trainer's held-out numbers to the decimal.
+
+Three checkpoints ship — generation 0, 20, and 300 — behind the hero's **CREW BRAIN** switcher, which swaps the steering network without disturbing the field so the difference is actually legible. Generation 0 drifts into walls; generation 300 turns early and lines up the next coin while still moving.
+
+Two things stated plainly, because the repo prefers it that way: five lines of `normalize(coin - pos)` steering would look nearly identical on screen, so the learned policy is here as a craft artifact rather than a necessity; and the whole thing degrades to the original keyframe composition when JavaScript is unavailable or `prefers-reduced-motion` is set.
+
+Method, hyperparameters, learning curve, and reproduction steps: [`docs/pixel-crew-training.md`](docs/pixel-crew-training.md).
+
+```bash
+node tools/train_pixel_crew.mjs
+```
 
 ## Run Locally
 
