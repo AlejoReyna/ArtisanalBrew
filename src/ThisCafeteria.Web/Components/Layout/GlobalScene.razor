@@ -1,0 +1,156 @@
+@* Global pixel-space background scenario, shared by /, /staking and
+   /procurement-lab (all StakingLayout pages).
+
+   The permanent base — cross-shaped stars, the Andromeda galaxy and the two
+   planets, plus the Ethereum/Solana/BNB chain badges — never changes between
+   routes. Both containers carry data-permanent, so Blazor's enhanced
+   navigation keeps these exact DOM nodes across route changes and the sky's
+   animations never restart; the random palette variant is also picked once
+   per visit instead of re-rolling on every navigation.
+
+   Per-route dressing lives in .gs-layer wrappers: the home layer (catalog
+   coffee bags, scattered coins and the pixel crew) and the staking layer
+   (the drifting coffee coins). Which layer is visible is driven by the
+   data-scene-route attribute that App.razor renders on <html>; visibility
+   rules for that attribute live in app.css (CSS isolation cannot select
+   outside this component), while the layers' own styles and transitions are
+   in GlobalScene.razor.css. Only the class/attribute that selects layers
+   changes on a route switch, so the outgoing design fades out over the
+   preserved base while the incoming one fades in.
+
+   The crew robots render in the second fixed container which stacks ABOVE
+   the page content: they must stay pointer-reachable (they are draggable,
+   and pixelCrewRuntime.js hit-tests them) even though the space itself is a
+   background. pointer-events: none on the wrapper with pointer-events: auto
+   on each robot means only the robots intercept input. Everything else —
+   stars, planets, badges, bags, coins — stays beneath @Body.
+
+   The crew is not choreographed: wwwroot/js/pixelCrewRuntime.js still mounts
+   on the stable #ph-scene-root id (this background container, falling back
+   to the whole root as its scene) and drives the robots in the -over
+   container; the CSS keyframes remain the no-JS and reduced-motion fallback. *@
+
+<div class="gs-scene gs-scene--bg-@_bgVariant" id="ph-scene-root" data-permanent aria-hidden="true">
+    @* Base sky: cross-shaped pixel stars, irregular via per-star custom
+       properties. Sixteen of them, dispersed over the whole sky. *@
+    <span class="ph-star ph-star--one"></span>
+    <span class="ph-star ph-star--two"></span>
+    <span class="ph-star ph-star--three"></span>
+    <span class="ph-star ph-star--four"></span>
+    <span class="ph-star ph-star--five"></span>
+    <span class="ph-star ph-star--six"></span>
+    <span class="ph-star ph-star--seven"></span>
+    <span class="ph-star ph-star--eight"></span>
+    <span class="ph-star ph-star--nine"></span>
+    <span class="ph-star ph-star--ten"></span>
+    <span class="ph-star ph-star--eleven"></span>
+    <span class="ph-star ph-star--twelve"></span>
+    <span class="ph-star ph-star--thirteen"></span>
+    <span class="ph-star ph-star--fourteen"></span>
+    <span class="ph-star ph-star--fifteen"></span>
+    <span class="ph-star ph-star--sixteen"></span>
+
+    @* Andromeda, sitting furthest back of anything in the scene: dimmed and
+       small enough to read as deep sky rather than as another prop. Sprite
+       from tools/generate_andromeda.py. *@
+    <img class="ph-sky__andromeda" src="images/pl-andromeda.png" alt="" width="132" height="84" />
+
+    <img class="ph-sky__planet" src="images/pl-planet.png" alt="" />
+    <img class="ph-sky__planet ph-sky__planet--ringed" src="images/pl-planet-ringed.png" alt="" />
+
+    @* Pixel chain badges — Ethereum octahedron, Solana stripes, BNB diamonds —
+       dim and drifting in the background behind the coins and the crew. Two of
+       each, dispersed over the space; the -b variants drop out on narrow
+       viewports. *@
+    <span class="ph-chain ph-chain--eth-a"><img src="images/pl-chain-ethereum.png" alt="" /></span>
+    <span class="ph-chain ph-chain--sol-a"><img src="images/pl-chain-solana.png" alt="" /></span>
+    <span class="ph-chain ph-chain--bnb-a"><img src="images/pl-chain-bnb.png" alt="" /></span>
+    <span class="ph-chain ph-chain--eth-b"><img src="images/pl-chain-ethereum.png" alt="" /></span>
+    <span class="ph-chain ph-chain--sol-b"><img src="images/pl-chain-solana.png" alt="" /></span>
+    <span class="ph-chain ph-chain--bnb-b"><img src="images/pl-chain-bnb.png" alt="" /></span>
+
+    @* Staking layer: the drifting coffee coins that used to live inside the
+       /staking intro. The layer fades in on /staking and out again everywhere
+       else; the vignette ::after keeps the tokens softly dimmed at the edges. *@
+    <div class="gs-layer gs-layer--staking">
+        <img class="staking-space__coin staking-space__coin--one" src="images/coffee-coin-pixel.png" alt="" />
+        <img class="staking-space__coin staking-space__coin--two" src="images/coffee-coin-pixel.png" alt="" />
+        <img class="staking-space__coin staking-space__coin--three" src="images/coffee-coin-pixel.png" alt="" />
+        <img class="staking-space__coin staking-space__coin--four" src="images/coffee-coin-pixel.png" alt="" />
+        <img class="staking-space__coin staking-space__coin--five" src="images/coffee-coin-pixel.png" alt="" />
+        <img class="staking-space__coin staking-space__coin--six" src="images/coffee-coin-pixel.png" alt="" />
+        <img class="staking-space__coin staking-space__coin--seven" src="images/coffee-coin-pixel.png" alt="" />
+    </div>
+
+    @* Home layer, under-content half: the six catalog bags, one per product
+       on /products, cut down to tiny pl-bag sprites (tools/generate_pixel_bags.py),
+       plus seven coins. The crew runtime owns their positions once it loads —
+       they are scattered by the simulation and respawn wherever it decides. The
+       coordinates in the stylesheet are the no-JS fallback composition. *@
+    <div class="gs-layer gs-layer--home">
+        <span class="ph-bag ph-bag--colombia"><img src="images/pl-bag-colombia.png" alt="" /></span>
+        <span class="ph-bag ph-bag--costa-rica"><img src="images/pl-bag-costa-rica.png" alt="" /></span>
+        <span class="ph-bag ph-bag--ethiopia"><img src="images/pl-bag-ethiopia.png" alt="" /></span>
+        <span class="ph-bag ph-bag--guatemala"><img src="images/pl-bag-guatemala.png" alt="" /></span>
+        <span class="ph-bag ph-bag--mexico"><img src="images/pl-bag-mexico.png" alt="" /></span>
+        <span class="ph-bag ph-bag--peru"><img src="images/pl-bag-peru.png" alt="" /></span>
+
+        <span class="ph-coinbit ph-coinbit--ambient-a"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+        <span class="ph-coinbit ph-coinbit--ambient-b"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+        <span class="ph-coinbit ph-coinbit--ambient-c"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+        <span class="ph-coinbit ph-coinbit--loot-scout"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+        <span class="ph-coinbit ph-coinbit--loot-buyer"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+        <span class="ph-coinbit ph-coinbit--loot-courier"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+        <span class="ph-coinbit ph-coinbit--loot-inspector"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+    </div>
+</div>
+
+@* Home layer, above-content half: the crew itself. Each roam wrapper is one
+   simulated agent; the trained policy in wwwroot/js/pixelCrewPolicy.js picks
+   its acceleration every frame from what it can see, and pixelCrewRuntime.js
+   writes the result as a transform. Empty hands — they gather, they don't
+   work. Drag one anywhere: the policy picks up from the new spot. *@
+<div class="gs-crew" id="ph-scene-root-over" data-permanent aria-hidden="true">
+    <div class="gs-layer gs-layer--home">
+        <div class="ph-scene__roam ph-scene__roam--scout">
+            <div class="ph-scene__unit ph-scene__unit--scout">
+                <span class="ph-scene__actor ph-scene__actor--scout"></span>
+                <span class="ph-scene__grab"></span>
+                <span class="ph-scene__sip"></span>
+                <span class="ph-scene__plus"></span>
+            </div>
+        </div>
+        <div class="ph-scene__roam ph-scene__roam--buyer">
+            <div class="ph-scene__unit ph-scene__unit--buyer">
+                <span class="ph-scene__actor ph-scene__actor--buyer"></span>
+                <span class="ph-scene__grab"></span>
+                <span class="ph-scene__sip"></span>
+                <span class="ph-scene__plus"></span>
+            </div>
+        </div>
+        <div class="ph-scene__roam ph-scene__roam--courier">
+            <div class="ph-scene__unit ph-scene__unit--courier">
+                <span class="ph-scene__actor ph-scene__actor--courier"></span>
+                <span class="ph-scene__grab"></span>
+                <span class="ph-scene__sip"></span>
+                <span class="ph-scene__plus"></span>
+            </div>
+        </div>
+        <div class="ph-scene__roam ph-scene__roam--inspector">
+            <div class="ph-scene__unit ph-scene__unit--inspector">
+                <span class="ph-scene__actor ph-scene__actor--inspector"></span>
+                <span class="ph-scene__grab"></span>
+                <span class="ph-scene__sip"></span>
+                <span class="ph-scene__plus"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // One of the five space palettes per session. The containers are
+    // data-permanent, so whichever variant the first full render picked
+    // survives every subsequent enhanced navigation — a route change no
+    // longer re-rolls the sky, only a fresh full-page load does.
+    private readonly int _bgVariant = Random.Shared.Next(5);
+}

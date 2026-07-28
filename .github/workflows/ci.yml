@@ -48,6 +48,9 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build
 
+      - name: Verify trained homepage policy
+        run: node tools/verify_pixel_crew.mjs
+
       - name: Test EVM contracts
         working-directory: contracts/evm
         run: npm ci && npm test
@@ -294,11 +297,13 @@ jobs:
   deploy-azure:
     name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest
-    needs: build-test
+    needs: [build-test, crossstack-verification]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
     concurrency:
       group: production-deploy
-      cancel-in-progress: true
+      # Never interrupt a production run after it may have applied migrations.
+      cancel-in-progress: false
 
     permissions:
       id-token: write
@@ -317,6 +322,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Classify deployment scope
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE="${{ github.event.before }}"
+          if [[ "$BEFORE" =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "web_changed=true" >> "$GITHUB_OUTPUT"
+            echo "worker_changed=true" >> "$GITHUB_OUTPUT"
+            echo "hero_expected=$(test -f src/ThisCafeteria.Web/Components/Home/PixelHome.razor && echo true || echo false)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED_FILES=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
+          printf '%s\n' "$CHANGED_FILES"
+
+          if grep -Eq '^(src/ThisCafeteria.Web/|src/ThisCafeteria.Domain/|src/ThisCafeteria.Application/|src/ThisCafeteria.Infrastructure/|deployments/|Directory.Build.props$|global.json$)' <<< "$CHANGED_FILES"; then
+            echo "web_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "web_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -Eq '^(src/ThisCafeteria.Worker/|src/ThisCafeteria.Domain/|src/ThisCafeteria.Application/|src/ThisCafeteria.Infrastructure/|deployments/|Directory.Build.props$|global.json$)' <<< "$CHANGED_FILES"; then
+            echo "worker_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "worker_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "hero_expected=$(test -f src/ThisCafeteria.Web/Components/Home/PixelHome.razor && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -324,6 +361,25 @@ jobs:
           client-id: ${{ vars.AZURE_CICD_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Capture currently deployed images
+        id: previous
+        shell: bash
+        run: |
+          set -euo pipefail
+          WEB_IMAGE=$(az containerapp show \
+            --name "$WEB_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.template.containers[0].image" -o tsv)
+          WORKER_IMAGE=$(az containerapp show \
+            --name "$WORKER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.template.containers[0].image" -o tsv)
+          test -n "$WEB_IMAGE"
+          test -n "$WORKER_IMAGE"
+          echo "web_image=$WEB_IMAGE" >> "$GITHUB_OUTPUT"
+          echo "worker_image=$WORKER_IMAGE" >> "$GITHUB_OUTPUT"
+          echo "Rollback images captured."
 
       # ACR Tasks (az acr build) is not permitted on Azure for Students
       # subscriptions (TasksOperationsNotAllowed), so images are built on the
@@ -334,24 +390,24 @@ jobs:
           az acr login --name "$ACR_NAME"
 
       - name: Build and push Web image to ACR
+        if: steps.scope.outputs.web_changed == 'true'
         run: |
           set -euo pipefail
           docker build \
             --file src/ThisCafeteria.Web/Dockerfile \
             --tag "$ACR_NAME.azurecr.io/thiscafeteria-web:$IMAGE_TAG" \
-            --tag "$ACR_NAME.azurecr.io/thiscafeteria-web:latest" \
             .
-          docker push --all-tags "$ACR_NAME.azurecr.io/thiscafeteria-web"
+          docker push "$ACR_NAME.azurecr.io/thiscafeteria-web:$IMAGE_TAG"
 
       - name: Build and push Worker image to ACR
+        if: steps.scope.outputs.worker_changed == 'true'
         run: |
           set -euo pipefail
           docker build \
             --file src/ThisCafeteria.Worker/Dockerfile \
             --tag "$ACR_NAME.azurecr.io/thiscafeteria-worker:$IMAGE_TAG" \
-            --tag "$ACR_NAME.azurecr.io/thiscafeteria-worker:latest" \
             .
-          docker push --all-tags "$ACR_NAME.azurecr.io/thiscafeteria-worker"
+          docker push "$ACR_NAME.azurecr.io/thiscafeteria-worker:$IMAGE_TAG"
 
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v5
@@ -401,6 +457,7 @@ jobs:
             --yes || true
 
       - name: Update Web Container App
+        if: steps.scope.outputs.web_changed == 'true'
         run: |
           set -euo pipefail
           az containerapp update \
@@ -411,7 +468,60 @@ jobs:
             --max-replicas 2 \
             --output none
 
+      - name: Wait for Web app health
+        id: web_health
+        if: steps.scope.outputs.web_changed == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          WEB_FQDN=$(az containerapp show \
+            --name "$WEB_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          for attempt in $(seq 1 30); do
+            if curl --fail --show-error --silent "https://$WEB_FQDN/health/ready" >/dev/null \
+              && curl --fail --show-error --silent "https://$WEB_FQDN/_framework/blazor.web.js" >/dev/null; then
+              if [[ "${{ steps.scope.outputs.hero_expected }}" == "true" ]]; then
+                HOME_HTML=$(curl --fail --show-error --silent "https://$WEB_FQDN/")
+                if ! grep -q 'class="ph-hero' <<< "$HOME_HTML" \
+                  || ! grep -q 'id="ph-scene-root"' <<< "$HOME_HTML"; then
+                  echo "App is healthy, but the pixel homepage release contract is missing."
+                  sleep 5
+                  continue
+                fi
+              fi
+              echo "App healthy, serving Blazor, and matching the homepage release contract on attempt ${attempt}"
+              exit 0
+            fi
+            echo "App not ready (attempt ${attempt}/30), retrying in 5s..."
+            sleep 5
+          done
+          echo "App did not become healthy (health + blazor.web.js) within 150 seconds." >&2
+          exit 1
+
+      - name: Roll back Web after failed health check
+        if: steps.scope.outputs.web_changed == 'true' && steps.web_health.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          echo "Rolling Web back to ${{ steps.previous.outputs.web_image }}"
+          az containerapp update \
+            --name "$WEB_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "${{ steps.previous.outputs.web_image }}" \
+            --min-replicas 1 \
+            --max-replicas 2 \
+            --output none
+
+      - name: Fail deployment after Web rollback
+        if: steps.scope.outputs.web_changed == 'true' && steps.web_health.outcome == 'failure'
+        run: |
+          echo "The candidate Web image failed health checks and was rolled back." >&2
+          exit 1
+
       - name: Update Worker Container App
+        id: deploy_worker
+        if: steps.scope.outputs.worker_changed == 'true'
+        continue-on-error: true
         run: |
           set -euo pipefail
           az containerapp update \
@@ -422,21 +532,51 @@ jobs:
             --max-replicas 1 \
             --output none
 
-      - name: Wait for Web app health
+      - name: Roll back release after failed Worker update
+        if: steps.scope.outputs.worker_changed == 'true' && steps.deploy_worker.outcome == 'failure'
         run: |
           set -euo pipefail
-          WEB_FQDN=$(az containerapp show \
-            --name "$WEB_APP_NAME" \
+          echo "Rolling Worker back to ${{ steps.previous.outputs.worker_image }}"
+          az containerapp update \
+            --name "$WORKER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
-            --query "properties.configuration.ingress.fqdn" -o tsv)
-          for attempt in $(seq 1 30); do
-            if curl --fail --show-error --silent "https://$WEB_FQDN/health/ready" >/dev/null \
-              && curl --fail --show-error --silent "https://$WEB_FQDN/_framework/blazor.web.js" >/dev/null; then
-              echo "App healthy and serving blazor.web.js on attempt ${attempt}"
-              exit 0
-            fi
-            echo "App not ready (attempt ${attempt}/30), retrying in 5s..."
-            sleep 5
-          done
-          echo "App did not become healthy (health + blazor.web.js) within 150 seconds." >&2
+            --image "${{ steps.previous.outputs.worker_image }}" \
+            --min-replicas 1 \
+            --max-replicas 1 \
+            --output none
+          if [[ "${{ steps.scope.outputs.web_changed }}" == "true" ]]; then
+            echo "Rolling Web back to ${{ steps.previous.outputs.web_image }} to keep the release atomic"
+            az containerapp update \
+              --name "$WEB_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --image "${{ steps.previous.outputs.web_image }}" \
+              --min-replicas 1 \
+              --max-replicas 2 \
+              --output none
+          fi
+
+      - name: Fail deployment after Worker rollback
+        if: steps.scope.outputs.worker_changed == 'true' && steps.deploy_worker.outcome == 'failure'
+        run: |
+          echo "The candidate Worker image failed to deploy and the release was rolled back." >&2
           exit 1
+
+      # infra/main.bicepparam deliberately points routine IaC reconciliations at
+      # :latest. Move that mutable tag only after every affected app is healthy;
+      # otherwise an infra-only Bicep apply could resurrect a failed candidate
+      # even though the Container App itself had already rolled back to a SHA.
+      - name: Promote healthy images to latest
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.scope.outputs.web_changed }}" == "true" ]]; then
+            docker tag \
+              "$ACR_NAME.azurecr.io/thiscafeteria-web:$IMAGE_TAG" \
+              "$ACR_NAME.azurecr.io/thiscafeteria-web:latest"
+            docker push "$ACR_NAME.azurecr.io/thiscafeteria-web:latest"
+          fi
+          if [[ "${{ steps.scope.outputs.worker_changed }}" == "true" ]]; then
+            docker tag \
+              "$ACR_NAME.azurecr.io/thiscafeteria-worker:$IMAGE_TAG" \
+              "$ACR_NAME.azurecr.io/thiscafeteria-worker:latest"
+            docker push "$ACR_NAME.azurecr.io/thiscafeteria-worker:latest"
+          fi

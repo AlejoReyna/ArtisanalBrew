@@ -9,7 +9,7 @@ stepped keyframes.
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +33,7 @@ COPPER_DK = (112, 72, 42, 255)
 GOLD = (236, 178, 66, 255)
 GREEN = (143, 185, 155, 255)
 CLAY = (229, 152, 128, 255)
+COFFEE = (98, 64, 38, 255)
 
 
 def rect(draw: ImageDraw.ImageDraw, box: tuple[int, int, int, int], fill) -> None:
@@ -48,21 +49,52 @@ def robot(
     left_hand: tuple[int, int] | None = None,
     right_hand: tuple[int, int] | None = None,
     antenna: bool = False,
+    floating: bool = False,
+    tuck: bool = False,
 ) -> None:
     """Draw the shared friendly square-headed robot from back to front."""
 
-    bob = 1 if frame == 1 else 0
+    # Floating robots hang their legs and sway them together instead of
+    # stepping; grounded ones bob and alternate feet. Tuck pulls the legs up
+    # a few pixels — the collecting pose.
+    if floating:
+        bob = (0, 1, 0, -2)[frame % 4] if frame < 4 else -1
+        sway = (-1, 0, 1, 0)[frame % 4] if frame < 4 else 0
+        left_step = right_step = sway
+    else:
+        bob = 1 if frame == 1 else 0
+        left_step = -2 if frame == 0 else 2 if frame == 1 else 0
+        right_step = 2 if frame == 0 else -2 if frame == 1 else 0
     y += bob
 
-    # Legs: deliberately spindly like the reference, with alternating feet.
-    left_step = -2 if frame == 0 else 2 if frame == 1 else 0
-    right_step = 2 if frame == 0 else -2 if frame == 1 else 0
-    rect(draw, (x + 18, y + 41, x + 22, y + 53), BLACK)
-    rect(draw, (x + 27, y + 41, x + 31, y + 53), BLACK)
-    rect(draw, (x + 19, y + 41, x + 21, y + 50), CREAM_HI)
-    rect(draw, (x + 28, y + 41, x + 30, y + 50), CREAM_HI)
-    rect(draw, (x + 16 + left_step, y + 51, x + 22 + left_step, y + 55), BLACK)
-    rect(draw, (x + 27 + right_step, y + 51, x + 33 + right_step, y + 55), BLACK)
+    # Legs: deliberately spindly, with alternating feet when walking. Tucked
+    # frames raise the whole leg set, like knees pulled up mid-grab.
+    ly = y - 3 if tuck else y
+    rect(draw, (x + 18, ly + 41, x + 22, ly + 53), BLACK)
+    rect(draw, (x + 27, ly + 41, x + 31, ly + 53), BLACK)
+    rect(draw, (x + 19, ly + 41, x + 21, ly + 50), CREAM_HI)
+    rect(draw, (x + 28, ly + 41, x + 30, ly + 50), CREAM_HI)
+    rect(draw, (x + 16 + left_step, ly + 51, x + 22 + left_step, ly + 55), BLACK)
+    rect(draw, (x + 27 + right_step, ly + 51, x + 33 + right_step, ly + 55), BLACK)
+
+    # Jetpack on the back: a squat twin-banded tank tucked against the torso's
+    # rear (left) edge and under the head, copper strap bands, nozzle low.
+    # Drawn before the arms so the arm passes in front of it; the head eats
+    # its top corner, seating it on the back. Floating frames sputter a
+    # stepped flickering flame out of the nozzle; the tuck frame (mid-grab)
+    # burns longest. Walkers keep the pack cold.
+    rect(draw, (x + 8, y + 28, x + 12, y + 41), BLACK)
+    rect(draw, (x + 9, y + 29, x + 11, y + 40), METAL)
+    rect(draw, (x + 8, y + 32, x + 12, y + 33), COPPER_DK)
+    rect(draw, (x + 8, y + 37, x + 12, y + 38), COPPER_DK)
+    rect(draw, (x + 9, y + 42, x + 11, y + 43), BLACK)
+    if floating:
+        flame = 8 if tuck else (4, 6, 5, 7)[frame % 4]
+        for i in range(flame):
+            fy = y + 44 + i
+            color = GOLD if i < max(flame - 2, 1) else CLAY
+            half = 1 if i < 2 else 0
+            rect(draw, (x + 10 - half, fy, x + 10 + half, fy), color)
 
     # Arms live behind the body and can be aimed at role props.
     left_shoulder = (x + 13, y + 32)
@@ -92,11 +124,12 @@ def robot(
     rect(draw, (x + 19, y + 10, x + 37, y + 21), TEAL)
     rect(draw, (x + 20, y + 10, x + 35, y + 11), TEAL_HI)
 
-    # Friendly face from the reference.
-    rect(draw, (x + 22, y + 14, x + 24, y + 16), FACE)
-    rect(draw, (x + 33, y + 14, x + 35, y + 16), FACE)
+    # Happy face from the pixel reference (Pinterest pin 667377238568275892):
+    # two vertical pill eyes and a wide, shallow smile — cute, no anime styling.
+    rect(draw, (x + 22, y + 11, x + 23, y + 15), FACE)
+    rect(draw, (x + 33, y + 11, x + 34, y + 15), FACE)
     draw.line(
-        ((x + 24, y + 18), (x + 26, y + 20), (x + 31, y + 20), (x + 33, y + 18)),
+        ((x + 24, y + 18), (x + 26, y + 20), (x + 30, y + 20), (x + 33, y + 18)),
         fill=FACE,
         width=2,
     )
@@ -197,10 +230,112 @@ def draw_inspector(frame: int) -> Image.Image:
     return image
 
 
-def save_sheet(name: str, renderer) -> None:
-    sheet = Image.new("RGBA", (FRAME * FRAMES, FRAME), (0, 0, 0, 0))
-    for index in range(FRAMES):
-        sheet.alpha_composite(renderer(index), (index * FRAME, 0))
+def draw_coincrew(frame: int) -> Image.Image:
+    """Prop-less coin collector: empty hands treading gently, dangling legs,
+    a soft 4-frame hover cycle so it reads as weightless. Frame 4 is the
+    unique collecting pose: legs tucked, both hands thrust forward and down
+    to snatch the coin."""
+    image = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    if frame == 4:  # grab pose
+        robot(
+            draw,
+            x=7,
+            y=7,
+            frame=frame,
+            left_hand=(24, 51),
+            right_hand=(33, 51),
+            floating=True,
+            tuck=True,
+        )
+        return image
+    # Arms paddle slowly: hands sink a few pixels then lift back over the
+    # four frames, like treading water in zero-G.
+    stroke = (-3, -1, 1, -1)[frame]
+    reach = (0, -1, 0, 1)[frame]
+    robot(
+        draw,
+        x=7,
+        y=7,
+        frame=frame,
+        left_hand=(10 - reach, 45 + stroke),
+        right_hand=(47 + reach, 45 + stroke),
+        floating=True,
+    )
+    return image
+
+
+def coffee_cup(draw: ImageDraw.ImageDraw, x: int, y: int, steam: int = 0) -> None:
+    """Tiny cup: cream body, dark coffee surface, nub handle on the right,
+    plus optional steam dots creeping up from the rim."""
+    rect(draw, (x, y, x + 4, y + 5), BLACK)
+    rect(draw, (x + 1, y + 1, x + 3, y + 4), CREAM_HI)
+    rect(draw, (x + 1, y + 1, x + 3, y + 2), COFFEE)
+    rect(draw, (x + 5, y + 2, x + 6, y + 3), BLACK)
+    if steam >= 1:
+        rect(draw, (x + 1, y - 3, x + 1, y - 3), CREAM_HI)
+    if steam == 2:
+        rect(draw, (x + 3, y - 5, x + 3, y - 5), CREAM_HI)
+
+
+# Cup anchor during the sip: reach (low right), raise to the mouth, sip (same
+# spot, steam), and ease back down half-way.
+SIP_POSES = ((44, 37), (37, 24), (37, 24), (42, 34))
+SIP_STEAM = (0, 0, 2, 1)
+
+
+def draw_sip(frame: int) -> Image.Image:
+    """Coffee-break pose: the coin collector paused mid-hover with its cup.
+    Four frames — reach / raise / sip / lower — covering exactly one second in
+    the hero (CSS steps), triggered on demand via .ph-scene__roam--sipping."""
+    image = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    cx, cy = SIP_POSES[frame]
+    robot(
+        draw,
+        x=7,
+        y=7,
+        frame=frame,
+        right_hand=(cx + 2, cy + 5),
+        floating=True,
+    )
+    coffee_cup(draw, cx, cy, steam=SIP_STEAM[frame])
+    return image
+
+
+PLUS_ONE = (
+    "010 010",
+    "010 110",
+    "111 010",
+    "010 010",
+    "010 111",
+)
+
+
+def draw_plus_one() -> Image.Image:
+    """Pixel "+1" score popup, Mario-style: dark drop copy under a bright
+    glyph so it reads on any sky."""
+    grid = [row.replace(" ", "") for row in PLUS_ONE]
+    image = Image.new("RGBA", (9, 6), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    for yy, row in enumerate(grid):
+        for xx, cell in enumerate(row):
+            if cell == "1":
+                draw.point((xx + 1, yy + 1), fill=BLACK)
+    for yy, row in enumerate(grid):
+        for xx, cell in enumerate(row):
+            if cell == "1":
+                draw.point((xx, yy), fill=FACE)
+    return image
+
+
+def save_sheet(name: str, renderer, frames: int = FRAMES, mirror: bool = False) -> None:
+    sheet = Image.new("RGBA", (FRAME * frames, FRAME), (0, 0, 0, 0))
+    for index in range(frames):
+        frame_image = renderer(index)
+        if mirror:
+            frame_image = ImageOps.mirror(frame_image)
+        sheet.alpha_composite(frame_image, (index * FRAME, 0))
     sheet.save(OUTPUT / name, optimize=True)
 
 
@@ -210,6 +345,14 @@ def main() -> None:
     save_sheet("pl-robot-buyer.png", draw_buyer)
     save_sheet("pl-robot-courier.png", draw_courier)
     save_sheet("pl-robot-inspector.png", draw_inspector)
+    save_sheet("pl-robot-coincrew.png", draw_coincrew, frames=5)
+    # Mirrored copy for robots anchored on the right side, so they face
+    # left — toward the space and their coins.
+    save_sheet("pl-robot-coincrew-flip.png", draw_coincrew, frames=5, mirror=True)
+    # Coffee-break overlay sheet + mirror, same facing logic.
+    save_sheet("pl-robot-coincrew-sip.png", draw_sip)
+    save_sheet("pl-robot-coincrew-sip-flip.png", draw_sip, mirror=True)
+    draw_plus_one().save(OUTPUT / "pl-plus-one.png", optimize=True)
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.44.1.10279",
-      "templateHash": "11504752539942688758"
+      "version": "0.45.15.27210",
+      "templateHash": "7276058945058498061"
     }
   },
   "parameters": {
@@ -71,6 +71,34 @@
         "description": "Worker container image reference. Same placeholder convention as webImage."
       }
     },
+    "enableSepoliaBundler": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Set true only when a tracer-capable Sepolia RPC URL and a dedicated funded bundler signer are supplied."
+      }
+    },
+    "sepoliaBundlerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/oss/ubuntu/ubuntu:22.04",
+      "metadata": {
+        "description": "Rundler image reference, built separately from the Web and Worker images."
+      }
+    },
+    "sepoliaBundlerNodeRpcUrl": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Sepolia node RPC URL with debug_traceCall JavaScript-tracer support. Never commit this provider credential."
+      }
+    },
+    "sepoliaBundlerSignerPrivateKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Dedicated Sepolia beneficiary/signer private key for Rundler. Never reuse the deployed-contract owner key."
+      }
+    },
     "additionalWebEnvVars": {
       "type": "array",
       "defaultValue": [],
@@ -104,6 +132,7 @@
     "resourceToken": "[uniqueString(subscription().subscriptionId, resourceGroup().id, parameters('environmentName'))]",
     "namePrefix": "[format('{0}-{1}', parameters('projectName'), parameters('environmentName'))]",
     "adminSecrets": "[if(empty(parameters('authenticationAdminPassword')), createObject(), createObject('authentication-admin-password', parameters('authenticationAdminPassword')))]",
+    "sepoliaBundlerSecrets": "[if(parameters('enableSepoliaBundler'), createObject('sepolia-bundler-node-rpc-url', parameters('sepoliaBundlerNodeRpcUrl'), 'sepolia-bundler-signer-private-key', parameters('sepoliaBundlerSignerPrivateKey')), createObject())]",
     "sharedSecretEnvVars": "[concat(createArray(createObject('envVarName', 'ConnectionStrings__DefaultConnection', 'keyVaultSecretName', 'db-connection-string'), createObject('envVarName', 'Azure__Communication__ConnectionString', 'keyVaultSecretName', 'azure-communication-connection-string')), if(empty(parameters('authenticationAdminPassword')), createArray(), createArray(createObject('envVarName', 'Authentication__AdminPassword', 'keyVaultSecretName', 'authentication-admin-password'))))]"
   },
   "resources": [
@@ -130,8 +159,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "6805860227323082248"
+              "version": "0.45.15.27210",
+              "templateHash": "11823405556577255009"
             }
           },
           "parameters": {
@@ -194,6 +223,9 @@
           },
           "githubBranch": {
             "value": "[parameters('githubBranch')]"
+          },
+          "githubEnvironment": {
+            "value": "production"
           }
         },
         "template": {
@@ -202,8 +234,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "2747819058463228697"
+              "version": "0.45.15.27210",
+              "templateHash": "8648893835181545634"
             }
           },
           "parameters": {
@@ -231,6 +263,13 @@
               "metadata": {
                 "description": "Branch this identity is allowed to authenticate from"
               }
+            },
+            "githubEnvironment": {
+              "type": "string",
+              "defaultValue": "production",
+              "metadata": {
+                "description": "Protected GitHub environment allowed to authenticate for production deployments"
+              }
             }
           },
           "resources": [
@@ -247,6 +286,21 @@
               "properties": {
                 "issuer": "https://token.actions.githubusercontent.com",
                 "subject": "[format('repo:{0}:ref:refs/heads/{1}', parameters('githubRepo'), parameters('githubBranch'))]",
+                "audiences": [
+                  "api://AzureADTokenExchange"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials",
+              "apiVersion": "2023-01-31",
+              "name": "[format('{0}/{1}', parameters('name'), format('github-actions-environment-{0}', parameters('githubEnvironment')))]",
+              "properties": {
+                "issuer": "https://token.actions.githubusercontent.com",
+                "subject": "[format('repo:{0}:environment:{1}', parameters('githubRepo'), parameters('githubEnvironment'))]",
                 "audiences": [
                   "api://AzureADTokenExchange"
                 ]
@@ -302,8 +356,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "3961624026947265948"
+              "version": "0.45.15.27210",
+              "templateHash": "12019612001300367424"
             }
           },
           "parameters": {
@@ -420,8 +474,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "10957036929087520991"
+              "version": "0.45.15.27210",
+              "templateHash": "672761792932821228"
             }
           },
           "parameters": {
@@ -498,8 +552,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "5363064416060828972"
+              "version": "0.45.15.27210",
+              "templateHash": "15138003061195119931"
             }
           },
           "parameters": {
@@ -599,8 +653,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "13916314649500731768"
+              "version": "0.45.15.27210",
+              "templateHash": "13516638059152276892"
             }
           },
           "parameters": {
@@ -758,8 +812,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "5143512317848445626"
+              "version": "0.45.15.27210",
+              "templateHash": "16583544447132007669"
             }
           },
           "parameters": {
@@ -887,8 +941,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "4456533861832664860"
+              "version": "0.45.15.27210",
+              "templateHash": "9610639371825854388"
             }
           },
           "parameters": {
@@ -1028,8 +1082,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "13013441963302633670"
+              "version": "0.45.15.27210",
+              "templateHash": "12758214091802191462"
             }
           },
           "parameters": {
@@ -1127,7 +1181,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cicdIdentity'), '2025-04-01').outputs.principalId.value]"
           },
           "secrets": {
-            "value": "[union(createObject('db-connection-string', format('Host={0};Port=5432;Database={1};Username={2};Password={3};Ssl Mode=Require;Trust Server Certificate=true', reference(resourceId('Microsoft.Resources/deployments', 'postgres'), '2025-04-01').outputs.fqdn.value, reference(resourceId('Microsoft.Resources/deployments', 'postgres'), '2025-04-01').outputs.databaseName.value, parameters('postgresAdminLogin'), parameters('postgresAdminPassword')), 'azure-communication-connection-string', reference(resourceId('Microsoft.Resources/deployments', 'communicationEmail'), '2025-04-01').outputs.connectionString.value), variables('adminSecrets'))]"
+            "value": "[union(createObject('db-connection-string', format('Host={0};Port=5432;Database={1};Username={2};Password={3};Ssl Mode=Require;Trust Server Certificate=true', reference(resourceId('Microsoft.Resources/deployments', 'postgres'), '2025-04-01').outputs.fqdn.value, reference(resourceId('Microsoft.Resources/deployments', 'postgres'), '2025-04-01').outputs.databaseName.value, parameters('postgresAdminLogin'), parameters('postgresAdminPassword')), 'azure-communication-connection-string', reference(resourceId('Microsoft.Resources/deployments', 'communicationEmail'), '2025-04-01').outputs.connectionString.value), variables('adminSecrets'), variables('sepoliaBundlerSecrets'))]"
           }
         },
         "template": {
@@ -1136,8 +1190,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "14509056624208105389"
+              "version": "0.45.15.27210",
+              "templateHash": "16942415118113626278"
             }
           },
           "parameters": {
@@ -1325,8 +1379,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "12732543147332698012"
+              "version": "0.45.15.27210",
+              "templateHash": "1839594511135432975"
             }
           },
           "parameters": {
@@ -1370,6 +1424,13 @@
               "type": "bool",
               "metadata": {
                 "description": "Whether this Container App exposes external HTTP ingress (true for Web, false for Worker)"
+              }
+            },
+            "externalIngress": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Whether enabled HTTP ingress is public. Internal ingress remains reachable only inside the Container Apps environment."
               }
             },
             "targetPort": {
@@ -1481,7 +1542,7 @@
                     }
                   ],
                   "secrets": "[variables('secrets')]",
-                  "ingress": "[if(parameters('enableIngress'), createObject('external', true(), 'targetPort', parameters('targetPort'), 'transport', 'auto', 'allowInsecure', false()), null())]"
+                  "ingress": "[if(parameters('enableIngress'), createObject('external', parameters('externalIngress'), 'targetPort', parameters('targetPort'), 'transport', 'auto', 'allowInsecure', false()), null())]"
                 },
                 "template": {
                   "containers": [
@@ -1492,7 +1553,8 @@
                         "cpu": "[json(parameters('cpu'))]",
                         "memory": "[parameters('memory')]"
                       },
-                      "env": "[concat(parameters('plainEnvVars'), variables('secretEnv'))]"
+                      "env": "[concat(parameters('plainEnvVars'), variables('secretEnv'))]",
+                      "probes": "[if(parameters('enableIngress'), createArray(createObject('type', 'Startup', 'httpGet', createObject('path', '/health/live', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 1, 'periodSeconds', 1, 'timeoutSeconds', 3, 'failureThreshold', 120, 'successThreshold', 1), createObject('type', 'Liveness', 'httpGet', createObject('path', '/health/live', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 5, 'periodSeconds', 30, 'timeoutSeconds', 5, 'failureThreshold', 3, 'successThreshold', 1), createObject('type', 'Readiness', 'httpGet', createObject('path', '/health/ready', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 1, 'periodSeconds', 5, 'timeoutSeconds', 5, 'failureThreshold', 48, 'successThreshold', 1)), createArray())]"
                     }
                   ],
                   "scale": {
@@ -1603,8 +1665,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "12732543147332698012"
+              "version": "0.45.15.27210",
+              "templateHash": "1839594511135432975"
             }
           },
           "parameters": {
@@ -1648,6 +1710,13 @@
               "type": "bool",
               "metadata": {
                 "description": "Whether this Container App exposes external HTTP ingress (true for Web, false for Worker)"
+              }
+            },
+            "externalIngress": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Whether enabled HTTP ingress is public. Internal ingress remains reachable only inside the Container Apps environment."
               }
             },
             "targetPort": {
@@ -1759,7 +1828,7 @@
                     }
                   ],
                   "secrets": "[variables('secrets')]",
-                  "ingress": "[if(parameters('enableIngress'), createObject('external', true(), 'targetPort', parameters('targetPort'), 'transport', 'auto', 'allowInsecure', false()), null())]"
+                  "ingress": "[if(parameters('enableIngress'), createObject('external', parameters('externalIngress'), 'targetPort', parameters('targetPort'), 'transport', 'auto', 'allowInsecure', false()), null())]"
                 },
                 "template": {
                   "containers": [
@@ -1770,7 +1839,8 @@
                         "cpu": "[json(parameters('cpu'))]",
                         "memory": "[parameters('memory')]"
                       },
-                      "env": "[concat(parameters('plainEnvVars'), variables('secretEnv'))]"
+                      "env": "[concat(parameters('plainEnvVars'), variables('secretEnv'))]",
+                      "probes": "[if(parameters('enableIngress'), createArray(createObject('type', 'Startup', 'httpGet', createObject('path', '/health/live', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 1, 'periodSeconds', 1, 'timeoutSeconds', 3, 'failureThreshold', 120, 'successThreshold', 1), createObject('type', 'Liveness', 'httpGet', createObject('path', '/health/live', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 5, 'periodSeconds', 30, 'timeoutSeconds', 5, 'failureThreshold', 3, 'successThreshold', 1), createObject('type', 'Readiness', 'httpGet', createObject('path', '/health/ready', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 1, 'periodSeconds', 5, 'timeoutSeconds', 5, 'failureThreshold', 48, 'successThreshold', 1)), createArray())]"
                     }
                   ],
                   "scale": {
@@ -1818,6 +1888,305 @@
         "[resourceId('Microsoft.Resources/deployments', 'serviceBus')]",
         "[resourceId('Microsoft.Resources/deployments', 'storage')]"
       ]
+    },
+    {
+      "condition": "[parameters('enableSepoliaBundler')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "sepoliaBundler",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[format('{0}-sepolia-bundler', variables('namePrefix'))]"
+          },
+          "containerAppsEnvironmentId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerAppsEnvironment'), '2025-04-01').outputs.id.value]"
+          },
+          "userAssignedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'identity'), '2025-04-01').outputs.id.value]"
+          },
+          "acrLoginServer": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'acr'), '2025-04-01').outputs.loginServer.value]"
+          },
+          "image": {
+            "value": "[parameters('sepoliaBundlerImage')]"
+          },
+          "enableIngress": {
+            "value": true
+          },
+          "externalIngress": {
+            "value": false
+          },
+          "targetPort": {
+            "value": 4338
+          },
+          "cpu": {
+            "value": "0.5"
+          },
+          "memory": {
+            "value": "1Gi"
+          },
+          "minReplicas": {
+            "value": 1
+          },
+          "maxReplicas": {
+            "value": 1
+          },
+          "keyVaultUri": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyVault'), '2025-04-01').outputs.uri.value]"
+          },
+          "plainEnvVars": {
+            "value": []
+          },
+          "secretEnvVars": {
+            "value": [
+              {
+                "envVarName": "RUNDLER_NODE_HTTP",
+                "keyVaultSecretName": "sepolia-bundler-node-rpc-url"
+              },
+              {
+                "envVarName": "RUNDLER_SIGNER_PRIVATE_KEY",
+                "keyVaultSecretName": "sepolia-bundler-signer-private-key"
+              }
+            ]
+          },
+          "deployerPrincipalId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cicdIdentity'), '2025-04-01').outputs.principalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.45.15.27210",
+              "templateHash": "1839594511135432975"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the Container App"
+              }
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container App"
+              }
+            },
+            "containerAppsEnvironmentId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the Container Apps managed environment"
+              }
+            },
+            "userAssignedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the user-assigned managed identity used for ACR pull and Key Vault access"
+              }
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "metadata": {
+                "description": "Login server of the Azure Container Registry, e.g. myregistry.azurecr.io"
+              }
+            },
+            "image": {
+              "type": "string",
+              "metadata": {
+                "description": "Full container image reference to deploy, e.g. myregistry.azurecr.io/thiscafeteria-web:latest"
+              }
+            },
+            "enableIngress": {
+              "type": "bool",
+              "metadata": {
+                "description": "Whether this Container App exposes external HTTP ingress (true for Web, false for Worker)"
+              }
+            },
+            "externalIngress": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Whether enabled HTTP ingress is public. Internal ingress remains reachable only inside the Container Apps environment."
+              }
+            },
+            "targetPort": {
+              "type": "int",
+              "defaultValue": 8080,
+              "metadata": {
+                "description": "Target port the container listens on; ignored when enableIngress is false"
+              }
+            },
+            "cpu": {
+              "type": "string",
+              "defaultValue": "0.5",
+              "metadata": {
+                "description": "vCPU allocation, e.g. 0.5"
+              }
+            },
+            "memory": {
+              "type": "string",
+              "defaultValue": "1Gi",
+              "metadata": {
+                "description": "Memory allocation, e.g. 1Gi"
+              }
+            },
+            "minReplicas": {
+              "type": "int",
+              "defaultValue": 0,
+              "metadata": {
+                "description": "Minimum replica count; 0 enables scale-to-zero"
+              }
+            },
+            "maxReplicas": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Maximum replica count"
+              }
+            },
+            "plainEnvVars": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Plain (non-secret) environment variables"
+              }
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Key Vault URI, e.g. https://myvault.vault.azure.net/"
+              }
+            },
+            "secretEnvVars": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Environment variables sourced from Key Vault secrets: [{ envVarName: string, keyVaultSecretName: string }]"
+              }
+            },
+            "deployerPrincipalId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Principal ID of the CI/CD identity that deploys new revisions to this Container App. Leave empty to skip."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "secrets",
+                "count": "[length(parameters('secretEnvVars'))]",
+                "input": {
+                  "name": "[parameters('secretEnvVars')[copyIndex('secrets')].keyVaultSecretName]",
+                  "keyVaultUrl": "[format('{0}secrets/{1}', parameters('keyVaultUri'), parameters('secretEnvVars')[copyIndex('secrets')].keyVaultSecretName)]",
+                  "identity": "[parameters('userAssignedIdentityId')]"
+                }
+              },
+              {
+                "name": "secretEnv",
+                "count": "[length(parameters('secretEnvVars'))]",
+                "input": {
+                  "name": "[parameters('secretEnvVars')[copyIndex('secretEnv')].envVarName]",
+                  "secretRef": "[parameters('secretEnvVars')[copyIndex('secretEnv')].keyVaultSecretName]"
+                }
+              }
+            ],
+            "containerAppsContributorRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '358470bc-b998-42bd-ab17-a7e34c199c0f')]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "environmentId": "[parameters('containerAppsEnvironmentId')]",
+                "configuration": {
+                  "activeRevisionsMode": "Single",
+                  "registries": [
+                    {
+                      "server": "[parameters('acrLoginServer')]",
+                      "identity": "[parameters('userAssignedIdentityId')]"
+                    }
+                  ],
+                  "secrets": "[variables('secrets')]",
+                  "ingress": "[if(parameters('enableIngress'), createObject('external', parameters('externalIngress'), 'targetPort', parameters('targetPort'), 'transport', 'auto', 'allowInsecure', false()), null())]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "[parameters('name')]",
+                      "image": "[parameters('image')]",
+                      "resources": {
+                        "cpu": "[json(parameters('cpu'))]",
+                        "memory": "[parameters('memory')]"
+                      },
+                      "env": "[concat(parameters('plainEnvVars'), variables('secretEnv'))]",
+                      "probes": "[if(parameters('enableIngress'), createArray(createObject('type', 'Startup', 'httpGet', createObject('path', '/health/live', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 1, 'periodSeconds', 1, 'timeoutSeconds', 3, 'failureThreshold', 120, 'successThreshold', 1), createObject('type', 'Liveness', 'httpGet', createObject('path', '/health/live', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 5, 'periodSeconds', 30, 'timeoutSeconds', 5, 'failureThreshold', 3, 'successThreshold', 1), createObject('type', 'Readiness', 'httpGet', createObject('path', '/health/ready', 'port', parameters('targetPort'), 'scheme', 'HTTP'), 'initialDelaySeconds', 1, 'periodSeconds', 5, 'timeoutSeconds', 5, 'failureThreshold', 48, 'successThreshold', 1)), createArray())]"
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": "[parameters('minReplicas')]",
+                    "maxReplicas": "[parameters('maxReplicas')]"
+                  }
+                }
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('deployerPrincipalId')))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.App/containerApps', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.App/containerApps', parameters('name')), parameters('deployerPrincipalId'), variables('containerAppsContributorRoleDefinitionId'))]",
+              "properties": {
+                "roleDefinitionId": "[variables('containerAppsContributorRoleDefinitionId')]",
+                "principalId": "[parameters('deployerPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.App/containerApps', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "fqdn": {
+              "type": "string",
+              "value": "[if(parameters('enableIngress'), reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2024-03-01').configuration.ingress.fqdn, '')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'acr')]",
+        "[resourceId('Microsoft.Resources/deployments', 'cicdIdentity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'containerAppsEnvironment')]",
+        "[resourceId('Microsoft.Resources/deployments', 'identity')]",
+        "[resourceId('Microsoft.Resources/deployments', 'keyVault')]"
+      ]
     }
   ],
   "outputs": {
@@ -1848,6 +2217,10 @@
     "keyVaultName": {
       "type": "string",
       "value": "[toLower(format('tc-kv-{0}', variables('resourceToken')))]"
+    },
+    "sepoliaBundlerInternalFqdn": {
+      "type": "string",
+      "value": "[if(parameters('enableSepoliaBundler'), reference(resourceId('Microsoft.Resources/deployments', 'sepoliaBundler'), '2025-04-01').outputs.fqdn.value, '')]"
     }
   }
 }

@@ -81,6 +81,7 @@ module cicdIdentity 'modules/cicdIdentity.bicep' = {
     name: '${namePrefix}-cicd-identity'
     githubRepo: githubRepo
     githubBranch: githubBranch
+    githubEnvironment: 'production'
   }
 }
 

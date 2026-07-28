@@ -1,11 +1,19 @@
 /**
  * Artisanal Brew — pixel crew runtime
  *
- * Drives the "/" hero's robots from the trained policy instead of from CSS
- * keyframes. Each frame it observes the world, runs the 9→16→2 network per
- * robot, steps the shared simulation (wwwroot/js/pixelCrewSim.js — the exact
- * file the trainer optimised against), and writes the resulting positions as
- * transforms.
+ * Drives the crew's robots in the GlobalScene background scenario from the
+ * trained policy instead of from CSS keyframes. Each frame it observes the
+ * world, runs the 9→16→2 network per robot, steps the shared simulation
+ * (wwwroot/js/pixelCrewSim.js — the exact file the trainer optimised
+ * against), and writes the resulting positions as transforms.
+ *
+ * The scenario is split across two fixed, data-permanent containers (see
+ * Components/Layout/GlobalScene.razor): the root (#ph-scene-root, stacked
+ * UNDER the page content) holds the coins and bags, and #ph-scene-root-over
+ * (stacked ABOVE the content) holds the robots, because they must stay
+ * pointer-reachable while the rest of the sky is a background. Both are
+ * viewport-sized, so coordinates measured against the root apply verbatim in
+ * the -over container.
  *
  * What stays in CSS: the sprite-sheet hover loop, the idle bob, the collect
  * poses and the +1 pop. Those are decoration and are better off declarative.
@@ -14,9 +22,10 @@
  * to a robot's destination so the two would coincide. Under the sim a robot
  * collects a coin because it reached it, not because the clock said so.
  *
- * Adding .ph-scene--sim is what hands control over; the stylesheet keys its
- * sim-mode rules off that class, so if this module never loads (or the visitor
- * prefers reduced motion) the original CSS composition is still what renders.
+ * Adding .ph-scene--sim to BOTH containers is what hands control over; the
+ * stylesheet keys its sim-mode rules off that class, so if this module never
+ * loads (or the visitor prefers reduced motion) the original CSS composition
+ * is still what renders.
  *
  * Blazor notes: this is loaded as a JS module via IJSObjectReference from
  * PixelHome.razor, and `destroy` must be called on dispose — enhanced
@@ -86,12 +95,15 @@ class Crew {
     constructor(root, checkpoint) {
         this.root = root;
         this.scene = root.querySelector('.ph-scene') || root;
+        // The robots live in the companion above-content container (see the
+        // module header); fall back to the scene if it is missing.
+        this.over = (root.id && document.getElementById(root.id + '-over')) || this.scene;
         this.weights = Float64Array.from(WEIGHTS[checkpoint] || WEIGHTS.trained);
         this.obs = new Float64Array(OBS_SIZE);
         this.act = new Float64Array(ACT_SIZE);
 
         this.robots = ROLES
-            .map((role) => this.scene.querySelector('.ph-scene__roam--' + role))
+            .map((role) => this.over.querySelector('.ph-scene__roam--' + role))
             .filter(Boolean);
         this.coinEls = Array.from(this.scene.querySelectorAll('.ph-coinbit'));
         this.bagEls = Array.from(this.scene.querySelectorAll('.ph-bag'));
@@ -120,6 +132,7 @@ class Crew {
 
         this.measure();
         this.scene.classList.add(SIM_CLASS);
+        this.over.classList.add(SIM_CLASS);
 
         this._tick = this.tick.bind(this);
         this._resize = this.measure.bind(this);
@@ -130,7 +143,8 @@ class Crew {
 
         window.addEventListener('resize', this._resize);
         document.addEventListener('visibilitychange', this._visibility);
-        this.scene.addEventListener('pointerdown', this._down);
+        // The robots live in this.over, so drag gestures are caught there.
+        this.over.addEventListener('pointerdown', this._down);
 
         // Place everything before the first frame so there is no flash of
         // robots stacked at the scene origin.
@@ -145,7 +159,9 @@ class Crew {
      * Returns null when the copy is hidden — then the whole scene is fair game.
      */
     keepOutRect(sceneRect) {
-        const copy = this.root.closest('.ph-hero')?.querySelector('.ph-hero__copy');
+        // The scene lives in the layout's GlobalScene now, not inside the
+        // hero, so the copy column is looked up from the document.
+        const copy = document.querySelector('.ph-hero__copy');
         if (!copy || !copy.offsetParent) return null;
         const b = copy.getBoundingClientRect();
         if (!b.width || !b.height) return null;
@@ -386,8 +402,9 @@ class Crew {
         cancelAnimationFrame(this.frame);
         window.removeEventListener('resize', this._resize);
         document.removeEventListener('visibilitychange', this._visibility);
-        this.scene.removeEventListener('pointerdown', this._down);
+        this.over.removeEventListener('pointerdown', this._down);
         this.scene.classList.remove(SIM_CLASS);
+        this.over.classList.remove(SIM_CLASS);
         for (const el of this.robots) {
             el.style.transform = '';
             el.classList.remove(HELD_CLASS, 'ph-scene__roam--mirrored', BOOSTED_CLASS);

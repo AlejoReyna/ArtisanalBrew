@@ -19,27 +19,16 @@
 @inject ILogger<ProcurementLab> Logger
 
 <div class="procurement-lab" data-page-theme-color="#171714">
-    @* Full-screen sky: sparse pixel stars and coffee-colored planets span the whole
-       page behind the content. Decorative only. *@
-    <div class="pl-sky" aria-hidden="true">
-        <span class="pl-star pl-star--one"></span>
-        <span class="pl-star pl-star--two"></span>
-        <span class="pl-star pl-star--three"></span>
-        <span class="pl-star pl-star--four"></span>
-        <span class="pl-star pl-star--five"></span>
-        <span class="pl-star pl-star--six"></span>
-        <span class="pl-star pl-star--seven"></span>
-        <span class="pl-star pl-star--eight"></span>
-        <img class="pl-sky__planet pl-sky__planet--one" src="images/pl-planet.png" alt="" />
-        <img class="pl-sky__planet pl-sky__planet--two" src="images/pl-planet-ringed.png" alt="" />
-    </div>
-
+    @* The sky (stars + planets, plus the Andromeda galaxy and chain badges) is
+       the shared GlobalScene background scenario now — it stays pristine across
+       routes, so the lab renders only its own UI on top of it. *@
   <div class="procurement-lab__inner">
     @* Hero: centered editorial copy, robot escrow station, action, then mission
        telemetry. Decorative pixel work is hidden from screen readers; the lifecycle
        is told by the robots and the live panels below — no workflow bar. *@
     <section class="pl-hero" aria-labelledby="pl-hero-title">
         <div class="pl-hero__copy">
+            <p class="pl-hero__protocols">Featuring ERC-4337 · ERC-8004 · ERC-7683 · ERC-8183</p>
             <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
             <p class="pl-hero__lede">
                 Track registered agents, limited permissions, and escrowed procurement jobs

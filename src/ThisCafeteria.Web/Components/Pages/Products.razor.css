@@ -669,3 +669,103 @@
         margin-left: -2rem;
     }
 }
+
+/* ── Mobile-only category sub-navbar (Adidas-style horizontal scroll tabs) ── */
+/* Hidden on desktop where the FilterSidebar already handles category selection. */
+.catalog-subnav {
+    display: none;
+}
+
+@media (max-width: 1023px) {
+    .catalog-subnav {
+        display: block;
+        border-bottom: 1px solid var(--color-line, #e5e0d8);
+        margin: 0 -1rem 1rem;
+        padding: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--color-cream, #f5f2ec);
+    }
+
+    .catalog-subnav__list {
+        display: flex;
+        gap: 0;
+        list-style: none;
+        margin: 0;
+        overflow-x: auto;
+        padding: 0 1rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .catalog-subnav__list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .catalog-subnav__tab {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        color: var(--color-mute, #8b8880);
+        cursor: pointer;
+        flex: none;
+        font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 0.88rem;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        padding: 0.85rem 1rem 0.75rem;
+        position: relative;
+        transition: color 180ms ease, border-color 180ms ease;
+        white-space: nowrap;
+    }
+
+    .catalog-subnav__tab:first-child {
+        padding-left: 0;
+    }
+
+    .catalog-subnav__tab.is-active {
+        color: var(--color-ink, #1c1b1a);
+        font-weight: 700;
+        border-bottom-color: var(--color-ink, #1c1b1a);
+    }
+
+    .catalog-subnav__tab:not(.is-active):hover {
+        color: var(--color-ink, #1c1b1a);
+    }
+
+    .catalog-subnav__tab:not(.is-active):active {
+        opacity: 0.6;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .catalog-subnav__tab {
+            transition: none;
+        }
+    }
+}
+
+/* Phone-only: 4 categories, 4 equal columns — no horizontal scroll, each tab
+   gets exactly 25% of the row. Tablet widths above keep the scrolling-tabs
+   treatment from the block above. */
+@media (max-width: 640px) {
+    .catalog-subnav__list {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        overflow-x: visible;
+        padding: 0;
+    }
+
+    .catalog-subnav__tab {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        text-align: center;
+        white-space: normal;
+        width: 100%;
+    }
+
+    .catalog-subnav__tab:first-child {
+        padding-left: 0.35rem;
+    }
+}

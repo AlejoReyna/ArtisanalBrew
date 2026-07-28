@@ -67,6 +67,40 @@
 
             <TestnetInfoModal />
 
+            @* ── Mobile-only category sub-navbar (Adidas-style horizontal scroll tabs) ── *@
+            <nav class="catalog-subnav" aria-label="Product categories">
+                <ul class="catalog-subnav__list">
+                    <li>
+                        <button type="button"
+                                class="catalog-subnav__tab @(string.IsNullOrEmpty(_selectedCategory) ? "is-active" : null)"
+                                @onclick="@(() => { _selectedCategory = string.Empty; _currentPage = 1; })">
+                            All
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button"
+                                class="catalog-subnav__tab @(_selectedCategory == nameof(ProductCategory.Beans) ? "is-active" : null)"
+                                @onclick="@(() => { _selectedCategory = nameof(ProductCategory.Beans); _currentPage = 1; })">
+                            Single Origin
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button"
+                                class="catalog-subnav__tab @(_selectedCategory == nameof(ProductCategory.BrewingEquipment) ? "is-active" : null)"
+                                @onclick="@(() => { _selectedCategory = nameof(ProductCategory.BrewingEquipment); _currentPage = 1; })">
+                            Equipment
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button"
+                                class="catalog-subnav__tab @(_selectedCategory == nameof(ProductCategory.CeramicsAndGoods) ? "is-active" : null)"
+                                @onclick="@(() => { _selectedCategory = nameof(ProductCategory.CeramicsAndGoods); _currentPage = 1; })">
+                            Ceramics
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
             <div class="flex flex-col gap-8 lg:flex-row">
                 @* Below lg the sidebar leaves the flow and becomes a bottom sheet,
                    opened from the filter bar above the grid — the old stacked layout
