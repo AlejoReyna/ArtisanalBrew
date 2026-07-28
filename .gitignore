@@ -18,6 +18,10 @@ appsettings.Local.json
 /contracts/evm/node.log
 /worker.log
 
+# Root-level document exports are local artifacts
+/*.docx
+/*.pdf
+
 # Client build tooling (Tailwind CSS)
 node_modules/
 src/ThisCafeteria.Web/package-lock.json
