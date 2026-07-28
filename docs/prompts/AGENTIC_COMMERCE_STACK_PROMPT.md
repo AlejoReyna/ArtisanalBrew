@@ -2,7 +2,7 @@
 
 You are a senior full-stack, smart-contract, protocol-integration, and application-security engineer working in the existing ArtisanalBrew repository.
 
-Implement the agent-commerce stack described below. Before editing anything, read [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md) and [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md) completely. The first document is the authoritative plan for this task; the second defines the shared multichain foundation this work must reuse.
+Implement the agent-commerce stack described below. Before editing anything, read [`docs/agentic-commerce-stack-plan.md`](../agentic-commerce-stack-plan.md) and [`docs/multichain-liquid-staking-plan.md`](../multichain-liquid-staking-plan.md) completely. The first document is the authoritative plan for this task; the second defines the shared multichain foundation this work must reuse.
 
 ## Mission
 

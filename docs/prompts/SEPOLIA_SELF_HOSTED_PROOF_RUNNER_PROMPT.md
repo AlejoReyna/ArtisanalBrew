@@ -33,7 +33,7 @@ manifest state:
 - Legacy COFFEE: `0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C`
 
 The authoritative local record is
-`contracts/evm/deployments/ethereum-sepolia.json`.
+[`contracts/evm/deployments/ethereum-sepolia.json`](../../contracts/evm/deployments/ethereum-sepolia.json).
 
 ## Azure runtime already exists
 

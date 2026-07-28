@@ -1,6 +1,6 @@
 # ArtisanalBrew Multichain Liquid Staking — Implementation Prompt
 
-You are a senior full-stack and smart-contract engineer working in the existing ArtisanalBrew repository. Implement the multichain liquid-staking program described below. Read [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md) completely before editing code; it contains the audited current-state map, architecture decisions, risks, and orchestration gates.
+You are a senior full-stack and smart-contract engineer working in the existing ArtisanalBrew repository. Implement the multichain liquid-staking program described below. Read [`docs/multichain-liquid-staking-plan.md`](../multichain-liquid-staking-plan.md) completely before editing code; it contains the audited current-state map, architecture decisions, risks, and orchestration gates.
 
 ## Mission
 

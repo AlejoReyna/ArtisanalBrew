@@ -1,6 +1,6 @@
 # ArtisanalBrew — Really Activate the Remaining Public Testnets
 
-You are a senior full-stack and smart-contract engineer working in the existing ArtisanalBrew repository. Read [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md) and [`docs/multichain-liquid-staking-operations.md`](docs/multichain-liquid-staking-operations.md) completely before editing anything. The operations doc documents the exact working pattern this task must repeat; do not invent a different one.
+You are a senior full-stack and smart-contract engineer working in the existing ArtisanalBrew repository. Read [`docs/multichain-liquid-staking-plan.md`](../multichain-liquid-staking-plan.md) and [`docs/multichain-liquid-staking-operations.md`](../multichain-liquid-staking-operations.md) completely before editing anything. The operations doc documents the exact working pattern this task must repeat; do not invent a different one.
 
 ## Mission
 

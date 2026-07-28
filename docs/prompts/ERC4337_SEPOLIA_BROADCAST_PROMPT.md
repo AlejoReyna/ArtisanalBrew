@@ -15,7 +15,7 @@ local can. The code is done. Two credentials were the only blocker, and one has 
 **Check out branch `agent/erc4337-sponsored-submission` first** (currently local-only, 9 commits
 ahead of `origin/main`, never pushed). Do not start from `main` and do not redo any of this work —
 read the commits (`git log origin/main..agent/erc4337-sponsored-submission`) and
-[`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md)'s top section
+[`docs/agentic-commerce-stack-plan.md`](../agentic-commerce-stack-plan.md)'s top section
 ("Session handoff (2026-07-22) — ERC-4337 sponsored submission") before touching anything.
 
 ## Verified ground truth (checked directly, not taken on faith)

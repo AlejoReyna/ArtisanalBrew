@@ -6,7 +6,7 @@ You are a senior full-stack, smart-contract, and infrastructure engineer working
 
 Everything needed to *decide* whether a UserOperation should be gas-sponsored, and to *produce a valid paymaster signature* for it, already exists and is proven against a live chain. What does **not** exist anywhere in `main` is code that actually **submits** a sponsored UserOperation to a bundler and gets it mined — and no bundler is deployed anywhere this app can reach in production. Close that gap: wire real `.NET` submission through a bundler, and get a bundler this app can actually talk to running against Ethereum Sepolia (not just local Hardhat).
 
-Read [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md) in full before touching anything — especially the "Session handoff (2026-07-21)", "Bundler investigation", and "Rundler investigation" sections. That document is the authoritative record of what was tried, what failed, and why. Do not re-discover any of it from scratch.
+Read [`docs/agentic-commerce-stack-plan.md`](../agentic-commerce-stack-plan.md) in full before touching anything — especially the "Session handoff (2026-07-21)", "Bundler investigation", and "Rundler investigation" sections. That document is the authoritative record of what was tried, what failed, and why. Do not re-discover any of it from scratch.
 
 ## Verified ground truth (checked directly, not taken on faith from docs)
 

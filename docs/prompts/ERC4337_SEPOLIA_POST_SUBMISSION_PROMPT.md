@@ -8,8 +8,8 @@ untracked files. Do not reset, clean, switch branches, commit, push, or expose s
 
 Before changing anything, inspect:
 
-- `docs/agentic-commerce-stack-plan.md` — its top handoff is the authoritative current record.
-- `ERC4337_SEPOLIA_BROADCAST_PROMPT.md` and `SEPOLIA_SELF_HOSTED_PROOF_RUNNER_PROMPT.md` — they
+- [`docs/agentic-commerce-stack-plan.md`](../agentic-commerce-stack-plan.md) — its top handoff is the authoritative current record.
+- [`ERC4337_SEPOLIA_BROADCAST_PROMPT.md`](ERC4337_SEPOLIA_BROADCAST_PROMPT.md) and [`SEPOLIA_SELF_HOSTED_PROOF_RUNNER_PROMPT.md`](SEPOLIA_SELF_HOSTED_PROOF_RUNNER_PROMPT.md) — they
   contain historical context only; do not follow their stale instructions to broadcast again.
 - `README.md`, `contracts/evm/package.json`, deployment manifest, relevant source, and tests.
 

@@ -36,7 +36,7 @@ parity — real contracts, real manifests, real end-to-end flows, no stubs and n
   Services/SmartAccountService.cs:~590`) **fails closed** unless every modular address is present.
   The current `ethereum-sepolia.json` / `bsc-testnet.json` manifests do not carry those addresses, so
   the capability is false. Provenance rules: `docs/erc4337-session-key-provenance.md`. A focused prompt
-  for just this capability already exists: `ACTIVATE_SESSION_KEY_SMART_ACCOUNTS_PROMPT.md` — reuse it.
+  for just this capability already exists: [`ACTIVATE_SESSION_KEY_SMART_ACCOUNTS_PROMPT.md`](ACTIVATE_SESSION_KEY_SMART_ACCOUNTS_PROMPT.md) — reuse it.
 - Capability consumers to wire against, not around:
   - `src/ThisCafeteria.Web/Components/Shared/YieldPanel.razor` gates faucet and legacy-exit UI on
     `SelectedChain.Capabilities.Faucet` / `.LegacyExit`.
@@ -89,7 +89,7 @@ parity — real contracts, real manifests, real end-to-end flows, no stubs and n
 
 ### 1. AgenticSessionPayments — Ethereum Sepolia, then BSC Testnet
 
-- Follow `ACTIVATE_SESSION_KEY_SMART_ACCOUNTS_PROMPT.md` and the provenance matrix in
+- Follow [`ACTIVATE_SESSION_KEY_SMART_ACCOUNTS_PROMPT.md`](ACTIVATE_SESSION_KEY_SMART_ACCOUNTS_PROMPT.md) and the provenance matrix in
   `docs/erc4337-session-key-provenance.md`. Deploy the unmodified MetaMask Delegation Framework
   (v1.3.0) modular stack — factory, DelegationManager, HybridDeleGator implementation, and the
   enforcers the loader expects — per chain.
@@ -101,7 +101,7 @@ parity — real contracts, real manifests, real end-to-end flows, no stubs and n
 
 - Decide and document the payment rail (x402 gateway vs. direct escrow settlement) and wire the
   checkout path to it on the liquid chains. Reuse the agentic-commerce escrow already deployed
-  (`erc8183Escrow` in the manifests) where appropriate; see `AGENTIC_COMMERCE_STACK_PROMPT.md`.
+  (`erc8183Escrow` in the manifests) where appropriate; see [`AGENTIC_COMMERCE_STACK_PROMPT.md`](AGENTIC_COMMERCE_STACK_PROMPT.md).
 - Turn the capability on via the manifest (now honored after step 0) and un-gate the checkout UI.
 - Prove a real payment settles and reconciles on both chains.
 
