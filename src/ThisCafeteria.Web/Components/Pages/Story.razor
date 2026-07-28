@@ -1,28 +1,65 @@
 @page "/story"
 @implements IAsyncDisposable
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Routing
+@using ThisCafeteria.Application.DTOs
+@using ThisCafeteria.Application.Services
 @inject IJSRuntime JSRuntime
+@inject IServiceProvider Services
+@inject NavigationManager Navigation
 
 <PageTitle>This Café Doesn't Exist | Artisanal Brew</PageTitle>
 
+@*
+    publicHeader.js paints <body> with this page's theme colour (#100e0d) so the
+    browser chrome matches the header. That leaves the document background near-black
+    while --ink/--muted are still light-theme values, which is what made every section
+    below the hero dark-on-dark. This backdrop gives the page its own light surface,
+    independent of whatever <body> is painted; the hero and the yield band are
+    full-bleed and paint over it.
+*@
+<div class="story-surface" aria-hidden="true"></div>
+
 <!-- ==================== HERO ==================== -->
-<section class="page-intro story-hero" data-recruiter-section>
-    <p class="eyebrow" data-recruiter-animate="lift">Full Disclosure</p>
+<section class="page-intro story-hero" data-recruiter-section data-page-theme-color="#100e0d">
+    <div class="story-hero__media" aria-hidden="true">
+        <img class="story-hero__poster"
+             src="/images/story-hero-poster.webp"
+             alt=""
+             width="1280"
+             height="832"
+             decoding="async"
+             fetchpriority="high" />
+        <video class="story-hero__video"
+               autoplay
+               muted
+               loop
+               playsinline
+               preload="none"
+               data-story-hero-video>
+            <source data-src="/videos/story-hero-loop.mp4" type="video/mp4" />
+        </video>
+    </div>
+    <span class="story-hero__scrim" aria-hidden="true"></span>
 
-    <h1 class="story-hero__headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
-        <span class="mask-line"><span class="mask-line__inner">This café</span></span>
-        <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">doesn't exist.</em></span></span>
-    </h1>
+    <div class="story-hero__content">
+        <p class="eyebrow" data-recruiter-animate="lift">Full Disclosure</p>
 
-    <p class="lede story-hero__lede" data-recruiter-animate="lift" data-recruiter-delay="320">
-        No storefront. No beans. No baristas. What <em>is</em> real: a full commerce, staking, and settlement
-        stack, engineered as if the café were.
-    </p>
+        <h1 class="story-hero__headline" aria-label="This café doesn't exist.">
+            <Pixel3DText Lines="@HeroHeadlineLines" />
+        </h1>
 
-    <p class="story-hero__type" data-recruiter-animate="type" data-recruiter-delay="560">
-        <span class="type-line">&gt; a fictional cafeteria &middot; real engineering</span>
-    </p>
+        <p class="lede story-hero__lede" data-recruiter-animate="lift" data-recruiter-delay="320">
+            No storefront. No beans. No baristas. What <em>is</em> real: a full commerce, staking, and settlement
+            stack, engineered as if the café were.
+        </p>
 
-    <span class="story-hero__rule" aria-hidden="true"></span>
+        <p class="story-hero__type" data-recruiter-animate="type" data-recruiter-delay="560">
+            <span class="type-line">&gt; a fictional cafeteria &middot; real engineering</span>
+        </p>
+
+        <span class="story-hero__rule" aria-hidden="true"></span>
+    </div>
 </section>
 
 <!-- ==================== THE FICTION ==================== -->
@@ -43,6 +80,256 @@
             not a startup, not a product — a complete system, done properly, for its own sake.
         </p>
     </div>
+
+    <div class="story-fiction__infra" data-recruiter-observe-self>
+        <div class="story-fiction__terminal">
+            <div class="story-fiction__terminal-bar">
+                <span class="story-fiction__terminal-dot story-fiction__terminal-dot--red" aria-hidden="true"></span>
+                <span class="story-fiction__terminal-dot story-fiction__terminal-dot--yellow" aria-hidden="true"></span>
+                <span class="story-fiction__terminal-dot story-fiction__terminal-dot--green" aria-hidden="true"></span>
+                <span class="story-fiction__terminal-title">zsh &mdash; az cli &mdash; thiscafeteria-prod-rg</span>
+            </div>
+
+            <div class="story-fiction__terminal-body">
+                <p class="story-fiction__infra-mono" data-recruiter-animate="type" data-recruiter-delay="100">
+                    <span class="type-line">$ az resource list -g thiscafeteria-prod-rg</span>
+                </p>
+                <p class="story-fiction__infra-caption">Snapshot &middot; @InfraSnapshotDate &middot; westus</p>
+
+                <div class="story-fiction__infra-grid" data-infra-grid data-recruiter-stagger>
+                    @for (var i = 0; i < InfraSnapshot.Length; i++)
+                    {
+                        var svc = InfraSnapshot[i];
+                        <div class="story-fiction__infra-card" data-infra-card data-infra-index="@i" data-recruiter-animate="lift" data-recruiter-observe-self>
+                            <button type="button" class="story-fiction__infra-face" data-infra-open aria-expanded="false" aria-label="View details for @svc.Name">
+                                <div class="story-fiction__infra-card-top">
+                                    <img class="story-fiction__infra-icon" src="@svc.IconPath" alt="" loading="lazy" />
+                                    <p class="story-fiction__infra-category">@svc.Category</p>
+                                    <span class="story-fiction__infra-dot @(svc.IsHealthy ? "is-up" : "is-down")" aria-hidden="true"></span>
+                                    <p class="story-fiction__infra-status">@svc.Status</p>
+                                </div>
+                                <p class="story-fiction__infra-name">@svc.Name</p>
+                                <p class="story-fiction__infra-detail">@svc.Detail</p>
+                            </button>
+
+                            <div class="story-fiction__infra-expanded">
+                                <button type="button" class="story-fiction__infra-back" data-infra-close aria-label="Back to services">
+                                    <span aria-hidden="true">&larr;</span> Back
+                                </button>
+                                <div class="story-fiction__infra-card-top">
+                                    <img class="story-fiction__infra-icon" src="@svc.IconPath" alt="" loading="lazy" />
+                                    <p class="story-fiction__infra-category">@svc.Category</p>
+                                    <span class="story-fiction__infra-dot @(svc.IsHealthy ? "is-up" : "is-down")" aria-hidden="true"></span>
+                                    <p class="story-fiction__infra-status">@svc.Status</p>
+                                </div>
+                                <p class="story-fiction__infra-name">@svc.Name</p>
+                                <p class="story-fiction__infra-description">@svc.Description</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== THE PATH · ONE ORDER, ALL THE WAY DOWN ==================== -->
+<section class="story-path" data-recruiter-section>
+    <div class="recruiter-section-heading section-heading">
+        <p class="eyebrow" data-recruiter-animate="lift">The Path</p>
+        <h2 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">One order,</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">all the way down.</em></span></span>
+        </h2>
+        <p class="story-path__intro" data-recruiter-animate="lift" data-recruiter-delay="240">
+            The estate above is the map. This is the route one checkout actually takes through it —
+            traced from the source, not from the architecture diagram.
+        </p>
+    </div>
+
+    <div class="story-path__rail" data-path-rail>
+        <span class="story-path__track" aria-hidden="true"></span>
+        <span class="story-path__fill" data-path-fill aria-hidden="true"></span>
+        <span class="story-path__packet" data-path-packet aria-hidden="true"></span>
+
+        <ol class="story-path__stops">
+            @for (var i = 0; i < DataPath.Length; i++)
+            {
+                var stop = DataPath[i];
+                <li class="story-path__stop @(stop.IsDeferred ? "is-deferred" : null)" data-path-stop>
+                    <span class="story-path__node" aria-hidden="true"></span>
+                    <p class="story-path__index">@((i + 1).ToString("00", CultureInfo.InvariantCulture))</p>
+                    <p class="story-path__call">@stop.Call</p>
+                    <p class="story-path__where">@stop.Where</p>
+                    <p class="story-path__copy">@stop.Copy</p>
+                    @if (stop.Writes is not null)
+                    {
+                        <p class="story-path__writes">
+                            <span class="story-path__writes-label">writes</span>@stop.Writes
+                        </p>
+                    }
+                </li>
+            }
+        </ol>
+    </div>
+
+    <p class="story-path__note" data-recruiter-animate="lift" data-recruiter-observe-self>
+        Stops 01&ndash;05 all run inside the request. Stop 06 is provisioned and listening but nothing
+        publishes to it yet &mdash; checkout still writes synchronously, and the queue is the seam for
+        the day it shouldn't.
+    </p>
+</section>
+
+<!-- ==================== THE SCHEMA · THE ENTITY DIAGRAM ==================== -->
+<section class="story-schema" data-recruiter-section>
+    <div class="recruiter-section-heading section-heading">
+        <p class="eyebrow" data-recruiter-animate="lift">The Schema</p>
+        <h2 data-recruiter-animate="mask-line" data-recruiter-delay="120">
+            <span class="mask-line"><span class="mask-line__inner">Every table,</span></span>
+            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">on the record.</em></span></span>
+        </h2>
+        <p class="story-schema__intro" data-recruiter-animate="lift" data-recruiter-delay="240">
+            Not a diagram someone drew once and forgot. Everything below is read out of the live
+            EF&nbsp;Core model at request time &mdash; if a migration changes the database, this section
+            changes with it, whether or not anyone remembers to update the copy.
+        </p>
+    </div>
+
+    @if (_schema is null)
+    {
+        <p class="story-schema__empty">
+            @(_schemaError ?? "Reading the model…")
+        </p>
+    }
+    else
+    {
+        <div class="story-schema__stats" data-recruiter-stagger>
+            <div class="story-schema__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-schema__stat-number">@_schema.TableCount</p>
+                <p class="story-schema__stat-caption">Tables</p>
+            </div>
+            <div class="story-schema__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-schema__stat-number">@_schema.ColumnCount</p>
+                <p class="story-schema__stat-caption">Columns</p>
+            </div>
+            <div class="story-schema__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-schema__stat-number">@_schema.RelationshipCount</p>
+                <p class="story-schema__stat-caption">Foreign keys</p>
+            </div>
+            <div class="story-schema__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
+                <p class="story-schema__stat-number">@_schema.TotalRows.ToString("N0", CultureInfo.InvariantCulture)</p>
+                <p class="story-schema__stat-caption">Rows, right now</p>
+            </div>
+        </div>
+
+        <div class="story-schema__groups" role="tablist" aria-label="Schema groups">
+            @foreach (var group in SchemaGroups.Where(candidate => TablesIn(candidate).Count > 0))
+            {
+                <button type="button"
+                        role="tab"
+                        class="story-schema__group @(group == _activeGroup ? "is-active" : null)"
+                        aria-selected="@(group == _activeGroup ? "true" : "false")"
+                        @onclick="() => SelectGroup(group)">
+                    @group
+                    <span class="story-schema__group-count">@TablesIn(group).Count</span>
+                </button>
+            }
+        </div>
+
+        <div class="story-schema__grid">
+            @foreach (var table in TablesIn(_activeGroup))
+            {
+                var isOpen = _openTable == table.Table;
+                <article class="story-schema__table @(isOpen ? "is-open" : null) @(_highlightTable == table.Table ? "is-highlighted" : null)"
+                         id="@SchemaAnchorId(table.Table)">
+                    <button type="button"
+                            class="story-schema__table-head"
+                            aria-expanded="@(isOpen ? "true" : "false")"
+                            @onclick="() => ToggleTable(table.Table)">
+                        <span class="story-schema__table-name">@table.Table</span>
+                        <span class="story-schema__table-meta">
+                            @table.Columns.Count cols
+                            @if (table.Rows is not null)
+                            {
+                                <span class="story-schema__table-rows">@table.Rows.Value.ToString("N0", CultureInfo.InvariantCulture) rows</span>
+                            }
+                        </span>
+                        <span class="story-schema__table-chevron" aria-hidden="true">@(isOpen ? "−" : "+")</span>
+                    </button>
+
+                    @if (isOpen)
+                    {
+                        <div class="story-schema__columns">
+                            @foreach (var column in table.Columns)
+                            {
+                                <div class="story-schema__column">
+                                    <span class="story-schema__column-key">
+                                        @if (column.PrimaryKey)
+                                        {
+                                            <span class="story-schema__badge story-schema__badge--pk" title="Primary key">PK</span>
+                                        }
+                                        else if (column.ForeignKey)
+                                        {
+                                            <span class="story-schema__badge story-schema__badge--fk" title="Foreign key">FK</span>
+                                        }
+                                    </span>
+                                    <span class="story-schema__column-name">@column.Name</span>
+                                    <span class="story-schema__column-type">
+                                        @column.Type@(column.Nullable ? "?" : string.Empty)
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (table.References.Count > 0)
+                        {
+                            <div class="story-schema__refs">
+                                @foreach (var reference in table.References)
+                                {
+                                    <button type="button"
+                                            class="story-schema__ref"
+                                            @onclick="() => JumpToTable(reference.ToTable)">
+                                        @reference.FromColumn <span aria-hidden="true">&rarr;</span> @($"{reference.ToTable}.{reference.ToColumn}")
+                                    </button>
+                                }
+                            </div>
+                        }
+                    }
+                </article>
+            }
+        </div>
+
+        <div class="story-schema__api" data-recruiter-animate="lift" data-recruiter-observe-self>
+            <p class="story-schema__api-eyebrow">Check it yourself</p>
+            <p class="story-schema__api-copy">
+                Everything on this page comes from one public, unauthenticated endpoint. No key, no
+                account &mdash; the same JSON that renders the diagram is yours to pull.
+            </p>
+
+            <div class="story-schema__api-command">
+                <code>curl @SchemaEndpointUrl</code>
+                <button type="button" class="story-schema__api-copy-button" @onclick="CopyEndpointAsync">
+                    @(_copied ? "Copied" : "Copy")
+                </button>
+            </div>
+
+            <div class="story-schema__api-links">
+                <a class="story-schema__api-link" href="/api/transparency/schema" target="_blank" rel="noopener noreferrer">
+                    /api/transparency/schema
+                </a>
+                <a class="story-schema__api-link" href="/api/transparency/stats" target="_blank" rel="noopener noreferrer">
+                    /api/transparency/stats
+                </a>
+            </div>
+
+            <ul class="story-schema__api-notes">
+                @foreach (var note in _schema.Notes)
+                {
+                    <li>@note</li>
+                }
+            </ul>
+        </div>
+    }
 </section>
 
 <!-- ==================== THE RECIPE · HOW IT'S BUILT ==================== -->
@@ -226,26 +513,93 @@
 </section>
 
 <style>
+    .story-surface {
+        background: var(--surface);
+        inset: 0;
+        pointer-events: none;
+        position: fixed;
+        z-index: -3;
+    }
+
     /* ===== Hero ===== */
     .story-hero {
-        max-width: 46rem;
-        margin-inline: auto;
-        padding-top: clamp(2rem, 5vw, 4rem);
+        align-items: center;
+        background: #100e0d;
+        box-sizing: border-box;
+        display: grid;
+        isolation: isolate;
+        margin: calc(clamp(1.25rem, 3vw, 3rem) * -1) calc(50% - 50vw) clamp(4rem, 8vw, 8rem);
+        max-width: none;
+        min-height: 100svh;
+        overflow: hidden;
+        padding: clamp(4rem, 10vh, 7rem) clamp(1.25rem, 6vw, 5rem);
         position: relative;
         text-align: center;
+        width: 100vw;
+    }
+
+    .story-hero__media,
+    .story-hero__poster,
+    .story-hero__video,
+    .story-hero__scrim {
+        height: 100%;
+        inset: 0;
+        position: absolute;
+        width: 100%;
+    }
+
+    .story-hero__media {
+        overflow: hidden;
+        z-index: -2;
+    }
+
+    .story-hero__poster,
+    .story-hero__video {
+        display: block;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .story-hero__video {
+        opacity: 0;
+        transition: opacity 700ms linear;
+    }
+
+    .story-hero__video.is-ready {
+        opacity: 1;
+    }
+
+    .story-hero__scrim {
+        background:
+            radial-gradient(circle at 50% 44%, rgba(16, 14, 13, 0.18), rgba(16, 14, 13, 0.56) 76%),
+            linear-gradient(180deg, rgba(16, 14, 13, 0.3), rgba(16, 14, 13, 0.58));
+        z-index: -1;
+    }
+
+    .story-hero__content {
+        margin-inline: auto;
+        max-width: 46rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .story-hero .eyebrow {
+        color: rgba(251, 249, 244, 0.74);
     }
 
     .story-hero__headline {
+        color: #fbf9f4;
         font-size: clamp(2.75rem, 8vw, 5rem);
         line-height: 0.98;
     }
 
     .story-hero__lede {
+        color: rgba(251, 249, 244, 0.9);
         margin-inline: auto;
     }
 
     .story-hero__type {
-        color: var(--muted);
+        color: rgba(251, 249, 244, 0.7);
         font-family: var(--crypto-mono);
         font-size: 0.85rem;
         letter-spacing: 0.04em;
@@ -253,7 +607,7 @@
     }
 
     .story-hero__rule {
-        background: var(--line);
+        background: rgba(251, 249, 244, 0.48);
         display: block;
         height: 1px;
         margin: clamp(3rem, 6vw, 5rem) auto 0;
@@ -281,6 +635,748 @@
         display: grid;
         gap: clamp(2rem, 5vw, 4rem);
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .story-fiction__infra {
+        margin-top: clamp(3rem, 7vw, 5rem);
+    }
+
+    .story-fiction__terminal {
+        background: var(--charcoal);
+        border-radius: 0.85rem;
+        box-shadow: 0 24px 60px -24px rgba(31, 26, 24, 0.45);
+        overflow: hidden;
+    }
+
+    .story-fiction__terminal-bar {
+        align-items: center;
+        background: rgba(255, 253, 249, 0.05);
+        border-bottom: 1px solid rgba(255, 253, 249, 0.08);
+        display: flex;
+        gap: 0.45rem;
+        padding: 0.85rem 1.1rem;
+    }
+
+    .story-fiction__terminal-dot {
+        border-radius: 50%;
+        flex: none;
+        height: 11px;
+        width: 11px;
+    }
+
+    .story-fiction__terminal-dot--red {
+        background: #ff5f56;
+    }
+
+    .story-fiction__terminal-dot--yellow {
+        background: #ffbd2e;
+    }
+
+    .story-fiction__terminal-dot--green {
+        background: #27c93f;
+    }
+
+    .story-fiction__terminal-title {
+        color: rgba(255, 253, 249, 0.45);
+        font-family: var(--crypto-mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
+        margin: 0 0 0 0.5rem;
+    }
+
+    .story-fiction__terminal-body {
+        padding: clamp(1.5rem, 4vw, 2.5rem);
+    }
+
+    .story-fiction__infra-mono {
+        color: rgba(255, 253, 249, 0.65);
+        font-family: var(--crypto-mono);
+        font-size: 0.85rem;
+        letter-spacing: 0.02em;
+        margin: 0;
+    }
+
+    .story-fiction__infra-mono .type-line {
+        border-right-color: rgba(255, 253, 249, 0.4);
+    }
+
+    .story-fiction__infra-caption {
+        color: rgba(255, 253, 249, 0.4);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        margin: 0.5rem 0 0;
+        text-transform: uppercase;
+    }
+
+    .story-fiction__infra-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr;
+        margin-top: 1.75rem;
+        position: relative;
+    }
+
+    .story-fiction__infra-card {
+        background: rgba(255, 253, 249, 0.03);
+        border: 1px solid rgba(255, 253, 249, 0.12);
+        border-radius: 0.75rem;
+        box-sizing: border-box;
+        overflow: hidden;
+        padding: 1.15rem 1.25rem;
+    }
+
+    .story-fiction__infra-card.is-dimmed {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease;
+    }
+
+    .story-fiction__infra-card.is-expanded {
+        background: var(--charcoal);
+        box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.55);
+        clip-path: none !important;
+        filter: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        z-index: 5;
+    }
+
+    .story-fiction__infra-face {
+        all: unset;
+        box-sizing: border-box;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .story-fiction__infra-card.is-expanded .story-fiction__infra-face {
+        display: none;
+    }
+
+    .story-fiction__infra-expanded {
+        display: none;
+    }
+
+    .story-fiction__infra-card.is-expanded .story-fiction__infra-expanded {
+        animation: infraExpandedContentIn 320ms cubic-bezier(.16, 1, .3, 1) both;
+        animation-delay: 160ms;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+        width: 100%;
+    }
+
+    @@keyframes infraExpandedContentIn {
+        from {
+            opacity: 0;
+            transform: translate3d(0, 10px, 0);
+        }
+        to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+    .story-fiction__infra-back {
+        all: unset;
+        align-items: center;
+        color: rgba(255, 253, 249, 0.6);
+        cursor: pointer;
+        display: inline-flex;
+        font-family: var(--crypto-mono);
+        font-size: 0.8rem;
+        gap: 0.4rem;
+        letter-spacing: 0.02em;
+        margin-bottom: 1.5rem;
+        transition: color 200ms ease;
+    }
+
+    .story-fiction__infra-back:hover {
+        color: var(--white);
+    }
+
+    .story-fiction__infra-description {
+        color: rgba(255, 253, 249, 0.7);
+        font-size: 1rem;
+        line-height: 1.75;
+        margin: 1rem 0 0;
+        max-width: 36rem;
+    }
+
+    .story-fiction__infra-expanded .story-fiction__infra-name {
+        font-size: 1.4rem;
+        margin-top: 1.5rem;
+    }
+
+    .story-fiction__infra-card-top {
+        align-items: center;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .story-fiction__infra-icon {
+        flex: none;
+        height: 20px;
+        width: 20px;
+    }
+
+    .story-fiction__infra-dot {
+        background: #e5c078;
+        border-radius: 50%;
+        flex: none;
+        height: 7px;
+        width: 7px;
+    }
+
+    .story-fiction__infra-dot.is-up {
+        background: #8fb99b;
+    }
+
+    .story-fiction__infra-category {
+        color: rgba(255, 253, 249, 0.45);
+        font-family: var(--crypto-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .story-fiction__infra-status {
+        color: rgba(255, 253, 249, 0.85);
+        font-family: var(--crypto-mono);
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        margin: 0 0 0 auto;
+        text-transform: uppercase;
+    }
+
+    .story-fiction__infra-name {
+        color: var(--white);
+        font-family: var(--crypto-mono);
+        font-size: 0.95rem;
+        margin: 0.65rem 0 0;
+    }
+
+    .story-fiction__infra-detail {
+        color: rgba(255, 253, 249, 0.55);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin: 0.35rem 0 0;
+    }
+
+    @@media (min-width: 700px) {
+        .story-fiction__infra-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* ===== The Path ===== */
+    .story-path {
+        margin-inline: auto;
+        max-width: 64rem;
+    }
+
+    .story-path__intro {
+        color: var(--muted);
+        line-height: 1.7;
+        margin-top: 1.5rem;
+        max-width: 38rem;
+    }
+
+    .story-path__rail {
+        margin-top: clamp(3rem, 7vw, 5rem);
+        position: relative;
+    }
+
+    .story-path__track,
+    .story-path__fill {
+        bottom: 0;
+        left: 1.35rem;
+        position: absolute;
+        top: 0;
+        width: 2px;
+    }
+
+    .story-path__track {
+        background: var(--line);
+    }
+
+    .story-path__fill {
+        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 35%, transparent), var(--accent));
+        transform: scaleY(0);
+        transform-origin: top;
+        will-change: transform;
+    }
+
+    .story-path__packet {
+        background: var(--accent);
+        border-radius: 50%;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent),
+                    0 0 18px 2px color-mix(in srgb, var(--accent) 45%, transparent);
+        height: 10px;
+        left: calc(1.35rem - 4px);
+        opacity: 0;
+        position: absolute;
+        top: -5px;
+        transition: opacity 260ms ease;
+        width: 10px;
+        will-change: transform;
+    }
+
+    .story-path__stops {
+        display: grid;
+        gap: clamp(2.5rem, 6vw, 3.5rem);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .story-path__stop {
+        opacity: 0.45;
+        padding-left: 3.25rem;
+        position: relative;
+        transition: opacity 420ms ease;
+    }
+
+    .story-path__stop.is-reached {
+        opacity: 1;
+    }
+
+    .story-path__node {
+        background: var(--surface);
+        border: 1.5px solid var(--line);
+        border-radius: 50%;
+        height: 12px;
+        left: calc(1.35rem - 5px);
+        position: absolute;
+        top: 0.3rem;
+        transition: background 420ms ease, border-color 420ms ease, transform 420ms cubic-bezier(.16, 1, .3, 1);
+        width: 12px;
+    }
+
+    .story-path__stop.is-reached .story-path__node {
+        background: var(--accent);
+        border-color: var(--accent);
+        transform: scale(1.25);
+    }
+
+    .story-path__stop.is-deferred .story-path__node {
+        background: var(--surface);
+        border-style: dashed;
+    }
+
+    .story-path__index {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        margin: 0 0 0.4rem;
+    }
+
+    .story-path__call {
+        color: var(--ink);
+        font-family: var(--crypto-mono);
+        font-size: 0.95rem;
+        line-height: 1.4;
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .story-path__stop.is-deferred .story-path__call {
+        color: var(--muted);
+    }
+
+    .story-path__where {
+        color: var(--accent);
+        font-family: var(--crypto-mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        margin: 0.45rem 0 0;
+        text-transform: uppercase;
+    }
+
+    .story-path__copy {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.65;
+        margin: 0.75rem 0 0;
+        max-width: 34rem;
+    }
+
+    .story-path__writes {
+        align-items: center;
+        color: var(--ink);
+        display: inline-flex;
+        flex-wrap: wrap;
+        font-family: var(--crypto-mono);
+        font-size: 0.78rem;
+        gap: 0.5rem;
+        margin: 0.85rem 0 0;
+    }
+
+    .story-path__writes-label {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        padding: 0.2rem 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .story-path__note {
+        border-left: 2px solid var(--line);
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.7;
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+        max-width: 42rem;
+        padding-left: 1.25rem;
+    }
+
+    /* ===== The Schema ===== */
+    .story-schema {
+        margin-inline: auto;
+        margin-top: clamp(4rem, 10vw, 7rem);
+        max-width: 64rem;
+    }
+
+    .story-schema__intro {
+        color: var(--muted);
+        line-height: 1.7;
+        margin-top: 1.5rem;
+        max-width: 40rem;
+    }
+
+    .story-schema__empty {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 0.85rem;
+        margin-top: 2.5rem;
+    }
+
+    .story-schema__stats {
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 0;
+        grid-template-columns: repeat(2, 1fr);
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+    }
+
+    .story-schema__stat {
+        border-bottom: 1px solid var(--line);
+        padding-block: 1.5rem;
+    }
+
+    .story-schema__stat-number {
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: clamp(1.9rem, 5vw, 2.6rem);
+        line-height: 1;
+        margin: 0;
+    }
+
+    .story-schema__stat-caption {
+        color: var(--muted);
+        font-family: var(--crypto-mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        margin: 0.5rem 0 0;
+        text-transform: uppercase;
+    }
+
+    .story-schema__groups {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: clamp(2rem, 5vw, 3rem);
+    }
+
+    .story-schema__group {
+        align-items: center;
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        cursor: pointer;
+        display: inline-flex;
+        font-family: var(--crypto-mono);
+        font-size: 0.75rem;
+        gap: 0.5rem;
+        letter-spacing: 0.04em;
+        padding: 0.5rem 0.9rem;
+        transition: background 200ms ease, border-color 200ms ease, color 200ms ease;
+    }
+
+    .story-schema__group:hover {
+        border-color: var(--accent);
+        color: var(--ink);
+    }
+
+    .story-schema__group.is-active {
+        background: var(--charcoal);
+        border-color: var(--charcoal);
+        color: var(--white);
+    }
+
+    .story-schema__group-count {
+        color: currentColor;
+        font-size: 10px;
+        opacity: 0.6;
+    }
+
+    .story-schema__grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: 1fr;
+        margin-top: 1.5rem;
+    }
+
+    .story-schema__table {
+        border: 1px solid var(--line);
+        border-radius: 0.7rem;
+        overflow: hidden;
+        transition: border-color 300ms ease, box-shadow 300ms ease;
+    }
+
+    .story-schema__table.is-open {
+        border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    }
+
+    .story-schema__table.is-highlighted {
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
+    .story-schema__table-head {
+        align-items: center;
+        background: transparent;
+        border: none;
+        color: var(--ink);
+        cursor: pointer;
+        display: flex;
+        font-family: var(--crypto-mono);
+        gap: 0.75rem;
+        padding: 0.95rem 1.1rem;
+        text-align: left;
+        width: 100%;
+    }
+
+    .story-schema__table-name {
+        font-size: 0.9rem;
+        overflow-wrap: anywhere;
+    }
+
+    .story-schema__table-meta {
+        color: var(--muted);
+        display: flex;
+        flex-wrap: wrap;
+        font-size: 10px;
+        gap: 0.75rem;
+        letter-spacing: 0.06em;
+        margin-left: auto;
+        text-transform: uppercase;
+    }
+
+    .story-schema__table-rows {
+        color: var(--accent);
+    }
+
+    .story-schema__table-chevron {
+        color: var(--muted);
+        flex: none;
+        font-size: 1rem;
+        line-height: 1;
+        width: 0.75rem;
+    }
+
+    .story-schema__columns {
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 0;
+        padding: 0.5rem 0;
+    }
+
+    .story-schema__column {
+        align-items: baseline;
+        display: grid;
+        font-family: var(--crypto-mono);
+        font-size: 0.78rem;
+        gap: 0.75rem;
+        grid-template-columns: 2rem 1fr auto;
+        padding: 0.4rem 1.1rem;
+    }
+
+    .story-schema__column-name {
+        color: var(--ink);
+        overflow-wrap: anywhere;
+    }
+
+    .story-schema__column-type {
+        color: var(--muted);
+        font-size: 0.7rem;
+        text-align: right;
+    }
+
+    .story-schema__badge {
+        border-radius: 3px;
+        display: inline-block;
+        font-size: 9px;
+        letter-spacing: 0.06em;
+        padding: 0.1rem 0.3rem;
+    }
+
+    .story-schema__badge--pk {
+        background: color-mix(in srgb, var(--accent) 22%, transparent);
+        color: var(--ink);
+    }
+
+    .story-schema__badge--fk {
+        border: 1px solid var(--line);
+        color: var(--muted);
+    }
+
+    .story-schema__refs {
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.85rem 1.1rem;
+    }
+
+    .story-schema__ref {
+        background: transparent;
+        border: 1px dashed var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        cursor: pointer;
+        font-family: var(--crypto-mono);
+        font-size: 0.7rem;
+        padding: 0.3rem 0.65rem;
+        transition: border-color 200ms ease, color 200ms ease;
+    }
+
+    .story-schema__ref:hover {
+        border-color: var(--accent);
+        border-style: solid;
+        color: var(--ink);
+    }
+
+    .story-schema__api {
+        background: var(--charcoal);
+        border-radius: 0.85rem;
+        margin-top: clamp(2.5rem, 6vw, 4rem);
+        padding: clamp(1.75rem, 4vw, 2.5rem);
+    }
+
+    .story-schema__api-eyebrow {
+        color: var(--accent);
+        font-family: var(--crypto-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    .story-schema__api-copy {
+        color: rgba(255, 253, 249, 0.7);
+        line-height: 1.7;
+        margin: 0.85rem 0 0;
+        max-width: 36rem;
+    }
+
+    .story-schema__api-command {
+        align-items: center;
+        background: rgba(255, 253, 249, 0.05);
+        border: 1px solid rgba(255, 253, 249, 0.12);
+        border-radius: 0.5rem;
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding: 0.75rem 0.75rem 0.75rem 1rem;
+    }
+
+    .story-schema__api-command code {
+        color: var(--white);
+        font-family: var(--crypto-mono);
+        font-size: 0.78rem;
+        overflow-wrap: anywhere;
+    }
+
+    .story-schema__api-copy-button {
+        background: rgba(255, 253, 249, 0.1);
+        border: none;
+        border-radius: 0.35rem;
+        color: var(--white);
+        cursor: pointer;
+        flex: none;
+        font-family: var(--crypto-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        margin-left: auto;
+        padding: 0.45rem 0.75rem;
+        text-transform: uppercase;
+        transition: background 200ms ease;
+    }
+
+    .story-schema__api-copy-button:hover {
+        background: rgba(255, 253, 249, 0.2);
+    }
+
+    .story-schema__api-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        margin-top: 1.25rem;
+    }
+
+    .story-schema__api-link {
+        color: var(--accent);
+        font-family: var(--crypto-mono);
+        font-size: 0.78rem;
+        text-decoration: none;
+        text-underline-offset: 3px;
+    }
+
+    .story-schema__api-link:hover {
+        text-decoration: underline;
+    }
+
+    .story-schema__api-notes {
+        color: rgba(255, 253, 249, 0.45);
+        font-size: 0.8rem;
+        line-height: 1.7;
+        list-style: none;
+        margin: 1.5rem 0 0;
+        padding: 0;
+    }
+
+    .story-schema__api-notes li {
+        padding-left: 1rem;
+        position: relative;
+    }
+
+    .story-schema__api-notes li::before {
+        content: "·";
+        left: 0.25rem;
+        position: absolute;
+    }
+
+    @@media (min-width: 700px) {
+        .story-schema__stats {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .story-schema__grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .story-schema__table.is-open {
+            grid-column: 1 / -1;
+        }
     }
 
     /* ===== The Recipe ===== */
@@ -648,12 +1744,26 @@
 
     /* ===== Responsive ===== */
     @@media (max-width: 700px) {
+        .story-hero {
+            min-height: 100svh;
+        }
+
+        .story-hero__poster,
+        .story-hero__video {
+            object-position: 38% center;
+        }
+
         .story-fiction__columns {
             grid-template-columns: 1fr;
         }
     }
 
     @@media (prefers-reduced-motion: reduce) {
+        .story-hero__video {
+            display: none;
+            transition: none;
+        }
+
         .story-hero__rule {
             transition: none;
         }
@@ -662,15 +1772,173 @@
             animation: none;
             display: none;
         }
+
+        .story-path__stop {
+            opacity: 1;
+            transition: none;
+        }
+
+        .story-path__node {
+            transition: none;
+        }
+
+        .story-path__packet {
+            display: none;
+        }
+    }
+
+    @@media (prefers-contrast: more) {
+        .story-hero__scrim {
+            background: rgba(16, 14, 13, 0.78);
+        }
     }
 </style>
 
 @code {
+    private static readonly string[] HeroHeadlineLines = ["This café", "doesn't exist."];
+
+    // ===== The Path =====
+    private sealed record PathStop(string Call, string Where, string Copy, string? Writes, bool IsDeferred = false);
+
+    private static readonly PathStop[] DataPath =
+    [
+        new("POST /checkout",
+            "Blazor Server circuit · Checkout.razor",
+            "The wallet pays first. The ETH transfer is polled until Sepolia confirms it — no row is written against an unconfirmed payment.",
+            null),
+
+        new("OrderPricingService.Calculate()",
+            "Application layer · FluentValidation",
+            "The request is validated, the coupon re-quoted server-side, and subtotal, shipping, tax and discount recomputed from scratch. Whatever the browser claimed the total was is discarded.",
+            null),
+
+        new("orderRepository.AddAsync()",
+            "EF Core · Postgres Flexible Server",
+            "The order, its line items, and any coupon redemption are written together — one SaveChanges, one transaction, all of it or none of it.",
+            "Orders · OrderItems · CouponRedemptions"),
+
+        new("TransparencyService.CreatePendingRecordsForOrderAsync()",
+            "Application layer · SHA-256",
+            "Line items are sorted, joined, and hashed into a single order hash. Each item gets a record stamped with the chain id and network, status Pending, waiting to be anchored.",
+            "TransparencyRecords"),
+
+        new("ReceiptService.SendReceiptAsync()",
+            "QuestPDF · Blob Storage · Communication Services",
+            "A PDF is rendered in-process, uploaded to Blob Storage, and emailed through Azure's managed relay.",
+            "Receipts"),
+
+        new("order-processing",
+            "Service Bus · OrderProcessingWorker",
+            "The queue is provisioned and the worker holds an open receiver on it. Nothing publishes to it yet — it is the seam where the synchronous path above gets to become asynchronous.",
+            null,
+            IsDeferred: true)
+    ];
+
+    // ===== The Schema =====
+    private static readonly string[] SchemaGroups =
+    [
+        "Commerce", "Identity & wallets", "Staking", "Settlement", "Agentic commerce", "Other"
+    ];
+
+    private DatabaseSchemaDto? _schema;
+    private string? _schemaError;
+    private string _activeGroup = "Commerce";
+    private string? _openTable;
+    private string? _highlightTable;
+    private bool _copied;
+
+    private string SchemaEndpointUrl => $"{Navigation.BaseUri.TrimEnd('/')}/api/transparency/schema";
+
+    private IReadOnlyList<SchemaTableDto> TablesIn(string group)
+        => _schema is null
+            ? []
+            : _schema.Tables.Where(table => table.Group == group).ToArray();
+
+    private static string SchemaAnchorId(string table) => $"schema-{table.ToLowerInvariant()}";
+
+    private void SelectGroup(string group)
+    {
+        _activeGroup = group;
+        _openTable = null;
+    }
+
+    private void ToggleTable(string table)
+    {
+        _openTable = _openTable == table ? null : table;
+        _highlightTable = null;
+    }
+
+    /// <summary>Follows a foreign key: switches to the target's group, opens it, and flags it for highlight.</summary>
+    private void JumpToTable(string table)
+    {
+        var target = _schema?.Tables.FirstOrDefault(candidate => candidate.Table == table);
+        if (target is null)
+        {
+            return;
+        }
+
+        _activeGroup = target.Group;
+        _openTable = target.Table;
+        _highlightTable = target.Table;
+    }
+
+    private async Task CopyEndpointAsync()
+    {
+        _copied = await JSRuntime.InvokeAsync<bool>("storyDataPath.copy", $"curl {SchemaEndpointUrl}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var schemaService = Services.GetService<IDatabaseSchemaService>();
+        if (schemaService is null)
+        {
+            _schemaError = "No database is configured for this environment, so there is no schema to show.";
+            return;
+        }
+
+        try
+        {
+            _schema = await schemaService.GetSchemaAsync();
+        }
+        catch (Exception)
+        {
+            _schemaError = "The schema is temporarily unreadable — the endpoint below still answers.";
+        }
+    }
+
+    private const string InfraSnapshotDate = "27 Jul 2026";
+
+    private sealed record InfraService(string Category, string Name, string Status, string Detail, bool IsHealthy, string IconPath, string Description);
+
+    private static readonly InfraService[] InfraSnapshot =
+    [
+        new("Compute", "thiscafeteria-prod-web", "Running", "Blazor web app · Container Apps · scale 1–2", true, "images/azure-icons/container-apps-environments.svg",
+            "Serves the public storefront — browsing, cart, checkout, and the staking dashboard — over a Blazor Server circuit, autoscaling 1–2 replicas behind the Container Apps ingress."),
+        new("Compute", "thiscafeteria-prod-worker", "Running", "Order-processing consumer · Container Apps · scale 1", true, "images/azure-icons/worker-container-app.svg",
+            "A headless background service with no public ingress. Drains the order-processing queue, persists orders via EF Core, and publishes wallet-status updates back onto Service Bus."),
+        new("Database", "thiscafeteria-prod-pg", "Ready", "PostgreSQL 16 · Standard_B1ms · 32 GB", true, "images/azure-icons/postgresql.svg",
+            "The system of record. Every order, product, and account row lives here, reached through EF Core migrations that run automatically on deploy."),
+        new("Messaging", "thiscafeteria-prod-sb", "Active", "Service Bus Basic · order-processing + wallet-status", true, "images/azure-icons/service-bus.svg",
+            "Decouples the web app from the worker. order-processing carries new checkouts off the request thread; wallet-status carries wallet-linking results back to the UI."),
+        new("Storage", "tcst3m7beebrmubaa", "Available", "Blob Storage · StorageV2 · Standard_LRS", true, "images/azure-icons/storage-accounts.svg",
+            "Holds product photography and generated order receipts, served straight from Blob Storage rather than through the app's own compute."),
+        new("Secrets", "tc-kv-3m7beebrmubaa", "Available", "Key Vault · Standard tier", true, "images/azure-icons/key-vaults.svg",
+            "Holds the Postgres connection string, Service Bus keys, and Communication Services credentials — nothing sensitive ships in an environment variable or in source."),
+        new("Registry", "thiscafeteriaprodacr", "Available", "Container Registry · Basic tier", true, "images/azure-icons/container-registries.svg",
+            "Every image from CI lands here first; Container Apps pulls the web and worker images from this registry on deploy."),
+        new("Comms", "thiscafeteria-prod-acs", "Provisioned", "Communication Services · email + ACS", true, "images/azure-icons/communication-services.svg",
+            "Sends order-confirmation and account emails through Azure's managed relay — no mail server to run or patch."),
+        new("Compute", "thiscafeteria-sepolia-aa", "Deallocated", "Standard_D4s_v3 · ERC-4337 bundler, powered off when idle", false, "images/azure-icons/virtual-machine.svg",
+            "Runs the self-hosted ERC-4337 bundler and paymaster for sponsored staking transactions on Sepolia — deallocated between test runs, the one piece of infrastructure that gets to rest when the café is closed."),
+    ];
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
+            await JSRuntime.InvokeVoidAsync("infraGridExpand.init");
+            await JSRuntime.InvokeVoidAsync("storyDataPath.init");
         }
     }
 
@@ -679,6 +1947,8 @@
         try
         {
             await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.destroy");
+            await JSRuntime.InvokeVoidAsync("infraGridExpand.destroy");
+            await JSRuntime.InvokeVoidAsync("storyDataPath.destroy");
         }
         catch
         {

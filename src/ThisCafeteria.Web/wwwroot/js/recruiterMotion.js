@@ -2,12 +2,49 @@ window.recruiterShowcaseMotion = window.recruiterShowcaseMotion || {
     instances: [],
     provenanceCleanup: null,
     originsCleanup: null,
+    heroVideoCleanup: null,
     init() {
         this.destroy();
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const sections = Array.from(document.querySelectorAll('[data-recruiter-section]'));
         if (!sections.length) return;
+
+        const heroVideo = document.querySelector('[data-story-hero-video]');
+        if (heroVideo) {
+            const source = heroVideo.querySelector('source[data-src]');
+            const saveData = Boolean(navigator.connection && navigator.connection.saveData);
+
+            if (source && !prefersReducedMotion && !saveData) {
+                const markReady = () => heroVideo.classList.add('is-ready');
+                const syncPlayback = () => {
+                    if (document.hidden) {
+                        heroVideo.pause();
+                    } else {
+                        heroVideo.play().catch(() => {});
+                    }
+                };
+
+                heroVideo.addEventListener('canplay', markReady);
+                document.addEventListener('visibilitychange', syncPlayback);
+                source.src = source.dataset.src;
+                heroVideo.load();
+                syncPlayback();
+
+                if (heroVideo.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+                    markReady();
+                }
+
+                this.heroVideoCleanup = () => {
+                    heroVideo.removeEventListener('canplay', markReady);
+                    document.removeEventListener('visibilitychange', syncPlayback);
+                    heroVideo.pause();
+                    heroVideo.classList.remove('is-ready');
+                    source.removeAttribute('src');
+                    heroVideo.load();
+                };
+            }
+        }
 
         const revealElement = (element) => element.classList.add('is-visible');
         const hideElement = (element) => element.classList.remove('is-visible');
@@ -222,6 +259,10 @@ window.recruiterShowcaseMotion = window.recruiterShowcaseMotion || {
         if (this.originsCleanup) {
             this.originsCleanup();
             this.originsCleanup = null;
+        }
+        if (this.heroVideoCleanup) {
+            this.heroVideoCleanup();
+            this.heroVideoCleanup = null;
         }
     }
 };
