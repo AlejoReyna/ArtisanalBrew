@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using ThisCafeteria.Application.DTOs
 @using ThisCafeteria.Application.Services
+@using ThisCafeteria.Web.Components.Story
 @using DatabaseSchemaDto = ThisCafeteria.Application.DTOs.DatabaseSchemaDto
 @using SchemaTableDto = ThisCafeteria.Application.DTOs.SchemaTableDto
 @inject IJSRuntime JSRuntime
@@ -23,7 +24,10 @@
 <div class="story-surface" aria-hidden="true"></div>
 
 <!-- ==================== HERO ==================== -->
-<section class="page-intro story-hero" data-recruiter-section data-page-theme-color="#100e0d">
+<section class="page-intro story-hero"
+         data-recruiter-section
+         data-page-theme-color="#100e0d"
+         data-theme-color="#100e0d">
     <div class="story-hero__media" aria-hidden="true">
         <img class="story-hero__poster"
              src="/images/story-hero-poster.webp"
@@ -83,57 +87,10 @@
         </p>
     </div>
 
-    <div class="story-fiction__infra" data-recruiter-observe-self>
-        <div class="story-fiction__terminal">
-            <div class="story-fiction__terminal-bar">
-                <span class="story-fiction__terminal-dot story-fiction__terminal-dot--red" aria-hidden="true"></span>
-                <span class="story-fiction__terminal-dot story-fiction__terminal-dot--yellow" aria-hidden="true"></span>
-                <span class="story-fiction__terminal-dot story-fiction__terminal-dot--green" aria-hidden="true"></span>
-                <span class="story-fiction__terminal-title">zsh &mdash; az cli &mdash; thiscafeteria-prod-rg</span>
-            </div>
-
-            <div class="story-fiction__terminal-body">
-                <p class="story-fiction__infra-mono" data-recruiter-animate="type" data-recruiter-delay="100">
-                    <span class="type-line">$ az resource list -g thiscafeteria-prod-rg</span>
-                </p>
-                <p class="story-fiction__infra-caption">Snapshot &middot; @InfraSnapshotDate &middot; westus</p>
-
-                <div class="story-fiction__infra-grid" data-infra-grid data-recruiter-stagger>
-                    @for (var i = 0; i < InfraSnapshot.Length; i++)
-                    {
-                        var svc = InfraSnapshot[i];
-                        <div class="story-fiction__infra-card" data-infra-card data-infra-index="@i" data-recruiter-animate="lift" data-recruiter-observe-self>
-                            <button type="button" class="story-fiction__infra-face" data-infra-open aria-expanded="false" aria-label="View details for @svc.Name">
-                                <div class="story-fiction__infra-card-top">
-                                    <img class="story-fiction__infra-icon" src="@svc.IconPath" alt="" loading="lazy" />
-                                    <p class="story-fiction__infra-category">@svc.Category</p>
-                                    <span class="story-fiction__infra-dot @(svc.IsHealthy ? "is-up" : "is-down")" aria-hidden="true"></span>
-                                    <p class="story-fiction__infra-status">@svc.Status</p>
-                                </div>
-                                <p class="story-fiction__infra-name">@svc.Name</p>
-                                <p class="story-fiction__infra-detail">@svc.Detail</p>
-                            </button>
-
-                            <div class="story-fiction__infra-expanded">
-                                <button type="button" class="story-fiction__infra-back" data-infra-close aria-label="Back to services">
-                                    <span aria-hidden="true">&larr;</span> Back
-                                </button>
-                                <div class="story-fiction__infra-card-top">
-                                    <img class="story-fiction__infra-icon" src="@svc.IconPath" alt="" loading="lazy" />
-                                    <p class="story-fiction__infra-category">@svc.Category</p>
-                                    <span class="story-fiction__infra-dot @(svc.IsHealthy ? "is-up" : "is-down")" aria-hidden="true"></span>
-                                    <p class="story-fiction__infra-status">@svc.Status</p>
-                                </div>
-                                <p class="story-fiction__infra-name">@svc.Name</p>
-                                <p class="story-fiction__infra-description">@svc.Description</p>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
 </section>
+
+<div class="story-white-run">
+<StoryTechShowcase />
 
 <!-- ==================== THE PATH · ONE ORDER, ALL THE WAY DOWN ==================== -->
 <section class="story-path" data-recruiter-section>
@@ -382,64 +339,6 @@
     </p>
 </section>
 
-<!-- ==================== THE YIELD · HOW STAKING WORKS ==================== -->
-<section class="story-yield" data-recruiter-section>
-    <span class="story-yield__ring" aria-hidden="true"></span>
-    <span class="story-yield__ring story-yield__ring--outer" aria-hidden="true"></span>
-
-    <div class="story-yield__content">
-        <p class="eyebrow" data-recruiter-animate="lift">The Yield</p>
-
-        <h2 class="story-yield__headline" data-recruiter-animate="mask-line" data-recruiter-delay="120">
-            <span class="mask-line"><span class="mask-line__inner">Interest,</span></span>
-            <span class="mask-line"><span class="mask-line__inner"><em class="headline-italic">freshly ground.</em></span></span>
-        </h2>
-
-        <p class="story-yield__body" data-recruiter-animate="lift" data-recruiter-delay="300">
-            One Solidity contract, <code>CafeStakingPool</code>, runs the loyalty program on Sepolia. Stake CAFE,
-            accrue COFFEE by the second, claim whenever you like.
-        </p>
-
-        <div class="story-yield__flow" data-recruiter-stagger>
-            <div class="story-yield__step" data-recruiter-animate="lift" data-recruiter-observe-self>
-                <p class="story-yield__step-mono">stake()</p>
-                <p class="story-yield__step-copy">Tokens move into the pool, guarded against re-entrancy.</p>
-            </div>
-            <div class="story-yield__step" data-recruiter-animate="lift" data-recruiter-observe-self>
-                <p class="story-yield__step-mono">rewardPerToken()</p>
-                <p class="story-yield__step-copy">An owner-set annual rate, in basis points, accrues per second against total staked.</p>
-            </div>
-            <div class="story-yield__step" data-recruiter-animate="lift" data-recruiter-observe-self>
-                <p class="story-yield__step-mono">claimRewards()</p>
-                <p class="story-yield__step-copy">Pending COFFEE transfers out. No lock-up — unstake anytime.</p>
-            </div>
-        </div>
-
-        <div class="story-yield__stats" data-recruiter-stagger>
-            <div class="story-yield__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
-                <p class="story-yield__stat-number" data-count-to="100">0</p>
-                <p class="story-yield__stat-caption">% On-chain &middot; Sepolia</p>
-            </div>
-            <div class="story-yield__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
-                <p class="story-yield__stat-number" data-count-to="0">0</p>
-                <p class="story-yield__stat-caption">Days locked &middot; unstake anytime</p>
-            </div>
-            <div class="story-yield__stat" data-recruiter-animate="lift" data-recruiter-observe-self>
-                <p class="story-yield__stat-number" data-count-to="1">0</p>
-                <p class="story-yield__stat-caption">Pool contract &middot; CafeStakingPool</p>
-            </div>
-        </div>
-
-        <p class="story-yield__footnote" data-recruiter-animate="lift" data-recruiter-observe-self>
-            Testnet only — the tokens are as real as the café.
-        </p>
-
-        <div class="story-yield__cta" data-recruiter-animate="lift" data-recruiter-observe-self>
-            <a class="button story-yield__cta-button" href="staking">See the yield</a>
-        </div>
-    </div>
-</section>
-
 <!-- ==================== THE POUR · HOW IT'S DEPLOYED ==================== -->
 <section class="story-pour" data-recruiter-section>
     <div class="recruiter-section-heading section-heading">
@@ -513,6 +412,7 @@
         <a class="button button--ghost" href="https://github.com/AlejoReyna/ArtisanalBrew" target="_blank" rel="noopener noreferrer">Read the source</a>
     </div>
 </section>
+</div>
 
 <style>
     .story-surface {
@@ -521,6 +421,14 @@
         pointer-events: none;
         position: fixed;
         z-index: -3;
+    }
+
+    .story-white-run {
+        background: #fff;
+        box-shadow: 0 0 0 100vmax #fff;
+        clip-path: inset(0 -100vmax);
+        color: #1f1a18;
+        min-height: 100svh;
     }
 
     /* ===== Hero ===== */
@@ -1908,38 +1816,12 @@
         }
     }
 
-    private const string InfraSnapshotDate = "27 Jul 2026";
-
-    private sealed record InfraService(string Category, string Name, string Status, string Detail, bool IsHealthy, string IconPath, string Description);
-
-    private static readonly InfraService[] InfraSnapshot =
-    [
-        new("Compute", "thiscafeteria-prod-web", "Running", "Blazor web app · Container Apps · scale 1–2", true, "images/azure-icons/container-apps-environments.svg",
-            "Serves the public storefront — browsing, cart, checkout, and the staking dashboard — over a Blazor Server circuit, autoscaling 1–2 replicas behind the Container Apps ingress."),
-        new("Compute", "thiscafeteria-prod-worker", "Running", "Order-processing consumer · Container Apps · scale 1", true, "images/azure-icons/worker-container-app.svg",
-            "A headless background service with no public ingress. Drains the order-processing queue, persists orders via EF Core, and publishes wallet-status updates back onto Service Bus."),
-        new("Database", "thiscafeteria-prod-pg", "Ready", "PostgreSQL 16 · Standard_B1ms · 32 GB", true, "images/azure-icons/postgresql.svg",
-            "The system of record. Every order, product, and account row lives here, reached through EF Core migrations that run automatically on deploy."),
-        new("Messaging", "thiscafeteria-prod-sb", "Active", "Service Bus Basic · order-processing + wallet-status", true, "images/azure-icons/service-bus.svg",
-            "Decouples the web app from the worker. order-processing carries new checkouts off the request thread; wallet-status carries wallet-linking results back to the UI."),
-        new("Storage", "tcst3m7beebrmubaa", "Available", "Blob Storage · StorageV2 · Standard_LRS", true, "images/azure-icons/storage-accounts.svg",
-            "Holds product photography and generated order receipts, served straight from Blob Storage rather than through the app's own compute."),
-        new("Secrets", "tc-kv-3m7beebrmubaa", "Available", "Key Vault · Standard tier", true, "images/azure-icons/key-vaults.svg",
-            "Holds the Postgres connection string, Service Bus keys, and Communication Services credentials — nothing sensitive ships in an environment variable or in source."),
-        new("Registry", "thiscafeteriaprodacr", "Available", "Container Registry · Basic tier", true, "images/azure-icons/container-registries.svg",
-            "Every image from CI lands here first; Container Apps pulls the web and worker images from this registry on deploy."),
-        new("Comms", "thiscafeteria-prod-acs", "Provisioned", "Communication Services · email + ACS", true, "images/azure-icons/communication-services.svg",
-            "Sends order-confirmation and account emails through Azure's managed relay — no mail server to run or patch."),
-        new("Compute", "thiscafeteria-sepolia-aa", "Deallocated", "Standard_D4s_v3 · ERC-4337 bundler, powered off when idle", false, "images/azure-icons/virtual-machine.svg",
-            "Runs the self-hosted ERC-4337 bundler and paymaster for sponsored staking transactions on Sepolia — deallocated between test runs, the one piece of infrastructure that gets to rest when the café is closed."),
-    ];
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
-            await JSRuntime.InvokeVoidAsync("infraGridExpand.init");
+            await JSRuntime.InvokeVoidAsync("storyTechShowcase.init");
             await JSRuntime.InvokeVoidAsync("storyDataPath.init");
         }
     }
@@ -1949,7 +1831,7 @@
         try
         {
             await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.destroy");
-            await JSRuntime.InvokeVoidAsync("infraGridExpand.destroy");
+            await JSRuntime.InvokeVoidAsync("storyTechShowcase.destroy");
             await JSRuntime.InvokeVoidAsync("storyDataPath.destroy");
         }
         catch

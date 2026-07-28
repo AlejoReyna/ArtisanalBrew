@@ -49,7 +49,7 @@
     <script src="js/publicHeader.js"></script>
     <script src="js/productTransition.js"></script>
     <script src="js/recruiterMotion.js"></script>
-    <script src="js/infraGrid.js"></script>
+    <script src="js/storyTechShowcase.js"></script>
     <script src="js/storyDataPath.js"></script>
     <script src="js/journalProgress.js"></script>
     <script src="js/heroWebGL.js"></script>
@@ -200,6 +200,16 @@
             });
         };
 
+        window.queueStoryTechShowcase = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.storyTechShowcase) {
+                        window.storyTechShowcase.init();
+                    }
+                });
+            });
+        };
+
         window.queueHeroWebGL = () => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -250,6 +260,7 @@
         document.addEventListener('DOMContentLoaded', () => window.queueAnimations(false));
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
+        document.addEventListener('DOMContentLoaded', window.queueStoryTechShowcase);
         document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
         document.addEventListener('DOMContentLoaded', window.queueHeroVideo);
         document.addEventListener('DOMContentLoaded', window.queueHeroType);
@@ -266,6 +277,7 @@
             window.queueAnimations(true);
             window.queuePublicHeader();
             window.queueRecruiterMotion();
+            window.queueStoryTechShowcase();
             window.queueHeroWebGL();
             window.queueHeroVideo();
             window.queueHeroType();
