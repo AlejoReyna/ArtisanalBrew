@@ -12,6 +12,12 @@ publish-ec2/
 appsettings.Local.json
 .env
 
+# Local acceptance harness state and generated evidence
+/acceptance-evidence-*.log
+/contracts/evm/.acceptance-isolated
+/contracts/evm/node.log
+/worker.log
+
 # Client build tooling (Tailwind CSS)
 node_modules/
 src/ThisCafeteria.Web/package-lock.json
