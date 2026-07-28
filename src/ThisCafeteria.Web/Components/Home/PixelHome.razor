@@ -1,0 +1,320 @@
+@* Pixel-galaxy homepage: the procurement lab's robot crew set loose in a
+   full-bleed space backdrop to gather flat 2D coffee coins. Everything in the
+   scene is a flat sprite — see docs/kimi_ui.md for the design system this
+   follows.
+
+   The crew is not choreographed. A 194-parameter policy trained offline by
+   tools/train_pixel_crew.mjs steers each robot toward coins, and
+   wwwroot/js/pixelCrewRuntime.js runs it per frame against the same physics
+   the trainer used (wwwroot/js/pixelCrewSim.js). The CSS keyframes underneath
+   remain as the fallback for no-JS and reduced-motion. *@
+
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div class="ph-page ph-page--bg-@_bgVariant">
+    @* data-theme-color matches the hero's --stake-bg-deep base so
+       publicHeader.js keeps the page theme color (and its 1px top surface)
+       dark instead of falling back to the cream storefront default. *@
+    <section class="ph-hero @(_isIntroHidden ? "ph-hero--intro-hidden" : string.Empty)" data-theme-color="#100D0B">
+        <button class="ph-copy-toggle"
+                type="button"
+                aria-controls="pixel-home-intro"
+                aria-expanded="@(!_isIntroHidden)"
+                @onclick="ToggleIntro">
+            @(_isIntroHidden ? "SHOW INTRO" : "HIDE INTRO")
+        </button>
+
+        @* Checkpoint switcher: swaps which set of trained weights is steering
+           the crew, leaving the robots and coins exactly where they are so the
+           only thing that changes is the behaviour. Generation 0 has never
+           been trained and drifts into walls; 300 sweeps the field. Rendered
+           only when the runtime reports it took over — with no JS (or reduced
+           motion) the CSS choreography is running and there is no policy to
+           switch. *@
+        @if (_simRunning)
+        {
+            <div class="ph-brain" role="group" aria-label="Robot policy training checkpoint">
+                <span class="ph-brain__label">CREW BRAIN</span>
+                <div class="ph-brain__options">
+                    @foreach (var option in Checkpoints)
+                    {
+                        @* aria-pressed must be the literal string "true"/"false":
+                           a bool renders as an empty attribute when true and is
+                           dropped entirely when false, which reads as neither. *@
+                        <button class="ph-brain__option @(_checkpoint == option.Key ? "is-active" : string.Empty)"
+                                type="button"
+                                aria-pressed="@((_checkpoint == option.Key) ? "true" : "false")"
+                                title="@option.Description"
+                                @onclick="() => SetCheckpoint(option.Key)">
+                            @option.Label
+                        </button>
+                    }
+                </div>
+                <span class="ph-brain__stat">@CurrentCheckpoint.Description</span>
+            </div>
+        }
+
+        <div id="pixel-home-intro" class="ph-hero__copy">
+            @* 8-bit 3D title: white faces over a hard-stepped text-shadow
+               extrusion, letters bobbing in a staggered ripple like a retro
+               game logo. The aria-label carries the sentence; the decorative
+               letters stay out of the a11y tree. *@
+            <h1 class="ph-title3d" aria-label="Your next coffee, on-chain">
+                <span aria-hidden="true">
+                    @{ var letterIndex = 0; }
+                    @foreach (var line in PixelTitleLines)
+                    {
+                        <span class="ph-title3d__line">
+                            @foreach (var word in line.Split(' '))
+                            {
+                                <span class="ph-title3d__word">
+                                    @foreach (var letter in word)
+                                    {
+                                        <span class="ph-title3d__letter" style="--i: @letterIndex;">@letter</span>
+                                        letterIndex++;
+                                    }
+                                </span>
+                            }
+                        </span>
+                    }
+                </span>
+            </h1>
+            <p class="ph-lede">
+                Stake CAFE while it roasts, and watch a friendly pixel crew run
+                wallet-signed test missions on Sepolia. No autonomous agents —
+                every action is signed by you.
+            </p>
+            <div class="ph-cta-row">
+                <a class="ph-cta" href="/staking">STAKE COFFEE</a>
+                <a class="ph-cta ph-cta--ghost" href="https://www.alexisreyna.dev/blog" target="_blank" rel="noopener noreferrer">READ MY BLOG</a>
+            </div>
+        </div>
+
+        <div class="ph-hero__scene" id="ph-scene-root" aria-hidden="true">
+            <div class="ph-scene" role="img" aria-label="A pixel galaxy spanning the whole hero: the Andromeda galaxy glows far in the background behind drifting planets, six coffee bags from the catalog float through the deep backdrop, golden coffee coins are scattered through the space, and the pixel robot crew drifts over to collect them one by one, each grab marked by a pixel +1.">
+                @* Cross-shaped pixel stars, irregular via per-star custom
+                   properties. Sixteen of them, dispersed over the whole sky. *@
+                <span class="ph-star ph-star--one"></span>
+                <span class="ph-star ph-star--two"></span>
+                <span class="ph-star ph-star--three"></span>
+                <span class="ph-star ph-star--four"></span>
+                <span class="ph-star ph-star--five"></span>
+                <span class="ph-star ph-star--six"></span>
+                <span class="ph-star ph-star--seven"></span>
+                <span class="ph-star ph-star--eight"></span>
+                <span class="ph-star ph-star--nine"></span>
+                <span class="ph-star ph-star--ten"></span>
+                <span class="ph-star ph-star--eleven"></span>
+                <span class="ph-star ph-star--twelve"></span>
+                <span class="ph-star ph-star--thirteen"></span>
+                <span class="ph-star ph-star--fourteen"></span>
+                <span class="ph-star ph-star--fifteen"></span>
+                <span class="ph-star ph-star--sixteen"></span>
+
+                @* Andromeda, sitting furthest back of anything in the scene:
+                   dimmed and small enough to read as deep sky rather than as
+                   another prop. Sprite from tools/generate_andromeda.py. *@
+                <img class="ph-sky__andromeda" src="images/pl-andromeda.png" alt="" width="132" height="84" />
+
+                <img class="ph-sky__planet" src="images/pl-planet.png" alt="" />
+                <img class="ph-sky__planet ph-sky__planet--ringed" src="images/pl-planet-ringed.png" alt="" />
+                <img class="ph-sky__satellite" src="images/pl-satellite.png" alt="" />
+
+                @* Pixel chain badges — Ethereum octahedron, Solana stripes, BNB
+                   diamonds — dim and drifting in the background behind the
+                   coins and the crew. Two of each, dispersed over the space;
+                   the -b variants drop out on narrow viewports. *@
+                <span class="ph-chain ph-chain--eth-a"><img src="images/pl-chain-ethereum.png" alt="" /></span>
+                <span class="ph-chain ph-chain--sol-a"><img src="images/pl-chain-solana.png" alt="" /></span>
+                <span class="ph-chain ph-chain--bnb-a"><img src="images/pl-chain-bnb.png" alt="" /></span>
+                <span class="ph-chain ph-chain--eth-b"><img src="images/pl-chain-ethereum.png" alt="" /></span>
+                <span class="ph-chain ph-chain--sol-b"><img src="images/pl-chain-solana.png" alt="" /></span>
+                <span class="ph-chain ph-chain--bnb-b"><img src="images/pl-chain-bnb.png" alt="" /></span>
+
+                @* The six catalog bags, one per product on /products, cut down
+                   to tiny pl-bag sprites (tools/generate_pixel_bags.py) and
+                   dispersed through the deep backdrop with the chain badges —
+                   dim, tilted, and bobbing slowly. Guatemala, mexico and peru
+                   drop out on narrow viewports. *@
+                <span class="ph-bag ph-bag--colombia"><img src="images/pl-bag-colombia.png" alt="" /></span>
+                <span class="ph-bag ph-bag--costa-rica"><img src="images/pl-bag-costa-rica.png" alt="" /></span>
+                <span class="ph-bag ph-bag--ethiopia"><img src="images/pl-bag-ethiopia.png" alt="" /></span>
+                <span class="ph-bag ph-bag--guatemala"><img src="images/pl-bag-guatemala.png" alt="" /></span>
+                <span class="ph-bag ph-bag--mexico"><img src="images/pl-bag-mexico.png" alt="" /></span>
+                <span class="ph-bag ph-bag--peru"><img src="images/pl-bag-peru.png" alt="" /></span>
+
+                @* Seven coins. The crew runtime owns their positions once it
+                   loads — they are scattered by the simulation and respawn
+                   wherever it decides, never on the copy column. The
+                   ambient/loot split below and the coordinates in the
+                   stylesheet are the no-JS fallback composition; under the sim
+                   a coin vanishes because a robot reached it, not because a
+                   shared 90s clock said so. *@
+                <span class="ph-coinbit ph-coinbit--ambient-a"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+                <span class="ph-coinbit ph-coinbit--ambient-b"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+                <span class="ph-coinbit ph-coinbit--ambient-c"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+                <span class="ph-coinbit ph-coinbit--loot-scout"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+                <span class="ph-coinbit ph-coinbit--loot-buyer"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+                <span class="ph-coinbit ph-coinbit--loot-courier"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+                <span class="ph-coinbit ph-coinbit--loot-inspector"><img src="images/coffee-coin-pixel.png" alt="" /></span>
+
+                @* The crew. Each roam wrapper is one simulated agent: the
+                   trained policy in wwwroot/js/pixelCrewPolicy.js picks its
+                   acceleration every frame from what it can see (direction and
+                   distance to the nearest coin, its own velocity, the four
+                   walls), and pixelCrewRuntime.js writes the result as a
+                   transform. Empty hands — they gather, they don't work. The
+                   grab overlay and the Mario-style +1 fire on the frame a
+                   robot actually touches a coin. Drag one anywhere: the policy
+                   picks up from the new spot, which is as good a test of
+                   whether it generalises as any. *@
+                <div class="ph-scene__roam ph-scene__roam--scout">
+                    <div class="ph-scene__unit ph-scene__unit--scout">
+                        <span class="ph-scene__actor ph-scene__actor--scout"></span>
+                        <span class="ph-scene__grab"></span>
+                        <span class="ph-scene__sip"></span>
+                        <span class="ph-scene__plus"></span>
+                    </div>
+                </div>
+                <div class="ph-scene__roam ph-scene__roam--buyer">
+                    <div class="ph-scene__unit ph-scene__unit--buyer">
+                        <span class="ph-scene__actor ph-scene__actor--buyer"></span>
+                        <span class="ph-scene__grab"></span>
+                        <span class="ph-scene__sip"></span>
+                        <span class="ph-scene__plus"></span>
+                    </div>
+                </div>
+                <div class="ph-scene__roam ph-scene__roam--courier">
+                    <div class="ph-scene__unit ph-scene__unit--courier">
+                        <span class="ph-scene__actor ph-scene__actor--courier"></span>
+                        <span class="ph-scene__grab"></span>
+                        <span class="ph-scene__sip"></span>
+                        <span class="ph-scene__plus"></span>
+                    </div>
+                </div>
+                <div class="ph-scene__roam ph-scene__roam--inspector">
+                    <div class="ph-scene__unit ph-scene__unit--inspector">
+                        <span class="ph-scene__actor ph-scene__actor--inspector"></span>
+                        <span class="ph-scene__grab"></span>
+                        <span class="ph-scene__sip"></span>
+                        <span class="ph-scene__plus"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="ph-panels">
+        <div class="ph-panel">
+            <div class="ph-panel__glyph">
+                <img class="ph-panel__coin" src="images/coffee-coin-pixel.png" alt="" />
+            </div>
+            <p class="ph-panel__label">STAKE COFFEE</p>
+            <h2 class="ph-panel__title">Earn while it roasts</h2>
+            <p class="ph-panel__copy">
+                Stake your CAFE tokens in the pool and track yield on-chain.
+                What you see in the dashboard is what the contract holds — no
+                projected APYs, just recorded epochs.
+            </p>
+            <a class="ph-panel__link" href="/staking">OPEN THE STAKING POOL →</a>
+        </div>
+
+        <div class="ph-panel">
+            <div class="ph-panel__glyph">
+                <span class="ph-panel__robot"></span>
+            </div>
+            <p class="ph-panel__label">PROCUREMENT LAB</p>
+            <h2 class="ph-panel__title">Wallet-signed test missions</h2>
+            <p class="ph-panel__copy">
+                Create escrowed procurement missions for the robot crew. Every
+                mission is a test mission and every action is signed by your
+                wallet — nothing runs autonomously.
+            </p>
+            <a class="ph-panel__link" href="/procurement-lab">ENTER THE LAB →</a>
+        </div>
+    </section>
+
+    <footer class="ph-footer">
+        <p>© 2026 ARTISANAL BREW · BREWED ON SEPOLIA</p>
+    </footer>
+</div>
+
+@code {
+    private bool _isIntroHidden;
+
+    // 3D hero title, stacked as three lines.
+    private static readonly string[] PixelTitleLines = { "YOUR NEXT", "COFFEE,", "ON-CHAIN" };
+
+    // One of the five space palettes per render, so a refresh or a fresh
+    // session lands on a different background.
+    private readonly int _bgVariant = Random.Shared.Next(5);
+
+    private void ToggleIntro() => _isIntroHidden = !_isIntroHidden;
+
+    // The crew runtime replaces the CSS roam keyframes with the trained
+    // policy. Held as a module reference so the rAF loop can be torn down on
+    // dispose — enhanced navigation keeps the module cached, and a second
+    // init without a teardown would leave two loops driving the same DOM.
+    private IJSObjectReference? _crew;
+
+    // True once the runtime confirms it is driving the scene. It declines
+    // under prefers-reduced-motion, and the checkpoint switcher would be
+    // meaningless then — there is no policy running to switch.
+    private bool _simRunning;
+
+    private string _checkpoint = "trained";
+
+    private sealed record Checkpoint(string Key, string Label, string Description);
+
+    // Held-out coins per episode are measured at training time and printed by
+    // tools/train_pixel_crew.mjs; see docs/pixel-crew-training.md.
+    private static readonly Checkpoint[] Checkpoints =
+    {
+        new("untrained", "GEN 0", "Never trained — 1.8 coins, 0.2 bags per run"),
+        new("early", "GEN 20", "Barely trained — 25.8 coins, 5.6 bags per run"),
+        new("trained", "GEN 300", "Fully trained — 27.4 coins, 5.0 bags per run"),
+    };
+
+    private Checkpoint CurrentCheckpoint =>
+        Checkpoints.FirstOrDefault(c => c.Key == _checkpoint) ?? Checkpoints[^1];
+
+    private async Task SetCheckpoint(string key)
+    {
+        if (_crew is null || _checkpoint == key) return;
+        _checkpoint = key;
+        await _crew.InvokeVoidAsync("setCheckpoint", "ph-scene-root", key);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _crew = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/pixelCrewRuntime.js");
+            _simRunning = await _crew.InvokeAsync<bool>("init", "ph-scene-root", _checkpoint);
+            if (_simRunning)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_crew is not null)
+        {
+            try
+            {
+                await _crew.InvokeVoidAsync("destroy", "ph-scene-root");
+                await _crew.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit already gone; nothing left to tear down.
+            }
+        }
+    }
+}
