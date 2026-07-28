@@ -14,7 +14,7 @@
 <PageTitle>This Café Doesn't Exist | Artisanal Brew</PageTitle>
 
 @*
-    publicHeader.js paints <body> with this page's theme colour (#100e0d) so the
+    publicHeader.js paints <body> with this page's theme colour (#0f0f11) so the
     browser chrome matches the header. That leaves the document background near-black
     while --ink/--muted are still light-theme values, which is what made every section
     below the hero dark-on-dark. This backdrop gives the page its own light surface,
@@ -26,8 +26,8 @@
 <!-- ==================== HERO ==================== -->
 <section class="page-intro story-hero"
          data-recruiter-section
-         data-page-theme-color="#100e0d"
-         data-theme-color="#100e0d">
+         data-page-theme-color="#0f0f11"
+         data-theme-color="#0f0f11">
     <div class="story-hero__media" aria-hidden="true">
         <img class="story-hero__poster"
              src="/images/story-hero-poster.webp"
@@ -49,22 +49,25 @@
     <span class="story-hero__scrim" aria-hidden="true"></span>
 
     <div class="story-hero__content">
-        <p class="eyebrow" data-recruiter-animate="lift">Full Disclosure</p>
+        <p class="story-hero__guess" aria-hidden="true">
+            <span class="story-hero__guess-prefix">&gt;</span>
+            <span class="story-hero__guess-text" data-story-guess-text></span><span class="story-hero__guess-cursor"></span>
+        </p>
 
         <h1 class="story-hero__headline" aria-label="This café doesn't exist.">
             <Pixel3DText Lines="@HeroHeadlineLines" />
         </h1>
 
         <p class="lede story-hero__lede" data-recruiter-animate="lift" data-recruiter-delay="320">
-            No storefront. No beans. No baristas. What <em>is</em> real: a full commerce, staking, and settlement
-            stack, engineered as if the café were.
+            And that's exactly why it's awesome: a real blockchain stack, playing dress-up as a coffee shop.
         </p>
 
-        <p class="story-hero__type" data-recruiter-animate="type" data-recruiter-delay="560">
-            <span class="type-line">&gt; a fictional cafeteria &middot; real engineering</span>
-        </p>
-
-        <span class="story-hero__rule" aria-hidden="true"></span>
+        <a class="story-hero__github" href="https://github.com/AlejoReyna/ArtisanalBrew" target="_blank" rel="noopener noreferrer">
+            <svg class="story-hero__github-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+            </svg>
+            <span>AlejoReyna/ArtisanalBrew</span>
+        </a>
     </div>
 </section>
 
@@ -434,7 +437,7 @@
     /* ===== Hero ===== */
     .story-hero {
         align-items: center;
-        background: #100e0d;
+        background: #0f0f11;
         box-sizing: border-box;
         display: grid;
         isolation: isolate;
@@ -493,8 +496,35 @@
         z-index: 1;
     }
 
-    .story-hero .eyebrow {
+    .story-hero__guess {
+        align-items: baseline;
         color: rgba(251, 249, 244, 0.74);
+        display: flex;
+        font-family: var(--crypto-mono);
+        font-size: 0.85rem;
+        gap: 0.4rem;
+        justify-content: center;
+        letter-spacing: 0.04em;
+        margin: 0 0 1.25rem;
+        min-height: 1.2em;
+    }
+
+    .story-hero__guess-prefix {
+        color: rgba(251, 249, 244, 0.5);
+    }
+
+    .story-hero__guess-cursor {
+        animation: storyHeroGuessCaret 1s step-end infinite;
+        background: rgba(251, 249, 244, 0.85);
+        display: inline-block;
+        height: 1em;
+        vertical-align: text-bottom;
+        width: 0.5ch;
+    }
+
+    @@keyframes storyHeroGuessCaret {
+        0%, 49% { opacity: 1; }
+        50%, 100% { opacity: 0; }
     }
 
     .story-hero__headline {
@@ -508,26 +538,31 @@
         margin-inline: auto;
     }
 
-    .story-hero__type {
-        color: rgba(251, 249, 244, 0.7);
+    .story-hero__github {
+        align-items: center;
+        border: 1px solid rgba(251, 249, 244, 0.4);
+        border-radius: 999px;
+        color: #fbf9f4;
+        display: inline-flex;
         font-family: var(--crypto-mono);
-        font-size: 0.85rem;
-        letter-spacing: 0.04em;
-        margin-top: 2rem;
+        font-size: 0.78rem;
+        gap: 0.55rem;
+        letter-spacing: 0.02em;
+        margin-top: 1.5rem;
+        padding: 0.55rem 1.1rem;
+        text-decoration: none;
+        transition: background 160ms ease, border-color 160ms ease;
     }
 
-    .story-hero__rule {
-        background: rgba(251, 249, 244, 0.48);
-        display: block;
-        height: 1px;
-        margin: clamp(3rem, 6vw, 5rem) auto 0;
-        max-width: 8rem;
-        transform: scaleX(0);
-        transition: transform 1200ms cubic-bezier(.16, 1, .3, 1);
+    .story-hero__github:hover {
+        background: rgba(251, 249, 244, 0.12);
+        border-color: rgba(251, 249, 244, 0.7);
     }
 
-    .story-hero.is-in-view .story-hero__rule {
-        transform: scaleX(1);
+    .story-hero__github-icon {
+        flex: none;
+        height: 1rem;
+        width: 1rem;
     }
 
     /* ===== The Fiction ===== */
@@ -1660,7 +1695,7 @@
 
         .story-hero__poster,
         .story-hero__video {
-            object-position: 38% center;
+            object-position: 62% center;
         }
 
         .story-fiction__columns {
@@ -1674,8 +1709,9 @@
             transition: none;
         }
 
-        .story-hero__rule {
-            transition: none;
+        .story-hero__guess-cursor {
+            animation: none;
+            opacity: 0;
         }
 
         .story-yield__ring {
@@ -1820,6 +1856,9 @@
     {
         if (firstRender)
         {
+            // Run after this route's DOM is committed so enhanced navigation
+            // cannot initialize the header against the page being replaced.
+            await JSRuntime.InvokeVoidAsync("initPublicHeader");
             await JSRuntime.InvokeVoidAsync("recruiterShowcaseMotion.init");
             await JSRuntime.InvokeVoidAsync("storyTechShowcase.init");
             await JSRuntime.InvokeVoidAsync("storyDataPath.init");
