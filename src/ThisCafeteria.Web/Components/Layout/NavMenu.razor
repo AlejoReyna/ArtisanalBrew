@@ -58,26 +58,29 @@
     </div>
 
     <div class="nav-utilities">
-        <button class="theme-toggle"
-                type="button"
-                aria-label="@ThemeToggleLabel"
-                title="@ThemeToggleLabel"
-                @onclick="CycleThemeAsync">
-            <span class="theme-toggle__icon" aria-hidden="true">
-                @if (_theme == "dark")
-                {
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                }
-                else if (_theme == "light")
-                {
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-                }
-                else
-                {
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
-                }
-            </span>
-        </button>
+        @if (ThemeToggleEnabled)
+        {
+            <button class="theme-toggle"
+                    type="button"
+                    aria-label="@ThemeToggleLabel"
+                    title="@ThemeToggleLabel"
+                    @onclick="CycleThemeAsync">
+                <span class="theme-toggle__icon" aria-hidden="true">
+                    @if (_theme == "dark")
+                    {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    }
+                    else if (_theme == "light")
+                    {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    }
+                    else
+                    {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
+                    }
+                </span>
+            </button>
+        }
         <AuthorizeView>
             <Authorized>
                 <button class="@UserToggleCssClass nav-login--authorized"
@@ -208,9 +211,12 @@
                 <a href="cart" class="nav-drawer__cta nav-drawer__cta--outline" @onclick="CloseNav">Cart</a>
             </NotAuthorized>
         </AuthorizeView>
-        <button class="nav-drawer__theme-toggle" type="button" @onclick="CycleThemeAsync">
-            @ThemeToggleLabel
-        </button>
+        @if (ThemeToggleEnabled)
+        {
+            <button class="nav-drawer__theme-toggle" type="button" @onclick="CycleThemeAsync">
+                @ThemeToggleLabel
+            </button>
+        }
     </footer>
 </aside>
 
@@ -489,6 +495,11 @@
 
     private bool _isNetworkDropdownOpen = false;
 
+    // Deactivated for now: the toggle UI is hidden below (desktop + drawer)
+    // while /staking is pinned to a permanent dark default (see app.css). Flip
+    // back to true to restore the light/dark/system switch.
+    private const bool ThemeToggleEnabled = false;
+
     // Light/dark/system theme toggle. 'system' means no explicit choice is
     // stored — the CSS prefers-color-scheme tier decides. The actual applied
     // value lives in the `data-theme` attribute on <html>, set synchronously by
@@ -552,11 +563,9 @@
     private string HeaderCssClass =>
         IsStoryRoute
             ? "public-header public-header--transparent public-header--story"
-            : IsHomeRoute
-                ? "public-header public-header--home"
-                : TransparentHeader
-                    ? "public-header public-header--transparent"
-                    : "public-header";
+            : IsHomeRoute || TransparentHeader
+                ? "public-header public-header--transparent"
+                : "public-header";
 
     private string UserToggleCssClass => _isUserMenuOpen ? "nav-login active" : "nav-login";
 

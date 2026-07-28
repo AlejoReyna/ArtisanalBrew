@@ -77,7 +77,7 @@ window.themeColor = {
 };
 
 window.initPublicHeader = () => {
-    const hero = document.querySelector('.editorial-hero, .journal-hero, .story-hero');
+    const hero = document.querySelector('.editorial-hero, .journal-hero, .story-hero, .ph-hero');
     const header = document.querySelector('.public-header');
 
     if (window.publicHeaderObserver) {

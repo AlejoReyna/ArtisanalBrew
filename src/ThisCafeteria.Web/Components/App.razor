@@ -1,7 +1,7 @@
 @inject NavigationManager Navigation
 
 <!DOCTYPE html>
-<html lang="en" style="@InitialDocumentBackground">
+<html lang="en" style="@InitialDocumentBackground" data-scene-route="@SceneRoute">
 
 <head>
     <meta charset="utf-8" />
@@ -320,6 +320,24 @@
             InitialPath,
             "story",
             StringComparison.OrdinalIgnoreCase);
+
+    // Drives which layer of the GlobalScene background scenario is visible
+    // (Components/Layout/GlobalScene.razor + the matching rules in app.css).
+    // The scene's containers are data-permanent, so enhanced navigation only
+    // has to swap this <html> attribute for the per-route layers to cross-fade
+    // over the preserved sky. "lab" shows the base sky with no extra layer;
+    // "none" hides the scenario entirely (every page without it). /profile
+    // shares the staking layer: it hosts the same YieldPanel intro, and its
+    // dashboard views paint an opaque ground over the scene anyway.
+    private string SceneRoute =>
+        IsHomeRoute
+            ? "home"
+            : InitialPath.StartsWith("staking", StringComparison.OrdinalIgnoreCase) ||
+              InitialPath.StartsWith("profile", StringComparison.OrdinalIgnoreCase)
+                ? "staking"
+                : InitialPath.StartsWith("procurement-lab", StringComparison.OrdinalIgnoreCase)
+                    ? "lab"
+                    : "none";
 
     private string InitialThemeColor =>
         IsStoryRoute

@@ -22,44 +22,9 @@
     top: 0;
 }
 
-.story-tech__chrome {
-    align-items: center;
-    display: flex;
-    inset: clamp(4.5rem, 8vh, 6.5rem) clamp(1rem, 3vw, 2.5rem) auto;
-    justify-content: space-between;
-    position: absolute;
-    z-index: 8;
-}
-
-.story-tech__eyebrow,
-.story-tech__counter,
 .story-tech__kicker {
     font-family: var(--crypto-mono);
     text-transform: uppercase;
-}
-
-.story-tech__eyebrow {
-    color: #6d6d6d;
-    font-size: 0.66rem;
-    letter-spacing: 0.16em;
-    margin: 0;
-}
-
-.story-tech__counter {
-    align-items: center;
-    color: #171717;
-    display: flex;
-    font-size: 0.65rem;
-    gap: 0.55rem;
-    letter-spacing: 0.08em;
-    margin: 0;
-}
-
-.story-tech__counter-rule {
-    background: #d8d8d8;
-    display: block;
-    height: 1px;
-    width: 2rem;
 }
 
 .story-tech__titles {
@@ -93,6 +58,10 @@
     margin: 0 0 0.8rem;
 }
 
+.story-tech__title--infra .story-tech__kicker {
+    color: var(--tech-blue);
+}
+
 .story-tech__title h2 {
     color: #171717;
     font-family: var(--font-sans);
@@ -107,6 +76,12 @@
     color: var(--tech-accent);
     font-family: var(--font-display);
     font-weight: 500;
+}
+
+.story-tech__title--infra h2 em {
+    color: var(--tech-blue);
+    font-family: "Segoe UI", "Segoe UI Variable", "Helvetica Neue", Arial, sans-serif;
+    font-style: normal;
 }
 
 .story-tech__title > p:last-child {
@@ -370,11 +345,6 @@
         min-height: 36rem;
     }
 
-    .story-tech__chrome {
-        inset-inline: 0.85rem;
-        top: 3.35rem;
-    }
-
     .story-tech__title {
         background: radial-gradient(closest-side, #fff 68%, rgba(255, 255, 255, 0) 100%);
         box-sizing: border-box;
@@ -438,7 +408,6 @@
         position: relative;
     }
 
-    .story-tech__chrome,
     .story-tech__nav,
     .story-tech__scroll-cue,
     .story-tech__title--bridge {

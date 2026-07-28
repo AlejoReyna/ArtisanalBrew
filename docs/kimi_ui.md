@@ -138,6 +138,67 @@ A single flat `rotateY` image looks like paper edge-on. The fix in
 - Entrance (`coffee-orbit-arrive`, a translateY spring) and idle float live on
   outer wrappers so they never fight the flip transform.
 
+### 3.3 The staked twin (black token)
+
+A second coin sits beside the CAFE coin in the `/staking` hero to represent the
+locked (staked) token. Assets (32×32, from `tools/generate_staked_coin.py`):
+`wwwroot/images/staked-coin-bean.png` (white bean mask, S-crease cut
+transparent) and `wwwroot/images/staked-coin-pixel.png` — the coin rendered as
+dark lead-grey metal so it reads corporeal and heavy, not flat black:
+
+- LEAD `(46, 42, 39)` — outer contour and raised border. Deliberately not pure
+  black: the silhouette keeps its definition but stays the same metal as the
+  face.
+- METAL `(54, 48, 43)` base face, METAL_MID `(70, 62, 54)` raised inner field,
+  METAL_HI `(96, 84, 68)` stepped highlights and rim band, METAL_DK
+  `(30, 26, 23)` shadow steps — paired 2px/1px highlight and shadow arcs plus a
+  bottom crescent give the face stepped depth (no gradients).
+- GLINT `(168, 156, 136)` — micro light reflections: a thin arc on the raised
+  top rim (215°–285°) and two single-pixel catches.
+- DEEP `(16, 13, 11)` — the bean glyph kept carved near-black as a recess the
+  colored overlay mask fills at runtime.
+
+The bean is colored at runtime, not baked: each staked face wraps its sprite in
+a `.coffee-orbit__coin-face--staked` span carrying a `.coffee-orbit__coin-bean`
+overlay. The overlay uses the mask PNG as `mask-image`, so a flat
+`background-color` + `drop-shadow` filter lands exactly inside the glyph and
+the glow stays crisp. The face wrapper gets `transform-style: preserve-3d` and
+the bean `translateZ(1px)`, lifting it proud of the milled-edge layers —
+without that, the back face's bean (face plane −6px vs nearest edge layer
+−4.5px) is occluded by the darkened sprite slices and reads uncolored. Two
+synced 4.5s keyframes run the cycle: each chain holds ~1.1s, then blends over
+~0.4s for a subtle, smooth color change (1.5s per chain):
+
+- Solana — not a flat green but the full brand gradient
+  `#C864D7 → #7E79D7 → #4C65D7 → #9FBFF3 → #3AC2CC → #17DACB` (105°). Because
+  CSS gradients can't interpolate, the gradient is painted by the bean's
+  `::after` layer and the smooth transition is an opacity crossfade
+  (`staked-bean-solana`) on top of the base color cycle.
+- BSC gold `#F0B90B`
+- Ethereum periwinkle `#627EEA`
+
+`staked-bean-chain` animates the solid base `background-color` and the bean's
+glow drop-shadow through the holds/blends above. The token itself carries a
+soft static white halo — `.coffee-orbit__coin-scene--staked` declares
+`drop-shadow(0 0 22px rgba(255, 250, 240, 0.3))` alongside the base hard
+offset shadow; the chain colors stay on the bean glyph, never around the coin.
+Remaining modifiers:
+
+- `.coffee-orbit__coin-scene--staked` sets `--coin-url: url("images/staked-coin-pixel.png")`;
+  the base `.coffee-orbit__coin-layer` rule reads that variable (defaulting to
+  the gold sprite), so the milled edge follows the new sprite automatically.
+- `.coffee-orbit__coin3d--staked` runs the same flip keyframes slower (4.4s)
+  and in reverse, so the two coins don't move in lockstep.
+
+`.staking-intro__coins` is no longer a flow row inside the hero column: it is an
+absolutely positioned, pointer-events-none overlay on the whole intro section
+(sits in the DOM right after `.staking-intro__space`), so the headline and CTA
+stay centered while the orbits flank them — CAFE pinned high-left
+(`top: 9%`, `left: clamp(1rem, 7vw, 7rem)`), the staked token low-right
+(`bottom: 8%`, `right: clamp(1rem, 8vw, 8rem)`), both shrinking below 40rem
+viewport width. Reduced motion pins the bean to the static Solana gradient (its
+`::after` rests at full opacity) with no glow cycle.
+
 ---
 
 ## 4. The procurement robots
@@ -175,7 +236,7 @@ frame):
 | Body | BLACK `(x+13,y+27)-(x+36,y+44)`, cream inset | compact body and bright 12×9 chest plate |
 | Head | BLACK `(x+4,y+2)-(x+45,y+29)` plus a left ear/casing block | oversized square monitor silhouette copied from the visual reference |
 | Screen | TEAL_DK frame with a TEAL inset and 2px top sheen | inset deeply enough to preserve the chunky black bezel |
-| Face | two square yellow eyes and a four-segment smile | identical friendly expression across roles and frames |
+| Face | two vertical yellow pill eyes and a wide, shallow smile (from the happy-robot pixel reference) | identical cute, non-anime expression across roles and frames |
 
 Props per role (drawn after the base):
 
@@ -298,4 +359,5 @@ output to `src/ThisCafeteria.Web/wwwroot/images/`). To replicate or extend:
 - `Components/Layout/StakingLayout.razor` — shared navbar/offset shell.
 - `wwwroot/app.css` — `--stake-*` token tiers (light/dark), `.crypto-dot`,
   fonts.
-- `wwwroot/images/` — `coffee-coin-pixel.png`, `eth-pixel.png`, `pl-*.png`.
+- `wwwroot/images/` — `coffee-coin-pixel.png`, `staked-coin-pixel.png`, `staked-coin-bean.png`, `eth-pixel.png`, `pl-*.png`.
+- `tools/generate_staked_coin.py` — generator for the staked (black) coin sprite and bean mask.

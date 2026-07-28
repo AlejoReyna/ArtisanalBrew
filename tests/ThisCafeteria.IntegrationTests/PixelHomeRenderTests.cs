@@ -31,11 +31,19 @@ public sealed class PixelHomeRenderTests
             Path.Combine(root.FullName, "src/ThisCafeteria.Web/Components/Pages/Home.razor"));
         var hero = File.ReadAllText(
             Path.Combine(root.FullName, "src/ThisCafeteria.Web/Components/Home/PixelHome.razor"));
+        var scene = File.ReadAllText(
+            Path.Combine(root.FullName, "src/ThisCafeteria.Web/Components/Layout/GlobalScene.razor"));
 
         route.Should().Contain("@page \"/\"");
         route.Should().Contain("<PixelHome />", "the pixel homepage must be the production root");
         hero.Should().Contain("class=\"ph-hero", "the release health check uses the hero marker");
-        hero.Should().Contain("id=\"ph-scene-root\"", "the trained runtime mounts on this stable id");
+        hero.Should().Contain(
+            "\"ph-scene-root\"",
+            "the trained runtime mounts on this stable id");
+        scene.Should().Contain("id=\"ph-scene-root\"", "the background scenario keeps the stable mount id");
+        scene.Should().Contain(
+            "data-permanent",
+            "the scenario containers must survive enhanced navigation so the sky never restarts");
         hero.Should().Contain(
             "aria-label=\"Your next coffee, on-chain\"",
             "the visual pixel title must retain an accessible heading");

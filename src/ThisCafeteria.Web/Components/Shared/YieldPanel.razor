@@ -30,25 +30,9 @@
 @if (!_isConnected)
 {
     <section class="staking-intro" data-animate="fade-up" data-page-theme-color="#100D0B">
-        <div class="staking-intro__space" aria-hidden="true">
-            <img class="staking-space__coin staking-space__coin--one" src="images/coffee-coin-pixel.png" alt="" />
-            <img class="staking-space__coin staking-space__coin--two" src="images/coffee-coin-pixel.png" alt="" />
-            <img class="staking-space__coin staking-space__coin--three" src="images/coffee-coin-pixel.png" alt="" />
-            <img class="staking-space__coin staking-space__coin--four" src="images/coffee-coin-pixel.png" alt="" />
-            <img class="staking-space__coin staking-space__coin--five" src="images/coffee-coin-pixel.png" alt="" />
-            <img class="staking-space__coin staking-space__coin--six" src="images/coffee-coin-pixel.png" alt="" />
-            <img class="staking-space__coin staking-space__coin--seven" src="images/coffee-coin-pixel.png" alt="" />
-
-            <span class="staking-space__star staking-space__star--one"></span>
-            <span class="staking-space__star staking-space__star--two"></span>
-            <span class="staking-space__star staking-space__star--three"></span>
-            <span class="staking-space__star staking-space__star--four"></span>
-            <span class="staking-space__star staking-space__star--five"></span>
-            <span class="staking-space__star staking-space__star--six"></span>
-            <span class="staking-space__star staking-space__star--seven"></span>
-            <span class="staking-space__star staking-space__star--eight"></span>
-        </div>
-
+        @* The drifting-coin space backdrop (and the stars) belongs to the shared
+           GlobalScene scenario now — on /staking its staking layer fades in over
+           the preserved sky; the intro only carries its own content. *@
         <div class="staking-intro__inner">
             <div class="staking-intro__hero">
                 @* Keep the headline and asset together, then make the wallet action the next step. *@

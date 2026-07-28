@@ -47,13 +47,42 @@
    same solid paint as each hero so the top inset is correct on the first frame. */
 @media (max-width: 760px) {
     .public-header--story {
-        background: var(--active-theme-color, #0f0f11) !important;
         top: 0 !important;
     }
 
-    .public-header--home {
-        background: var(--active-theme-color, #817c78) !important;
-        top: 0 !important;
+    /* Over the hero itself (before publicHeader.js adds --solid on scroll),
+       the bar stays transparent — same as desktop and same as /staking and
+       /procurement-lab's "no separate plate" headers — so story-hero__media's
+       poster/video occupies the navbar row instead of a flat guessed color
+       cutting it off. Only the physical safe-area/notch sliver above the nav
+       row keeps a CSS-only solid fallback (no JS dependency, so there's no
+       flash before the circuit connects); it uses the same --active-theme-color
+       var + #0f0f11 literal the hero itself paints with, so it can only ever
+       match. z-index: -1 is required, not decorative: .public-header is a
+       stacking context, and a position:fixed pseudo-element with the default
+       z-index:auto paints in the "positioned" layer, which is ABOVE the
+       header's own non-positioned children (.site-nav) regardless of source
+       order — without this it blanks out the wordmark and nav links whenever
+       the safe-area inset overlaps their vertical position. -1 drops it into
+       the stacking context's background layer, below .site-nav but still
+       above the page content the fixed header sits over. */
+    .public-header--story::before {
+        background: var(--active-theme-color, #0f0f11);
+        content: "";
+        height: env(safe-area-inset-top, 0px);
+        left: 0;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: -1;
+    }
+
+    .public-header--story.public-header--solid {
+        background: var(--active-theme-color, #0f0f11) !important;
+    }
+
+    .public-header--story.public-header--solid::before {
+        content: none;
     }
 }
 

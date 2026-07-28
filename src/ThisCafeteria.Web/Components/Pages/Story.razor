@@ -54,8 +54,29 @@
             <span class="story-hero__guess-text" data-story-guess-text></span><span class="story-hero__guess-cursor"></span>
         </p>
 
-        <h1 class="story-hero__headline" aria-label="This café doesn't exist.">
-            <Pixel3DText Lines="@HeroHeadlineLines" />
+        @* Same 8-bit 3D treatment as the home hero: Press Start 2P letters with
+           a hard 2px keyline and a stepped text-shadow extrusion, bobbing in a
+           staggered ripple. The aria-label carries the sentence; the decorative
+           letters stay out of the a11y tree. *@
+        <h1 class="story-hero__headline story-title3d" aria-label="This café doesn't exist.">
+            <span aria-hidden="true">
+                @{ var letterIndex = 0; }
+                @foreach (var line in HeroHeadlineLines)
+                {
+                    <span class="story-title3d__line">
+                        @foreach (var word in line.Split(' '))
+                        {
+                            <span class="story-title3d__word">
+                                @foreach (var letter in word)
+                                {
+                                    <span class="story-title3d__letter" style="--i: @letterIndex;">@letter</span>
+                                    letterIndex++;
+                                }
+                            </span>
+                        }
+                    </span>
+                }
+            </span>
         </h1>
 
         <p class="lede story-hero__lede" data-recruiter-animate="lift" data-recruiter-delay="320">
@@ -69,27 +90,6 @@
             <span>AlejoReyna/ArtisanalBrew</span>
         </a>
     </div>
-</section>
-
-<!-- ==================== THE FICTION ==================== -->
-<section class="story-fiction" data-recruiter-section>
-    <div class="story-fiction__heading">
-        <p class="eyebrow" data-recruiter-animate="lift">The Fiction</p>
-        <h2 data-recruiter-animate="lift" data-recruiter-delay="120">Brewed from scratch, minus the coffee.</h2>
-    </div>
-
-    <div class="story-fiction__columns" data-recruiter-stagger>
-        <p class="lede" data-recruiter-animate="lift">
-            There is no address, no lease, no espresso machine. What exists is a production-shaped playground:
-            a real database, a real message queue, a real smart contract on a real (test) chain — orbiting an
-            imaginary counter that never actually pulls a shot.
-        </p>
-        <p class="lede" data-recruiter-animate="lift">
-            The café is the excuse. The point was to build something end-to-end and honest about what it is:
-            not a startup, not a product — a complete system, done properly, for its own sake.
-        </p>
-    </div>
-
 </section>
 
 <div class="story-white-run">
@@ -528,9 +528,67 @@
     }
 
     .story-hero__headline {
-        color: #fbf9f4;
-        font-size: clamp(2.75rem, 8vw, 5rem);
         line-height: 0.98;
+    }
+
+    /* 8-bit 3D headline, ported from the home hero (ph-title3d): Press Start
+       2P white faces with a 2px near-black keyline, then a stacked hard-edge
+       text-shadow stepping down-right as the blocky extrusion, darkening
+       toward the back. Letters bob in a staggered stepped ripple. */
+    .story-title3d {
+        color: #FFFDF9;
+        font-family: 'Press Start 2P', var(--crypto-mono);
+        font-size: clamp(1.3rem, 5vw, 3.2rem);
+        letter-spacing: 0.14em;
+        line-height: 1;
+        padding-right: 0.45em; /* keeps the last letter's extrusion on-canvas */
+    }
+
+    .story-title3d__line {
+        display: block;
+    }
+
+    .story-title3d__line + .story-title3d__line {
+        margin-top: 0.75em;
+    }
+
+    .story-title3d__word {
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .story-title3d__word + .story-title3d__word {
+        margin-left: 1.1em;
+    }
+
+    .story-title3d__letter {
+        animation: story-title3d-bob 2.6s steps(4, end) infinite;
+        animation-delay: calc(var(--i) * 120ms);
+        display: inline-block;
+        text-shadow:
+            -2px -2px 0 #0B0806,
+            0 -2px 0 #0B0806,
+            2px -2px 0 #0B0806,
+            -2px 0 0 #0B0806,
+            -2px 2px 0 #0B0806,
+            2px 2px 0 #2A1C11,
+            4px 4px 0 #2A1C11,
+            6px 6px 0 #241810,
+            8px 8px 0 #1A110A,
+            10px 10px 0 #0B0806;
+        will-change: transform;
+    }
+
+    @@media (hover: hover) and (pointer: fine) {
+        .story-title3d__letter:hover {
+            animation: none;
+            transform: translate(-2px, -4px);
+        }
+    }
+
+    @@keyframes story-title3d-bob {
+        0%, 100% { transform: translate3d(0, 0, 0); }
+        50% { transform: translate3d(0, -0.22em, 0); }
     }
 
     .story-hero__lede {
@@ -1712,6 +1770,11 @@
         .story-hero__guess-cursor {
             animation: none;
             opacity: 0;
+        }
+
+        .story-title3d__letter {
+            animation: none;
+            transform: none;
         }
 
         .story-yield__ring {

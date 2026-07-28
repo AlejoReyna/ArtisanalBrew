@@ -1,13 +1,18 @@
-@* Pixel-galaxy homepage: the procurement lab's robot crew set loose in a
-   full-bleed space backdrop to gather flat 2D coffee coins. Everything in the
-   scene is a flat sprite — see docs/kimi_ui.md for the design system this
-   follows.
+@* Pixel-galaxy homepage: editorial copy floating over the shared pixel-space
+   background scenario, whose robot crew runs loose through it to gather flat
+   2D coffee coins. The space itself — stars, planets, the Andromeda galaxy,
+   the chain badges, bags, coins and the crew — now belongs to
+   Components/Layout/GlobalScene.razor, rendered once by StakingLayout and
+   kept alive across routes via data-permanent; this page only carries its
+   copy, the panels and the crew-runtime wiring. Everything in the scene is a
+   flat sprite — see docs/kimi_ui.md for the design system this follows.
 
    The crew is not choreographed. A 194-parameter policy trained offline by
    tools/train_pixel_crew.mjs steers each robot toward coins, and
    wwwroot/js/pixelCrewRuntime.js runs it per frame against the same physics
-   the trainer used (wwwroot/js/pixelCrewSim.js). The CSS keyframes underneath
-   remain as the fallback for no-JS and reduced-motion. *@
+   the trainer used (wwwroot/js/pixelCrewSim.js), mounting on GlobalScene's
+   stable #ph-scene-root container. The CSS keyframes underneath remain as the
+   fallback for no-JS and reduced-motion. *@
 
 @rendermode InteractiveServer
 @implements IAsyncDisposable
@@ -15,7 +20,7 @@
 @using Microsoft.JSInterop
 @inject IJSRuntime JSRuntime
 
-<div class="ph-page ph-page--bg-@_bgVariant">
+<div class="ph-page">
     @* data-theme-color matches the hero's --stake-bg-deep base so
        publicHeader.js keeps the page theme color (and its 1px top surface)
        dark instead of falling back to the cream storefront default. *@
@@ -94,118 +99,10 @@
             </div>
         </div>
 
-        <div class="ph-hero__scene" id="ph-scene-root" aria-hidden="true">
-            <div class="ph-scene" role="img" aria-label="A pixel galaxy spanning the whole hero: the Andromeda galaxy glows far in the background behind drifting planets, six coffee bags from the catalog float through the deep backdrop, golden coffee coins are scattered through the space, and the pixel robot crew drifts over to collect them one by one, each grab marked by a pixel +1.">
-                @* Cross-shaped pixel stars, irregular via per-star custom
-                   properties. Sixteen of them, dispersed over the whole sky. *@
-                <span class="ph-star ph-star--one"></span>
-                <span class="ph-star ph-star--two"></span>
-                <span class="ph-star ph-star--three"></span>
-                <span class="ph-star ph-star--four"></span>
-                <span class="ph-star ph-star--five"></span>
-                <span class="ph-star ph-star--six"></span>
-                <span class="ph-star ph-star--seven"></span>
-                <span class="ph-star ph-star--eight"></span>
-                <span class="ph-star ph-star--nine"></span>
-                <span class="ph-star ph-star--ten"></span>
-                <span class="ph-star ph-star--eleven"></span>
-                <span class="ph-star ph-star--twelve"></span>
-                <span class="ph-star ph-star--thirteen"></span>
-                <span class="ph-star ph-star--fourteen"></span>
-                <span class="ph-star ph-star--fifteen"></span>
-                <span class="ph-star ph-star--sixteen"></span>
-
-                @* Andromeda, sitting furthest back of anything in the scene:
-                   dimmed and small enough to read as deep sky rather than as
-                   another prop. Sprite from tools/generate_andromeda.py. *@
-                <img class="ph-sky__andromeda" src="images/pl-andromeda.png" alt="" width="132" height="84" />
-
-                <img class="ph-sky__planet" src="images/pl-planet.png" alt="" />
-                <img class="ph-sky__planet ph-sky__planet--ringed" src="images/pl-planet-ringed.png" alt="" />
-                <img class="ph-sky__satellite" src="images/pl-satellite.png" alt="" />
-
-                @* Pixel chain badges — Ethereum octahedron, Solana stripes, BNB
-                   diamonds — dim and drifting in the background behind the
-                   coins and the crew. Two of each, dispersed over the space;
-                   the -b variants drop out on narrow viewports. *@
-                <span class="ph-chain ph-chain--eth-a"><img src="images/pl-chain-ethereum.png" alt="" /></span>
-                <span class="ph-chain ph-chain--sol-a"><img src="images/pl-chain-solana.png" alt="" /></span>
-                <span class="ph-chain ph-chain--bnb-a"><img src="images/pl-chain-bnb.png" alt="" /></span>
-                <span class="ph-chain ph-chain--eth-b"><img src="images/pl-chain-ethereum.png" alt="" /></span>
-                <span class="ph-chain ph-chain--sol-b"><img src="images/pl-chain-solana.png" alt="" /></span>
-                <span class="ph-chain ph-chain--bnb-b"><img src="images/pl-chain-bnb.png" alt="" /></span>
-
-                @* The six catalog bags, one per product on /products, cut down
-                   to tiny pl-bag sprites (tools/generate_pixel_bags.py) and
-                   dispersed through the deep backdrop with the chain badges —
-                   dim, tilted, and bobbing slowly. Guatemala, mexico and peru
-                   drop out on narrow viewports. *@
-                <span class="ph-bag ph-bag--colombia"><img src="images/pl-bag-colombia.png" alt="" /></span>
-                <span class="ph-bag ph-bag--costa-rica"><img src="images/pl-bag-costa-rica.png" alt="" /></span>
-                <span class="ph-bag ph-bag--ethiopia"><img src="images/pl-bag-ethiopia.png" alt="" /></span>
-                <span class="ph-bag ph-bag--guatemala"><img src="images/pl-bag-guatemala.png" alt="" /></span>
-                <span class="ph-bag ph-bag--mexico"><img src="images/pl-bag-mexico.png" alt="" /></span>
-                <span class="ph-bag ph-bag--peru"><img src="images/pl-bag-peru.png" alt="" /></span>
-
-                @* Seven coins. The crew runtime owns their positions once it
-                   loads — they are scattered by the simulation and respawn
-                   wherever it decides, never on the copy column. The
-                   ambient/loot split below and the coordinates in the
-                   stylesheet are the no-JS fallback composition; under the sim
-                   a coin vanishes because a robot reached it, not because a
-                   shared 90s clock said so. *@
-                <span class="ph-coinbit ph-coinbit--ambient-a"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-                <span class="ph-coinbit ph-coinbit--ambient-b"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-                <span class="ph-coinbit ph-coinbit--ambient-c"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-                <span class="ph-coinbit ph-coinbit--loot-scout"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-                <span class="ph-coinbit ph-coinbit--loot-buyer"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-                <span class="ph-coinbit ph-coinbit--loot-courier"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-                <span class="ph-coinbit ph-coinbit--loot-inspector"><img src="images/coffee-coin-pixel.png" alt="" /></span>
-
-                @* The crew. Each roam wrapper is one simulated agent: the
-                   trained policy in wwwroot/js/pixelCrewPolicy.js picks its
-                   acceleration every frame from what it can see (direction and
-                   distance to the nearest coin, its own velocity, the four
-                   walls), and pixelCrewRuntime.js writes the result as a
-                   transform. Empty hands — they gather, they don't work. The
-                   grab overlay and the Mario-style +1 fire on the frame a
-                   robot actually touches a coin. Drag one anywhere: the policy
-                   picks up from the new spot, which is as good a test of
-                   whether it generalises as any. *@
-                <div class="ph-scene__roam ph-scene__roam--scout">
-                    <div class="ph-scene__unit ph-scene__unit--scout">
-                        <span class="ph-scene__actor ph-scene__actor--scout"></span>
-                        <span class="ph-scene__grab"></span>
-                        <span class="ph-scene__sip"></span>
-                        <span class="ph-scene__plus"></span>
-                    </div>
-                </div>
-                <div class="ph-scene__roam ph-scene__roam--buyer">
-                    <div class="ph-scene__unit ph-scene__unit--buyer">
-                        <span class="ph-scene__actor ph-scene__actor--buyer"></span>
-                        <span class="ph-scene__grab"></span>
-                        <span class="ph-scene__sip"></span>
-                        <span class="ph-scene__plus"></span>
-                    </div>
-                </div>
-                <div class="ph-scene__roam ph-scene__roam--courier">
-                    <div class="ph-scene__unit ph-scene__unit--courier">
-                        <span class="ph-scene__actor ph-scene__actor--courier"></span>
-                        <span class="ph-scene__grab"></span>
-                        <span class="ph-scene__sip"></span>
-                        <span class="ph-scene__plus"></span>
-                    </div>
-                </div>
-                <div class="ph-scene__roam ph-scene__roam--inspector">
-                    <div class="ph-scene__unit ph-scene__unit--inspector">
-                        <span class="ph-scene__actor ph-scene__actor--inspector"></span>
-                        <span class="ph-scene__grab"></span>
-                        <span class="ph-scene__sip"></span>
-                        <span class="ph-scene__plus"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @* The pixel-space scene itself (stars, planets, Andromeda, badges,
+           bags, coins, crew) is rendered by Components/Layout/GlobalScene.razor,
+           which keeps the exact DOM alive across routes; this hero only keeps
+           the copy. *@
     </section>
 
     <section class="ph-panels">
@@ -248,10 +145,6 @@
 
     // 3D hero title, stacked as three lines.
     private static readonly string[] PixelTitleLines = { "YOUR NEXT", "COFFEE,", "ON-CHAIN" };
-
-    // One of the five space palettes per render, so a refresh or a fresh
-    // session lands on a different background.
-    private readonly int _bgVariant = Random.Shared.Next(5);
 
     private void ToggleIntro() => _isIntroHidden = !_isIntroHidden;
 

@@ -261,88 +261,24 @@ p {
 }
 
 /* Dark roast wing — the staking/allocation dashboard and the agentic-commerce
-   procurement lab both invert the café's cream ground to a roasted near-black
-   in dark mode, so crossing into /staking, /profile, or /procurement-lab reads
-   as entering the on-chain side of the product. In LIGHT mode (the default
-   block below) these same tokens resolve to the site's normal light palette,
-   keeping the same green/copper/amber/clay accent identity — these pages used
-   to be permanently dark; this is the first time they render light at all, so
-   treat these light values as a first pass, not a settled design.
+   procurement lab both invert the café's cream ground to a roasted near-black,
+   so crossing into /staking, /profile, or /procurement-lab reads as entering
+   the on-chain side of the product.
    Shared between both selectors (rather than declared on :root) so components
    using `var(--stake-x, <light-fallback>)` elsewhere in the app (e.g.
    ChainBadge/AddressChip/StatTile, also used in NavMenu/Checkout) still
    correctly fall back to their own light styling outside these two wings.
    ProcurementLab.razor.css's --pl-* and Profile.razor.css's --dash-* alias
-   these tokens directly instead of keeping their own copies. */
+   these tokens directly instead of keeping their own copies.
+
+   Both wings are pinned unconditionally dark — no [data-theme]/
+   prefers-color-scheme qualifier, so this wins regardless of any stored theme
+   choice while the toggle is deactivated (see the ThemeToggleEnabled flag in
+   NavMenu.razor). Literals, not var(--ink) etc: nested custom-property
+   indirection (--stake-x: var(--y)) was observed to fail to resolve for
+   descendants in testing, while direct literals resolve reliably. */
 .yield-page,
 .procurement-lab {
-    /* Literals, not var(--ink) etc: nested custom-property indirection
-       (--stake-x: var(--y)) was observed to fail to resolve for descendants
-       in testing, while direct literals resolve reliably. These values are
-       kept in exact sync with :root's --surface/--ink/--muted/--line/--white/
-       --accent/--crypto-positive by hand. */
-    --yield-cream: #f2eee5;
-    --yield-espresso: #2d2421;
-    --yield-sand: #f2eee5;
-    --yield-sand-hover: #f2eee5;
-    --yield-line: #d8d0c4;
-    --yield-muted: #746a63;
-
-    --stake-bg: #fbf9f4;
-    --stake-bg-deep: #f2eee5;
-    --stake-surface: #fffdf9;
-    --stake-surface-2: #f2eee5;
-    --stake-line: #d8d0c4;
-    --stake-line-strong: rgba(45, 36, 33, 0.18);
-    --stake-ink: #2d2421;
-    --stake-muted: #746a63;
-    --stake-faint: rgba(45, 36, 33, 0.4);
-    --stake-green: #47614e;
-    --stake-green-dim: rgba(71, 97, 78, 0.12);
-    --stake-copper: #8d6f55;
-    --stake-copper-dim: rgba(141, 111, 85, 0.14);
-    --stake-amber: #9c7a2e;
-    --stake-amber-dim: rgba(156, 122, 46, 0.12);
-    --stake-clay: #9a3b2f;
-    --stake-clay-dim: rgba(154, 59, 47, 0.12);
-}
-
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) .yield-page,
-    :root:not([data-theme]) .procurement-lab {
-        --yield-cream: #100D0B;
-        --yield-espresso: #F4EFE6;
-        --yield-sand: #100D0B;
-        --yield-sand-hover: #2A211B;
-        --yield-line: rgba(244, 239, 230, 0.1);
-        --yield-muted: rgba(244, 239, 230, 0.58);
-
-        --stake-bg: #171310;
-        --stake-bg-deep: #100D0B;
-        --stake-surface: #1F1915;
-        --stake-surface-2: #2A211B;
-        --stake-line: rgba(244, 239, 230, 0.1);
-        --stake-line-strong: rgba(244, 239, 230, 0.18);
-        --stake-ink: #F4EFE6;
-        --stake-muted: rgba(244, 239, 230, 0.58);
-        --stake-faint: rgba(244, 239, 230, 0.4);
-        --stake-green: #8FB99B;
-        --stake-green-dim: rgba(143, 185, 155, 0.14);
-        --stake-copper: #C89B6A;
-        --stake-copper-dim: rgba(200, 155, 106, 0.14);
-        --stake-amber: #E5C078;
-        --stake-amber-dim: rgba(229, 192, 120, 0.12);
-        --stake-clay: #E59880;
-        --stake-clay-dim: rgba(229, 152, 128, 0.12);
-
-        /* Lift the shared brand-green token so text/spinner states relying on
-           --crypto-positive stay legible against the roast ground. */
-        --crypto-positive: #8FB99B;
-    }
-}
-
-:root[data-theme="dark"] .yield-page,
-:root[data-theme="dark"] .procurement-lab {
     --yield-cream: #100D0B;
     --yield-espresso: #F4EFE6;
     --yield-sand: #100D0B;
@@ -371,6 +307,38 @@ p {
     /* Lift the shared brand-green token so text/spinner states relying on
        --crypto-positive stay legible against the roast ground. */
     --crypto-positive: #8FB99B;
+}
+
+/* ── GlobalScene route switching ───────────────────────────────────────────
+   The pixel-space background scenario (Components/Layout/GlobalScene.razor)
+   renders both of its fixed containers with data-permanent, so enhanced
+   navigation keeps the exact DOM nodes; only this <html> attribute changes
+   (App.razor renders it per route). The layers' hidden defaults and both
+   halves of the fade transitions live in GlobalScene.razor.css — these rules
+   only pick which layer is visible per route, and they must live here
+   because CSS isolation cannot select the <html> element. Cross-fade: the
+   outgoing design fades out over the preserved sky, then the incoming design
+   fades in one beat later. */
+html[data-scene-route="home"] .gs-layer--home,
+html[data-scene-route="staking"] .gs-layer--staking {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.55s ease 0.15s, visibility 0s;
+}
+
+/* Pages outside the scenario (it is only rendered by StakingLayout at all)
+   hide it smoothly while its containers are still preserved mid-transition. */
+html[data-scene-route="none"] .gs-scene,
+html[data-scene-route="none"] .gs-crew {
+    opacity: 0;
+    visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-scene-route="home"] .gs-layer--home,
+    html[data-scene-route="staking"] .gs-layer--staking {
+        transition: none;
+    }
 }
 
 .yield-dashboard {
