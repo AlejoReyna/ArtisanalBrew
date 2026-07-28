@@ -539,10 +539,24 @@
         }
     }
 
+    private bool IsHomeRoute
+    {
+        get
+        {
+            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+            var path = relativePath.Split('?', '#')[0].Trim('/');
+            return string.IsNullOrEmpty(path);
+        }
+    }
+
     private string HeaderCssClass =>
-        TransparentHeader || IsStoryRoute
-            ? "public-header public-header--transparent"
-            : "public-header";
+        IsStoryRoute
+            ? "public-header public-header--transparent public-header--story"
+            : IsHomeRoute
+                ? "public-header public-header--home"
+                : TransparentHeader
+                    ? "public-header public-header--transparent"
+                    : "public-header";
 
     private string UserToggleCssClass => _isUserMenuOpen ? "nav-login active" : "nav-login";
 
@@ -605,6 +619,16 @@
         {
             _theme = await JsRuntime.InvokeAsync<string>("artisanalTheme.current");
             StateHasChanged();
+
+            // The DOMContentLoaded listener in App.razor calls initPublicHeader too
+            // (via queuePublicHeader's double-rAF defer), but on a cold load that can
+            // race ahead of the circuit attaching this component, or the rAF pair can
+            // simply fail to fire promptly right after navigation — either way it can
+            // leave the safe-area strip on the light fallback color instead of the
+            // current section's data-theme-color. Call the function directly (not
+            // through the rAF-queued wrapper) since OnAfterRenderAsync already runs
+            // after this DOM is committed, so there's nothing left to wait for.
+            await JsRuntime.InvokeVoidAsync("initPublicHeader");
         }
     }
 

@@ -41,6 +41,22 @@
     border-bottom: 0;
 }
 
+/* Safari extends the background of an opaque fixed element touching the
+   viewport edge into the Dynamic Island/status-bar area. Keep the hero routes
+   visually transparent on larger screens, but give their mobile headers the
+   same solid paint as each hero so the top inset is correct on the first frame. */
+@media (max-width: 760px) {
+    .public-header--story {
+        background: var(--active-theme-color, #0f0f11) !important;
+        top: 0 !important;
+    }
+
+    .public-header--home {
+        background: var(--active-theme-color, #817c78) !important;
+        top: 0 !important;
+    }
+}
+
 /* Three tracks so the link row sits on the page's centre line rather than
    floating between two unequal-width neighbours. .navbar-toggler is
    display:none above 760px, so only three items ever occupy the grid. */
@@ -1296,4 +1312,3 @@
     background: rgba(194, 164, 125, 0.15);
     color: var(--white);
 }
-

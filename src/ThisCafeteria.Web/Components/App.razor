@@ -1,10 +1,12 @@
+@inject NavigationManager Navigation
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="@InitialDocumentBackground">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#523d26" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="@InitialThemeColor" />
     <base href="/" />
     <!-- Blocking, and deliberately first: applies the stored/OS-preferred
          data-theme attribute to <html> before app.css is fetched, so the CSS
@@ -37,7 +39,7 @@
     <HeadOutlet />
 </head>
 
-<body>
+<body style="@InitialDocumentBackground">
     <Routes />
     <ReconnectModal />
     <IdleTimeoutModal />
@@ -51,6 +53,7 @@
     <script src="js/recruiterMotion.js"></script>
     <script src="js/storyTechShowcase.js"></script>
     <script src="js/storyDataPath.js"></script>
+    <script src="js/storyGuessType.js"></script>
     <script src="js/journalProgress.js"></script>
     <script src="js/heroWebGL.js"></script>
     <script src="js/chainSelector.js"></script>
@@ -210,6 +213,16 @@
             });
         };
 
+        window.queueStoryGuessType = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.storyGuessType) {
+                        window.storyGuessType.init();
+                    }
+                });
+            });
+        };
+
         window.queueHeroWebGL = () => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -261,6 +274,7 @@
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
         document.addEventListener('DOMContentLoaded', window.queueStoryTechShowcase);
+        document.addEventListener('DOMContentLoaded', window.queueStoryGuessType);
         document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
         document.addEventListener('DOMContentLoaded', window.queueHeroVideo);
         document.addEventListener('DOMContentLoaded', window.queueHeroType);
@@ -278,6 +292,7 @@
             window.queuePublicHeader();
             window.queueRecruiterMotion();
             window.queueStoryTechShowcase();
+            window.queueStoryGuessType();
             window.queueHeroWebGL();
             window.queueHeroVideo();
             window.queueHeroType();
@@ -293,3 +308,30 @@
 </body>
 
 </html>
+
+@code {
+    private string InitialPath =>
+        Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+
+    private bool IsHomeRoute => string.IsNullOrEmpty(InitialPath);
+
+    private bool IsStoryRoute =>
+        string.Equals(
+            InitialPath,
+            "story",
+            StringComparison.OrdinalIgnoreCase);
+
+    private string InitialThemeColor =>
+        IsStoryRoute
+            ? "#0f0f11"
+            : IsHomeRoute
+                ? "#817c78"
+                : "#958276";
+
+    // Safari 26 derives its top chrome from the document background instead of
+    // reliably honoring a theme-color mutation after the first paint. Emit the
+    // hero routes' backgrounds in the initial HTML so their safe areas never
+    // start cream.
+    private string? InitialDocumentBackground =>
+        IsStoryRoute || IsHomeRoute ? $"background-color: {InitialThemeColor};" : null;
+}
