@@ -44,15 +44,18 @@ main {
    of blending into anything. See app.css's body:has(.journal-hero) rule for
    the treatment that actually fits: matching the header's solid color to
    that same --surface token. */
-/* Story is deliberately NOT in this list. A transparent bar only works while the
-   whole document behind it is dark; /story is dark for the hero and light from
-   the fiction section down, so a transparent bar put cream nav text over a cream
-   page once you scrolled. It keeps .public-header's own #100e0d instead — the
-   same near-black as .story-hero, so it still blends over the hero and stays
-   legible over everything below it. */
 .public-page:has(.editorial-hero) ::deep .public-header {
     background: transparent;
     border-bottom: 0;
+}
+
+/* Story opts into NavMenu's transparent variant so its artwork continues
+   behind the fixed bar. Once the hero has left, publicHeader.js adds the solid
+   state and this restores the component's own dark surface for contrast over
+   the white technical sections. */
+.public-page:has(.story-hero) ::deep .public-header.public-header--solid {
+    background: var(--nav-bg);
+    border-bottom: 1px solid rgba(251, 249, 244, 0.08);
 }
 
 .public-page:has(.journal-hero) .public-main {

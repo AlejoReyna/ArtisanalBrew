@@ -526,11 +526,21 @@
 
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
 
-    // The staking layout paints one continuous ground behind its fixed header,
-    // so both /staking and /procurement-lab can let that page background show
-    // through instead of rendering a separate navbar plate.
+    // StakingLayout opts into the transparent header explicitly. Story uses
+    // MainLayout, so its route opts in here and lets the hero artwork continue
+    // beneath the same component-owned transparent treatment.
+    private bool IsStoryRoute
+    {
+        get
+        {
+            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+            var path = relativePath.Split('?', '#')[0].Trim('/');
+            return path.Equals("story", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private string HeaderCssClass =>
-        TransparentHeader
+        TransparentHeader || IsStoryRoute
             ? "public-header public-header--transparent"
             : "public-header";
 

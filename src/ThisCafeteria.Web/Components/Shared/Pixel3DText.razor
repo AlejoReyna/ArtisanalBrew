@@ -1,37 +1,107 @@
 <span class="pixel-title" aria-hidden="true">
-    @for (var lineIndex = 0; lineIndex < Lines.Length; lineIndex++)
-    {
-        var line = Lines[lineIndex];
-        <span class="pixel-title__line">
-            @for (var glyphIndex = 0; glyphIndex < line.Length; glyphIndex++)
-            {
-                var character = line[glyphIndex];
-                if (char.IsWhiteSpace(character))
+    <span class="pixel-title__object">
+        @for (var lineIndex = 0; lineIndex < Lines.Length; lineIndex++)
+        {
+            var line = Lines[lineIndex];
+            <span class="pixel-title__line">
+                @for (var glyphIndex = 0; glyphIndex < line.Length; glyphIndex++)
                 {
-                    <span class="pixel-title__space"></span>
+                    var character = line[glyphIndex];
+                    if (char.IsWhiteSpace(character))
+                    {
+                        <span class="pixel-title__space"></span>
+                    }
+                    else
+                    {
+                        <span class="pixel-title__glyph"
+                              style="@GlyphStyle(lineIndex, glyphIndex)">
+                            <svg class="pixel-title__glyph-art"
+                                 viewBox="-0.5 -0.5 6.4 9.4"
+                                 preserveAspectRatio="xMidYMid meet"
+                                 shape-rendering="crispEdges"
+                                 focusable="false">
+                                <defs>
+                                    <filter id="@OutlineId(lineIndex, glyphIndex)"
+                                            x="-1.2"
+                                            y="-1.2"
+                                            width="8.8"
+                                            height="11.8"
+                                            filterUnits="userSpaceOnUse"
+                                            primitiveUnits="userSpaceOnUse"
+                                            color-interpolation-filters="sRGB">
+                                        <feMorphology in="SourceAlpha"
+                                                      operator="dilate"
+                                                      radius="0.17"
+                                                      result="expanded" />
+                                        <feFlood flood-color="#0b0919"
+                                                 result="outline-color" />
+                                        <feComposite in="outline-color"
+                                                     in2="expanded"
+                                                     operator="in"
+                                                     result="outline" />
+                                        <feMerge>
+                                            <feMergeNode in="outline" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+
+                                <g class="pixel-title__depth pixel-title__depth--far"
+                                   filter="@OutlineFilter(lineIndex, glyphIndex)"
+                                   transform="translate(0.82 0.92)">
+                                    @foreach (var cell in CellsFor(character))
+                                    {
+                                        <rect x="@(cell.Column - 1)"
+                                              y="@(cell.Row - 1)"
+                                              width="1.02"
+                                              height="1.02" />
+                                    }
+                                </g>
+
+                                <g class="pixel-title__depth pixel-title__depth--middle"
+                                   transform="translate(0.56 0.64)">
+                                    @foreach (var cell in CellsFor(character))
+                                    {
+                                        <rect x="@(cell.Column - 1)"
+                                              y="@(cell.Row - 1)"
+                                              width="1.02"
+                                              height="1.02" />
+                                    }
+                                </g>
+
+                                <g class="pixel-title__depth pixel-title__depth--near"
+                                   transform="translate(0.28 0.32)">
+                                    @foreach (var cell in CellsFor(character))
+                                    {
+                                        <rect x="@(cell.Column - 1)"
+                                              y="@(cell.Row - 1)"
+                                              width="1.02"
+                                              height="1.02" />
+                                    }
+                                </g>
+
+                                <g class="pixel-title__face"
+                                   filter="@OutlineFilter(lineIndex, glyphIndex)">
+                                    @foreach (var cell in CellsFor(character))
+                                    {
+                                        <rect x="@(cell.Column - 1)"
+                                              y="@(cell.Row - 1)"
+                                              width="1.02"
+                                              height="1.02" />
+                                    }
+                                </g>
+                            </svg>
+                        </span>
+                    }
                 }
-                else
-                {
-                    <span class="pixel-title__glyph"
-                          style="@GlyphStyle(lineIndex, glyphIndex)">
-                        @foreach (var pixel in PixelsFor(character))
-                        {
-                            <span class="pixel-title__pixel @PixelClass(pixel)"
-                                  style="@PixelStyle(pixel)"></span>
-                        }
-                    </span>
-                }
-            }
-        </span>
-    }
+            </span>
+        }
+    </span>
 </span>
 
 @code {
     [Parameter, EditorRequired]
     public string[] Lines { get; set; } = [];
-
-    private const int DepthLayers = 6;
-    private static readonly int[] DepthLayerIndices = [6, 5, 4, 3, 2, 1];
 
     private static readonly IReadOnlyDictionary<char, string[]> Glyphs =
         new Dictionary<char, string[]>
@@ -235,43 +305,15 @@
 
     private static string GlyphStyle(int lineIndex, int glyphIndex)
     {
-        var delay = 140 + (lineIndex * 130) + (glyphIndex * 42);
+        var delay = 120 + (lineIndex * 110) + (glyphIndex * 38);
         return $"--glyph-delay:{delay}ms";
     }
 
-    private static IEnumerable<LayeredPixel> PixelsFor(char character)
-    {
-        foreach (var depth in DepthLayerIndices)
-        {
-            foreach (var cell in CellsFor(character))
-            {
-                yield return new LayeredPixel(cell.Row, cell.Column, depth);
-            }
-        }
+    private static string OutlineId(int lineIndex, int glyphIndex) =>
+        $"pixel-title-outline-{lineIndex}-{glyphIndex}";
 
-        foreach (var cell in CellsFor(character))
-        {
-            yield return new LayeredPixel(cell.Row, cell.Column, 0);
-        }
-    }
-
-    private static string PixelClass(LayeredPixel pixel) =>
-        pixel.Depth == 0 ? "pixel-title__pixel--face" : "pixel-title__pixel--depth";
-
-    private static string PixelStyle(LayeredPixel pixel)
-    {
-        if (pixel.Depth == 0)
-        {
-            return $"grid-row:{pixel.Row};grid-column:{pixel.Column}";
-        }
-
-        var depth = pixel.Depth;
-        var offset = depth;
-        var compactOffset = (depth * 2 + 1) / 3;
-        var shade = 22 + ((DepthLayers - depth) * 8);
-        return $"grid-row:{pixel.Row};grid-column:{pixel.Column};--layer-offset:{offset}px;--layer-offset-negative:-{offset}px;--layer-offset-compact:{compactOffset}px;--layer-offset-compact-negative:-{compactOffset}px;--layer-shade:rgb({shade} {shade} {shade})";
-    }
+    private static string OutlineFilter(int lineIndex, int glyphIndex) =>
+        $"url(#{OutlineId(lineIndex, glyphIndex)})";
 
     private sealed record PixelCell(int Row, int Column);
-    private sealed record LayeredPixel(int Row, int Column, int Depth);
 }
