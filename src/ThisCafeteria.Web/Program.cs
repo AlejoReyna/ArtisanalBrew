@@ -246,7 +246,12 @@ app.UseAntiforgery();
 
 app.Use((context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+    var path = context.Request.Path;
+    if (path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/images", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/videos", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/css", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/js", StringComparison.OrdinalIgnoreCase))
     {
         return next(context);
     }
