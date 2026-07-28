@@ -236,12 +236,15 @@ top border and a stepped highlight lip via `::before` — no gradients.
 
 | Element | Binding | Animation |
 | --- | --- | --- |
-| Buyer robot | `_activeEpoch is null` → `is-locked` (desaturate + 55% opacity); epoch present → `is-live` (green drop-shadow) | — |
+| Buyer robot | `_activeEpoch is null` → `is-locked` (desaturate + 55% opacity, frozen on frame 0); epoch present → `is-live` (green drop-shadow) | `pl-buyer-insert` 3.4s `steps(1,end)`: arm back → approach slot → key in → terminal lights, hold → reset |
+| Scout robot | always | `pl-scout-sweep` 4.8s `steps(1,end)`: level watch → adjust → telescope rises → amber lock-on hold → reset |
+| Courier robot | always | `pl-courier-walk` 1.05s `steps(1,end)`: brisk 4-step gait, body dips on each footfall |
+| Inspector robot | always | `pl-inspector-scan` 3.8s `steps(1,end)`: scanner on crate → lift → scan pass → teal beep, hold → reset |
 | Key sprite | rendered only when `_activeEpoch is not null` | `pl-key-pulse` 1.6s `steps(2,end)` gold glow |
 | Vault glow | always (a gold square **behind** the vault img — it shines through the translucent glass alpha from §4.2) | `pl-vault-glow` 2.8s `steps(2,end)` opacity .45↔.95 |
 | Role robots | scout/courier/inspector always; buyer only with an active permission | `pl-robot-work` advances two walking frames and two role-action frames with `steps(1,end)` |
 | Activity labels | four local callouts above the actors; buyer text follows permission state | Static role-local labels (`Scanning suppliers`, `Authorizing`/`Awaiting key`, `Delivering crate`, `Inspecting proof`) rather than a lifecycle bar |
-| Inspector beam | always | `pl-scan-sweep` 2.4s `steps(5,end)`, 3px teal bar crossing the crate |
+| Inspector beam | always | `pl-scan-sweep` 3.8s `steps(5,end)`, 3px teal bar crossing the crate (synced to the inspector's scan cycle) |
 | Approve/return controls | `is-live` when any job is `Submitted` | `pl-control-blink` 1.4s `steps(2,end)`, return delayed 0.7s |
 | Scout signal | always | 3 dots, `steps(1,end)` blink, 0.3s stagger |
 | Satellite + downlink | rendered only while `_loading` | 3 amber dots, `steps(1,end)`, 0.25s stagger |

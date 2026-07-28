@@ -1,0 +1,188 @@
+========================================================
+ Phase 3 Acceptance Harness
+ Command  : ./run-acceptance.sh 
+ Timestamp: 2026-07-20T20:30:38Z
+ Log      : acceptance-evidence-20260720-143038.log
+========================================================
+INFO: ACCEPTANCE_ISOLATED=1 set – accepting isolated environment.
+INFO: contracts/evm/.acceptance-isolated marker found.
+--- Checking PostgreSQL health ---
+PostgreSQL is ready.
+RESET_DB=1: dropping database for clean state...
+Build started...
+Build succeeded.
+The Entity Framework tools version '10.0.9' is older than that of the runtime '10.0.10'. Update the tools for the latest features and bug fixes. See https://aka.ms/AAc1fbw for more information.
+Dropping database 'this_cafeteria' on server 'tcp://localhost:5433'.
+Successfully dropped database 'this_cafeteria'.
+--- Building projects ---
+  Determining projects to restore...
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+  All projects are up-to-date for restore.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+  ThisCafeteria.Domain -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Domain/bin/Debug/net10.0/ThisCafeteria.Domain.dll
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+  ThisCafeteria.Application -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Application/bin/Debug/net10.0/ThisCafeteria.Application.dll
+  ThisCafeteria.Infrastructure -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Infrastructure/bin/Debug/net10.0/ThisCafeteria.Infrastructure.dll
+  ThisCafeteria.Web -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Web/bin/Debug/net10.0/ThisCafeteria.Web.dll
+  ThisCafeteria.Worker -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/bin/Debug/net10.0/ThisCafeteria.Worker.dll
+  ThisCafeteria.IntegrationTests -> /Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Debug/net10.0/ThisCafeteria.IntegrationTests.dll
+  ThisCafeteria.UnitTests -> /Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/bin/Debug/net10.0/ThisCafeteria.UnitTests.dll
+
+Build succeeded.
+
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+    8 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.41
+--- Applying database migrations ---
+Build started...
+Build succeeded.
+The Entity Framework tools version '10.0.9' is older than that of the runtime '10.0.10'. Update the tools for the latest features and bug fixes. See https://aka.ms/AAc1fbw for more information.
+An error occurred using the connection to database 'this_cafeteria' on server 'tcp://localhost:5433'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260525154725_InitialCreate'.
+Applying migration '20260525175015_AddTransparencyRecords'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260525180000_AddWalletLoginToUsers'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260525195130_AddRewardClaims'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260526000000_AddWalletStatusEvents'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260526120000_AddOrderPaymentMetadata'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260526174112_AddRewardClaimAllocationMetadata'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260526190000_RepairRewardClaimPaymentTransactionHash'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260526203000_RemoveOrderItemProductForeignKey'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260526205000_SyncPendingModelChanges'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260527132000_AddStakingLedgerEntries'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260527205750_FixPendingModelChanges'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260527214500_NormalizeLegacyProductCategories'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260528154229_AddCoupons'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260704000643_AddStakingReconciliationCheckpoints'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260719000206_AddMultichainLiquidStakingPersistence'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260719023143_AddRawStakingQuantities'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260719030006_AddPersistentWalletAuthChallenges'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260719104424_AgenticCommercePhase3'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260719190709_AddAgenticJobs'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260720065627_AgenticCommerceReconciliationPhase3'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260720070806_UpdateAgenticJobProjectionIndex'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260720092405_AgenticCommerceReconciliationPhase3Idempotency'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Applying migration '20260720200813_AddAgenticJobDeferredEvents'.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+Done.
+--- Starting Hardhat node ---
+Hardhat node PID: 14506
+--- Waiting for Hardhat node RPC ---
+Hardhat node is ready.
+--- Deploying contracts to local Hardhat node ---
+
+> deploy:local
+> hardhat run scripts/deploy.ts --network localhost
+
+
+{
+  "schemaVersion": 1,
+  "chainKey": "evm-local",
+  "chainId": 31337,
+  "rpcUrl": "http://127.0.0.1:8545",
+  "displayName": "Local EVM",
+  "explorerAddressTemplate": "http://127.0.0.1:8545/address/{0}",
+  "explorerTransactionTemplate": "http://127.0.0.1:8545/tx/{0}",
+  "nativeCurrency": {
+    "name": "Local Ether",
+    "symbol": "ETH",
+    "decimals": 18
+  },
+  "deployBlock": "672",
+  "compiler": {
+    "solc": "0.8.24",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "deployedAtUtc": "2026-07-20T20:30:53.036Z",
+  "addresses": {
+    "cafe": "0x75c68e69775fa3e9dd38ea32e554f6bf259c1135",
+    "coffee": "0x572316ac11cb4bc5daf6bdae68f43ea3cce3ae0e",
+    "liquidVault": "0x975ab64f4901af5f0c96636dea0b9de3419d0c2f",
+    "faucet": "0x4593ed9cbe6003e687e5e77368534bb04b162503",
+    "entryPoint": "0xf5c4a909455c00b99a90d93b48736f3196db5621",
+    "erc8004Registry": "0xfd2cf3b56a73c75a7535ffe44ebabe7723c64719",
+    "erc7683Resolver": "0xb22c255250d74b0add1bfb936676d2a299bf48bd",
+    "erc8183Escrow": "0x666d0c3da3dbc946d5128d06115bb4eed4595580"
+  },
+  "capabilities": {
+    "walletLogin": true,
+    "liquidStaking": true,
+    "legacyExit": false,
+    "faucet": true,
+    "marketplacePayment": false,
+    "rewardMinting": true,
+    "agenticCommerce": true
+  },
+  "admin": "redacted"
+}
+WARNING: hre.network.connect() is deprecated and will be removed in a future version. Use hre.network.create() or hre.network.getOrCreate() instead.
+Contract addresses (from manifest):
+    "cafe": "0x75c68e69775fa3e9dd38ea32e554f6bf259c1135",
+    "erc8004Registry": "0xfd2cf3b56a73c75a7535ffe44ebabe7723c64719",
+    "erc8183Escrow": "0x666d0c3da3dbc946d5128d06115bb4eed4595580"
+--- Starting reconciliation worker ---
+Worker PID: 14643
+--- Waiting for worker to initialize (5s) ---
+--- Running acceptance test script ---
+Test harness note: uses Hardhat-controlled local wallets, NOT a browser wallet or UI E2E test.
+Setting up database connection...
+1. Registering Agent Identity...
+Agent Identity verified in DB.
+2. Creating Job...
+Job created with ID: 1
+DB Job Row: c154f253-be33-47d4-aa46-db1413545134 | Status: Open | Creation Tx: 0xc489c0a1fbd7cca541a46136fc823f3cc425e124b349f7815db0d18faeb1d471
+✓ Job created and verified in DB.
+3. Setting Budget...
+4. ERC-20 Approval & Funding...
+✓ Job Funding verified in DB.
+5. Provider Submission...
+✓ Job Submission verified in DB.
+6. Evaluator Completion...
+Provider payout verified on-chain.
+✓ Job Completion verified in DB.
+=== Running Rejection Variant ===
+Rejection variant passed.
+=== Running Expiry Variant ===
+Waiting for expiry...
+Expiry variant passed.
+✅ Full lifecycle acceptance test passed successfully!
+
+--- Acceptance test exit code: 0 ---
+--- Worker checkpoint and applied-event counts (via psql) ---

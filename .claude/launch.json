@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/ThisCafeteria.Web", "--", "--ConnectionStrings:DefaultConnection=Host=192.168.64.4;Port=5432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password"],
+      "port": 5286
+    }
+  ]
+}

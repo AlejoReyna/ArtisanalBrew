@@ -110,49 +110,10 @@
                 </button>
             }
         </div>
-
-        <dl class="pl-hero__telemetry" aria-label="Mission control telemetry">
-            <div>
-                <dt>Chain</dt>
-                <dd>@SelectedChainAccessor.SelectedChain.ShortName</dd>
-            </div>
-            <div>
-                <dt>Projection</dt>
-                <dd><span class="crypto-dot crypto-dot--pulse" aria-hidden="true"></span>@(_loading ? "Syncing…" : "Reading projections")</dd>
-            </div>
-            <div>
-                <dt>Wallet</dt>
-                <dd>@(_walletAddress is null ? "Not linked" : ShortAddress(_walletAddress))</dd>
-            </div>
-        </dl>
-    </section>
-
-    <section class="procurement-lab__summary" aria-label="Projection summary">
-        <div class="state-metric state-metric--agents"><span class="state-metric__value">@(Agents?.Count ?? 0)</span><span class="state-metric__label">Indexed agents</span></div>
-        <div class="state-metric state-metric--jobs"><span class="state-metric__value">@(Jobs?.Count ?? 0)</span><span class="state-metric__label">Observed jobs</span></div>
-        <div class="state-metric state-metric--terminal"><span class="state-metric__value">@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</span><span class="state-metric__label">Terminal jobs</span></div>
-        <div class="state-metric state-metric--wallet">
-            @if (_walletAddress is null)
-            {
-                <span class="state-metric__value">—</span>
-            }
-            else
-            {
-                <button type="button" class="pl-copy state-metric__value @(_copiedKey == "wallet" ? "is-copied" : null)" title="Copy @_walletAddress" @onclick='() => Copy("wallet", _walletAddress)'>@ShortAddress(_walletAddress)<span class="pl-copy__flag">Copied</span></button>
-            }
-            <span class="state-metric__label">Wallet scope</span>
-        </div>
     </section>
 
     @if (_walletAddress is null)
     {
-        <section class="projection-empty" role="status">
-            <span class="projection-empty__icon">◎</span>
-            <div>
-                <h2>Connect a wallet to open your mission scope</h2>
-                <p>The directory can be public, but job projections are scoped to the authenticated wallet. No local demo address is substituted.</p>
-            </div>
-        </section>
     }
     else if (_loading)
     {

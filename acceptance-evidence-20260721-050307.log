@@ -1,0 +1,204 @@
+========================================================
+ Phase 3 Acceptance Harness
+ Command  : run-acceptance.sh 
+ Timestamp: 2026-07-21T11:03:07Z
+ Log      : acceptance-evidence-20260721-050307.log
+========================================================
+INFO: ACCEPTANCE_ISOLATED=1 set – accepting isolated environment.
+INFO: contracts/evm/.acceptance-isolated marker found.
+--- Checking PostgreSQL health ---
+PostgreSQL is ready.
+--- Building projects ---
+  Determining projects to restore...
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+  All projects are up-to-date for restore.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+  ThisCafeteria.Domain -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Domain/bin/Debug/net10.0/ThisCafeteria.Domain.dll
+  ThisCafeteria.Application -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Application/bin/Debug/net10.0/ThisCafeteria.Application.dll
+  ThisCafeteria.Infrastructure -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Infrastructure/bin/Debug/net10.0/ThisCafeteria.Infrastructure.dll
+  ThisCafeteria.Worker -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/bin/Debug/net10.0/ThisCafeteria.Worker.dll
+  ThisCafeteria.Web -> /Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Web/bin/Debug/net10.0/ThisCafeteria.Web.dll
+  ThisCafeteria.UnitTests -> /Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/bin/Debug/net10.0/ThisCafeteria.UnitTests.dll
+  ThisCafeteria.IntegrationTests -> /Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Debug/net10.0/ThisCafeteria.IntegrationTests.dll
+
+Build succeeded.
+
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved. [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [/Users/alexis/Downloads/tcde/ArtisanalBrew/ThisCafeteria.sln]
+/Users/alexis/Downloads/tcde/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+/Users/alexis/Downloads/tcde/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.10 was resolved.
+    8 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.97
+--- Applying database migrations ---
+Build started...
+Build succeeded.
+The Entity Framework tools version '10.0.9' is older than that of the runtime '10.0.10'. Update the tools for the latest features and bug fixes. See https://aka.ms/AAc1fbw for more information.
+Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+No migrations were applied. The database is already up to date.
+Done.
+--- Starting Hardhat node ---
+Hardhat node PID: 70025
+--- Waiting for Hardhat node RPC ---
+Waiting for Hardhat node (attempt 1/30)...
+Hardhat node is ready.
+--- Deploying contracts to local Hardhat node ---
+
+> deploy:local
+> hardhat run scripts/deploy.ts --network localhost
+
+
+{
+  "schemaVersion": 1,
+  "chainKey": "evm-local",
+  "chainId": 31337,
+  "rpcUrl": "http://127.0.0.1:8545",
+  "displayName": "Local EVM",
+  "explorerAddressTemplate": "http://127.0.0.1:8545/address/{0}",
+  "explorerTransactionTemplate": "http://127.0.0.1:8545/tx/{0}",
+  "nativeCurrency": {
+    "name": "Local Ether",
+    "symbol": "ETH",
+    "decimals": 18
+  },
+  "deployBlock": "3",
+  "compiler": {
+    "solc": "0.8.24",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "deployedAtUtc": "2026-07-21T11:03:16.792Z",
+  "addresses": {
+    "cafe": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    "coffee": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    "liquidVault": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+    "faucet": "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+    "entryPoint": "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+    "erc8004Registry": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+    "erc7683Resolver": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+    "erc8183Escrow": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0"
+  },
+  "capabilities": {
+    "walletLogin": true,
+    "liquidStaking": true,
+    "legacyExit": false,
+    "faucet": true,
+    "marketplacePayment": false,
+    "rewardMinting": true,
+    "agenticCommerce": true
+  },
+  "admin": "redacted"
+}
+WARNING: hre.network.connect() is deprecated and will be removed in a future version. Use hre.network.create() or hre.network.getOrCreate() instead.
+Contract addresses (from manifest):
+    "cafe": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    "erc8004Registry": "0x610178da211fef7d417bc0e6fed39f05609ad788",
+    "erc8183Escrow": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0"
+--- Starting reconciliation worker ---
+Worker PID: 73695
+--- Waiting for worker to initialize (5s) ---
+--- Running acceptance test script ---
+Test harness note: uses Hardhat-controlled local wallets, NOT a browser wallet or UI E2E test.
+Setting up database connection...
+1. Registering Agent Identity...
+Agent Identity verified in DB.
+2. Creating Job...
+Job created with ID: 1
+DB Job Row: 3847edeb-bf06-4fba-aad6-ec99ceabd9e0 | Status: Open | Creation Tx: 0x0554c0340df21a76f4c4d1377a32fb99763813b675a16cf52e415e785ab09d7a
+✓ Job created and verified in DB.
+3. Setting Budget...
+4. ERC-20 Approval & Funding...
+✓ Job Funding verified in DB.
+5. Provider Submission...
+✓ Job Submission verified in DB.
+6. Evaluator Completion...
+Provider payout verified on-chain.
+✓ Job Completion verified in DB.
+=== Running Rejection Variant ===
+Rejection variant passed.
+=== Running Expiry Variant ===
+Waiting for expiry...
+Expiry variant passed.
+✅ Full lifecycle acceptance test passed successfully!
+
+--- Acceptance test exit code: 0 ---
+--- Worker checkpoint and applied-event counts (via psql) ---
+-- checkpoints --
+ ChainKey  |               EscrowAddress                | LastScannedBlock |         UpdatedAtUtc          
+-----------+--------------------------------------------+------------------+-------------------------------
+ evm-local | 0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0 |               62 | 2026-07-21 11:03:33.825256+00
+ evm-local | 0x666d0c3da3dbc946d5128d06115bb4eed4595580 |              733 | 2026-07-20 20:31:12.185639+00
+ evm-local | 0x67d269191c92caf3cd7723f116c85e6e9bf55933 |              733 | 2026-07-20 20:31:17.736836+00
+ evm-local | 0x7bc06c482dead17c0e297afbc32f6e63d3846650 |              733 | 2026-07-20 20:31:17.739751+00
+ evm-local | 0xfbc22278a96299d91d41c453234d97b4f5eb9b2d |              733 | 2026-07-20 20:31:17.743048+00
+ evm-local | 0x2e2ed0cfd3ad2f1d34481277b3204d807ca2f8c2 |              733 | 2026-07-20 20:31:17.746715+00
+ evm-local | 0x0e801d84fa97b50751dbf25036d067dcf18858bf |              733 | 2026-07-20 20:31:17.750774+00
+ evm-local | 0x045857bdeae7c1c7252d611eb24eb55564198b4c |              403 | 2026-07-21 11:02:20.673987+00
+ evm-local | 0x56d13eb21a625eda8438f55df2c31dc3632034f5 |              459 | 2026-07-21 11:02:20.679754+00
+ evm-local | 0x720472c8ce72c2a2d711333e064abd3e6bbeadd3 |              203 | 2026-07-21 11:02:20.766058+00
+ evm-local | 0xa7c59f010700930003b33ab25a7a0679c860f29c |              234 | 2026-07-21 11:02:20.766062+00
+ evm-local | 0x5fc748f1feb28d7b76fa1c6b07d8ba2d5535177c |              265 | 2026-07-21 11:02:21.367249+00
+ evm-local | 0x19ceccd6942ad38562ee10bafd44776ceb67e923 |              296 | 2026-07-21 11:02:22.108658+00
+ evm-local | 0xde2bd2ffea002b8e84adea96e5976af664115e2c |              348 | 2026-07-21 11:02:04.452251+00
+(14 rows)
+
+-- applied event count --
+ applied_event_count 
+---------------------
+                 101
+(1 row)
+
+-- deferred event count --
+ deferred_event_count 
+----------------------
+                    0
+(1 row)
+
+-- job projections --
+ OnChainJobId |  Status   |                      CreationTransactionHash                       |                       FundedTransactionHash                        |                     CompletionTransactionHash                      
+--------------+-----------+--------------------------------------------------------------------+--------------------------------------------------------------------+--------------------------------------------------------------------
+            1 | Completed | 0xc489c0a1fbd7cca541a46136fc823f3cc425e124b349f7815db0d18faeb1d471 | 0x016f927cb6f3ddab39f0c7091c0c0399fd535e9f48a6535df18a0d992dcefcc1 | 0xe55571a91c5a89232b757b044d6e515663670dbea5314d0db6364eb7c0b3dfef
+            1 | Completed | 0xa09af72830661e726f1cae2036212f98d96256430749b6453f95c464b9630e3a | 0x2f0737d745847a6cda991fadf0d67edddbbc74dcd90baf8713c095fdd72a40e9 | 0x6c4c0024aaae271b79f050591dce359a03f0ae5204b1f6a953f2d33d42dff06c
+            1 | Completed | 0xf1a0c72796935f6ca84b30b049b4c63b4ff1d11cedce4b0cf373750e7484e0d6 | 0x941a65bf3e68da023d46af9623aea20908b75564d8a982829008ddc431576c6f | 0xba0d289ebf9241af5eeb150945b328fd96383ecd89ef454af575729e4b3f637d
+            1 | Open      | 0xc4d8bd681b15c9f76df738d42b245719ac5367abf7f9c18930bc40f11d6ddb18 |                                                                    | 
+            1 | Open      | 0x3d27dd8dfea1282423da9437a4e455b4775252a1766e0a3ec7821c853a212cda |                                                                    | 
+            1 | Open      | 0x12e75f60bf6500977992a8eb48ba93f4e95bce1b7de410eb48dbfb1cfac0b894 |                                                                    | 
+            1 | Open      | 0x158a379e28a95e390f96fb383bd7fd0fd325dfe4608f1d6e8c6b125b9198476c |                                                                    | 
+            1 | Open      | 0xc500cc6bc9471bfd8a6cf591bae5c2c9a9d2cbf3444f7179844ecaaeff501de3 |                                                                    | 
+            1 | Completed | 0x0554c0340df21a76f4c4d1377a32fb99763813b675a16cf52e415e785ab09d7a | 0x9253f4b3848123d42c78938b26083dc3ea343de0dc3846a1cd00bdf6bc41f5a5 | 0x521c9ecb18b6f33305fdbf25b8df5266c0afc338f724928d65bf12d48d92f77d
+            1 | Open      | 0x20e0747bd43604409390bfdc9a95468fdbf039616dbdfd75400b2eb3d456e8c5 |                                                                    | 
+            1 | Open      | 0x865139a5b2432778c84388cdd5088e7d731c4755193b2e34e6fb2693fce1f0ff |                                                                    | 
+            1 | Open      | 0xf92b1270cd595696173dcad40eaed46357e2d17098395ea56535f6e80dfe80cb |                                                                    | 
+            1 | Completed | 0xd11e68d061e4ed4a4698c21d81cb8c2693911bd3f50ca211a290d588f327a5e4 | 0x79ebee13c6f29005ad4aff03c2f98535bac552a2edfbe04e24adb5eb5248d240 | 0x008cf836f38261ba16ccbdbc7f8c4ceab53af896c5a0b2e6ae36ad10e82f5954
+            1 | Completed | 0x4151416c07afd4d4775c06303cee518d8152dcfd9a90191291a3666c02a8149f | 0x50641b1cf4b769907af803ea0a4b9f97b759296392cfbbe448a430191ea64df4 | 0x1709d081457409b0039e5ea98e288a219b5fad20e1c4d799ed8794fe11670dd7
+            2 | Rejected  | 0xdca7b0dcc08ca55fb5fd24c5b8bbfae5d314c8dd39c08d3f4986a6808776446c | 0x12ed5e10f8d70f2b10b0ba637639190cd9519670db4b8ccddff5e173d6705657 | 0x608320fbafe1bd0b13b1e4c62db23f54f29a44599b734b38e68332599e46d837
+            2 | Rejected  | 0xc5f8b7630e89d6362ae15e772cf3c497d7bbc06b795aca7d7f5c87de5db728a2 | 0xac6621f3d13b9e9318eab398451e79c3c10eb4441eaa2b2049e47259fa2b138e | 0x85de045cce83b8018d3877bd964053b344e026f6daa4278aac00012d970171ae
+            2 | Rejected  | 0x049962b3c3be9116941a3a509e84bb8791ef5f83c4b8f339f62f77b6c9d632e3 | 0x744215bbb41362b0402824487ad34ee9021d3453d8e0bc7214684f5c720fc112 | 0x5dd882adfb483a00d655dc839d8960ad337ed1a48f59c797c3732817af25c94f
+            2 | Rejected  | 0xa948c0decd1a6e8a1d6a829f3be2798c9d340fdc87cec4d0457410cd14a87c59 | 0x986b1f349cf1dba01cafe410a3e0298be8133726b29877710732d615955ae3d8 | 0xc9d6c2a3e0d5ed51cf1349d3594f4a806344e7dc63187992e9ec33a7645b4ed0
+            2 | Rejected  | 0xb7476dad621b3149519d2b8dd8f8bb9ac0c0f4edaa175d94d0c77ac7a52cbd43 | 0x9e9960eee38359f9dd72a6df5475443802462aa76bb17d9c0db6ee850c7e85cf | 0xace2810fe6de4c8570141686dea2f6371204c0ef55a70d2206962bcaa0a9a1a0
+            3 | Expired   | 0x043554da7b4203be53b313ad62f3c3d247b7701d4c1b9cc60040b382acd56f51 | 0x1eb7bd8598783e4b53e729a4dc9f783e44025a4044deeb9a4c47436b4a75944b | 0x2ade69f3f8f64d25807c0cc58533fc45b2dc86ebf3c0facf7790b84ae6cb2ac4
+            3 | Expired   | 0x35074330f1c462d8e2c6cf4e7f50b6c7711f98cd26aa129cd57d89c17001f6c0 | 0xf7c969aa4b2b09603f2581cd4289c932556a5f399bf0f6fc6370c10ce35f55b6 | 0xa1b2960c088c18fec82065671d44bb20b4967f1ef0d1e0820f39b6e38d349ed6
+            3 | Funded    | 0x04bc2e83bd8cf3d5490b66edaeed3a6654de94a0d4409689579c862c2fe74698 | 0x8f095fb4efb56f58b1e4f8893f581a58e6ec2b8dbdf5e12066e41f91958fa758 | 
+(22 rows)
+
+
+--- Lifecycle stages proven ---
+  create → provider assignment → budget → funding → submission → completion/payment release  [VERIFIED]
+  rejection/refund  [VERIFIED]
+  expiry/claim refund  [VERIFIED]
+
+ACCEPTANCE_RESULT=PASS  exit=0
+--- cleanup trap: terminating background processes ---
+Killing worker tree (root PID 73695): 75332 73695
+Killing hardhat node tree (root PID 70025): 70055 70027 70025
