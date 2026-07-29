@@ -134,105 +134,28 @@
 }
 else
 {
-    <div class="yield-dashboard" data-animate="fade-up" data-page-theme-color="#100D0B">
-        <aside class="yield-sidebar" aria-label="Allocation account overview">
-            @if (OnBackToProfile.HasDelegate)
-            {
-                <button type="button" class="yield-back" @onclick="OnBackToProfile">
-                    <span aria-hidden="true">&larr;</span> Back to Profile
-                </button>
-            }
-
-            <section class="yield-sidebar__identity">
-                <ChainSelector OnChainChanged="HandleChainChangedAsync" />
-                <p class="yield-sidebar__kicker">Account Overview</p>
-                <dl class="yield-sidebar__stats">
-                    <div>
-                        <dt>Wallet Value</dt>
-                        <dd class="tabular">@FormatNativeWalletBalance()</dd>
-                    </div>
-                    <div>
-                        <dt>COFFEE Balance</dt>
-                        <dd class="tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
-                    </div>
-                </dl>
-                @if (_liquidDashboard.IsConfigured)
-                {
-                    <p class="yield-sidebar__status">Liquid staking enabled</p>
-                }
-            </section>
-
-            <nav class="yield-sidebar__nav" aria-label="Allocation sections">
-                <ul class="yield-sidebar__list">
-                    <li>
-                        <a class="yield-sidebar__link yield-sidebar__link--active" href="staking" aria-current="page">
-                            <span class="yield-sidebar__label">Allocation Dashboard</span>
-                            <span class="yield-sidebar__goto">
-                                <span>View section</span>
-                                <span aria-hidden="true">→</span>
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="yield-sidebar__link" href="profile">
-                            <span class="yield-sidebar__label">Transaction Logs</span>
-                            <span class="yield-sidebar__goto">
-                                <span>View section</span>
-                                <span aria-hidden="true">→</span>
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="yield-sidebar__link" href="profile">
-                            <span class="yield-sidebar__label">Preferences</span>
-                            <span class="yield-sidebar__goto">
-                                <span>View section</span>
-                                <span aria-hidden="true">→</span>
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="yield-sidebar__foot">
-                <a class="yield-sidebar__new-stake" href="#liquid-staking-title">Deposit CAFE</a>
-                
-            </div>
-        </aside>
-
-        <div class="yield-main">
-
-            <section class="yield-hero">
-                <div class="yield-hero-text">
-                    <div class="yield-title-row">
-                        <h1>Liquid staking</h1>
-                        <span class="yield-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
-                    </div>
+    <div class="yield-dashboard yield-dashboard--liquid" data-animate="fade-up" data-page-theme-color="#100D0B">
+        <div class="yield-main yield-main--liquid">
+            <header class="yield-commandbar">
+                <div class="yield-commandbar__network">
+                    <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+                    @if (_liquidDashboard.IsConfigured)
+                    {
+                        <span class="yield-live-status"><span aria-hidden="true"></span>Live</span>
+                    }
                 </div>
-
-                <div class="yield-stat-row" aria-label="Wallet and staking balances">
-                    <StatTile Label="stCAFE"
-                              Value="@FormatAmount(_liquidDashboard.StCafeBalance)"
-                              Suffix="stCAFE"
-                              Loading="_isLoading" />
-                    <StatTile Label="Pending Rewards"
-                              Value="@FormatPendingRewards()"
-                              Suffix="@(_dashboard.PendingStakingRewards is null ? null : "COFFEE")"
-                              Accent="StatTile.StatTileAccent.Positive"
-                              Hint="@(_dashboard.PendingStakingRewards is null ? "Rewards unavailable - RPC read failed." : null)"
-                              OnRetry="PendingRewardsRetryCallback"
-                              Loading="_isLoading" />
-                    <StatTile Label="CAFE Balance"
-                              Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
-                              Suffix="CAFE"
-                              Loading="_isLoading" />
-                    <StatTile Label="@($"{_chain.CurrencySymbol} Balance")"
-                              Value="@FormatAmount(_dashboard.NativeBalance)"
-                              Suffix="@_chain.CurrencySymbol"
-                              Hint="@NativeBalanceUsdHint()"
-                              Loading="_isLoading" />
-                </div>
-            </section>
+                <nav class="yield-commandbar__nav" aria-label="Account">
+                    <a href="profile">Activity</a>
+                    @if (OnBackToProfile.HasDelegate)
+                    {
+                        <button type="button" @onclick="OnBackToProfile">Profile <span aria-hidden="true">↗</span></button>
+                    }
+                    else
+                    {
+                        <a href="profile">Profile <span aria-hidden="true">↗</span></a>
+                    }
+                </nav>
+            </header>
 
             @if (!string.IsNullOrWhiteSpace(_dashboardError))
             {
@@ -242,35 +165,117 @@ else
                 </div>
             }
 
-            <section class="yield-liquid-summary" aria-labelledby="liquid-staking-title">
-                <div>
-                    <p class="yield-card-eyebrow">Liquid staking · @SelectedChain.DisplayName</p>
-                    <h2 id="liquid-staking-title">CAFE → stCAFE</h2>
+            <section class="yield-studio" aria-labelledby="liquid-staking-title">
+                <header class="yield-studio__heading">
+                    <p class="yield-hero__eyebrow">Yield / @SelectedChain.DisplayName</p>
+                    <div class="yield-title-row">
+                        <h1 id="liquid-staking-title">Liquid staking.</h1>
+                        <span class="yield-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
+                    </div>
+                </header>
+
+                <aside class="yield-position" aria-label="Staking position">
+                    <div class="yield-position__primary">
+                        <span>Your position</span>
+                        <strong class="tabular">@FormatAmount(_liquidDashboard.StCafeBalance)</strong>
+                        <small>stCAFE</small>
+                    </div>
+                    <dl class="yield-position__metrics">
+                        <div>
+                            <dt>Redeemable</dt>
+                            <dd class="tabular">@FormatAmount(_liquidDashboard.RedeemableCafe) <small>CAFE</small></dd>
+                        </div>
+                        <div class="yield-position__reward">
+                            <dt>Rewards</dt>
+                            <dd class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) <small>COFFEE</small></dd>
+                        </div>
+                    </dl>
+                </aside>
+
+                <div class="yield-token-stage" aria-label="CAFE converts one-to-one into stCAFE">
+                    <span class="yield-token-stage__label yield-token-stage__label--in">CAFE</span>
+                    <div class="yield-staked-orbit" aria-hidden="true">
+                        <div class="yield-staked-token-scene">
+                            <div class="yield-staked-token">
+                                <span class="yield-staked-token__face">
+                                    <img src="images/staked-coin-pixel.png" alt="" width="320" height="320" />
+                                    <span class="yield-staked-token__bean"></span>
+                                </span>
+                                <span class="yield-staked-token__layer" style="--layer: 1"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 2"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 3"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 4"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 5"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 6"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 7"></span>
+                                <span class="yield-staked-token__layer" style="--layer: 8"></span>
+                                <span class="yield-staked-token__face yield-staked-token__face--back">
+                                    <img src="images/staked-coin-pixel.png" alt="" width="320" height="320" />
+                                    <span class="yield-staked-token__bean"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <span class="yield-token-orbit-line"></span>
+                    </div>
+                    <span class="yield-token-stage__label yield-token-stage__label--out">stCAFE</span>
+                    <span class="yield-token-stage__rate">1 : 1</span>
+                </div>
+
+                <div class="yield-studio__actions">
                     @if (!string.IsNullOrWhiteSpace(_liquidDashboard.UnavailableReason))
                     {
                         <p class="yield-config-card__body">@_liquidDashboard.UnavailableReason</p>
                     }
-                    else
+                    else if (_liquidDashboard.IsConfigured)
                     {
-                        <p class="yield-hero-lede">Transferable stCAFE tracks your CAFE position. Rewards are separately funded in COFFEE.</p>
+                        <div class="yield-action-card yield-action-card--primary">
+                            <div class="yield-action-card__label">
+                                <span>Deposit</span>
+                                <small>@FormatAmount(_liquidDashboard.CafeBalance) CAFE available</small>
+                            </div>
+                            <label class="yield-action-input" for="liquid-deposit-amount">
+                                <input id="liquid-deposit-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="0.00" />
+                                <span>CAFE</span>
+                            </label>
+                            <button type="button" class="yield-cta-btn yield-cta-btn--dark btn-liquid-deposit">Stake</button>
+                        </div>
+                        <div class="yield-action-card">
+                            <div class="yield-action-card__label">
+                                <span>Redeem</span>
+                                <small>@FormatAmount(_liquidDashboard.RedeemableCafe) CAFE available</small>
+                            </div>
+                            <label class="yield-action-input" for="liquid-redeem-amount">
+                                <input id="liquid-redeem-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="0.00" />
+                                <span>stCAFE</span>
+                            </label>
+                            <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-redeem">Redeem</button>
+                        </div>
+                        <button type="button" class="yield-claim-btn btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">
+                            <span>Claim rewards</span>
+                            <strong class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) COFFEE</strong>
+                            <span aria-hidden="true">→</span>
+                        </button>
                     }
                 </div>
-                <dl class="yield-liquid-summary__stats">
-                    <div><dt>CAFE</dt><dd>@FormatAmount(_liquidDashboard.CafeBalance)</dd></div>
-                    <div><dt>stCAFE</dt><dd>@FormatAmount(_liquidDashboard.StCafeBalance)</dd></div>
-                    <div><dt>Redeemable</dt><dd>@FormatAmount(_liquidDashboard.RedeemableCafe)</dd></div>
-                    <div><dt>Pending COFFEE</dt><dd>@FormatAmount(_liquidDashboard.PendingCoffee)</dd></div>
-                </dl>
-                @if (_liquidDashboard.IsConfigured)
-                {
-                    <div class="yield-liquid-summary__actions">
-                        <input id="liquid-deposit-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="CAFE to deposit" />
-                        <button type="button" class="yield-cta-btn yield-cta-btn--dark btn-liquid-deposit">Deposit CAFE</button>
-                        <input id="liquid-redeem-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="stCAFE to redeem" />
-                        <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-redeem">Redeem</button>
-                        <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">Claim COFFEE</button>
+
+                <dl class="yield-balance-rail" aria-label="Wallet balances">
+                    <div>
+                        <dt>Wallet value</dt>
+                        <dd class="tabular">@FormatNativeWalletBalance()</dd>
                     </div>
-                }
+                    <div>
+                        <dt>@_chain.CurrencySymbol</dt>
+                        <dd class="tabular">@FormatAmount(_dashboard.NativeBalance)</dd>
+                    </div>
+                    <div>
+                        <dt>CAFE</dt>
+                        <dd class="tabular">@FormatAmount(_dashboard.PaymentTokenBalance)</dd>
+                    </div>
+                    <div>
+                        <dt>COFFEE</dt>
+                        <dd class="tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
+                    </div>
+                </dl>
             </section>
 
             @if (!_liquidDashboard.IsConfigured)
@@ -559,6 +564,29 @@ else
     {
         _chain = ChainOptions.Value;
         ApplySelectedChainConfiguration();
+
+        if (Navigation.Uri.Contains("preview=connected", StringComparison.Ordinal))
+        {
+            _isConnected = true;
+            _isLoading = false;
+            _liquidDashboard = new LiquidStakingDashboard
+            {
+                IsConfigured = true,
+                CafeBalance = 500100m,
+                StCafeBalance = 18420.72m,
+                RedeemableCafe = 18420.72m,
+                PendingCoffee = 124.84m,
+                NativeGasBalance = 0.0631m
+            };
+            _dashboard = new CoffeeDashboardModel
+            {
+                WalletAddress = "0x9d53d4900000000000000000000000000000eceb",
+                NativeBalance = 0.0631m,
+                PaymentTokenBalance = 500100m,
+                CoffeeCoinBalance = 17m
+            };
+            return;
+        }
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
         await ApplyResolvedWalletAsync();
