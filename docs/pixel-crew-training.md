@@ -35,9 +35,9 @@ A continuous-control task in a normalised unit square.
 
 | | |
 |---|---|
-| **Observation** (13 floats) | unit vector to this robot's own claimed coin (2), distance to it (1), own velocity (2), distance to each of the four walls (4), unit vector to the nearest catchable coffee bag (2), distance to it (1), own caffeine remaining (1) |
+| **Observation** (13 floats) | unit vector to this robot's own claimed coin (2), distance to it (1), own velocity (2), distance to each of the four walls (4), unit vector to the nearest catchable coffee mug (2), distance to it (1), own caffeine remaining (1) |
 | **Action** (2 floats) | acceleration on x and y, each squashed through `tanh` |
-| **Reward** | `+1` per coin collected; `+0.4` per coffee bag caught; `-0.001 x` distance-to-own-coin shaping per step; `-0.0006 |a|²` control cost |
+| **Reward** | `+1` per coin collected; `+0.9` per coffee mug caught (`PARAMS.bagReward`); `-0.001 x` distance-to-own-coin shaping per step; `-0.0006 |a|²` control cost |
 | **Episode** | 1800 steps at a fixed `dt` of 1/60 s — thirty seconds of simulated time |
 | **Dynamics** | acceleration, linear drag, speed cap, absorbing walls |
 
@@ -61,6 +61,7 @@ that rather than for efficiency:
 | `drag` | 0.7 /s | **Low relative to `accel`** — momentum carries a robot well past the point it stops thrusting, which is what reads as vacuum rather than walking |
 | `maxSpeed` | 0.15 units/s | A full crossing of the scene takes about seven seconds |
 | `respawnSeconds` | 5.5 | A slow crew needs the field to stay put long enough to reach it |
+| `bagLifeMin/Max` | 12–20 s | **Must exceed the ~8.5 s crossing time**, or a distant mug is unreachable and the policy correctly ignores it |
 
 Measured on the trained policy: average speed **0.118 units/s**, or **8.5
 seconds** to cross the scene. It is something you watch, not something that
@@ -93,39 +94,73 @@ The result, per robot per episode over 5 held-out episodes:
 
 A min/max ratio of **0.81** — no robot is starved, which was the entire point.
 
-### Coffee bags: the difficulty layer
+### Coffee mugs: the difficulty layer
 
-Coins are always on the field. Coffee bags are not — and that is what makes
-them hard. Each of the six bag slots is dormant for a random 6–18 s, then
-**suddenly appears somewhere new**, stays catchable for only 7–12 s, and goes
+Coins are always on the field. Coffee mugs are not — and that is what makes
+them hard. Each of the six mug slots is dormant for a random 6–18 s, then
+**suddenly appears somewhere new**, stays catchable for 12–20 s, and goes
 dormant again whether or not anyone reached it. Nothing about the timing is
 tied to the crew, so a robot cannot plan around it.
 
-Catching one grants a **25% speed boost for 6 seconds**. The boost raises the
+Catching one grants a **40% speed boost for 6 seconds**. The boost raises the
 speed *cap*, not the thrust — a caffeinated robot keeps the same weightless
 acceleration and simply coasts faster once up to speed, so the drink reads as
 momentum rather than as a twitch.
 
 This is a genuine decision problem, which is the point of calling it
-difficulty: a bag is only worth chasing if the detour costs less than the boost
-earns back, and the bag may expire before the robot arrives.
+difficulty: a mug is only worth chasing if the detour costs less than the boost
+earns back, and the mug may expire before the robot arrives.
 
-The reward for a bag is **0.4**, deliberately less than a coin's 1.0. Most of a
-bag's value is indirect — it is what the boost earns *afterwards* — and a small
-direct reward is just enough for evolution to discover that. Paying a full 1.0
-made the crew abandon coins to farm bags.
+#### Tuning it, and one claim this document got wrong
 
-Measured on held-out episodes:
+The first version shipped a mug reward of 0.4 and a 7–12 s catchable window,
+and the crew visibly ignored mugs: a 46% catch rate, with one robot down at
+0.7 mugs per episode. Two things were wrong.
 
-| Checkpoint | Bags caught / appeared | Catch rate | Time boosted |
-|---|---|---|---|
-| `untrained` | 0.2 / 9.6 | 2% | 1% |
-| `early` | 5.6 / 11.2 | 50% | 20% |
-| `trained` | 5.0 / 10.6 | 47% | 20% |
+**The window was shorter than the travel time.** The crew drifts at 0.15
+units/s and a full crossing takes about 8.5 s. A mug that appeared across the
+scene simply could not be reached inside 7 s, so the policy was correct to
+ignore it — the reward was unreachable, not undervalued.
 
-The trained crew spends a fifth of its life caffeinated and catches roughly
-half of everything that appears. The untrained one essentially never gets one,
-which confirms the catches are deliberate rather than accidental collisions.
+**The reward was too low to justify the detour**, and an earlier draft of this
+document asserted that paying a full coin for a mug "made the crew abandon
+coins to farm bags". That claim was never measured, and it is wrong. A sweep
+(120 generations per configuration, held-out evaluation):
+
+| Mug reward | Catchable window | Coins | Mugs caught / appeared | Catch rate |
+|---|---|---|---|---|
+| 0.4 | 7–20 s | 28.5 | 5.3 / 10.8 | 48% |
+| 0.9 | 7–12 s | 27.6 | 6.3 / 10.6 | 59% |
+| 0.9 | 12–20 s | 26.5 | 5.9 / 9.5 | 62% |
+| 1.5 | 12–20 s | 26.7 | 6.4 / 9.9 | 65% |
+
+Even at 1.5 — a mug worth more than a coin — coin collection fell only about
+6%. The crew never abandoned coins. The shipped setting is **reward 0.9,
+window 12–20 s**, which takes most of the available gain while keeping a mug
+worth less than a coin, so the reward hierarchy still matches what the scene
+is about.
+
+#### Before and after
+
+Both rows evaluated under identical current dynamics (`bagBoost` 1.4, 30-second
+episodes, 20 held-out seeds), so this isolates the policy and the economics
+rather than comparing across worlds:
+
+| | Coins | Mugs caught / appeared | Catch rate | Time boosted | Mugs per robot |
+|---|---|---|---|---|---|
+| Stale policy (trained @ boost 1.25, reward 0.4) | 27.6 | 4.2 / 9.1 | **46%** | 17% | 1.4 / 1.2 / 0.7 / 0.9 |
+| Retrained (boost 1.4, reward 0.9, window 12–20 s) | 27.1 | 6.8 / 10.2 | **67%** | 24% | 1.8 / 1.4 / 1.8 / 1.8 |
+| Untrained baseline | 1.6 | 0.6 / 7.5 | 7% | 3% | 0.3 / 0.1 / 0.1 / 0 |
+
+Coin collection is essentially unchanged (27.6 → 27.1) while mug catching rises
+by half, and the per-robot spread evens out — the 0.7 laggard disappears.
+
+Measured in the browser against the real DOM, driving the frame loop with a
+synthetic clock over 60 seconds of simulated time: **9 catch events**, mugs
+live 41% of the time, robots caffeinated 17% of the time.
+
+The untrained baseline at 7% is the useful control: it confirms the catches are
+deliberate detours rather than accidental collisions.
 
 ## Architecture
 
@@ -189,8 +224,8 @@ The payoff was measurable. Running the shipped weights through the shipped sim
 ```
                 Node      Browser
 untrained        1.8         1.8
-early (gen 20)  25.8        25.8
-trained         27.4        27.4
+early (gen 20)  25.2        25.2
+trained         27.0        27.0
 ```
 
 ## Results
@@ -201,8 +236,8 @@ optimised against:
 | Checkpoint | Coins per episode | Behaviour |
 |---|---|---|
 | `untrained` (generation 0) | **1.8** | Drifts, stalls against walls, collects only by accident |
-| `early` (generation 20) | **25.8** | Heads the right way, overshoots, coasts back |
-| `trained` (generation 300) | **27.4** | Thrusts early, lets momentum carry it in, breaks off for a bag when the detour is cheap |
+| `early` (generation 20) | **25.2** | Heads the right way, overshoots, coasts back |
+| `trained` (generation 300) | **27.0** | Thrusts early, lets momentum carry it in, breaks off for a mug when the detour is cheap |
 
 All three ship. The hero's **CREW BRAIN** switcher swaps which one is steering
 without rebuilding the world — the robots and coins stay exactly where they are,
@@ -234,7 +269,7 @@ Two honest observations about this curve:
 1. **It plateaus around generation 20–30**, harder than before. Nearly all the
    competence is bought in the first 30 seconds of training. The remaining 270
    generations buy a modest, noisy improvement — visible in the held-out gap
-   between 25.8 and 27.4, but not the dramatic climb the generation count
+   between 25.2 and 27.0, but not the dramatic climb the generation count
    implies. Per-coin claiming is largely responsible: pointing each robot at
    its own target makes the problem substantially easier to learn.
 2. **It is noisy, and the noise is not the policy getting worse.** Each point is

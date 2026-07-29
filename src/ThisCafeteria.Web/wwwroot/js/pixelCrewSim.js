@@ -49,13 +49,22 @@ export const PARAMS = {
     // there — each slot goes dormant for a random stretch, then appears
     // somewhere new and stays only briefly, so a robot has to decide whether
     // a bag is worth breaking off its coin run for.
-    bagBoost: 1.25,        // speed multiplier while caffeinated
+    bagBoost: 1.4,         // speed multiplier while caffeinated (the Sonic shoes)
     bagBoostSeconds: 6,    // how long a drink lasts
-    bagLifeMin: 7,         // a bag stays catchable for 7–12 s
-    bagLifeMax: 12,
+    // A mug stays catchable for 12–20 s. The crew drifts at 0.15 units/s — a
+    // full crossing takes ~8.5 s — so the original 7–12 s window meant a mug
+    // that appeared across the scene expired before anyone could physically
+    // reach it, and the policy correctly learned not to bother.
+    bagLifeMin: 12,
+    bagLifeMax: 20,
     bagDormantMin: 6,      // then the slot is empty for 6–18 s
     bagDormantMax: 18,
     bagRadius: 0.055,      // slightly bigger than a coin — bags are chunkier
+    // What catching a mug is worth in the reward, relative to a coin's 1.0.
+    // Most of a mug's value is indirect (it is what the boost earns
+    // afterwards), but evolution needs some direct signal to discover the
+    // detour at all. Tuned empirically — see docs/pixel-crew-training.md.
+    bagReward: 0.9,
 };
 
 /** Deterministic RNG — the trainer and the browser must agree on layouts. */
@@ -455,7 +464,7 @@ export function step(world, actions, dt) {
             // clear `alive`, but only one should play the catch animation.
             a.drankBag = k;
             world.drank++;
-            reward += 0.4;
+            reward += PARAMS.bagReward;
             break;
         }
 
