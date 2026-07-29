@@ -43,6 +43,181 @@
     z-index: 1;
 }
 
+/* The signed-out hero is short; min-height: 100dvh above used to leave a
+   screenful of empty sky under the CTA. Centre it in the viewport instead. */
+.procurement-lab--intro .procurement-lab__inner {
+    align-items: center;
+    display: flex;
+    min-height: calc(100dvh - 4.75rem - clamp(2.5rem, 5vw, 4.5rem) - 6rem);
+}
+
+.procurement-lab--intro .pl-hero {
+    width: 100%;
+}
+
+/* ── Connected console ──────────────────────────────────────────────────────
+   The console is a reading surface over the shared pixel sky, the same problem
+   /staking's dashboard has: labels, addresses and hashes were sitting on
+   drifting stars, planets and chain badges between the panels. One fixed
+   frosted plate blurs the scene for as long as the console is mounted.
+
+   No ancestor of this pseudo-element may take isolation/filter/opacity — any
+   of those becomes the backdrop root and the blur silently does nothing. Note
+   .pl-hero DOES set isolation: isolate, which is exactly why the plate hangs
+   off .procurement-lab--console and not off anything inside the hero. */
+.procurement-lab--console {
+    padding-top: calc(4.75rem + clamp(1.25rem, 2.5vw, 2rem));
+}
+
+.procurement-lab--console::before {
+    backdrop-filter: blur(22px) saturate(118%);
+    -webkit-backdrop-filter: blur(22px) saturate(118%);
+    background:
+        radial-gradient(ellipse 85% 60% at 50% 0%, rgba(16, 13, 11, 0.5), transparent 78%),
+        rgba(16, 13, 11, 0.62);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: fixed;
+    z-index: 0;
+}
+
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+    .procurement-lab--console::before {
+        background: rgba(16, 13, 11, 0.93);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .procurement-lab--console::before {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: var(--stake-bg-deep);
+    }
+}
+
+.pl-commandbar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line);
+    column-gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+    min-height: 3.4rem;
+    padding-bottom: 0.75rem;
+    row-gap: 0.5rem;
+}
+
+.pl-commandbar__id {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.pl-commandbar__chain {
+    color: var(--stake-ink);
+    font: 700 0.62rem/1 var(--crypto-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* .pl-copy sets `font: inherit` and is declared later in this file, so the
+   selector has to out-specify it rather than just come first. */
+.pl-commandbar__id .pl-commandbar__wallet {
+    color: var(--stake-copper);
+    font: 600 0.72rem/1 var(--crypto-mono);
+    letter-spacing: 0.06em;
+}
+
+.pl-commandbar__nav {
+    align-items: center;
+    display: flex;
+    gap: 1.2rem;
+}
+
+.pl-commandbar__nav a {
+    align-items: center;
+    color: var(--stake-muted);
+    display: flex;
+    font: 700 0.62rem/1 var(--crypto-mono);
+    gap: 0.35rem;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pl-commandbar__nav a:hover {
+        color: var(--stake-ink);
+    }
+}
+
+/* Copy left, station right. The station keeps its own aspect ratio and simply
+   gets a smaller box — the actors and their activity labels stay readable
+   because nothing about the scene's internal proportions changes. */
+.pl-console {
+    align-items: center;
+    display: grid;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+    margin-bottom: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.pl-console__copy {
+    min-width: 0;
+}
+
+.procurement-lab--console h1 {
+    font-size: clamp(2.1rem, 4vw, 3.2rem);
+    margin: 0.45rem 0 0.6rem;
+}
+
+.pl-console__lede {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 30rem;
+}
+
+.pl-console__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: clamp(1rem, 2vw, 1.4rem);
+}
+
+.pl-console__station {
+    min-width: 0;
+}
+
+/* Cropped shorter than the hero's 16/7.5. Everything in the scene is anchored
+   to the deck (bottom: 7%), so a shorter box only trims the empty sky above
+   the actors — which the hero absorbs with a negative margin and a stacked
+   console layout would otherwise show as a void. */
+.pl-console__station .pl-scene {
+    aspect-ratio: 16 / 5.4;
+    margin-inline: auto 0;
+    max-width: 26rem;
+    min-height: 0;
+}
+
+/* The four callouts are a teaching device for the signed-out hero and they
+   collide at strip width (their font-size is viewport-derived, so it does not
+   shrink with the box). The strip's live signals survive without them — the
+   buyer greys out or glows green with its key, the inspector's controls blink
+   when a job awaits evaluation — and the words themselves are already on the
+   command-bar pill and in the panels below. */
+.pl-console__station .pl-scene__activity {
+    display: none;
+}
+
 /* ── Hero: editorial copy + robot station ── */
 .panel-kicker {
     color: var(--stake-green);
@@ -1138,6 +1313,15 @@
     .procurement-lab__grid {
         grid-template-columns: 1fr;
     }
+
+    .pl-console {
+        grid-template-columns: 1fr;
+    }
+
+    .pl-console__station .pl-scene {
+        margin-inline: 0;
+        max-width: 34rem;
+    }
 }
 
 @media (max-width: 640px) {
@@ -1156,8 +1340,19 @@
         scrollbar-width: thin;
     }
 
-    .pl-scene {
+    /* 34rem, not 30: at 30 the scout's "Scanning suppliers" callout ran into
+       the buyer's, because the callout font-size floors at 0.46rem and stops
+       shrinking with the scene. */
+    .pl-hero__scene .pl-scene {
         min-height: 15rem;
-        min-width: 30rem;
+        min-width: 34rem;
+    }
+
+    /* The console's station is a status readout, and the same three signals
+       (permission installed, job awaiting evaluation, loading) are already
+       spelled out in the panels below. Dropping it beats a horizontal
+       scroller or a strip too small to read on a phone. */
+    .pl-console__station {
+        display: none;
     }
 }
