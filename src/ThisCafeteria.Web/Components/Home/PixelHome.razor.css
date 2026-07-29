@@ -458,11 +458,17 @@
     }
 
     .ph-cta-row {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 0.6rem;
     }
 
     .ph-cta {
-        width: 100%;
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.62rem;
+        padding-inline: 1rem;
+        min-height: 2.75rem;
     }
 
     .ph-panels {
