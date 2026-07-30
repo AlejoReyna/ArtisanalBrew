@@ -29,8 +29,132 @@
        padding-top (removed in StakingLayout.razor.css for this route), so the
        fixed transparent header floats over the shared background scenario
        instead of a gap that exposed .page/main's flat swatch. */
+    isolation: isolate;
     padding: calc(4.75rem + clamp(2.5rem, 5vw, 4.5rem)) 0 6rem;
     position: relative;
+}
+
+/* ── Procurement cabin ─────────────────────────────────────────────────────
+   The generated pixel frame deliberately has transparent glass. GlobalScene
+   remains the actual view outside, so its session palette, drifting planets,
+   and route-preserved animation are shared with the hero instead of being
+   flattened into another wallpaper.
+
+   The window clips sit below the frame image. This lets a visitor pass behind
+   the hull without a mask or JS timer; long staggered CSS loops make the
+   cameos rare enough to remain easter eggs. */
+.pl-cabin {
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: fixed;
+    z-index: 0;
+}
+
+.pl-cabin::before {
+    background: url("images/pl-spaceship-frame.png") center / cover no-repeat;
+    content: "";
+    image-rendering: pixelated;
+    inset: 0;
+    opacity: 0.96;
+    position: absolute;
+    z-index: 1;
+}
+
+.pl-cabin__window {
+    overflow: hidden;
+    position: absolute;
+    z-index: 0;
+}
+
+.pl-cabin__window--port {
+    clip-path: polygon(20% 0, 84% 0, 100% 14%, 100% 86%, 82% 100%, 20% 100%, 0 86%, 0 14%);
+    height: 43%;
+    left: 7.5%;
+    top: 16%;
+    width: 12%;
+}
+
+.pl-cabin__window--starboard {
+    clip-path: polygon(16% 0, 80% 0, 100% 14%, 100% 86%, 82% 100%, 18% 100%, 0 86%, 0 14%);
+    height: 43%;
+    right: 7.5%;
+    top: 16%;
+    width: 12%;
+}
+
+.pl-cabin__visitor {
+    aspect-ratio: 1;
+    opacity: 0;
+    position: absolute;
+    width: clamp(2.5rem, 4.5vw, 4rem);
+}
+
+.pl-cabin__visitor::before {
+    animation: pl-cabin-visitor-frames 1s steps(5, end) infinite;
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 500% 100%;
+    content: "";
+    image-rendering: pixelated;
+    inset: 0;
+    position: absolute;
+}
+
+.pl-cabin__visitor--port {
+    animation: pl-cabin-port-pass 53s steps(18, end) -17s infinite;
+}
+
+.pl-cabin__visitor--port::before {
+    background-image: url("images/pl-robot-coincrew.png");
+}
+
+.pl-cabin__visitor--starboard {
+    animation: pl-cabin-starboard-pass 67s steps(20, end) -41s infinite;
+}
+
+.pl-cabin__visitor--starboard::before {
+    background-image: url("images/pl-robot-coincrew-flip.png");
+}
+
+@keyframes pl-cabin-visitor-frames {
+    to { background-position: 125% 0; }
+}
+
+@keyframes pl-cabin-port-pass {
+    0%, 68% {
+        opacity: 0;
+        transform: translate3d(120%, 118%, 0) rotate(8deg);
+    }
+    71% {
+        opacity: 0.82;
+    }
+    83% {
+        opacity: 0.82;
+        transform: translate3d(-15%, -8%, 0) rotate(-6deg);
+    }
+    87%, 100% {
+        opacity: 0;
+        transform: translate3d(-55%, -48%, 0) rotate(-10deg);
+    }
+}
+
+@keyframes pl-cabin-starboard-pass {
+    0%, 74% {
+        opacity: 0;
+        transform: translate3d(-75%, 16%, 0) rotate(-4deg);
+    }
+    77% {
+        opacity: 0.78;
+    }
+    87% {
+        opacity: 0.78;
+        transform: translate3d(76%, 64%, 0) rotate(7deg);
+    }
+    91%, 100% {
+        opacity: 0;
+        transform: translate3d(130%, 94%, 0) rotate(10deg);
+    }
 }
 
 .procurement-lab__inner {
@@ -40,7 +164,7 @@
     padding: 0 clamp(1.25rem, 4vw, 3.5rem);
     position: relative;
     width: 100%;
-    z-index: 1;
+    z-index: 2;
 }
 
 /* The signed-out hero is short; min-height: 100dvh above used to leave a
@@ -79,7 +203,7 @@
     inset: 0;
     pointer-events: none;
     position: fixed;
-    z-index: 0;
+    z-index: 1;
 }
 
 @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
@@ -208,16 +332,6 @@
     min-height: 0;
 }
 
-/* The four callouts are a teaching device for the signed-out hero and they
-   collide at strip width (their font-size is viewport-derived, so it does not
-   shrink with the box). The strip's live signals survive without them — the
-   buyer greys out or glows green with its key, the inspector's controls blink
-   when a job awaits evaluation — and the words themselves are already on the
-   command-bar pill and in the panels below. */
-.pl-console__station .pl-scene__activity {
-    display: none;
-}
-
 /* ── Hero: editorial copy + robot station ── */
 .panel-kicker {
     color: var(--stake-green);
@@ -264,11 +378,39 @@
 }
 
 .pl-hero__protocols {
-    color: var(--stake-green);
-    font-family: var(--crypto-mono);
-    font-size: 0.95rem;
-    line-height: 1.55;
+    color: #FFFDF9;
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: 0.58rem;
+    line-height: 2;
     margin: 0 0 0.7rem;
+    letter-spacing: 0.06em;
+}
+
+.pl-proto__word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.pl-proto__word + .pl-proto__word {
+    margin-left: 0.55em;
+}
+
+.pl-proto__char {
+    animation: pl-proto-bob 2.6s steps(4, end) infinite;
+    animation-delay: calc(var(--i) * 100ms);
+    display: inline-block;
+    will-change: transform;
+}
+
+@keyframes pl-proto-bob {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -0.22em, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pl-proto__char {
+        animation: none;
+    }
 }
 
 .pl-hero__lede {
@@ -331,6 +473,30 @@
     margin-top: clamp(0.9rem, 2vh, 1.25rem);
     position: relative;
     z-index: 2;
+}
+
+.pl-copy-toggle {
+    background: rgba(16, 13, 11, 0.9);
+    border: 1px solid var(--stake-line-strong);
+    bottom: 1rem;
+    color: var(--stake-green);
+    cursor: pointer;
+    font: 700 0.58rem/1 var(--crypto-mono);
+    letter-spacing: 0.12em;
+    padding: 0.75rem 0.9rem;
+    position: fixed;
+    right: 1rem;
+    text-transform: uppercase;
+    z-index: 4;
+}
+
+.pl-copy-toggle:hover {
+    border-color: var(--stake-green);
+}
+
+.pl-copy-toggle:focus-visible {
+    outline: 2px dashed var(--stake-green);
+    outline-offset: 3px;
 }
 
 .pl-hero__connect-error {
@@ -444,9 +610,8 @@
    small stepped loop, and the whole block collapses to a still composition
    under prefers-reduced-motion. */
 .pl-hero__scene {
-    /* The scene's canvas includes sky above the actors. Pull that sky behind
-       the copy so the robots and platform arrive sooner without sacrificing
-       their composition or pushing the CTA below the fold. */
+    /* Pull the bridge canvas behind the copy so the seated crew reaches the
+       ship floor without pushing the CTA below the fold. */
     margin-top: calc(clamp(7rem, 12vw, 11rem) * -1);
     min-width: 0;
     position: relative;
@@ -454,11 +619,15 @@
     z-index: 0;
 }
 
+.pl-hero--copy-hidden .pl-hero__scene {
+    margin-top: clamp(-3.5rem, -5vw, -2rem);
+}
+
 .pl-scene {
-    aspect-ratio: 16 / 7.5;
+    aspect-ratio: 16 / 6.6;
     margin-inline: auto;
-    max-width: 48rem;
-    min-height: 17rem;
+    max-width: 68rem;
+    min-height: 20rem;
     position: relative;
     width: 100%;
 }
@@ -467,309 +636,83 @@
     image-rendering: pixelated;
 }
 
-/* Station deck: solid strip + stepped highlight lip, hard edges only. */
-.pl-scene__deck {
-    background: var(--stake-surface-2);
-    border-top: 2px solid var(--stake-line-strong);
+/* Bridge crew: a frontal captain at the helm with four seated operators. The
+   transparent group sits directly on the cabin artwork's perspective floor. */
+.pl-scene__bridge {
     bottom: 0;
-    height: 8%;
-    left: 0;
-    position: absolute;
-    right: 0;
-}
-
-.pl-scene__deck::before {
-    background: var(--stake-line);
-    content: "";
-    height: 2px;
-    left: 6%;
-    position: absolute;
-    right: 14%;
-    top: 4px;
-}
-
-.pl-scene__actor,
-.pl-scene__vault {
-    bottom: 7%;
-    position: absolute;
-}
-
-.pl-scene__actor {
-    aspect-ratio: 1;
-    background-position: 0 0;
-    background-repeat: no-repeat;
-    background-size: 400% 100%;
-    display: block;
-    image-rendering: pixelated;
-}
-
-.pl-scene__actor--scout {
-    animation: pl-scout-sweep 4.8s steps(1, end) infinite;
-    background-image: url("images/pl-robot-scout.png");
-    left: 1%;
-    width: 15%;
-}
-
-.pl-scene__actor--buyer {
-    background-image: url("images/pl-robot-buyer.png");
-    left: 20%;
-    width: 17%;
-}
-
-.pl-scene__actor--courier {
-    animation: pl-courier-walk 1.05s steps(1, end) infinite;
-    background-image: url("images/pl-robot-courier.png");
-    right: 25%;
-    width: 15%;
-}
-
-.pl-scene__actor--inspector {
-    animation: pl-inspector-scan 3.8s steps(1, end) infinite;
-    background-image: url("images/pl-robot-inspector.png");
-    right: 1%;
-    width: 17%;
-}
-
-.pl-scene__actor--buyer.is-locked {
-    animation: none;
-    background-position: 0 0;
-    filter: saturate(0.35);
-    opacity: 0.55;
-}
-
-.pl-scene__actor--buyer.is-live {
-    animation: pl-buyer-insert 3.4s steps(1, end) infinite;
-    filter: drop-shadow(0 0 6px rgba(143, 185, 155, 0.35));
-}
-
-/* Small local callouts explain each robot's job without turning the scene into
-   a horizontal lifecycle bar. */
-.pl-scene__activity {
-    background: color-mix(in srgb, var(--stake-surface) 88%, transparent);
-    border: 1px solid var(--stake-line-strong);
-    bottom: 35%;
-    color: var(--stake-muted);
-    font-family: var(--crypto-mono);
-    font-size: clamp(0.46rem, 0.8vw, 0.6rem);
-    letter-spacing: 0.08em;
-    padding: 0.22rem 0.38rem;
-    position: absolute;
-    text-transform: uppercase;
-    white-space: nowrap;
-    z-index: 1;
-}
-
-.pl-scene__activity--scout { left: 1%; }
-.pl-scene__activity--buyer { left: 20%; }
-.pl-scene__activity--courier { right: 24%; }
-.pl-scene__activity--inspector { right: 0; }
-
-.pl-scene__activity--buyer.is-locked {
-    color: var(--stake-faint);
-    opacity: 0.6;
-}
-
-.pl-scene__activity--buyer.is-live {
-    border-color: var(--stake-green);
-    color: var(--stake-green);
-}
-
-/* Escrow vault — the visual anchor, dead centre. */
-.pl-scene__vault {
     left: 50%;
+    position: absolute;
     transform: translateX(-50%);
-    width: 19%;
+    width: 76%;
+    z-index: 2;
 }
 
-.pl-scene__vault img {
+.pl-scene__bridge img {
     display: block;
+    filter: drop-shadow(0 8px 5px rgba(5, 3, 2, 0.48));
     position: relative;
     width: 100%;
     z-index: 1;
 }
 
-/* Gold glow behind the vault's translucent glass chamber. */
-.pl-scene__vault-glow {
-    animation: pl-vault-glow 2.8s steps(2, end) infinite;
+.pl-scene__bridge-glow {
+    animation: pl-bridge-console-pulse 2.4s steps(2, end) infinite;
     aspect-ratio: 1;
-    background: rgba(242, 178, 62, 0.55);
-    box-shadow: 0 0 14px 4px rgba(242, 178, 62, 0.45);
+    background: rgba(65, 224, 230, 0.68);
+    box-shadow: 0 0 10px 4px rgba(65, 224, 230, 0.35);
+    bottom: 15%;
+    position: absolute;
+    width: 2.4%;
+    z-index: 2;
+}
+
+.pl-scene__bridge-glow--port {
+    left: 18.5%;
+}
+
+.pl-scene__bridge-glow--helm {
+    animation-delay: 0.8s;
+    background: rgba(242, 178, 62, 0.72);
+    box-shadow: 0 0 12px 4px rgba(242, 178, 62, 0.38);
+    bottom: 17%;
+    left: 48.8%;
+}
+
+.pl-scene__bridge-glow--starboard {
+    animation-delay: 1.6s;
+    right: 18.5%;
+}
+
+.pl-scene__helm-motion {
+    animation: pl-captain-steer-poses 14s steps(1, end) infinite;
+    aspect-ratio: 1;
+    background-image: url("images/pl-captain-steering-poses.png");
+    background-position: 50% 0;
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+    filter: drop-shadow(0 2px 2px rgba(5, 3, 2, 0.55));
+    image-rendering: pixelated;
     left: 50%;
     position: absolute;
-    top: 53%;
+    top: 55.5%;
     transform: translate(-50%, -50%);
-    width: 26%;
-    z-index: 0;
+    width: 14.5%;
+    z-index: 3;
 }
 
-/* One-use authorization key, only present while a permission epoch is live. */
-.pl-scene__key {
-    animation: pl-key-pulse 1.6s steps(2, end) infinite;
-    bottom: 24%;
-    left: 30.5%;
-    position: absolute;
-    width: 7%;
+.pl-console__station .pl-scene__bridge {
+    width: 96%;
 }
 
-/* Scout telescope signal: three dots stepping up toward the planets. */
-.pl-scene__scout-signal {
-    bottom: 58%;
-    display: grid;
-    gap: 6px;
-    left: 12.5%;
-    position: absolute;
+@keyframes pl-bridge-console-pulse {
+    0%, 100% { opacity: 0.22; }
+    50% { opacity: 0.72; }
 }
 
-.pl-scene__scout-signal span {
-    animation: pl-signal-blink 1.8s steps(1, end) infinite;
-    background: var(--stake-green);
-    display: block;
-    height: 3px;
-    width: 3px;
-}
-
-.pl-scene__scout-signal span:nth-child(2) {
-    animation-delay: 0.3s;
-    margin-left: 7px;
-}
-
-.pl-scene__scout-signal span:nth-child(3) {
-    animation-delay: 0.6s;
-    margin-left: 14px;
-}
-
-/* Inspector scan beam sweeping the delivered crate. */
-.pl-scene__scan {
-    animation: pl-scan-sweep 3.8s steps(5, end) infinite;
-    background: rgba(127, 212, 196, 0.85);
-    bottom: 10%;
-    height: 3px;
-    position: absolute;
-    right: 15.5%;
-    width: 2.5%;
-}
-
-/* Approval / return controls beside the inspector's crate. */
-.pl-scene__controls {
-    bottom: 6.5%;
-    display: flex;
-    gap: 0.35rem;
-    position: absolute;
-    right: 17%;
-}
-
-.pl-scene__control {
-    align-items: center;
-    clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
-    display: inline-flex;
-    font-family: var(--crypto-mono);
-    font-size: 0.62rem;
-    font-weight: 800;
-    height: 1.3rem;
-    justify-content: center;
-    width: 1.3rem;
-}
-
-.pl-scene__control--approve {
-    background: var(--stake-green-dim);
-    color: var(--stake-green);
-}
-
-.pl-scene__control--return {
-    background: var(--stake-clay-dim);
-    color: var(--stake-clay);
-}
-
-.pl-scene__controls.is-live .pl-scene__control--approve {
-    animation: pl-control-blink 1.4s steps(2, end) infinite;
-}
-
-.pl-scene__controls.is-live .pl-scene__control--return {
-    animation: pl-control-blink 1.4s steps(2, end) 0.7s infinite;
-}
-
-/* Satellite + downlink, only rendered while the projection syncs. */
-.pl-scene__satellite {
-    position: absolute;
-    right: 26%;
-    top: 0;
-    width: 11%;
-}
-
-.pl-signal {
-    animation: pl-signal-blink 1.2s steps(1, end) infinite;
-    background: var(--stake-amber);
-    height: 3px;
-    position: absolute;
-    width: 3px;
-}
-
-.pl-signal--one { right: 27.5%; top: 14%; }
-.pl-signal--two { animation-delay: 0.25s; right: 29.5%; top: 20%; }
-.pl-signal--three { animation-delay: 0.5s; right: 31.5%; top: 26%; }
-
-@keyframes pl-signal-blink {
-    0%, 40% { opacity: 0; }
-    50%, 90% { opacity: 1; }
-    100% { opacity: 0; }
-}
-
-@keyframes pl-key-pulse {
-    0%, 100% { filter: drop-shadow(0 0 2px rgba(242, 178, 62, 0.4)); }
-    50% { filter: drop-shadow(0 0 8px rgba(242, 178, 62, 0.9)); }
-}
-
-@keyframes pl-vault-glow {
-    0%, 100% { opacity: 0.45; }
-    50% { opacity: 0.95; }
-}
-
-/* Scout: level watch → adjust → telescope rises → amber lock-on hold → reset.
-   Uneven holds (not even quarters) make the sweep read as deliberate. */
-@keyframes pl-scout-sweep {
-    0%, 30%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-    31%, 46%  { background-position: 33.333% 0; transform: translate3d(0, 1px, 0); }
-    47%, 70%  { background-position: 66.667% 0; transform: translate3d(0, -1px, 0); }
-    71%, 92%  { background-position: 100% 0;    transform: translate3d(0, -1px, 0); }
-    93%, 100% { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-}
-
-/* Buyer: arm back → approach the slot → key in → terminal lights, hold → reset. */
-@keyframes pl-buyer-insert {
-    0%, 24%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-    25%, 49%  { background-position: 33.333% 0; transform: translate3d(1px, 0, 0); }
-    50%, 79%  { background-position: 66.667% 0; transform: translate3d(2px, 0, 0); }
-    80%, 96%  { background-position: 100% 0;    transform: translate3d(2px, 0, 0); }
-    97%, 100% { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-}
-
-/* Courier: brisk 4-step gait — dips on each footfall, lifts between steps. */
-@keyframes pl-courier-walk {
-    0%, 24%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-    25%, 49%  { background-position: 33.333% 0; transform: translate3d(1px, -1px, 0); }
-    50%, 74%  { background-position: 66.667% 0; transform: translate3d(0, 0, 0); }
-    75%, 100% { background-position: 100% 0;    transform: translate3d(1px, -1px, 0); }
-}
-
-/* Inspector: scanner on the crate → lift → scan pass → teal beep, hold → reset. */
-@keyframes pl-inspector-scan {
-    0%, 29%   { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-    30%, 59%  { background-position: 33.333% 0; transform: translate3d(0, 0, 0); }
-    60%, 84%  { background-position: 66.667% 0; transform: translate3d(0, 1px, 0); }
-    85%, 97%  { background-position: 100% 0;    transform: translate3d(0, -1px, 0); }
-    98%, 100% { background-position: 0 0;       transform: translate3d(0, 0, 0); }
-}
-
-@keyframes pl-scan-sweep {
-    0% { opacity: 0; transform: translateX(0); }
-    12% { opacity: 1; }
-    88% { opacity: 1; }
-    100% { opacity: 0; transform: translateX(260%); }
-}
-
-@keyframes pl-control-blink {
-    0%, 100% { opacity: 0.35; }
-    50% { opacity: 1; }
+@keyframes pl-captain-steer-poses {
+    0%, 15%, 42%, 58%, 85%, 100% { background-position: 50% 0; }
+    22%, 34% { background-position: 0 0; }
+    65%, 77% { background-position: 100% 0; }
 }
 
 /* ── Summary KPI row ── */
@@ -1295,21 +1238,23 @@
     .pl-btn:hover { transform: none; }
     .projection-empty__pulse { animation-duration: 1.6s; }
 
-    /* Static composition: no movement, but every scene element stays in place. */
-    .pl-scene__actor,
-    .pl-scene__vault-glow,
-    .pl-scene__key,
-    .pl-scene__scan,
-    .pl-scene__scout-signal span,
-    .pl-scene__controls .pl-scene__control,
-    .pl-signal { animation: none; }
+    .pl-scene__bridge-glow,
+    .pl-scene__helm-motion {
+        animation: none;
+        background-position: 50% 0;
+    }
 
-    .pl-scene__scan { opacity: 0.6; }
-    .pl-scene__vault-glow { opacity: 0.7; }
+    .pl-cabin__visitor {
+        display: none;
+    }
 }
 
 /* ── Responsive ── */
 @media (max-width: 860px) {
+    .procurement-lab {
+        overflow-x: clip;
+    }
+
     .procurement-lab__grid {
         grid-template-columns: 1fr;
     }
@@ -1322,37 +1267,88 @@
         margin-inline: 0;
         max-width: 34rem;
     }
+
+    .pl-hero h1 {
+        font-size: clamp(2.75rem, 8vw, 4rem);
+    }
+
+    .pl-hero__scene {
+        margin-top: -3rem;
+    }
+
+    .pl-hero__scene .pl-scene__bridge {
+        width: 86%;
+    }
 }
 
 @media (max-width: 640px) {
+    .procurement-lab {
+        padding-top: calc(4.75rem + clamp(1.75rem, 6vw, 2.5rem));
+    }
+
+    .procurement-lab__inner {
+        padding-inline: clamp(1rem, 5vw, 1.5rem);
+    }
+
     .procurement-lab__summary {
         grid-template-columns: repeat(2, 1fr);
     }
+
     .job-flow__label {
         display: none;
     }
 
-    /* Scrollable decorative strip instead of shrinking the station illegibly;
-       the wrapper keeps the page itself free of horizontal overflow. */
+    .pl-hero h1 {
+        font-size: clamp(2.15rem, 10.5vw, 3rem);
+        line-height: 0.98;
+    }
+
+    .pl-hero__protocols {
+        font-size: clamp(0.43rem, 2vw, 0.52rem);
+        line-height: 2.1;
+    }
+
+    .pl-hero__lede {
+        font-size: clamp(0.76rem, 3.4vw, 0.9rem);
+        line-height: 1.55;
+    }
+
+    /* The bridge now scales to the available viewport instead of preserving a
+       desktop minimum width that pushed its centre and starboard crew offscreen. */
     .pl-hero__scene {
-        margin-top: -3rem;
-        overflow-x: auto;
-        scrollbar-width: thin;
+        margin-top: -1.75rem;
+        overflow: visible;
     }
 
-    /* 34rem, not 30: at 30 the scout's "Scanning suppliers" callout ran into
-       the buyer's, because the callout font-size floors at 0.46rem and stops
-       shrinking with the scene. */
     .pl-hero__scene .pl-scene {
-        min-height: 15rem;
-        min-width: 34rem;
+        aspect-ratio: auto;
+        min-height: clamp(13rem, 56vw, 16rem);
+        min-width: 0;
     }
 
-    /* The console's station is a status readout, and the same three signals
-       (permission installed, job awaiting evaluation, loading) are already
-       spelled out in the panels below. Dropping it beats a horizontal
-       scroller or a strip too small to read on a phone. */
+    /* The console panels below already carry the state on phones. Dropping the
+       compact bridge beats rendering its five seats too small to read. */
     .pl-console__station {
         display: none;
+    }
+
+    /* A portrait viewport crops to the large forward window. The side-window
+       visitors would be hidden by that crop anyway, so avoid running their
+       long animations on small devices. */
+    .pl-cabin__window {
+        display: none;
+    }
+
+    .pl-hero__scene .pl-scene__bridge {
+        width: 114%;
+    }
+
+    .pl-hero__action {
+        margin-top: 0.6rem;
+    }
+
+    .pl-cta {
+        min-height: 3rem;
+        padding-inline: 1.6rem;
     }
 }

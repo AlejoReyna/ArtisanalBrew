@@ -26,24 +26,53 @@
    (command bar, compact title, the station demoted to a status strip, and the
    KPI rail) and the panels start near the fold. *@
 <div class="procurement-lab @(IsConnected ? "procurement-lab--console" : "procurement-lab--intro")" data-page-theme-color="#171714">
-    @* The sky (stars + planets, plus the Andromeda galaxy and chain badges) is
-       the shared GlobalScene background scenario now — it stays pristine across
-       routes, so the lab renders only its own UI on top of it. The console
-       state frosts it (see the stylesheet); the intro leaves it sharp. *@
+    @* The lab is the ship around the shared GlobalScene, not a replacement for
+       it. Transparent observation windows keep the same stars, planets,
+       Andromeda, and chain badges alive across navigation. The two clipped
+       window layers occasionally carry a crew robot past the hull; the frame
+       always paints above them, so the cameo never crosses into the cabin. *@
+    <div class="pl-cabin" aria-hidden="true">
+        <span class="pl-cabin__window pl-cabin__window--port">
+            <span class="pl-cabin__visitor pl-cabin__visitor--port"></span>
+        </span>
+        <span class="pl-cabin__window pl-cabin__window--starboard">
+            <span class="pl-cabin__visitor pl-cabin__visitor--starboard"></span>
+        </span>
+    </div>
+
   <div class="procurement-lab__inner">
     @if (!IsConnected)
     {
         @* Hero: centered editorial copy, robot escrow station, connect action.
            Decorative pixel work is hidden from screen readers; the lifecycle is
            told by the robots and the live panels below — no workflow bar. *@
-        <section class="pl-hero" aria-labelledby="pl-hero-title">
+        <section class="pl-hero @(!_showHeroCopy ? "pl-hero--copy-hidden" : null)"
+                 aria-labelledby="@(_showHeroCopy ? "pl-hero-title" : null)"
+                 aria-label="@(!_showHeroCopy ? "Procurement lab" : null)">
             <div class="pl-hero__copy">
-                <p class="pl-hero__protocols">Featuring ERC-4337 · ERC-8004 · ERC-7683 · ERC-8183</p>
-                <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
-                <p class="pl-hero__lede">
-                    Track registered agents, limited permissions, and escrowed procurement jobs
-                    across the selected chain.
+                <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
+                    <span aria-hidden="true">
+                        @{ var protoIdx = 0; }
+                        @foreach (var word in ProtocolsText.Split(' '))
+                        {
+                            <span class="pl-proto__word">
+                                @foreach (var ch in word)
+                                {
+                                    <span class="pl-proto__char" style="--i: @protoIdx;">@ch</span>
+                                    protoIdx++;
+                                }
+                            </span>
+                        }
+                    </span>
                 </p>
+                @if (_showHeroCopy)
+                {
+                    <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
+                    <p class="pl-hero__lede">
+                        Track registered agents, limited permissions, and escrowed procurement jobs
+                        across the selected chain.
+                    </p>
+                }
             </div>
 
             <div class="pl-hero__scene">
@@ -59,6 +88,15 @@
                     <p class="pl-hero__connect-error" role="alert">@_connectError</p>
                 }
             </div>
+
+            @* Temporary art-direction control. Remove with _showHeroCopy once
+               the final cabin composition has been approved. *@
+            <button type="button"
+                    class="pl-copy-toggle"
+                    aria-pressed="@(_showHeroCopy ? "false" : "true")"
+                    @onclick="() => _showHeroCopy = !_showHeroCopy">
+                @(_showHeroCopy ? "Hide copy" : "Show copy")
+            </button>
         </section>
     }
     else
@@ -317,66 +355,31 @@
 </div>
 
 @code {
+    private const string ProtocolsText = "Featuring ERC-4337 · ERC-8004 · ERC-7683 · ERC-8183";
     private static readonly (int Number, string Key, string Label)[] LifecycleSteps =
     [ (1, "Open", "Open"), (2, "Funded", "Funded"), (3, "Submitted", "Submitted"), (4, "Terminal", "Settled") ];
     private List<AgentDirectoryEntry>? Agents;
     private List<AgenticJobProjection>? Jobs;
     private string? _walletAddress;
     private bool _loading = true;
+    private bool _showHeroCopy = true;
     private string? _copiedKey;
 
     private bool IsConnected => _walletAddress is not null;
 
     /// <summary>
-    /// The robot escrow station, rendered by both states — full width under the
-    /// marketing hero when signed out, and as a status strip beside the console
-    /// copy when connected. One definition so the two states cannot drift.
-    ///
-    /// Decorative overall (role="img"), but three of its parts are wired to real
-    /// state: the loading satellite, the buyer's key (an installed agent
-    /// permission), and the inspector's controls (a job awaiting evaluation).
+    /// The robot command bridge, rendered by both states — full width under the
+    /// marketing hero when signed out, and as a compact bridge beside the
+    /// console copy when connected. One definition keeps both views aligned.
     /// </summary>
-    private RenderFragment StationScene => @<div class="pl-scene" role="img" aria-label="Pixel robots run a coffee escrow station in space: a scout searches for supplier planets, a buyer authorizes payment at a terminal, a courier carries a crate to the locked vault, and an inspector scans a delivered crate.">
-        @if (_loading)
-        {
-            <img class="pl-scene__satellite" src="images/pl-satellite.png" alt="" />
-            <span class="pl-signal pl-signal--one"></span>
-            <span class="pl-signal pl-signal--two"></span>
-            <span class="pl-signal pl-signal--three"></span>
-        }
-
-        <span class="pl-scene__deck" aria-hidden="true"></span>
-
-        <span class="pl-scene__actor pl-scene__actor--scout" aria-hidden="true"></span>
-        <span class="pl-scene__activity pl-scene__activity--scout" aria-hidden="true">Scanning suppliers</span>
-        <span class="pl-scene__scout-signal" aria-hidden="true">
-            <span></span><span></span><span></span>
-        </span>
-
-        <span class="pl-scene__actor pl-scene__actor--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true"></span>
-        <span class="pl-scene__activity pl-scene__activity--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true">
-            @(_activeEpoch is not null ? "Authorizing" : "Awaiting key")
-        </span>
-        @if (_activeEpoch is not null)
-        {
-            <img class="pl-scene__key" src="images/pl-key.png" alt="" />
-        }
-
-        <div class="pl-scene__vault">
-            <span class="pl-scene__vault-glow" aria-hidden="true"></span>
-            <img src="images/pl-vault.png" alt="" />
+    private RenderFragment StationScene => @<div class="pl-scene" role="img" aria-label="A pixel robot captain sits at the center of the spaceship bridge, facing forward behind a helm and control panel, while four robot crew members sit at side consoles.">
+        <div class="pl-scene__bridge" aria-hidden="true">
+            <span class="pl-scene__bridge-glow pl-scene__bridge-glow--port"></span>
+            <span class="pl-scene__bridge-glow pl-scene__bridge-glow--helm"></span>
+            <span class="pl-scene__bridge-glow pl-scene__bridge-glow--starboard"></span>
+            <img src="images/pl-bridge-crew-no-static-arms.png" alt="" />
+            <span class="pl-scene__helm-motion"></span>
         </div>
-
-        <span class="pl-scene__actor pl-scene__actor--courier" aria-hidden="true"></span>
-        <span class="pl-scene__activity pl-scene__activity--courier" aria-hidden="true">Delivering crate</span>
-
-        <span class="pl-scene__actor pl-scene__actor--inspector" aria-hidden="true"></span>
-        <span class="pl-scene__activity pl-scene__activity--inspector" aria-hidden="true">Inspecting proof</span>
-        <span class="pl-scene__scan" aria-hidden="true"></span>
-        <span class="pl-scene__controls @(Jobs?.Any(job => job.Status == "Submitted") == true ? "is-live" : null)" aria-hidden="true">
-            <span class="pl-scene__control pl-scene__control--approve">✓</span>
-            <span class="pl-scene__control pl-scene__control--return">✗</span>
-        </span>
     </div>;
 
     // --- Session-key authority state ---
