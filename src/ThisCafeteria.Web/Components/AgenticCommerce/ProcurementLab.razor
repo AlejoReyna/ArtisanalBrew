@@ -25,7 +25,7 @@
    is now the signed-out state only; a connected wallet gets a console header
    (command bar, compact title, the station demoted to a status strip, and the
    KPI rail) and the panels start near the fold. *@
-<div class="procurement-lab @(IsConnected ? "procurement-lab--console" : "procurement-lab--intro")" data-page-theme-color="#171714">
+<div class="procurement-lab @(IsConnected ? "procurement-lab--console" : "procurement-lab--intro")" data-page-theme-color="#100D0B">
     @* The lab is the ship around the shared GlobalScene, not a replacement for
        it. Transparent observation windows keep the same stars, planets,
        Andromeda, and chain badges alive across navigation. The two clipped
@@ -46,9 +46,7 @@
         @* Hero: centered editorial copy, robot escrow station, connect action.
            Decorative pixel work is hidden from screen readers; the lifecycle is
            told by the robots and the live panels below — no workflow bar. *@
-        <section class="pl-hero @(!_showHeroCopy ? "pl-hero--copy-hidden" : null)"
-                 aria-labelledby="@(_showHeroCopy ? "pl-hero-title" : null)"
-                 aria-label="@(!_showHeroCopy ? "Procurement lab" : null)">
+        <section class="pl-hero" aria-labelledby="pl-hero-title">
             <div class="pl-hero__copy">
                 <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
                     <span aria-hidden="true">
@@ -65,14 +63,11 @@
                         }
                     </span>
                 </p>
-                @if (_showHeroCopy)
-                {
-                    <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
-                    <p class="pl-hero__lede">
-                        Track registered agents, limited permissions, and escrowed procurement jobs
-                        across the selected chain.
-                    </p>
-                }
+                <h1 id="pl-hero-title">Welcome, x402 protocol</h1>
+                <p class="pl-hero__lede">
+                    Explore agent-led procurement, scoped permissions, and escrowed payments
+                    across the selected chain.
+                </p>
             </div>
 
             <div class="pl-hero__scene">
@@ -88,15 +83,6 @@
                     <p class="pl-hero__connect-error" role="alert">@_connectError</p>
                 }
             </div>
-
-            @* Temporary art-direction control. Remove with _showHeroCopy once
-               the final cabin composition has been approved. *@
-            <button type="button"
-                    class="pl-copy-toggle"
-                    aria-pressed="@(_showHeroCopy ? "false" : "true")"
-                    @onclick="() => _showHeroCopy = !_showHeroCopy">
-                @(_showHeroCopy ? "Hide copy" : "Show copy")
-            </button>
         </section>
     }
     else
@@ -362,7 +348,6 @@
     private List<AgenticJobProjection>? Jobs;
     private string? _walletAddress;
     private bool _loading = true;
-    private bool _showHeroCopy = true;
     private string? _copiedKey;
 
     private bool IsConnected => _walletAddress is not null;
