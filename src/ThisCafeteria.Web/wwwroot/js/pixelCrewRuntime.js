@@ -51,6 +51,9 @@ const COLLECTED_CLASS = 'is-collected';
 const COLLECTING_CLASS = 'is-collecting';
 const HELD_CLASS = 'ph-scene__roam--held';
 const THRUSTING_CLASS = 'is-thrusting';
+const INTRO_ACTIVE_CLASS = 'gs-crew--intro-active';
+const INTRO_PENDING_CLASS = 'gs-crew--intro-pending';
+const INTRO_VISIBLE_CLASS = 'is-intro-visible';
 
 /* ── Coffee-bag animation contract ────────────────────────────────────────
    The bag catch/drink animation is owned by a separate stylesheet pass. This
@@ -101,7 +104,7 @@ const STOP_COAST_SPEED = PARAMS.maxSpeed * 0.08;
 // The crew holds its opening formation this long before the policy takes over.
 // The idle bob and sprite loop are CSS and keep running throughout, so the
 // pause reads as the crew hanging in place, not as a frozen frame.
-const START_HOLD_SECONDS = 1.3;
+const START_HOLD_SECONDS = 0.9;
 
 class Crew {
     constructor(root, checkpoint) {
@@ -141,6 +144,7 @@ class Crew {
         this.dragging = null;
         this.last = 0;
         this.frame = 0;
+        this.introFrame = 0;
 
         this.measure();
         this.scene.classList.add(SIM_CLASS);
@@ -161,7 +165,24 @@ class Crew {
         // Place everything before the first frame so there is no flash of
         // robots stacked at the scene origin.
         this.render();
+        this.startIntro();
         this.frame = requestAnimationFrame(this._tick);
+    }
+
+    startIntro() {
+        const hero = document.querySelector('.ph-hero--intro-pending');
+        this.over.classList.add(INTRO_ACTIVE_CLASS);
+        this.robots.forEach((robot) => robot.classList.remove(INTRO_VISIBLE_CLASS));
+
+        // Commit both the concealed state and the real simulation positions
+        // before the reveal. The title leads by one beat, then the robots pop
+        // in one by one while the three title lines are still arriving.
+        this.introFrame = requestAnimationFrame(() => {
+            this.introFrame = 0;
+            hero?.classList.add('is-intro-ready');
+            this.over.classList.remove(INTRO_PENDING_CLASS);
+            this.robots.forEach((robot) => robot.classList.add(INTRO_VISIBLE_CLASS));
+        });
     }
 
     isThrusting(index) {
@@ -437,18 +458,23 @@ class Crew {
 
     destroy() {
         cancelAnimationFrame(this.frame);
+        cancelAnimationFrame(this.introFrame);
+        this.introFrame = 0;
         window.removeEventListener('resize', this._resize);
         document.removeEventListener('visibilitychange', this._visibility);
         this.over.removeEventListener('pointerdown', this._down);
         this.scene.classList.remove(SIM_CLASS);
         this.over.classList.remove(SIM_CLASS);
+        this.over.classList.remove(INTRO_ACTIVE_CLASS);
+        this.over.classList.add(INTRO_PENDING_CLASS);
         for (const el of this.robots) {
             el.style.transform = '';
             el.classList.remove(
                 HELD_CLASS,
                 'ph-scene__roam--mirrored',
                 BOOSTED_CLASS,
-                THRUSTING_CLASS
+                THRUSTING_CLASS,
+                INTRO_VISIBLE_CLASS
             );
             if (el.firstElementChild) {
                 el.firstElementChild.classList.remove(COLLECTING_CLASS, DRINKING_CLASS);
@@ -476,6 +502,9 @@ export function init(rootId, checkpoint = 'trained') {
     // Reduced motion: leave the CSS composition alone rather than animating a
     // simulation nobody asked to see.
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const over = root.id && document.getElementById(root.id + '-over');
+        over?.classList.remove(INTRO_PENDING_CLASS, INTRO_ACTIVE_CLASS);
+        document.querySelector('.ph-hero--intro-pending')?.classList.add('is-intro-ready');
         return false;
     }
     const key = root.id || root;

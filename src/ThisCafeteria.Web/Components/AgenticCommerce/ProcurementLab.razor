@@ -70,18 +70,18 @@
                 </p>
             </div>
 
-            <div class="pl-hero__scene">
-                @StationScene
-            </div>
-
             <div class="pl-hero__action">
                 <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                    @(_isConnecting ? "Connecting…" : "Connect MetaMask")
+                    @(_isConnecting ? "Connecting…" : "Connect Wallet")
                 </button>
                 @if (!string.IsNullOrWhiteSpace(_connectError))
                 {
                     <p class="pl-hero__connect-error" role="alert">@_connectError</p>
                 }
+            </div>
+
+            <div class="pl-hero__scene">
+                @StationScene
             </div>
         </section>
     }
@@ -363,7 +363,9 @@
             <span class="pl-scene__bridge-glow pl-scene__bridge-glow--helm"></span>
             <span class="pl-scene__bridge-glow pl-scene__bridge-glow--starboard"></span>
             <img src="images/pl-bridge-crew-no-static-arms.png" alt="" />
-            <span class="pl-scene__helm-motion"></span>
+            <span class="pl-scene__captain-body">
+                <span class="pl-scene__captain-arms"></span>
+            </span>
         </div>
     </div>;
 

@@ -1,5 +1,5 @@
 .pd-section {
-    align-items: end;
+    align-items: center;
     box-sizing: border-box;
     display: grid;
     margin: 0 auto;
@@ -52,7 +52,6 @@
 
 .pd-robot-column {
     align-items: center;
-    border-right: 2px solid var(--stake-line-strong);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -409,7 +408,7 @@
     }
 
     .pd-robot-column {
-        border-bottom: 2px solid var(--stake-line-strong);
+        border-bottom: 0;
         border-right: 0;
     }
 }
