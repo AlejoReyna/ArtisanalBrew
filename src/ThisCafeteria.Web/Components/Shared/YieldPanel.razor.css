@@ -286,9 +286,9 @@
 }
 
 .staking-intro__faucets {
-    display: grid;
+    display: flex;
     gap: 0.7rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
     width: 100%;
 }
 
@@ -306,6 +306,7 @@
 }
 
 .staking-intro__description .staking-intro__faucet-link {
+    flex: 1 1 0;
     gap: 0.45rem;
     padding: 0.4rem 0.6rem;
 }
@@ -1129,10 +1130,6 @@
 }
 
 @media (max-width: 640px) {
-    .staking-intro__faucets {
-        grid-template-columns: 1fr;
-    }
-
     .yield-card-footer {
         flex-direction: column;
         align-items: stretch;

@@ -33,10 +33,15 @@ public sealed class PixelHomeRenderTests
             Path.Combine(root.FullName, "src/ThisCafeteria.Web/Components/Home/PixelHome.razor"));
         var scene = File.ReadAllText(
             Path.Combine(root.FullName, "src/ThisCafeteria.Web/Components/Layout/GlobalScene.razor"));
+        var sceneRoutes = File.ReadAllText(
+            Path.Combine(root.FullName, "src/ThisCafeteria.Web/wwwroot/app.css"));
 
         route.Should().Contain("@page \"/\"");
         route.Should().Contain("<PixelHome />", "the pixel homepage must be the production root");
         hero.Should().Contain("class=\"ph-hero", "the release health check uses the hero marker");
+        hero.Should().Contain(
+            "class=\"ph-extended-hero\"",
+            "the hero and product discovery must share the two-screen home stage");
         hero.Should().Contain(
             "\"ph-scene-root\"",
             "the trained runtime mounts on this stable id");
@@ -44,6 +49,15 @@ public sealed class PixelHomeRenderTests
         scene.Should().Contain(
             "data-permanent",
             "the scenario containers must survive enhanced navigation so the sky never restarts");
+        scene.Should().Contain(
+            "gs-layer gs-layer--home ph-scene",
+            "the runtime playfield must stay independent from the extended background");
+        sceneRoutes.Should().Contain(
+            "height: 200dvh",
+            "the home sky must end after the second viewport chapter");
+        sceneRoutes.Should().Contain(
+            "html[data-scene-route=\"home\"] .gs-crew",
+            "the crew needs a home-only one-screen clip");
         hero.Should().Contain(
             "aria-label=\"Your next coffee, on-chain\"",
             "the visual pixel title must retain an accessible heading");

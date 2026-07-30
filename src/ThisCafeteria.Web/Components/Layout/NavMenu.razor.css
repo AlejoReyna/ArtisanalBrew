@@ -21,7 +21,7 @@
 .public-header {
     --nav-bg: #100e0d;
     --nav-fg: #fbf9f4;
-    --nav-fg-dim: rgba(251, 249, 244, 0.55);
+    --nav-fg-dim: rgba(251, 249, 244, 0.8);
     --nav-line: rgba(251, 249, 244, 0.14);
     --nav-underline: #c2a47d;
     position: fixed;

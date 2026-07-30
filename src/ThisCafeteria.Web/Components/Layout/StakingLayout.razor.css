@@ -5,13 +5,15 @@
 }
 
 /* Transparent so the GlobalScene background scenario shows through; .page
-   above keeps the flat --stake-bg-deep ground behind the scene. z-index: 1
-   stacks the content over the scene's under-content container. */
+   above keeps the flat --stake-bg-deep ground behind the scene. z-index: 2
+   stacks the content over both the scene's under-content container (0) and
+   the roaming crew (1, see GlobalScene.razor.css) — text, buttons and
+   labels always paint over the robots, never the other way around. */
 main {
     background: transparent;
     min-height: 100vh;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .public-main {

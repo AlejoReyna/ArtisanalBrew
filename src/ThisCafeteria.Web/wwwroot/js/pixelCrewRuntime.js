@@ -7,20 +7,20 @@
  * (wwwroot/js/pixelCrewSim.js — the exact file the trainer optimised
  * against), and writes the resulting positions as transforms.
  *
- * The scenario is split across two fixed, data-permanent containers (see
+ * The scenario is split across two data-permanent containers (see
  * Components/Layout/GlobalScene.razor): the root (#ph-scene-root, stacked
- * UNDER the page content) holds the coins and bags, and #ph-scene-root-over
- * (stacked ABOVE the content) holds the robots, because they must stay
- * pointer-reachable while the rest of the sky is a background. Both are
- * viewport-sized, so coordinates measured against the root apply verbatim in
- * the -over container.
+ * UNDER the page content) owns a viewport-sized .ph-scene playfield for coins
+ * and bags, and #ph-scene-root-over (stacked ABOVE the content) holds the
+ * robots. The homepage root can therefore extend to two viewports while both
+ * halves of the simulation still share the same one-screen coordinates.
  *
  * What stays in CSS: the sprite-sheet hover loop, the idle bob, the collect
- * poses and the +1 pop. Those are decoration and are better off declarative.
- * What moves here: position, and the decision of where to go — which is the
- * part that used to be a hand-timed 90s keyframe cycle with each coin pinned
- * to a robot's destination so the two would coincide. Under the sim a robot
- * collects a coin because it reached it, not because the clock said so.
+ * poses, jet-flame flicker and the +1 pop. Those are decoration and are better
+ * off declarative. What moves here: position, the 1.5s-on / 0.8s-off jetpack
+ * duty cycle, and the decision of where to go — which is the part that used
+ * to be a hand-timed 90s keyframe cycle with each coin pinned to a robot's
+ * destination so the two would coincide. Under the sim a robot collects a
+ * coin because it reached it, not because the clock said so.
  *
  * Adding .ph-scene--sim to BOTH containers is what hands control over; the
  * stylesheet keys its sim-mode rules off that class, so if this module never
@@ -50,6 +50,7 @@ const SIM_CLASS = 'ph-scene--sim';
 const COLLECTED_CLASS = 'is-collected';
 const COLLECTING_CLASS = 'is-collecting';
 const HELD_CLASS = 'ph-scene__roam--held';
+const THRUSTING_CLASS = 'is-thrusting';
 
 /* ── Coffee-bag animation contract ────────────────────────────────────────
    The bag catch/drink animation is owned by a separate stylesheet pass. This
@@ -85,6 +86,17 @@ const DRINKING_CLASS = 'is-drinking';
 const COLLECT_MS = 900;
 // A tab restored after a while must not integrate one enormous step.
 const MAX_DT = 1 / 20;
+
+// Jetpack energy envelope. Each robot may start at a different point in the
+// cycle, but every individual engine always burns for exactly 1.5 seconds and
+// then shuts down for exactly 0.8 seconds. During that engine-off window only
+// a tightly capped remnant of momentum survives: enough to read as inertia in
+// zero-G, never enough for the robot to keep crossing the screen.
+const THRUST_ENERGY_SECONDS = 1.5;
+const THRUST_STOP_SECONDS = 0.8;
+const THRUST_CYCLE_SECONDS = THRUST_ENERGY_SECONDS + THRUST_STOP_SECONDS;
+const THRUST_PHASE_OFFSETS = [0, 0.31, 0.62, 0.93];
+const STOP_COAST_SPEED = PARAMS.maxSpeed * 0.08;
 
 // The crew holds its opening formation this long before the policy takes over.
 // The idle bob and sprite loop are CSS and keep running throughout, so the
@@ -150,6 +162,11 @@ class Crew {
         // robots stacked at the scene origin.
         this.render();
         this.frame = requestAnimationFrame(this._tick);
+    }
+
+    isThrusting(index) {
+        const offset = THRUST_PHASE_OFFSETS[index % THRUST_PHASE_OFFSETS.length];
+        return ((this.world.time + offset) % THRUST_CYCLE_SECONDS) < THRUST_ENERGY_SECONDS;
     }
 
     /**
@@ -255,10 +272,30 @@ class Crew {
 
         for (let i = 0; i < this.robots.length; i++) {
             const agent = this.world.agents[i];
-            if (this.dragging && this.dragging.index === i) {
+            const held = this.dragging && this.dragging.index === i;
+            const thrusting = !held && this.isThrusting(i);
+            this.robots[i].classList.toggle(THRUSTING_CLASS, thrusting);
+
+            if (held) {
                 // A held robot takes no action; the pointer owns it.
                 this.actions[i * 2] = 0;
                 this.actions[i * 2 + 1] = 0;
+                agent.vx = 0;
+                agent.vy = 0;
+                continue;
+            }
+            if (!thrusting) {
+                // No new force is applied while the engine is dark. Preserve
+                // only a small, damped slice of the velocity from the burn so
+                // the body continues floating a few pixels before settling.
+                this.actions[i * 2] = 0;
+                this.actions[i * 2 + 1] = 0;
+                const speed = Math.hypot(agent.vx, agent.vy);
+                if (speed > STOP_COAST_SPEED) {
+                    const scale = STOP_COAST_SPEED / speed;
+                    agent.vx *= scale;
+                    agent.vy *= scale;
+                }
                 continue;
             }
             observe(this.world, agent, this.obs);
@@ -407,7 +444,12 @@ class Crew {
         this.over.classList.remove(SIM_CLASS);
         for (const el of this.robots) {
             el.style.transform = '';
-            el.classList.remove(HELD_CLASS, 'ph-scene__roam--mirrored', BOOSTED_CLASS);
+            el.classList.remove(
+                HELD_CLASS,
+                'ph-scene__roam--mirrored',
+                BOOSTED_CLASS,
+                THRUSTING_CLASS
+            );
             if (el.firstElementChild) {
                 el.firstElementChild.classList.remove(COLLECTING_CLASS, DRINKING_CLASS);
             }

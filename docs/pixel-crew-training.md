@@ -59,13 +59,14 @@ that rather than for efficiency:
 |---|---|---|
 | `accel` | 0.6 units/s² | Gentle thrust; no snapping into motion |
 | `drag` | 0.7 /s | **Low relative to `accel`** — momentum carries a robot well past the point it stops thrusting, which is what reads as vacuum rather than walking |
-| `maxSpeed` | 0.15 units/s | A full crossing of the scene takes about seven seconds |
+| `maxSpeed` | 0.12 units/s (20% below the original 0.15 tuning) | A full crossing of the scene takes about nine seconds |
 | `respawnSeconds` | 5.5 | A slow crew needs the field to stay put long enough to reach it |
-| `bagLifeMin/Max` | 12–20 s | **Must exceed the ~8.5 s crossing time**, or a distant mug is unreachable and the policy correctly ignores it |
+| `bagLifeMin/Max` | 12–20 s | **Must exceed the ~10.6 s crossing time**, or a distant mug is unreachable and the policy correctly ignores it |
 
-Measured on the trained policy: average speed **0.118 units/s**, or **8.5
-seconds** to cross the scene. It is something you watch, not something that
-flickers.
+Measured on the original 0.15-tuned policy: average speed **0.118 units/s**, or
+**8.5 seconds** to cross the scene — scaling down with the 20% speed cut puts
+the current crew at roughly **0.094 units/s**, or **10.6 seconds** to cross.
+It is something you watch, not something that flickers.
 
 Because a 10-second episode would now end before a slow policy finished its
 first approach, episodes were lengthened to 30 seconds. All coin counts below

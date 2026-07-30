@@ -125,7 +125,7 @@ The four pixel robots on the landing page are not running an animation. They run
 
 The scene used to be CSS keyframes: every robot rode a shared 90-second clock, and each coin sat at exactly one robot's roam destination so the two beats would coincide. Now each robot observes the field every frame — direction and distance to **its own claimed coin**, its own velocity, the four walls — and a 258-parameter network decides where to accelerate. Coins are claimed one robot each, so the crew never clumps on a single prize and no robot goes starved.
 
-The physics are tuned for weightlessness rather than efficiency: low thrust, low drag, so momentum carries a robot well past the point it stops accelerating. A full crossing of the scene takes about eight seconds. It is something you watch drift, not something that darts.
+The physics are tuned for weightlessness rather than efficiency: low thrust, low drag, so momentum carries a robot well past the point it stops accelerating. A full crossing of the scene takes about ten seconds. It is something you watch drift, not something that darts.
 
 Coffee mugs are the difficulty layer. Unlike coins they are not always there — each one appears suddenly at a random spot, stays catchable for 12–20 seconds, then vanishes whether or not anyone reached it. Catching one grants a **40% speed boost for six seconds**, which makes it a real decision: a mug is worth chasing only if the detour costs less than the boost earns back, and it may expire before the robot arrives. The trained crew catches **67%** of everything that appears and spends a quarter of its life caffeinated; the untrained one catches 7%.
 

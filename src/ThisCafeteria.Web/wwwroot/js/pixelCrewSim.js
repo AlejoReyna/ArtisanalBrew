@@ -32,7 +32,7 @@ export const EPISODE_STEPS = 1800;
  * Weightless drift, not darting. `drag` is deliberately low relative to
  * `accel`: momentum carries a robot well past the point it stops thrusting,
  * which is what reads as floating in vacuum rather than walking. `maxSpeed`
- * puts a full crossing of the scene at roughly seven seconds, so the crew is
+ * puts a full crossing of the scene at roughly nine seconds, so the crew is
  * something you watch rather than something that flickers.
  *
  * Changing any of these invalidates the shipped weights — retrain.
@@ -40,7 +40,7 @@ export const EPISODE_STEPS = 1800;
 export const PARAMS = {
     accel: 0.6,        // units/s² at full throttle
     drag: 0.7,         // velocity damping per second — low, so glide persists
-    maxSpeed: 0.15,    // units/s
+    maxSpeed: 0.12,    // units/s (20% below the original 0.15 tuning)
     pickupRadius: 0.05,
     respawnSeconds: 5.5,
     margin: 0.03,      // keeps agents off the exact edge
@@ -51,8 +51,8 @@ export const PARAMS = {
     // a bag is worth breaking off its coin run for.
     bagBoost: 1.4,         // speed multiplier while caffeinated (the Sonic shoes)
     bagBoostSeconds: 6,    // how long a drink lasts
-    // A mug stays catchable for 12–20 s. The crew drifts at 0.15 units/s — a
-    // full crossing takes ~8.5 s — so the original 7–12 s window meant a mug
+    // A mug stays catchable for 12–20 s. The crew drifts at 0.12 units/s — a
+    // full crossing takes ~10.6 s — so the original 7–12 s window meant a mug
     // that appeared across the scene expired before anyone could physically
     // reach it, and the policy correctly learned not to bother.
     bagLifeMin: 12,
