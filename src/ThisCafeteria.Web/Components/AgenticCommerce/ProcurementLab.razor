@@ -18,72 +18,39 @@
 @inject NavigationManager Navigation
 @inject ILogger<ProcurementLab> Logger
 
-<div class="procurement-lab" data-page-theme-color="#171714">
+@* Two states, not one. The lab used to render the full marketing hero —
+   protocol list, 44rem headline, full-width robot station — above the console
+   for a connected wallet too, which pushed the permission/agent/job panels an
+   entire screen down and made a working tool read as a landing page. The hero
+   is now the signed-out state only; a connected wallet gets a console header
+   (command bar, compact title, the station demoted to a status strip, and the
+   KPI rail) and the panels start near the fold. *@
+<div class="procurement-lab @(IsConnected ? "procurement-lab--console" : "procurement-lab--intro")" data-page-theme-color="#171714">
     @* The sky (stars + planets, plus the Andromeda galaxy and chain badges) is
        the shared GlobalScene background scenario now — it stays pristine across
-       routes, so the lab renders only its own UI on top of it. *@
+       routes, so the lab renders only its own UI on top of it. The console
+       state frosts it (see the stylesheet); the intro leaves it sharp. *@
   <div class="procurement-lab__inner">
-    @* Hero: centered editorial copy, robot escrow station, action, then mission
-       telemetry. Decorative pixel work is hidden from screen readers; the lifecycle
-       is told by the robots and the live panels below — no workflow bar. *@
-    <section class="pl-hero" aria-labelledby="pl-hero-title">
-        <div class="pl-hero__copy">
-            <p class="pl-hero__protocols">Featuring ERC-4337 · ERC-8004 · ERC-7683 · ERC-8183</p>
-            <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
-            <p class="pl-hero__lede">
-                Track registered agents, limited permissions, and escrowed procurement jobs
-                across the selected chain.
-            </p>
-        </div>
-
-        <div class="pl-hero__scene">
-            <div class="pl-scene" role="img" aria-label="Pixel robots run a coffee escrow station in space: a scout searches for supplier planets, a buyer authorizes payment at a terminal, a courier carries a crate to the locked vault, and an inspector scans a delivered crate.">
-                @if (_loading)
-                {
-                    <img class="pl-scene__satellite" src="images/pl-satellite.png" alt="" />
-                    <span class="pl-signal pl-signal--one"></span>
-                    <span class="pl-signal pl-signal--two"></span>
-                    <span class="pl-signal pl-signal--three"></span>
-                }
-
-                <span class="pl-scene__deck" aria-hidden="true"></span>
-
-                <span class="pl-scene__actor pl-scene__actor--scout" aria-hidden="true"></span>
-                <span class="pl-scene__activity pl-scene__activity--scout" aria-hidden="true">Scanning suppliers</span>
-                <span class="pl-scene__scout-signal" aria-hidden="true">
-                    <span></span><span></span><span></span>
-                </span>
-
-                <span class="pl-scene__actor pl-scene__actor--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true"></span>
-                <span class="pl-scene__activity pl-scene__activity--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true">
-                    @(_activeEpoch is not null ? "Authorizing" : "Awaiting key")
-                </span>
-                @if (_activeEpoch is not null)
-                {
-                    <img class="pl-scene__key" src="images/pl-key.png" alt="" />
-                }
-
-                <div class="pl-scene__vault">
-                    <span class="pl-scene__vault-glow" aria-hidden="true"></span>
-                    <img src="images/pl-vault.png" alt="" />
-                </div>
-
-                <span class="pl-scene__actor pl-scene__actor--courier" aria-hidden="true"></span>
-                <span class="pl-scene__activity pl-scene__activity--courier" aria-hidden="true">Delivering crate</span>
-
-                <span class="pl-scene__actor pl-scene__actor--inspector" aria-hidden="true"></span>
-                <span class="pl-scene__activity pl-scene__activity--inspector" aria-hidden="true">Inspecting proof</span>
-                <span class="pl-scene__scan" aria-hidden="true"></span>
-                <span class="pl-scene__controls @(Jobs?.Any(job => job.Status == "Submitted") == true ? "is-live" : null)" aria-hidden="true">
-                    <span class="pl-scene__control pl-scene__control--approve">✓</span>
-                    <span class="pl-scene__control pl-scene__control--return">✗</span>
-                </span>
+    @if (!IsConnected)
+    {
+        @* Hero: centered editorial copy, robot escrow station, connect action.
+           Decorative pixel work is hidden from screen readers; the lifecycle is
+           told by the robots and the live panels below — no workflow bar. *@
+        <section class="pl-hero" aria-labelledby="pl-hero-title">
+            <div class="pl-hero__copy">
+                <p class="pl-hero__protocols">Featuring ERC-4337 · ERC-8004 · ERC-7683 · ERC-8183</p>
+                <h1 id="pl-hero-title">Scoped agents. Protected payments.</h1>
+                <p class="pl-hero__lede">
+                    Track registered agents, limited permissions, and escrowed procurement jobs
+                    across the selected chain.
+                </p>
             </div>
-        </div>
 
-        <div class="pl-hero__action">
-            @if (_walletAddress is null)
-            {
+            <div class="pl-hero__scene">
+                @StationScene
+            </div>
+
+            <div class="pl-hero__action">
                 <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
                     @(_isConnecting ? "Connecting…" : "Connect MetaMask")
                 </button>
@@ -91,24 +58,82 @@
                 {
                     <p class="pl-hero__connect-error" role="alert">@_connectError</p>
                 }
-            }
-            else
-            {
-                <button type="button" class="pl-cta" @onclick="CreateTestJob">
-                    Create test mission — wallet signed
-                </button>
-            }
-        </div>
-    </section>
-
-    @if (_walletAddress is null)
-    {
+            </div>
+        </section>
     }
-    else if (_loading)
+    else
+    {
+        @* Command bar mirrors /staking's: which chain and wallet you are acting
+           as, and the way back out, on one line above the work. *@
+        <header class="pl-commandbar">
+            <div class="pl-commandbar__id">
+                <span class="pl-commandbar__chain">@SelectedChainAccessor.SelectedChain.DisplayName</span>
+                <button type="button"
+                        class="pl-copy pl-commandbar__wallet @(_copiedKey == "commandbar-wallet" ? "is-copied" : null)"
+                        title="Copy @_walletAddress"
+                        @onclick='() => Copy("commandbar-wallet", _walletAddress)'>
+                    @ShortAddress(_walletAddress)<span class="pl-copy__flag">Copied</span>
+                </button>
+                @if (_activeEpoch is not null)
+                {
+                    <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>Agent authorised</span>
+                }
+            </div>
+            <nav class="pl-commandbar__nav" aria-label="Account">
+                <a href="staking">Yield</a>
+                <a href="profile">Profile <span aria-hidden="true">↗</span></a>
+            </nav>
+        </header>
+
+        <section class="pl-console" aria-labelledby="pl-console-title">
+            <div class="pl-console__copy">
+                <p class="panel-kicker">Agentic commerce · ERC-4337 · ERC-8004</p>
+                <h1 id="pl-console-title">Procurement lab.</h1>
+                <p class="pl-console__lede">
+                    Registered agents, the permissions they hold, and every escrowed job
+                    on @SelectedChainAccessor.SelectedChain.ShortName.
+                </p>
+                <div class="pl-console__actions">
+                    <button type="button" class="pl-cta" @onclick="CreateTestJob">
+                        Create test mission — wallet signed
+                    </button>
+                </div>
+            </div>
+
+            @* The station is not decoration here: the buyer reads the installed
+               permission, the inspector's controls light up when a job is
+               awaiting evaluation. Demoted to a strip beside the copy so it
+               stays a status readout rather than a billboard. *@
+            <div class="pl-console__station">
+                @StationScene
+            </div>
+        </section>
+
+        <dl class="procurement-lab__summary" aria-label="Chain projection summary">
+            <div class="state-metric state-metric--agents">
+                <dd class="state-metric__value">@(Agents?.Count ?? 0)</dd>
+                <dt class="state-metric__label">Agents indexed</dt>
+            </div>
+            <div class="state-metric state-metric--jobs">
+                <dd class="state-metric__value">@(Jobs?.Count ?? 0)</dd>
+                <dt class="state-metric__label">My missions</dt>
+            </div>
+            <div class="state-metric state-metric--terminal">
+                <dd class="state-metric__value">@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</dd>
+                <dt class="state-metric__label">Settled</dt>
+            </div>
+            <div class="state-metric state-metric--wallet">
+                <dd class="state-metric__value">@ShortAddress(_walletAddress)</dd>
+                <dt class="state-metric__label">Acting as</dt>
+            </div>
+        </dl>
+    }
+
+    @if (IsConnected && _loading)
     {
         <section class="projection-empty projection-empty--loading" role="status"><div class="projection-empty__pulse"></div><p>Loading the selected chain projection…</p></section>
     }
-    else
+    else if (IsConnected)
     {
         <section class="projection-panel projection-panel--permission">
             <div class="projection-panel__heading">
@@ -299,6 +324,60 @@
     private string? _walletAddress;
     private bool _loading = true;
     private string? _copiedKey;
+
+    private bool IsConnected => _walletAddress is not null;
+
+    /// <summary>
+    /// The robot escrow station, rendered by both states — full width under the
+    /// marketing hero when signed out, and as a status strip beside the console
+    /// copy when connected. One definition so the two states cannot drift.
+    ///
+    /// Decorative overall (role="img"), but three of its parts are wired to real
+    /// state: the loading satellite, the buyer's key (an installed agent
+    /// permission), and the inspector's controls (a job awaiting evaluation).
+    /// </summary>
+    private RenderFragment StationScene => @<div class="pl-scene" role="img" aria-label="Pixel robots run a coffee escrow station in space: a scout searches for supplier planets, a buyer authorizes payment at a terminal, a courier carries a crate to the locked vault, and an inspector scans a delivered crate.">
+        @if (_loading)
+        {
+            <img class="pl-scene__satellite" src="images/pl-satellite.png" alt="" />
+            <span class="pl-signal pl-signal--one"></span>
+            <span class="pl-signal pl-signal--two"></span>
+            <span class="pl-signal pl-signal--three"></span>
+        }
+
+        <span class="pl-scene__deck" aria-hidden="true"></span>
+
+        <span class="pl-scene__actor pl-scene__actor--scout" aria-hidden="true"></span>
+        <span class="pl-scene__activity pl-scene__activity--scout" aria-hidden="true">Scanning suppliers</span>
+        <span class="pl-scene__scout-signal" aria-hidden="true">
+            <span></span><span></span><span></span>
+        </span>
+
+        <span class="pl-scene__actor pl-scene__actor--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true"></span>
+        <span class="pl-scene__activity pl-scene__activity--buyer @(_activeEpoch is not null ? "is-live" : "is-locked")" aria-hidden="true">
+            @(_activeEpoch is not null ? "Authorizing" : "Awaiting key")
+        </span>
+        @if (_activeEpoch is not null)
+        {
+            <img class="pl-scene__key" src="images/pl-key.png" alt="" />
+        }
+
+        <div class="pl-scene__vault">
+            <span class="pl-scene__vault-glow" aria-hidden="true"></span>
+            <img src="images/pl-vault.png" alt="" />
+        </div>
+
+        <span class="pl-scene__actor pl-scene__actor--courier" aria-hidden="true"></span>
+        <span class="pl-scene__activity pl-scene__activity--courier" aria-hidden="true">Delivering crate</span>
+
+        <span class="pl-scene__actor pl-scene__actor--inspector" aria-hidden="true"></span>
+        <span class="pl-scene__activity pl-scene__activity--inspector" aria-hidden="true">Inspecting proof</span>
+        <span class="pl-scene__scan" aria-hidden="true"></span>
+        <span class="pl-scene__controls @(Jobs?.Any(job => job.Status == "Submitted") == true ? "is-live" : null)" aria-hidden="true">
+            <span class="pl-scene__control pl-scene__control--approve">✓</span>
+            <span class="pl-scene__control pl-scene__control--return">✗</span>
+        </span>
+    </div>;
 
     // --- Session-key authority state ---
     // The Lab is where procurement actually happens, so which authority is about to sign belongs
@@ -567,6 +646,19 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // ?preview=connected renders the console state with fixture data and no
+        // wallet — the only way to see and verify it without MetaMask. Same flag
+        // and same contract as YieldPanel's: read-only, display state only, no
+        // chain calls and no writes.
+        if (Navigation.Uri.Contains("preview=connected", StringComparison.Ordinal))
+        {
+            _walletAddress = "0x9d53d4900000000000000000000000000000eceb";
+            Agents = [];
+            Jobs = [];
+            _loading = false;
+            return;
+        }
+
         var authentication = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         _walletAddress = authentication.User.FindFirst("wallet_address")?.Value;
         Agents = await JobService.GetAgentsAsync(SelectedChainAccessor.SelectedChainKey);

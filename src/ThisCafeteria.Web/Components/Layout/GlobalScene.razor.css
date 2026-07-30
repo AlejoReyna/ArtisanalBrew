@@ -7,10 +7,14 @@
    docs/kimi_ui.md §2–§5.
 
    LAYERING: .gs-scene stacks BELOW the page content (main) — it is the sky
-   itself. .gs-crew stacks ABOVE the content — only the robots live there,
-   because they must stay draggable and the crew runtime hit-tests them. Both
-   are data-permanent, so enhanced navigation keeps these exact nodes and no
-   keyframe restarts on a route switch.
+   itself. .gs-crew sits between the sky and the content: above the stars,
+   badges, mugs and coins so the robots read as roaming the scene, but below
+   main so headings, copy and buttons never get walked over. The robots stay
+   draggable anyway — main's pointer-events only claim the pixels its own
+   elements actually occupy, and the crew roams the empty space around them.
+   Both are data-permanent, so enhanced navigation keeps these exact nodes
+   and no keyframe restarts on a route switch. app.css changes their geometry
+   on the home route: a 200dvh scrolling sky and a 100dvh clipped crew field.
 
    VISIBILITY: which .gs-layer shows is selected by the data-scene-route
    attribute on <html> (rendered by App.razor); the selectors live in app.css
@@ -27,15 +31,18 @@
     transition: opacity 0.4s ease, visibility 0s linear 0.4s;
 }
 
-/* Below the page content (main is z-index: 1 in StakingLayout.razor.css);
-   the layout's own flat --stake-bg-deep ground paints underneath. */
+/* Below everything else; the layout's own flat --stake-bg-deep ground paints
+   underneath. */
 .gs-scene {
     z-index: 0;
 }
 
-/* Above the page content but below the fixed header (z-index: 1000). */
+/* Above the sky, below the page content (main is z-index: 2 in
+   StakingLayout.razor.css) and the fixed header (z-index: 1000) — text,
+   buttons and labels always paint over the robots, never the other way
+   around. */
 .gs-crew {
-    z-index: 2;
+    z-index: 1;
 }
 
 /* Scenario 0 (defaults): the scene always sits on the staking wing's
@@ -240,6 +247,7 @@
 .ph-scene__roam.ph-scene__roam--held,
 .ph-scene__roam.ph-scene__roam--held .ph-scene__unit,
 .ph-scene__roam.ph-scene__roam--held .ph-scene__actor,
+.ph-scene__roam.ph-scene__roam--held .ph-scene__jetflame,
 .ph-scene__roam.ph-scene__roam--held .ph-scene__grab,
 .ph-scene__roam.ph-scene__roam--held .ph-scene__sip,
 .ph-scene__roam.ph-scene__roam--held .ph-scene__plus {
@@ -357,7 +365,8 @@
    wrapper's inherited --roam-duration / --roam-delay. */
 .ph-scene__actor {
     animation: ph-coincrew-hover var(--hover-duration, 2.6s) steps(1, end) var(--hover-delay, 0s) infinite,
-               ph-collect-nod var(--roam-duration, 48s) ease-in-out var(--roam-delay, 0s) infinite;
+               ph-collect-nod var(--roam-duration, 48s) ease-in-out var(--roam-delay, 0s) infinite,
+               ph-collect-actor-swap var(--roam-duration, 48s) steps(1, end) var(--roam-delay, 0s) infinite;
     background-image: url("images/pl-robot-coincrew.png");
     background-position: 0 0;
     background-repeat: no-repeat;
@@ -377,6 +386,49 @@
     75%, 100% { background-position: 75% 0; }
 }
 
+/* Jet exhaust is separate from the robot sheets so the burn can match the
+   movement duty cycle exactly: 1.5s powered, 0.8s stopped. Four unequal,
+   layered frames give the active burn a hot core, turbulent orange shell and
+   unstable red tail instead of the old always-on single-pixel sputter. */
+.ph-scene__jetflame {
+    animation:
+        ph-jetflame-flicker 280ms steps(1, end) infinite,
+        ph-jetflame-fallback-duty 2.3s steps(1, end) infinite;
+    background-image: url("images/pl-robot-jetflame.png");
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 400% 100%;
+    filter:
+        drop-shadow(0 2px 3px rgba(238, 69, 62, 0.45))
+        drop-shadow(0 0 3px rgba(236, 178, 66, 0.35));
+    height: 18.75%;
+    image-rendering: pixelated;
+    left: 20.3125%;
+    pointer-events: none;
+    position: absolute;
+    top: 81.25%;
+    width: 10.9375%;
+    z-index: 2;
+}
+
+@keyframes ph-jetflame-flicker {
+    0%, 24% { background-position: 0 0; }
+    25%, 49% { background-position: 33.333% 0; }
+    50%, 74% { background-position: 66.667% 0; }
+    75%, 100% { background-position: 100% 0; }
+}
+
+@keyframes ph-jetflame-fallback-duty {
+    0%, 65.2% { visibility: visible; }
+    65.3%, 100% { visibility: hidden; }
+}
+
+.ph-scene__roam--courier .ph-scene__jetflame,
+.ph-scene__roam--inspector .ph-scene__jetflame {
+    left: auto;
+    right: 20.3125%;
+}
+
 /* Agarrar y guardar: dives onto the coin (54% ≈ roam arrival), then pulls
    back into a tuck while the coin is pocketed, then settles back. */
 @keyframes ph-collect-nod {
@@ -386,8 +438,17 @@
     80%, 100% { transform: none; }
 }
 
-/* Collecting pose overlay (sheet frame 4): covers the paddling sprite only
-   for the grab window, so the pose change is instant and pixel-stepped. */
+/* The grab sheet contains a complete robot, not just replacement arms.
+   Hide the hover sheet for the exact window that the grab sheet is visible;
+   otherwise their different leg poses composite into a duplicate robot. */
+@keyframes ph-collect-actor-swap {
+    0%, 53% { opacity: 1; }
+    54%, 73% { opacity: 0; }
+    74%, 100% { opacity: 1; }
+}
+
+/* Collecting pose overlay (sheet frame 4): replaces the hidden paddling
+   sprite for the grab window, so the pose change is instant and pixel-stepped. */
 .ph-scene__grab {
     animation: ph-collect-reveal var(--roam-duration, 48s) steps(1, end) var(--roam-delay, 0s) infinite;
     background-image: url("images/pl-robot-coincrew.png");
@@ -410,8 +471,8 @@
 }
 
 /* Coffee break: the trigger toggles .ph-scene__roam--sipping on the roam
-   wrapper for about a second. The actor's hover freezes mid-paddle and this
-   overlay plays the four-frame sip (reach / raise / sip with steam / lower)
+   wrapper for about a second. The actor's hover freezes and is hidden while
+   this overlay plays the four-frame sip (reach / raise / sip with steam / lower)
    across exactly 1s, then holds the last frame until the class comes off.
    The overlay is display:none when idle so it costs nothing. Mirror wiring
    matches the grab overlay: courier and inspector statically here, every
@@ -431,6 +492,7 @@
 
 .ph-scene__roam--sipping .ph-scene__actor {
     animation-play-state: paused;
+    visibility: hidden;
 }
 
 .ph-scene__roam--sipping .ph-scene__sip {
@@ -472,6 +534,56 @@
     64% { opacity: 1; transform: translate3d(0, -7px, 0) scale(1); }
     70% { opacity: 1; transform: translate3d(0, -14px, 0); }
     76%, 100% { opacity: 0; transform: translate3d(0, -18px, 0); }
+}
+
+/* Sonic power sneakers: a robot wears them for exactly as long as a
+   coffee-mug boost runs (tools/generate_sonic_shoes.py). The runtime toggles
+   .is-boosted on the roam wrapper for the whole caffeine window, so the shoes
+   are keyed straight off that class — no separate timing to keep in sync.
+   Both toes point in the robot's travel direction, so left-facing crew use
+   the generated -flip sprite. display:none while idle so they cost nothing.
+
+   Box is sized to the actor sprite's own boot pixels (pl-robot-coincrew.png,
+   64x64 frame: legs sit at x23-30 and x34-41, y53-57). The sprite starts at
+   y56, replacing only the final two leg rows plus the original boots; its
+   thick sole extends four pixels below the old 64px frame. */
+.ph-scene__shoes {
+    background: url("images/pl-sonic-shoes.png") center bottom / contain no-repeat;
+    bottom: -6.25%;
+    display: none;
+    height: 18.75%;
+    image-rendering: pixelated;
+    left: 26.5625%;
+    position: absolute;
+    width: 45.3125%;
+    z-index: 2;
+}
+
+/* Keep both long toes aimed toward the direction each robot faces. */
+.ph-scene__roam--courier .ph-scene__shoes,
+.ph-scene__roam--inspector .ph-scene__shoes,
+.ph-scene--sim .ph-scene__roam--mirrored .ph-scene__shoes {
+    background-image: url("images/pl-sonic-shoes-flip.png");
+}
+
+.ph-scene__roam.is-boosted .ph-scene__shoes {
+    animation: ph-sonic-shoes-dash 0.5s steps(2, end) infinite;
+    display: block;
+}
+
+/* Remove the robot's original lower legs and boots while the replacement
+   sneakers are visible. Without this cutout, transparent pixels around the
+   cuffs reveal the old feet underneath and the two silhouettes collide. */
+.ph-scene__roam.is-boosted .ph-scene__actor,
+.ph-scene__roam.is-boosted .ph-scene__grab,
+.ph-scene__roam.is-boosted .ph-scene__sip {
+    clip-path: inset(0 0 12.5% 0);
+}
+
+/* Rapid stepped hop — the feet blur of a 40%-faster robot. */
+@keyframes ph-sonic-shoes-dash {
+    0%, 49% { transform: translate3d(0, 0, 0); }
+    50%, 100% { transform: translate3d(0, -2px, 0); }
 }
 
 .ph-scene__actor--scout { --hover-delay: -0.7s; --hover-duration: 2.4s; }
@@ -617,87 +729,87 @@
     50%, 100% { opacity: 1; transform: scale(1); }
 }
 
-/* Pixel chain badges — Ethereum octahedron, Solana stripes, BNB diamonds —
-   dispersed over the space, dimmed and drifting slowly so they read as deep
-   background behind the stars, coins and crew. The wrapper carries position
-   and tint; the img floats on the shared roomy bob, staggered per badge. */
+/* Pixel chain badges — Ethereum crystal, Solana stripes and BNB cube —
+   dispersed over the extended sky and drifting slowly. They stay in the
+   background container so chapter two retains its pixel landmarks after the
+   first-screen crew has scrolled away. */
 .ph-chain {
     pointer-events: none;
     position: absolute;
-    z-index: 0;
+    z-index: 2;
 }
 
 .ph-chain img {
     animation: ph-unit-float var(--chain-bob-duration, 10s) cubic-bezier(0.45, 0, 0.55, 1) var(--chain-bob-delay, 0s) infinite alternate;
     display: block;
+    image-rendering: pixelated;
     width: 100%;
 }
 
 .ph-chain--eth-a {
-    filter: drop-shadow(0 0 5px rgba(127, 153, 242, 0.45));
+    filter: drop-shadow(0 0 7px rgba(76, 138, 226, 0.48));
     left: 6%;
-    opacity: 0.5;
+    opacity: 0.68;
     top: 46%;
-    width: 2rem;
+    width: 2.75rem;
 }
 
 .ph-chain--sol-a {
     --chain-bob-delay: -3.4s;
     --chain-bob-duration: 12s;
-    filter: drop-shadow(0 0 5px rgba(90, 180, 215, 0.4));
+    filter: drop-shadow(0 0 7px rgba(20, 241, 149, 0.42));
     left: 36%;
-    opacity: 0.55;
+    opacity: 0.7;
     top: 36%;
-    width: 2.6rem;
+    width: 3.6rem;
 }
 
 .ph-chain--bnb-a {
     --chain-bob-delay: -6.1s;
     --chain-bob-duration: 9s;
-    filter: drop-shadow(0 0 5px rgba(243, 186, 47, 0.4));
+    filter: drop-shadow(0 0 7px rgba(255, 190, 32, 0.45));
     left: 62%;
-    opacity: 0.5;
+    opacity: 0.66;
     top: 30%;
-    width: 2.2rem;
+    width: 3.1rem;
 }
 
 .ph-chain--eth-b {
     --chain-bob-delay: -1.8s;
     --chain-bob-duration: 13s;
-    filter: drop-shadow(0 0 4px rgba(127, 153, 242, 0.35));
-    opacity: 0.4;
+    filter: drop-shadow(0 0 5px rgba(76, 138, 226, 0.38));
+    opacity: 0.5;
     right: 20%;
     top: 72%;
-    width: 1.6rem;
+    width: 2.2rem;
 }
 
 .ph-chain--sol-b {
     --chain-bob-delay: -8.3s;
     --chain-bob-duration: 11s;
-    filter: drop-shadow(0 0 4px rgba(90, 180, 215, 0.35));
+    filter: drop-shadow(0 0 5px rgba(20, 241, 149, 0.34));
     left: 8%;
-    opacity: 0.45;
+    opacity: 0.54;
     top: 72%;
-    width: 2rem;
+    width: 2.7rem;
 }
 
 .ph-chain--bnb-b {
     --chain-bob-delay: -4.7s;
     --chain-bob-duration: 8.5s;
-    filter: drop-shadow(0 0 4px rgba(243, 186, 47, 0.35));
-    opacity: 0.4;
+    filter: drop-shadow(0 0 5px rgba(255, 190, 32, 0.36));
+    opacity: 0.5;
     right: 44%;
     top: 50%;
-    width: 1.8rem;
+    width: 2.3rem;
 }
 
-/* Catalog coffee bags — one for each product on /products, tiny pl-bag
-   sprites keyed out of the live catalog art. Deep backdrop like the chains:
-   dimmed, softly tilted, hard dark shadow instead of a glow. The wrapper
-   carries position, opacity and resting tilt; the img floats on the shared
-   roomy bob, staggered per bag. */
+/* Saucer-free pixel coffee mugs — six catchable coffee props based on the
+   supplied cream-mug reference. The legacy .ph-bag class remains the runtime
+   pickup hook, but the rendered asset is now a mug. Deep backdrop like the
+   chains: softly tilted with a hard dark shadow instead of a glow. */
 .ph-bag {
-    filter: drop-shadow(4px 5px 0 rgba(0, 0, 0, 0.28));
+    filter: drop-shadow(4px 5px 0 rgba(0, 0, 0, 0.34));
     pointer-events: none;
     position: absolute;
     z-index: 0;
@@ -706,71 +818,72 @@
 .ph-bag img {
     animation: ph-unit-float var(--bag-bob-duration, 12s) cubic-bezier(0.45, 0, 0.55, 1) var(--bag-bob-delay, 0s) infinite alternate;
     display: block;
+    image-rendering: pixelated;
     width: 100%;
 }
 
-.ph-bag--colombia {
+.ph-mug--one {
     left: 48%;
-    opacity: 0.52;
+    opacity: 0.7;
     top: 84%;
-    --bag-tilt: -5deg;
+    --bag-tilt: -4deg;
     transform: rotate(var(--bag-tilt));
-    width: 2.3rem;
+    width: 3rem;
 }
 
-.ph-bag--costa-rica {
+.ph-mug--two {
     --bag-bob-delay: -4.2s;
     --bag-bob-duration: 13.5s;
-    opacity: 0.5;
+    opacity: 0.66;
     right: 9%;
     top: 30%;
-    --bag-tilt: 4deg;
+    --bag-tilt: 3deg;
     transform: rotate(var(--bag-tilt));
-    width: 2rem;
+    width: 2.75rem;
 }
 
-.ph-bag--ethiopia {
+.ph-mug--three {
     --bag-bob-delay: -7.6s;
     --bag-bob-duration: 11s;
     left: 20%;
-    opacity: 0.42;
+    opacity: 0.58;
     top: 88%;
-    --bag-tilt: -3deg;
+    --bag-tilt: -2deg;
     transform: rotate(var(--bag-tilt));
-    width: 1.8rem;
+    width: 2.5rem;
 }
 
-.ph-bag--guatemala {
+.ph-mug--four {
     --bag-bob-delay: -2.9s;
     --bag-bob-duration: 12.5s;
     left: 63%;
-    opacity: 0.42;
+    opacity: 0.58;
     top: 52%;
-    --bag-tilt: 5deg;
+    --bag-tilt: 4deg;
     transform: rotate(var(--bag-tilt));
-    width: 1.7rem;
+    width: 2.5rem;
 }
 
-.ph-bag--mexico {
+.ph-mug--five {
     --bag-bob-delay: -6.3s;
     --bag-bob-duration: 14s;
     left: 38%;
-    opacity: 0.48;
+    opacity: 0.64;
     top: 12%;
-    --bag-tilt: -6deg;
+    --bag-tilt: -4deg;
     transform: rotate(var(--bag-tilt));
-    width: 1.8rem;
+    width: 2.75rem;
 }
 
-.ph-bag--peru {
+.ph-mug--six {
     --bag-bob-delay: -9.1s;
     --bag-bob-duration: 10.5s;
     bottom: 6%;
-    opacity: 0.45;
+    opacity: 0.6;
     right: 36%;
-    --bag-tilt: 4deg;
+    --bag-tilt: 3deg;
     transform: rotate(var(--bag-tilt));
-    width: 1.6rem;
+    width: 2.5rem;
 }
 
 /* ── Staking layer: the drifting coffee coins that used to live inside the
@@ -861,30 +974,25 @@
     to { transform: translate3d(7px, 9px, 0) rotate(4deg); }
 }
 
-/* ── Mobile: drop secondary floaters ── */
+/* ── Mobile: keep the full crew, drop secondary background floaters ── */
 @media (max-width: 700px) {
     .ph-sky__planet--ringed,
-    .ph-scene__roam--buyer,
-    .ph-scene__roam--inspector,
     .ph-coinbit--loot-buyer,
     .ph-coinbit--loot-inspector,
     .ph-coinbit--ambient-b,
     .ph-chain--eth-b,
     .ph-chain--sol-b,
     .ph-chain--bnb-b,
-    .ph-bag--guatemala,
-    .ph-bag--mexico,
-    .ph-bag--peru {
+    .ph-mug--four,
+    .ph-mug--five,
+    .ph-mug--six {
         display: none;
     }
 
     /* On one column the home copy spans the full width (roughly 27%–77% of
        the scene vertically), so parking coins in the left and right margins
        has nowhere to go. Everything visible is pushed into the clear bands
-       above the title and below the CTAs instead — the same variables drive
-       the wrappers, their keyframes and their loot coins, so moving the
-       destination moves the coin with it. Buyer and inspector are hidden
-       here, hence only the scout and courier vectors. */
+       above the title and below the CTAs. */
     .gs-scene {
         --courier-home: 6%;
         --courier-roam-x: -6vw;
@@ -895,6 +1003,44 @@
         --ambient-a-y: 10%;
         --ambient-c-x: 15%;
         --ambient-c-y: 88%;
+    }
+
+    /* Four-robot fallback composition: one crew member per mobile corner.
+       The live simulation already starts at the same four quadrants and its
+       later .ph-scene--sim rules take over these static anchors. */
+    .ph-scene__roam--scout,
+    .ph-scene__roam--buyer,
+    .ph-scene__roam--courier,
+    .ph-scene__roam--inspector {
+        width: clamp(4rem, 18vw, 5rem);
+    }
+
+    .ph-scene__roam--scout {
+        bottom: auto;
+        left: max(0.25rem, env(safe-area-inset-left));
+        right: auto;
+        top: clamp(5.5rem, 12vh, 7rem);
+    }
+
+    .ph-scene__roam--courier {
+        bottom: auto;
+        left: auto;
+        right: max(0.25rem, env(safe-area-inset-right));
+        top: clamp(5.5rem, 12vh, 7rem);
+    }
+
+    .ph-scene__roam--buyer {
+        bottom: clamp(1rem, 5vh, 3rem);
+        left: max(0.25rem, env(safe-area-inset-left));
+        right: auto;
+        top: auto;
+    }
+
+    .ph-scene__roam--inspector {
+        bottom: clamp(1rem, 5vh, 3rem);
+        left: auto;
+        right: max(0.25rem, env(safe-area-inset-right));
+        top: auto;
     }
 
     /* Small enough to clear the right edge, dropped into the band under the
@@ -945,6 +1091,33 @@
     background-image: url("images/pl-robot-coincrew.png");
 }
 
+.ph-scene--sim .ph-scene__jetflame {
+    animation: ph-jetflame-flicker 280ms steps(1, end) infinite;
+    visibility: hidden;
+}
+
+.ph-scene--sim .ph-scene__roam.is-thrusting .ph-scene__jetflame {
+    visibility: visible;
+}
+
+.ph-scene--sim .ph-scene__roam--mirrored .ph-scene__jetflame {
+    left: auto;
+    right: 20.3125%;
+}
+
+.ph-scene--sim .ph-scene__roam:not(.ph-scene__roam--mirrored) .ph-scene__jetflame {
+    left: 20.3125%;
+    right: auto;
+}
+
+/* The engine-off window keeps the slow unit bob alive. The runtime separately
+   caps residual travel to a few pixels, so the dark-jet beat reads as gentle
+   zero-G inertia instead of either a frozen sprite or continued thrust. */
+
+.ph-scene__roam--held .ph-scene__jetflame {
+    visibility: hidden;
+}
+
 .ph-scene--sim .ph-coinbit {
     animation: none;
     bottom: auto;
@@ -954,10 +1127,10 @@
     will-change: transform;
 }
 
-/* ── Coffee bags under the sim ────────────────────────────────────────────
-   Bags stop being background dressing and become catchable pickups: they blink
-   in at random spots, sit briefly, and hand out a 25% speed boost to whoever
-   reaches one.
+/* ── Coffee mugs under the sim ────────────────────────────────────────────
+   Mugs stop being background dressing and become catchable pickups: they blink
+   in at random spots, sit briefly, and hand out a 40% speed boost (and the
+   Sonic shoes) to whoever reaches one.
 
    STATE ONLY — the catch/drink choreography is a separate pass and is
    deliberately NOT written here. pixelCrewRuntime.js drives four classes:
@@ -967,7 +1140,7 @@
    minimum needed for the mechanic to read at all; override them freely.
 
    One constraint worth keeping: the runtime owns `transform` on .ph-bag (it is
-   how the bag is positioned) and composes the designed tilt back in via
+   how the mug is positioned) and composes the designed tilt back in via
    --bag-tilt. An animation that needs its own transform should target the
    inner <img>, which is free. */
 .ph-scene--sim .ph-bag {
@@ -976,14 +1149,14 @@
     left: 0;
     right: auto;
     top: 0;
-    /* Dormant by default: a bag only exists while it is catchable. */
+    /* Dormant by default: a mug only exists while it is catchable. */
     opacity: 0;
     transition: opacity 220ms ease;
     will-change: transform;
 }
 
 .ph-scene--sim .ph-bag.is-live {
-    /* Brighter than the old decorative dressing — these are in play now. */
+    /* Brighter than the static dressing — these are in play now. */
     opacity: 0.92;
 }
 
@@ -1006,7 +1179,8 @@
 /* One-shot collect: the runtime adds .is-collecting to the unit for ~900ms. */
 .ph-scene--sim .ph-scene__unit.is-collecting .ph-scene__actor {
     animation: ph-coincrew-hover var(--hover-duration, 2.6s) steps(1, end) var(--hover-delay, 0s) infinite,
-               ph-sim-nod 620ms ease-in-out 1;
+               ph-sim-nod 620ms ease-in-out 1,
+               ph-sim-actor-swap 620ms steps(1, end) 1;
 }
 
 .ph-scene--sim .ph-scene__unit.is-collecting .ph-scene__grab {
@@ -1022,6 +1196,11 @@
     22% { transform: translate3d(0, 7%, 0) scale(1.06); }
     52%, 74% { transform: translate3d(0, -2%, 0) scale(0.95); }
     100% { transform: none; }
+}
+
+@keyframes ph-sim-actor-swap {
+    0%, 74% { opacity: 0; }
+    75%, 100% { opacity: 1; }
 }
 
 @keyframes ph-sim-grab {
@@ -1044,6 +1223,10 @@
 .ph-scene--sim .ph-scene__unit.is-drinking .ph-scene__sip {
     animation: ph-sip-cycle 1s steps(1, end) 1;
     display: block;
+}
+
+.ph-scene--sim .ph-scene__unit.is-drinking .ph-scene__actor {
+    visibility: hidden;
 }
 
 /* Collected coin: pop and stay hidden until the runtime respawns it (which is
@@ -1079,10 +1262,15 @@
     .ph-scene__roam,
     .ph-scene__unit,
     .ph-scene__actor,
+    .ph-scene__jetflame,
     .ph-scene__grab,
     .ph-scene__sip,
     .ph-scene__plus,
     .staking-space__coin {
         animation: none;
+    }
+
+    .ph-scene__jetflame {
+        visibility: hidden;
     }
 }

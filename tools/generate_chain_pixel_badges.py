@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Generate the pixel chain badges drifting in the PixelHome hero background.
+"""Generate the pixel chain marks drifting in the PixelHome hero background.
 
-Three transparent 32x32 PNGs, hand-plotted on a 16x16 grid scaled 2x, matching
-the aliased sprite style of generate_procurement_sprites.py:
+The source art is drawn on a 24x24 pixel grid and nearest-neighbour scaled to
+48x48. That leaves enough room for each logo's characteristic negative space
+while keeping the deliberately chunky language used by the rest of the scene:
 
-- pl-chain-ethereum.png — the octahedron glyph: two stacked triangles with a
-  gap at the belt, four facets alternating light/dark like the real mark.
-- pl-chain-solana.png — the three slanted stripes, purple -> green, one
-  uniform tone per stripe with a shaded bottom edge.
-- pl-chain-bnb.png — the pinwheel of five diamonds with a pale top-left
-  highlight, like the two-tone shading on the site's other sprites.
+- pl-chain-ethereum.png — a split neon crystal with four upper facets and a
+  detached lower chevron.
+- pl-chain-solana.png — three wide, alternating parallelograms carrying one
+  continuous violet-to-mint gradient.
+- pl-chain-bnb.png — the cube-and-ring construction, with distinct top, side
+  and lower pieces instead of a generic five-diamond cross.
 
 (images/eth-pixel.png sounds like the rhombus but is actually a round gold
 coin sprite — it is NOT used for this badge.)
@@ -22,108 +23,114 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "src" / "ThisCafeteria.Web" / "wwwroot" / "images"
 
-SCALE = 2          # 16x16 conceptual grid -> 32x32 canvas
-GRID = 16
+SCALE = 2
+GRID = 24
 
-# Palette: brand colour, its shaded edge, and a pale highlight.
-OUTL = (43, 27, 16, 255)        # shared dark outline, as on eth-pixel.png
-SOL_TOP = (153, 69, 255, 255)   # purple end of the Solana gradient
-SOL_TOP_DK = (96, 40, 168, 255)
-SOL_MID = (45, 186, 200, 255)   # teal blend
-SOL_MID_DK = (24, 120, 132, 255)
-SOL_BOT = (20, 241, 149, 255)   # green end
-SOL_BOT_DK = (12, 158, 98, 255)
-BNB = (243, 186, 47, 255)
-BNB_DK = (176, 128, 22, 255)
-BNB_HI = (255, 224, 138, 255)
-ETH_FACET_HI = (127, 153, 242, 255)   # light facet, periwinkle
-ETH_FACET_DK = (58, 77, 171, 255)     # dark facet
+TRANSPARENT = (0, 0, 0, 0)
+
+SOL_PURPLE = (153, 69, 255)
+SOL_GREEN = (20, 241, 149)
+
+BNB_HI = (255, 210, 66, 255)
+BNB = (247, 178, 20, 255)
+BNB_MID = (219, 137, 9, 255)
+BNB_DK = (167, 93, 5, 255)
+
+ETH_BLUE = (76, 138, 226, 255)  # #4c8ae2
+
+
+def canvas() -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    img = Image.new("RGBA", (GRID, GRID), TRANSPARENT)
+    return img, ImageDraw.Draw(img)
+
+
+def save_scaled(img: Image.Image, name: str) -> None:
+    img.resize(
+        (GRID * SCALE, GRID * SCALE),
+        resample=Image.Resampling.NEAREST,
+    ).save(OUTPUT / name)
 
 
 def ethereum() -> None:
-    """Octahedron: two stacked triangles with a one-cell gap at the belt.
+    img, d = canvas()
 
-    The upper pyramid's left facet is light and its right facet dark; the
-    lower pyramid flips them, which is what makes the glyph read as folded
-    geometry instead of a plain diamond.
-    """
-    img = Image.new("RGBA", (GRID * SCALE, GRID * SCALE), (0, 0, 0, 0))
+    # Four planes meet off-centre, which gives the upper crystal the folded,
+    # asymmetric depth visible in the reference instead of reading as a flat
+    # diamond.
+    d.polygon([(12, 0), (12, 10), (5, 14)], fill=ETH_BLUE)
+    d.polygon([(12, 0), (19, 14), (12, 10)], fill=ETH_BLUE)
+    d.polygon([(5, 14), (12, 10), (12, 16)], fill=ETH_BLUE)
+    d.polygon([(19, 14), (12, 10), (12, 16)], fill=ETH_BLUE)
+
+    # The detached chevron is intentionally separated by a transparent notch.
+    # It keeps the mark airy and still readable when it drifts behind copy.
+    d.polygon([(5, 17), (12, 20), (12, 23)], fill=ETH_BLUE)
+    d.polygon([(19, 17), (12, 20), (12, 23)], fill=ETH_BLUE)
+
+    save_scaled(img, "pl-chain-ethereum.png")
+
+
+def gradient_bar(
+    img: Image.Image,
+    polygon: list[tuple[int, int]],
+    shadow_edge: list[tuple[int, int]],
+) -> None:
+    mask = Image.new("L", (GRID, GRID), 0)
+    md = ImageDraw.Draw(mask)
+    md.polygon(polygon, fill=255)
+
+    pixels = img.load()
+    mask_pixels = mask.load()
+    for y in range(GRID):
+        for x in range(GRID):
+            if not mask_pixels[x, y]:
+                continue
+            t = x / (GRID - 1)
+            pixels[x, y] = (
+                round(SOL_PURPLE[0] + (SOL_GREEN[0] - SOL_PURPLE[0]) * t),
+                round(SOL_PURPLE[1] + (SOL_GREEN[1] - SOL_PURPLE[1]) * t),
+                round(SOL_PURPLE[2] + (SOL_GREEN[2] - SOL_PURPLE[2]) * t),
+                255,
+            )
+
+    # One hard lower edge adds the same tiny bevel used by the bags and coins.
     d = ImageDraw.Draw(img)
-    center = 7                      # grid is 0..15, the glyph axis sits on 7
-
-    for y in range(1, 8):           # upper pyramid, tip at row 1, belt row 7
-        w = round((y - 1) * 6 / 7 + 0.5)
-        for x in range(center - w, center + w + 1):
-            cell(d, x, y, ETH_FACET_HI if x <= center else ETH_FACET_DK)
-
-    for y in range(9, 15):          # lower pyramid, belt row 9, tip at row 14
-        w = round((14 - y) * 6 / 7 + 0.5)
-        for x in range(center - w, center + w + 1):
-            cell(d, x, y, ETH_FACET_DK if x <= center else ETH_FACET_HI)
-
-    img.save(OUTPUT / "pl-chain-ethereum.png")
-
-
-def cell(draw: ImageDraw.ImageDraw, cx: int, cy: int, fill) -> None:
-    x0, y0 = cx * SCALE, cy * SCALE
-    draw.rectangle((x0, y0, x0 + SCALE - 1, y0 + SCALE - 1), fill=fill)
+    d.line(shadow_edge, fill=(37, 119, 129, 255), width=1)
 
 
 def solana() -> None:
-    img = Image.new("RGBA", (GRID * SCALE, GRID * SCALE), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    # Three parallelogram stripes slanting up to the right. Each stripe is
-    # three cells tall; the run shifts one cell right per row inside the
-    # stripe, and the stepped ends echo the rounded caps of the real mark.
-    stripes = [
-        (2, SOL_TOP, SOL_TOP_DK),
-        (7, SOL_MID, SOL_MID_DK),
-        (12, SOL_BOT, SOL_BOT_DK),
-    ]
-    for top, tone, shade in stripes:
-        for row in range(3):
-            y = top + row
-            # Slant: the stripe starts further right on lower rows.
-            x_start = 4 + row
-            x_end = 11 + row
-            for x in range(x_start, x_end + 1):
-                # Bottom row of each stripe gets the shaded tone, the two
-                # upper rows the main tone — a cheap bottom-edge shade.
-                cell(d, x, y, shade if row == 2 else tone)
-        # Stepped end caps.
-        cell(d, 3, top + 1, tone)
-        cell(d, 12 + 2, top + 1, tone)
+    img, _ = canvas()
 
-    img.save(OUTPUT / "pl-chain-solana.png")
+    # The centre bar reverses direction. That alternating silhouette is a key
+    # part of the Solana mark and was missing from the previous sprite.
+    gradient_bar(img, [(5, 2), (23, 2), (19, 6), (1, 6)], [(1, 6), (19, 6)])
+    gradient_bar(img, [(1, 10), (19, 10), (23, 14), (5, 14)], [(5, 14), (23, 14)])
+    gradient_bar(img, [(5, 18), (23, 18), (19, 22), (1, 22)], [(1, 22), (19, 22)])
+
+    save_scaled(img, "pl-chain-solana.png")
 
 
 def bnb() -> None:
-    img = Image.new("RGBA", (GRID * SCALE, GRID * SCALE), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+    img, d = canvas()
 
-    def diamond(cx: int, cy: int, radius: int) -> None:
-        """Solid pixel diamond: |dx| + |dy| <= radius."""
-        for dy in range(-radius, radius + 1):
-            width = radius - abs(dy)
-            for dx in range(-width, width + 1):
-                x, y = cx + dx, cy + dy
-                # Highlight the upper-left facet, shade the lower-right one.
-                if dx + dy < -radius // 2:
-                    cell(d, x, y, BNB_HI)
-                elif dx + dy > radius // 2:
-                    cell(d, x, y, BNB_DK)
-                else:
-                    cell(d, x, y, BNB)
+    # Broken outer ring: a bright roof, two side brackets and a bottom cap.
+    d.polygon([(12, 0), (18, 3), (16, 5), (12, 3), (8, 5), (6, 3)], fill=BNB_HI)
+    d.polygon([(3, 4), (7, 6), (5, 8), (3, 7), (2, 8), (2, 12), (1, 10), (1, 6)], fill=BNB)
+    d.polygon([(21, 4), (17, 6), (19, 8), (21, 7), (22, 8), (22, 12), (23, 10), (23, 6)], fill=BNB_MID)
+    d.polygon([(1, 13), (3, 15), (3, 18), (8, 21), (8, 23), (1, 19)], fill=BNB)
+    d.polygon([(23, 13), (21, 15), (21, 18), (16, 21), (16, 23), (23, 19)], fill=BNB_MID)
+    d.polygon([(12, 20), (15, 22), (12, 23), (9, 22)], fill=BNB_DK)
 
-    # Center diamond plus the four corner diamonds of the pinwheel, spaced so
-    # a one-cell gutter separates the pieces.
-    diamond(8, 8, 2)
-    diamond(3, 3, 1)
-    diamond(13, 3, 1)
-    diamond(3, 13, 1)
-    diamond(13, 13, 1)
+    # Inner cube: three clearly different faces preserve its volume at 32px.
+    d.polygon([(12, 6), (17, 9), (12, 12), (7, 9)], fill=BNB_HI)
+    d.polygon([(7, 9), (12, 12), (12, 20), (7, 17)], fill=BNB)
+    d.polygon([(17, 9), (12, 12), (12, 20), (17, 17)], fill=BNB_MID)
 
-    img.save(OUTPUT / "pl-chain-bnb.png")
+    # Two tiny cut-outs keep the centre from becoming one solid yellow blob.
+    d.polygon([(5, 11), (7, 12), (7, 16), (5, 15)], fill=TRANSPARENT)
+    d.polygon([(19, 11), (17, 12), (17, 16), (19, 15)], fill=TRANSPARENT)
+
+    save_scaled(img, "pl-chain-bnb.png")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Generate the four Procurement Lab robot sprite sheets.
+"""Generate the Procurement Lab robot sheets and hero jet-flame strip.
 
 The sheets are intentionally tiny and aliased. Each contains four 64x64 frames
 laid out horizontally: two walking poses followed by two role-action poses.
 CSS scales them with nearest-neighbour rendering and advances the frames with
-stepped keyframes.
+stepped keyframes. The separate 7x12 exhaust frames let the hero runtime turn
+the flame fully off during its 0.8-second rest window.
 """
 
 from pathlib import Path
@@ -18,21 +19,26 @@ FRAME = 64
 FRAMES = 4
 
 OUT = (31, 22, 17, 255)
-BLACK = (8, 8, 7, 255)
-CREAM = (218, 207, 171, 255)
-CREAM_SH = (178, 165, 126, 255)
-CREAM_HI = (255, 250, 198, 255)
-TEAL_DK = (24, 67, 63, 255)
-TEAL = (57, 119, 109, 255)
-TEAL_HI = (132, 213, 190, 255)
-FACE = (231, 232, 103, 255)
-METAL = (89, 80, 66, 255)
-METAL_DK = (53, 46, 39, 255)
+# The robot palette is deliberately cooler and softer than the surrounding
+# coffee props. It follows the new character concept: an almost-black navy
+# keyline, powder-blue face glass, icy white casing and two tiny coral accents.
+BLACK = (17, 22, 39, 255)
+CREAM = (219, 232, 234, 255)
+CREAM_SH = (151, 181, 197, 255)
+CREAM_HI = (244, 247, 239, 255)
+TEAL_DK = (63, 101, 132, 255)
+TEAL = (147, 190, 211, 255)
+TEAL_HI = (199, 222, 229, 255)
+FACE = (27, 42, 76, 255)
+METAL = (92, 128, 151, 255)
+METAL_DK = (43, 66, 91, 255)
 COPPER = (181, 126, 72, 255)
 COPPER_DK = (112, 72, 42, 255)
 GOLD = (236, 178, 66, 255)
 GREEN = (143, 185, 155, 255)
-CLAY = (229, 152, 128, 255)
+CLAY = (242, 133, 137, 255)
+SIGNAL = (238, 69, 62, 255)
+SCORE = (231, 232, 103, 255)
 COFFEE = (98, 64, 38, 255)
 
 
@@ -52,7 +58,14 @@ def robot(
     floating: bool = False,
     tuck: bool = False,
 ) -> None:
-    """Draw the shared friendly square-headed robot from back to front."""
+    """Draw the shared friendly CRT-headed robot from back to front.
+
+    The silhouette is an original project-specific interpretation of the
+    ArtStation reference supplied for the homepage redesign: a large
+    powder-blue face window, tiny eyes and blush pixels, offset antennae,
+    mitten hands and sturdy little boots. The coffee jetpack and exact 64px
+    physics footprint remain unchanged.
+    """
 
     # Floating robots hang their legs and sway them together instead of
     # stepping; grounded ones bob and alternate feet. Tuck pulls the legs up
@@ -67,76 +80,89 @@ def robot(
         right_step = 2 if frame == 0 else -2 if frame == 1 else 0
     y += bob
 
-    # Legs: deliberately spindly, with alternating feet when walking. Tucked
-    # frames raise the whole leg set, like knees pulled up mid-grab.
+    # Sturdy segmented legs and wide dark soles. Tucked frames raise the whole
+    # leg set, like knees pulled up mid-grab.
     ly = y - 3 if tuck else y
-    rect(draw, (x + 18, ly + 41, x + 22, ly + 53), BLACK)
-    rect(draw, (x + 27, ly + 41, x + 31, ly + 53), BLACK)
-    rect(draw, (x + 19, ly + 41, x + 21, ly + 50), CREAM_HI)
-    rect(draw, (x + 28, ly + 41, x + 30, ly + 50), CREAM_HI)
-    rect(draw, (x + 16 + left_step, ly + 51, x + 22 + left_step, ly + 55), BLACK)
-    rect(draw, (x + 27 + right_step, ly + 51, x + 33 + right_step, ly + 55), BLACK)
+    rect(draw, (x + 16, ly + 42, x + 23, ly + 54), BLACK)
+    rect(draw, (x + 27, ly + 42, x + 34, ly + 54), BLACK)
+    rect(draw, (x + 18, ly + 43, x + 22, ly + 51), CREAM_SH)
+    rect(draw, (x + 29, ly + 43, x + 33, ly + 51), CREAM_SH)
+    rect(draw, (x + 19, ly + 43, x + 22, ly + 48), CREAM_HI)
+    rect(draw, (x + 30, ly + 43, x + 33, ly + 48), CREAM_HI)
+    rect(draw, (x + 14 + left_step, ly + 51, x + 24 + left_step, ly + 56), BLACK)
+    rect(draw, (x + 26 + right_step, ly + 51, x + 36 + right_step, ly + 56), BLACK)
+    rect(draw, (x + 17 + left_step, ly + 51, x + 23 + left_step, ly + 53), CREAM_HI)
+    rect(draw, (x + 29 + right_step, ly + 51, x + 35 + right_step, ly + 53), CREAM_HI)
 
-    # Jetpack on the back: a squat twin-banded tank tucked against the torso's
-    # rear (left) edge and under the head, copper strap bands, nozzle low.
+    # Jetpack on the back: a squat copper-and-teal tank tucked against the
+    # torso's rear (left) edge and under the head, with a low nozzle.
     # Drawn before the arms so the arm passes in front of it; the head eats
-    # its top corner, seating it on the back. Floating frames sputter a
-    # stepped flickering flame out of the nozzle; the tuck frame (mid-grab)
-    # burns longest. Walkers keep the pack cold.
-    rect(draw, (x + 8, y + 28, x + 12, y + 41), BLACK)
-    rect(draw, (x + 9, y + 29, x + 11, y + 40), METAL)
-    rect(draw, (x + 8, y + 32, x + 12, y + 33), COPPER_DK)
-    rect(draw, (x + 8, y + 37, x + 12, y + 38), COPPER_DK)
-    rect(draw, (x + 9, y + 42, x + 11, y + 43), BLACK)
-    if floating:
-        flame = 8 if tuck else (4, 6, 5, 7)[frame % 4]
-        for i in range(flame):
-            fy = y + 44 + i
-            color = GOLD if i < max(flame - 2, 1) else CLAY
-            half = 1 if i < 2 else 0
-            rect(draw, (x + 10 - half, fy, x + 10 + half, fy), color)
+    # its top corner, seating it on the back. The flame is a separate sprite
+    # controlled by the runtime's 1.5s thrust / 0.8s rest duty cycle.
+    rect(draw, (x + 6, y + 29, x + 13, y + 43), BLACK)
+    rect(draw, (x + 8, y + 30, x + 12, y + 42), TEAL_DK)
+    rect(draw, (x + 9, y + 32, x + 12, y + 36), TEAL_HI)
+    rect(draw, (x + 6, y + 29, x + 13, y + 31), COPPER)
+    rect(draw, (x + 6, y + 39, x + 13, y + 41), COPPER_DK)
+    rect(draw, (x + 8, y + 44, x + 11, y + 45), BLACK)
 
-    # Arms live behind the body and can be aimed at role props.
-    left_shoulder = (x + 13, y + 32)
-    right_shoulder = (x + 36, y + 32)
+    # Chunky arms live behind the body and can still be aimed at role props.
+    left_shoulder = (x + 14, y + 33)
+    right_shoulder = (x + 36, y + 33)
     if left_hand is None:
-        left_hand = (x + 9, y + 40)
+        left_hand = (x + 8, y + 40)
     if right_hand is None:
-        right_hand = (x + 40, y + 40)
-    draw.line((left_shoulder, left_hand), fill=BLACK, width=5)
-    draw.line((right_shoulder, right_hand), fill=BLACK, width=5)
-    draw.line((left_shoulder, left_hand), fill=CREAM_SH, width=2)
-    draw.line((right_shoulder, right_hand), fill=CREAM_SH, width=2)
-    rect(draw, (left_hand[0] - 2, left_hand[1] - 2, left_hand[0] + 2, left_hand[1] + 2), BLACK)
-    rect(draw, (right_hand[0] - 2, right_hand[1] - 2, right_hand[0] + 2, right_hand[1] + 2), BLACK)
+        right_hand = (x + 42, y + 40)
+    draw.line((left_shoulder, left_hand), fill=BLACK, width=7)
+    draw.line((right_shoulder, right_hand), fill=BLACK, width=7)
+    draw.line((left_shoulder, left_hand), fill=CREAM_SH, width=3)
+    draw.line((right_shoulder, right_hand), fill=CREAM_SH, width=3)
+    rect(draw, (left_hand[0] - 3, left_hand[1] - 3, left_hand[0] + 3, left_hand[1] + 3), BLACK)
+    rect(draw, (left_hand[0] - 2, left_hand[1] - 2, left_hand[0] + 1, left_hand[1] + 1), CREAM_HI)
+    rect(draw, (right_hand[0] - 3, right_hand[1] - 3, right_hand[0] + 3, right_hand[1] + 3), BLACK)
+    rect(draw, (right_hand[0] - 1, right_hand[1] - 2, right_hand[0] + 2, right_hand[1] + 1), CREAM_HI)
 
-    # Compact body and luminous chest plate.
-    rect(draw, (x + 13, y + 27, x + 36, y + 44), BLACK)
-    rect(draw, (x + 16, y + 30, x + 33, y + 42), CREAM_SH)
-    rect(draw, (x + 19, y + 32, x + 30, y + 40), CREAM_HI)
+    # Compact rounded body: clipped corners, broad white chest and one red
+    # status light. A short navy neck keeps the oversized head readable.
+    rect(draw, (x + 21, y + 27, x + 29, y + 32), BLACK)
+    rect(draw, (x + 13, y + 29, x + 37, y + 45), BLACK)
+    rect(draw, (x + 11, y + 33, x + 39, y + 41), BLACK)
+    rect(draw, (x + 14, y + 31, x + 36, y + 43), CREAM_SH)
+    rect(draw, (x + 13, y + 34, x + 37, y + 40), CREAM_SH)
+    rect(draw, (x + 18, y + 32, x + 34, y + 39), CREAM_HI)
+    rect(draw, (x + 17, y + 40, x + 33, y + 42), METAL)
+    rect(draw, (x + 32, y + 34, x + 34, y + 36), SIGNAL)
 
-    # Large monitor head: thick black silhouette, beige side casing, teal face.
-    rect(draw, (x + 4, y + 2, x + 45, y + 29), BLACK)
-    rect(draw, (x + 1, y + 9, x + 5, y + 22), BLACK)
-    rect(draw, (x + 5, y + 5, x + 14, y + 26), CREAM_SH)
-    rect(draw, (x + 14, y + 5, x + 42, y + 26), CREAM_HI)
-    rect(draw, (x + 17, y + 8, x + 39, y + 23), TEAL_DK)
-    rect(draw, (x + 19, y + 10, x + 37, y + 21), TEAL)
-    rect(draw, (x + 20, y + 10, x + 35, y + 11), TEAL_HI)
+    # Two offset antenna posts, part of every crew member's silhouette.
+    rect(draw, (x + 19, y - 1, x + 22, y + 5), BLACK)
+    rect(draw, (x + 20, y - 2, x + 21, y + 1), CREAM_HI)
+    rect(draw, (x + 29, y + 1, x + 32, y + 5), BLACK)
+    rect(draw, (x + 30, y, x + 31, y + 2), SIGNAL)
 
-    # Happy face from the pixel reference (Pinterest pin 667377238568275892):
-    # two vertical pill eyes and a wide, shallow smile — cute, no anime styling.
-    rect(draw, (x + 22, y + 11, x + 23, y + 15), FACE)
-    rect(draw, (x + 33, y + 11, x + 34, y + 15), FACE)
-    draw.line(
-        ((x + 24, y + 18), (x + 26, y + 20), (x + 30, y + 20), (x + 33, y + 18)),
-        fill=FACE,
-        width=2,
-    )
+    # Large stepped CRT head with a recessed powder-blue face panel. The left
+    # side pod and top-left glint keep the front-facing shape dimensional.
+    rect(draw, (x + 5, y + 3, x + 44, y + 30), BLACK)
+    rect(draw, (x + 3, y + 8, x + 46, y + 26), BLACK)
+    rect(draw, (x + 7, y + 5, x + 42, y + 28), CREAM_SH)
+    rect(draw, (x + 5, y + 10, x + 44, y + 24), CREAM_SH)
+    rect(draw, (x + 12, y + 6, x + 42, y + 27), CREAM_HI)
+    rect(draw, (x + 5, y + 11, x + 10, y + 23), METAL)
+    rect(draw, (x + 6, y + 12, x + 8, y + 16), TEAL_HI)
+    rect(draw, (x + 15, y + 8, x + 40, y + 25), TEAL_DK)
+    rect(draw, (x + 17, y + 10, x + 38, y + 23), TEAL)
+    rect(draw, (x + 18, y + 10, x + 37, y + 11), TEAL_HI)
+
+    # Tiny vertical eyes and single-pixel blush blocks: expressive at 64px
+    # without the old yellow smile or any anime-scale facial detail.
+    rect(draw, (x + 22, y + 14, x + 23, y + 18), FACE)
+    rect(draw, (x + 33, y + 14, x + 34, y + 18), FACE)
+    rect(draw, (x + 20, y + 19, x + 22, y + 20), CLAY)
+    rect(draw, (x + 34, y + 19, x + 36, y + 20), CLAY)
 
     if antenna:
-        rect(draw, (x + 24, y - 3, x + 26, y + 2), BLACK)
-        rect(draw, (x + 23, y - 5, x + 27, y - 2), TEAL_HI)
+        # Scout-only receiver sparkle; the physical twin posts stay shared.
+        rect(draw, (x + 18, y - 4, x + 20, y - 3), TEAL_HI)
+        rect(draw, (x + 19, y - 5, x + 19, y - 2), TEAL_HI)
 
 
 def telescope(draw: ImageDraw.ImageDraw, x: int, y: int, raised: bool) -> None:
@@ -325,8 +351,85 @@ def draw_plus_one() -> Image.Image:
     for yy, row in enumerate(grid):
         for xx, cell in enumerate(row):
             if cell == "1":
-                draw.point((xx, yy), fill=FACE)
+                draw.point((xx, yy), fill=SCORE)
     return image
+
+
+JET_FLAME_FRAMES = (
+    (
+        "000H000",
+        "00HH000",
+        "00YY000",
+        "0YYYY00",
+        "0YOOO00",
+        "00OO000",
+        "00RR000",
+        "000R000",
+    ),
+    (
+        "000H000",
+        "00HHH00",
+        "00YYY00",
+        "0YYYY00",
+        "0YOOO00",
+        "00OOO00",
+        "00OR000",
+        "00RR000",
+        "000R000",
+        "000R000",
+        "000R000",
+    ),
+    (
+        "000H000",
+        "00HH000",
+        "00YYY00",
+        "0YYYY00",
+        "0YOOO00",
+        "0OOOO00",
+        "00ORR00",
+        "000RR00",
+        "000R000",
+    ),
+    (
+        "000H000",
+        "00HHH00",
+        "0YYYY00",
+        "0YYYYY0",
+        "0YOOO00",
+        "00OOO00",
+        "00OR000",
+        "000RR00",
+        "000R000",
+        "000R000",
+        "000R000",
+        "000R000",
+    ),
+)
+
+
+def draw_jet_flame(frame: int) -> Image.Image:
+    """One hard-edged exhaust frame: white-hot core, gold body, orange shell
+    and a red tail. Different lengths make the active burn feel unstable."""
+    image = Image.new("RGBA", (7, 12), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    colors = {
+        "H": CREAM_HI,
+        "Y": GOLD,
+        "O": CLAY,
+        "R": SIGNAL,
+    }
+    for yy, row in enumerate(JET_FLAME_FRAMES[frame]):
+        for xx, cell in enumerate(row):
+            if cell != "0":
+                draw.point((xx, yy), fill=colors[cell])
+    return image
+
+
+def save_jet_flame_sheet() -> None:
+    sheet = Image.new("RGBA", (7 * len(JET_FLAME_FRAMES), 12), (0, 0, 0, 0))
+    for index in range(len(JET_FLAME_FRAMES)):
+        sheet.alpha_composite(draw_jet_flame(index), (index * 7, 0))
+    sheet.save(OUTPUT / "pl-robot-jetflame.png", optimize=True)
 
 
 def save_sheet(name: str, renderer, frames: int = FRAMES, mirror: bool = False) -> None:
@@ -352,6 +455,7 @@ def main() -> None:
     # Coffee-break overlay sheet + mirror, same facing logic.
     save_sheet("pl-robot-coincrew-sip.png", draw_sip)
     save_sheet("pl-robot-coincrew-sip-flip.png", draw_sip, mirror=True)
+    save_jet_flame_sheet()
     draw_plus_one().save(OUTPUT / "pl-plus-one.png", optimize=True)
 
 

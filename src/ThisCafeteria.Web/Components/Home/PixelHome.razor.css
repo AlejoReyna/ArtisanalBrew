@@ -5,7 +5,7 @@
    reliably in this project.
 
    The pixel-space scene itself (stars, planets, Andromeda, chain badges,
-   bags, coins, the robot crew, the sky palette variants) lives in
+   mugs, coins, the robot crew, the sky palette variants) lives in
    Components/Layout/GlobalScene.razor.css — this file only styles the copy,
    the switcher chrome and the feature panels that float over that shared
    background. */
@@ -18,6 +18,14 @@
 
 .ph-page img {
     image-rendering: pixelated;
+}
+
+/* The homepage's pixel-space background has the same two-screen footprint.
+   Keeping the chapters explicit makes the scene leave with ProductDiscovery
+   instead of following the feature panels and footer. */
+.ph-extended-hero {
+    min-height: 200dvh;
+    position: relative;
 }
 
 /* ── Hero: editorial copy floating over the shared full-bleed pixel space.
@@ -228,7 +236,7 @@
 }
 
 .ph-lede {
-    color: var(--stake-muted);
+    color: rgba(244, 239, 230, 0.85);
     font-family: var(--crypto-mono);
     font-size: 0.95rem;
     line-height: 1.6;
@@ -308,7 +316,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 0 auto;
     max-width: 64rem;
-    padding: clamp(1.5rem, 4vh, 3rem) clamp(1.25rem, 4vw, 3.5rem) 3.5rem;
+    padding: clamp(1rem, 2vh, 1.5rem) clamp(1.25rem, 4vw, 3.5rem) 3.5rem;
     position: relative;
     z-index: 1;
 }
@@ -372,7 +380,7 @@
 }
 
 .ph-panel__label {
-    color: var(--stake-green);
+    color: var(--stake-ink);
     font-family: var(--crypto-mono);
     font-size: 0.66rem;
     font-weight: 700;
@@ -458,11 +466,17 @@
     }
 
     .ph-cta-row {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 0.6rem;
     }
 
     .ph-cta {
-        width: 100%;
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.62rem;
+        padding-inline: 1rem;
+        min-height: 2.75rem;
     }
 
     .ph-panels {

@@ -1,7 +1,7 @@
 @* Pixel-galaxy homepage: editorial copy floating over the shared pixel-space
    background scenario, whose robot crew runs loose through it to gather flat
    2D coffee coins. The space itself — stars, planets, the Andromeda galaxy,
-   the chain badges, bags, coins and the crew — now belongs to
+   the chain badges, mugs, coins and the crew — now belongs to
    Components/Layout/GlobalScene.razor, rendered once by StakingLayout and
    kept alive across routes via data-permanent; this page only carries its
    copy, the panels and the crew-runtime wiring. Everything in the scene is a
@@ -21,10 +21,15 @@
 @inject IJSRuntime JSRuntime
 
 <div class="ph-page">
-    @* data-theme-color matches the hero's --stake-bg-deep base so
-       publicHeader.js keeps the page theme color (and its 1px top surface)
-       dark instead of falling back to the cream storefront default. *@
-    <section class="ph-hero @(_isIntroHidden ? "ph-hero--intro-hidden" : string.Empty)" data-theme-color="#100D0B">
+    @* The extended hero is two viewport chapters tall. GlobalScene mirrors
+       this footprint on the home route: its sky scrolls through both chapters,
+       while the crew's separate playfield is clipped to chapter one. *@
+    <div class="ph-extended-hero">
+        @* data-theme-color matches the hero's --stake-bg-deep base so
+           publicHeader.js keeps the page theme color (and its 1px top surface)
+           dark instead of falling back to the cream storefront default. *@
+        <section class="ph-hero @(_isIntroHidden ? "ph-hero--intro-hidden" : string.Empty)" data-theme-color="#100D0B">
+        @* Commented out for now.
         <button class="ph-copy-toggle"
                 type="button"
                 aria-controls="pixel-home-intro"
@@ -32,6 +37,7 @@
                 @onclick="ToggleIntro">
             @(_isIntroHidden ? "SHOW INTRO" : "HIDE INTRO")
         </button>
+        *@
 
         @* Checkpoint switcher: swaps which set of trained weights is steering
            the crew, leaving the robots and coins exactly where they are so the
@@ -40,7 +46,8 @@
            only when the runtime reports it took over — with no JS (or reduced
            motion) the CSS choreography is running and there is no policy to
            switch. *@
-        @if (_simRunning)
+        @* Commented out for now. *@
+        @if (false && _simRunning)
         {
             <div class="ph-brain" role="group" aria-label="Robot policy training checkpoint">
                 <span class="ph-brain__label">CREW BRAIN</span>
@@ -90,8 +97,7 @@
             </h1>
             <p class="ph-lede">
                 Stake CAFE while it roasts, and watch a friendly pixel crew run
-                wallet-signed test missions on Sepolia. No autonomous agents —
-                every action is signed by you.
+                wallet-signed test missions on
             </p>
             <div class="ph-cta-row">
                 <a class="ph-cta" href="/staking">STAKE COFFEE</a>
@@ -100,10 +106,16 @@
         </div>
 
         @* The pixel-space scene itself (stars, planets, Andromeda, badges,
-           bags, coins, crew) is rendered by Components/Layout/GlobalScene.razor,
+           mugs, coins, crew) is rendered by Components/Layout/GlobalScene.razor,
            which keeps the exact DOM alive across routes; this hero only keeps
            the copy. *@
-    </section>
+        </section>
+
+        @* The product-discovery panel is intentionally its own component. It is
+           the extended hero's second screen; the original staking/procurement
+           panels remain intact below it as chapter three. *@
+        <ProductDiscovery />
+    </div>
 
     <section class="ph-panels">
         <div class="ph-panel">
@@ -167,9 +179,9 @@
     // tools/train_pixel_crew.mjs; see docs/pixel-crew-training.md.
     private static readonly Checkpoint[] Checkpoints =
     {
-        new("untrained", "GEN 0", "Never trained — 1.8 coins, 0.2 bags per run"),
-        new("early", "GEN 20", "Barely trained — 25.8 coins, 5.6 bags per run"),
-        new("trained", "GEN 300", "Fully trained — 27.4 coins, 5.0 bags per run"),
+        new("untrained", "GEN 0", "Never trained — 1.8 coins, 0.6 mugs per run"),
+        new("early", "GEN 20", "Barely trained — 25.2 coins per run"),
+        new("trained", "GEN 300", "Fully trained — 27.0 coins, 6.8 mugs per run"),
     };
 
     private Checkpoint CurrentCheckpoint =>

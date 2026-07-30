@@ -311,19 +311,118 @@ p {
 
 /* ── GlobalScene route switching ───────────────────────────────────────────
    The pixel-space background scenario (Components/Layout/GlobalScene.razor)
-   renders both of its fixed containers with data-permanent, so enhanced
-   navigation keeps the exact DOM nodes; only this <html> attribute changes
-   (App.razor renders it per route). The layers' hidden defaults and both
-   halves of the fade transitions live in GlobalScene.razor.css — these rules
-   only pick which layer is visible per route, and they must live here
-   because CSS isolation cannot select the <html> element. Cross-fade: the
-   outgoing design fades out over the preserved sky, then the incoming design
-   fades in one beat later. */
+   renders both containers with data-permanent, so enhanced navigation keeps
+   the exact DOM nodes; only this <html> attribute changes (App.razor renders
+   it per route). The layers' hidden defaults and both halves of the fade
+   transitions live in GlobalScene.razor.css — these rules pick the visible
+   layer and the home-only geometry because CSS isolation cannot select the
+   <html> element. Cross-fade: the outgoing design fades out over the preserved
+   sky, then the incoming design fades in one beat later. */
 html[data-scene-route="home"] .gs-layer--home,
 html[data-scene-route="staking"] .gs-layer--staking {
     opacity: 1;
     visibility: visible;
     transition: opacity 0.55s ease 0.15s, visibility 0s;
+}
+
+/* Extended homepage stage: the background is exactly the first two viewport
+   chapters and moves with normal document scroll. The simulated crew and its
+   pickups keep a separate one-screen coordinate space, clipped at the hero
+   boundary, so no robot can leak into ProductDiscovery. */
+html[data-scene-route="home"] .gs-scene {
+    bottom: auto;
+    height: 200dvh;
+    position: absolute;
+}
+
+html[data-scene-route="home"] .gs-crew,
+html[data-scene-route="home"] .gs-scene > .ph-scene {
+    bottom: auto;
+    height: 100dvh;
+}
+
+html[data-scene-route="home"] .gs-crew {
+    position: absolute;
+}
+
+/* Home-specific chain composition. The base positions are tuned for the
+   one-screen staking scene; on the two-screen homepage they bunched up behind
+   ProductDiscovery. Three marks now frame the hero and three occupy the clear
+   upper field of chapter two, where the lowered panel cannot cover them. */
+html[data-scene-route="home"] .gs-scene > .ph-chain--eth-a {
+    left: 5%;
+    opacity: 0.84;
+    right: auto;
+    top: 42%;
+    width: 3.15rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--sol-a {
+    left: 46%;
+    opacity: 0.84;
+    right: auto;
+    top: 8%;
+    width: 3.9rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-a {
+    left: auto;
+    opacity: 0.82;
+    right: 5%;
+    top: 28%;
+    width: 3.45rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--eth-b {
+    left: 5%;
+    opacity: 0.76;
+    right: auto;
+    top: 62%;
+    width: 2.8rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--sol-b {
+    left: auto;
+    opacity: 0.78;
+    right: 6%;
+    top: 54%;
+    width: 3.2rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-b {
+    left: 45%;
+    opacity: 0.76;
+    right: auto;
+    top: 51%;
+    width: 2.95rem;
+}
+
+@media (max-width: 700px) {
+    /* Keep the second set on the homepage: it is the only blockchain dressing
+       available after the first-screen crew and pickup field have scrolled out. */
+    html[data-scene-route="home"] .gs-scene > .ph-chain--eth-b,
+    html[data-scene-route="home"] .gs-scene > .ph-chain--sol-b,
+    html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-b {
+        display: block;
+    }
+
+    html[data-scene-route="home"] .gs-scene > .ph-chain--eth-b {
+        left: 6%;
+        top: 61%;
+        width: 2.35rem;
+    }
+
+    html[data-scene-route="home"] .gs-scene > .ph-chain--sol-b {
+        right: 7%;
+        top: 54%;
+        width: 2.65rem;
+    }
+
+    html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-b {
+        left: 45%;
+        top: 51.5%;
+        width: 2.45rem;
+    }
 }
 
 /* Pages outside the scenario (it is only rendered by StakingLayout at all)
