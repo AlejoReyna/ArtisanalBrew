@@ -28,7 +28,7 @@
         @* data-theme-color matches the hero's --stake-bg-deep base so
            publicHeader.js keeps the page theme color (and its 1px top surface)
            dark instead of falling back to the cream storefront default. *@
-        <section class="ph-hero @(_isIntroHidden ? "ph-hero--intro-hidden" : string.Empty)" data-theme-color="#100D0B">
+        <section class="ph-hero ph-hero--intro-pending @(_isIntroHidden ? "ph-hero--intro-hidden" : string.Empty)" data-theme-color="#100D0B">
         @* Commented out for now.
         <button class="ph-copy-toggle"
                 type="button"

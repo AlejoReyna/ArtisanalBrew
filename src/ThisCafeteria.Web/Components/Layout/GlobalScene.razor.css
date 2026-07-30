@@ -234,6 +234,44 @@
     z-index: 1;
 }
 
+/* The permanent scene paints before the page's interactive runtime is ready.
+   Keep the crew concealed until the runtime has written its real simulated
+   positions, otherwise the fallback anchors flash first and the robots appear
+   to jump to a second starting formation a moment later. The unit is the
+   reveal surface because the runtime owns the wrapper's transform. */
+.gs-crew--intro-pending .ph-scene__unit,
+.gs-crew--intro-active .ph-scene__roam:not(.is-intro-visible) .ph-scene__unit {
+    opacity: 0;
+    scale: 0.55;
+}
+
+.gs-crew--intro-active .ph-scene__unit {
+    transition:
+        opacity 180ms steps(3, end) var(--robot-intro-delay, 100ms),
+        scale 440ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--robot-intro-delay, 100ms);
+}
+
+.gs-crew--intro-active .ph-scene__roam.is-intro-visible .ph-scene__unit {
+    opacity: 1;
+    scale: 1;
+}
+
+.ph-scene__roam--scout {
+    --robot-intro-delay: 100ms;
+}
+
+.ph-scene__roam--buyer {
+    --robot-intro-delay: 250ms;
+}
+
+.ph-scene__roam--courier {
+    --robot-intro-delay: 400ms;
+}
+
+.ph-scene__roam--inspector {
+    --robot-intro-delay: 550ms;
+}
+
 /* While held, the crew runtime owns the robot's simulated position and takes
    no policy action for it; on drop the policy resumes from wherever it was
    left. (In the no-JS fallback below this class is simply never applied.) */
@@ -1272,5 +1310,12 @@
 
     .ph-scene__jetflame {
         visibility: hidden;
+    }
+
+    .gs-crew--intro-pending .ph-scene__unit,
+    .gs-crew--intro-active .ph-scene__unit {
+        opacity: 1;
+        scale: 1;
+        transition: none;
     }
 }

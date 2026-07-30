@@ -179,6 +179,13 @@
     width: 100%;
 }
 
+.procurement-lab--intro .pl-hero__copy,
+.procurement-lab--intro .pl-hero__action {
+    /* Keep the stacked copy and its action visibly above the captain while the
+       fixed bridge remains aligned with the cabin floor. */
+    translate: 0 -2rem;
+}
+
 /* ── Connected console ──────────────────────────────────────────────────────
    The console is a reading surface over the shared pixel sky, the same problem
    /staking's dashboard has: labels, addresses and hashes were sitting on
@@ -428,6 +435,30 @@
     font-size: 0.95rem;
 }
 
+@keyframes pl-hero-title-in {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 0.7em, 0) scale(0.94);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@keyframes pl-hero-copy-in {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 0.8rem, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
 .pl-hero__telemetry {
     display: flex;
     flex-wrap: wrap;
@@ -617,12 +648,23 @@
 /* Bridge crew: a frontal captain at the helm with four seated operators. The
    transparent group sits directly on the cabin artwork's perspective floor. */
 .pl-scene__bridge {
+    --captain-body-width: 14.5%;
     bottom: 0;
     left: 50%;
+    pointer-events: none;
     position: absolute;
     transform: translateX(-50%);
     width: 76%;
     z-index: 2;
+}
+
+/* The cabin frame is viewport-fixed, so the signed-out crew must use the same
+   coordinate space to stay planted on its floor while the page scrolls. The
+   connected console keeps the in-flow bridge positioning above. */
+.procurement-lab--intro .pl-hero__scene .pl-scene__bridge {
+    bottom: 13dvh;
+    position: fixed;
+    width: min(64.6vw, 51.75rem);
 }
 
 .pl-scene__bridge img {
@@ -661,21 +703,33 @@
     right: 18.5%;
 }
 
-.pl-scene__helm-motion {
-    animation: pl-captain-steer-poses 14s steps(1, end) infinite;
+.pl-scene__captain-body {
+    --captain-arms-offset-x: 0%;
+    --captain-arms-scale-x: 1.2;
+    --captain-pose: 50%;
+    animation: pl-captain-body-signal 14s steps(1, end) infinite;
     aspect-ratio: 1;
-    background-image: url("images/pl-captain-steering-poses.png");
-    background-position: 50% 0;
-    background-repeat: no-repeat;
-    background-size: 300% 100%;
-    filter: drop-shadow(0 2px 2px rgba(5, 3, 2, 0.55));
-    image-rendering: pixelated;
     left: 50%;
     position: absolute;
     top: 55.5%;
     transform: translate(-50%, -50%);
-    width: 14.5%;
+    width: var(--captain-body-width);
     z-index: 3;
+}
+
+.pl-scene__captain-arms {
+    background-image: url("images/pl-captain-steering-poses.png");
+    background-position: var(--captain-pose) 0;
+    background-repeat: no-repeat;
+    background-size: 300% 100%;
+    filter: drop-shadow(0 2px 2px rgba(5, 3, 2, 0.55));
+    image-rendering: pixelated;
+    inset: 0;
+    position: absolute;
+    /* The neutral sprite's left shoulder is 191.5px into its 724px frame.
+       Keep that good attachment fixed while each pose corrects its shoulder span. */
+    transform: translate3d(var(--captain-arms-offset-x), 0, 0) scaleX(var(--captain-arms-scale-x));
+    transform-origin: 26.45% 50%;
 }
 
 .pl-console__station .pl-scene__bridge {
@@ -687,10 +741,24 @@
     50% { opacity: 0.72; }
 }
 
-@keyframes pl-captain-steer-poses {
-    0%, 15%, 42%, 58%, 85%, 100% { background-position: 50% 0; }
-    22%, 34% { background-position: 0 0; }
-    65%, 77% { background-position: 100% 0; }
+@keyframes pl-captain-body-signal {
+    0%, 15%, 42%, 58%, 85%, 100% {
+        --captain-arms-offset-x: 0%;
+        --captain-arms-scale-x: 1.2;
+        --captain-pose: 50%;
+    }
+
+    22%, 34% {
+        --captain-arms-offset-x: -3.3%;
+        --captain-arms-scale-x: 1.1643;
+        --captain-pose: 0%;
+    }
+
+    65%, 77% {
+        --captain-arms-offset-x: 8.29%;
+        --captain-arms-scale-x: 1.1879;
+        --captain-pose: 100%;
+    }
 }
 
 /* ── Summary KPI row ── */
@@ -1216,10 +1284,15 @@
     .pl-btn:hover { transform: none; }
     .projection-empty__pulse { animation-duration: 1.6s; }
 
-    .pl-scene__bridge-glow,
-    .pl-scene__helm-motion {
+    .pl-scene__bridge-glow {
         animation: none;
-        background-position: 50% 0;
+    }
+
+    .pl-scene__captain-body {
+        --captain-arms-offset-x: 0%;
+        --captain-arms-scale-x: 1.2;
+        --captain-pose: 50%;
+        animation: none;
     }
 
     .pl-cabin__visitor {
@@ -1247,7 +1320,27 @@
     }
 
     .pl-hero h1 {
+        animation: pl-hero-title-in 520ms cubic-bezier(0.22, 0.78, 0.24, 1) 150ms both;
         font-size: clamp(1.25rem, 4.5vw, 2.15rem);
+    }
+
+    .procurement-lab--intro .pl-hero__copy,
+    .procurement-lab--intro .pl-hero__action {
+        /* The bridge occupies the lower deck on compact screens. Ease the
+           content toward the visual center without crowding the larger crew. */
+        translate: 0 -0.5rem;
+    }
+
+    .procurement-lab--intro .pl-hero__protocols {
+        animation: pl-hero-copy-in 420ms cubic-bezier(0.22, 0.78, 0.24, 1) 40ms both;
+    }
+
+    .procurement-lab--intro .pl-hero__lede {
+        animation: pl-hero-copy-in 420ms cubic-bezier(0.22, 0.78, 0.24, 1) 480ms both;
+    }
+
+    .procurement-lab--intro .pl-hero__action {
+        animation: pl-hero-copy-in 420ms cubic-bezier(0.22, 0.78, 0.24, 1) 650ms both;
     }
 
     .pl-hero__scene {
@@ -1256,6 +1349,10 @@
 
     .pl-hero__scene .pl-scene__bridge {
         width: 86%;
+    }
+
+    .procurement-lab--intro .pl-hero__scene .pl-scene__bridge {
+        width: min(80vw, 40rem);
     }
 }
 
@@ -1317,8 +1414,11 @@
         display: none;
     }
 
-    .pl-hero__scene .pl-scene__bridge {
-        width: 114%;
+    .procurement-lab--intro .pl-hero__scene .pl-scene__bridge {
+        /* Keep the desktop floor clearance; only the crew's width changes for
+           the narrower portrait composition. This is exactly 130% of the
+           previous mobile bridge width. */
+        width: min(calc(148.2vw - 3.64rem), 55.25rem);
     }
 
     .pl-hero__action {
@@ -1328,5 +1428,14 @@
     .pl-cta {
         min-height: 3rem;
         padding-inline: 1.6rem;
+    }
+}
+
+@media (max-width: 860px) and (prefers-reduced-motion: reduce) {
+    .procurement-lab--intro .pl-hero__protocols,
+    .procurement-lab--intro .pl-hero h1,
+    .procurement-lab--intro .pl-hero__lede,
+    .procurement-lab--intro .pl-hero__action {
+        animation: none;
     }
 }
