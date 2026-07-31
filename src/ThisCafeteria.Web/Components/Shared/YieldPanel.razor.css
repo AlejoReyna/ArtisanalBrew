@@ -70,14 +70,11 @@
 .staking-intro__subtitle {
     color: var(--stake-muted);
     font-family: var(--crypto-mono);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    line-height: 1.55;
+    font-size: 0.95rem;
+    line-height: 1.6;
     margin: 0.7rem 0 0;
     max-width: 34rem;
     text-align: center;
-    text-transform: uppercase;
 }
 
 .staking-intro__coins {
@@ -276,13 +273,10 @@
 .staking-intro__faucet-title {
     color: var(--stake-muted);
     font-family: var(--crypto-mono);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    line-height: 1.5;
+    font-size: 0.95rem;
+    line-height: 1.6;
     margin: 0;
     text-align: center;
-    text-transform: uppercase;
 }
 
 .staking-intro__faucets {

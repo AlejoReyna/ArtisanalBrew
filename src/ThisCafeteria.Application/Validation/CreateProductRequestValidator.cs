@@ -13,5 +13,8 @@ public sealed class CreateProductRequestValidator : AbstractValidator<CreateProd
         RuleFor(x => x.StockQuantity).GreaterThanOrEqualTo(0);
         RuleFor(x => x.ImageUrl).MaximumLength(2_048);
         RuleFor(x => x.Category).IsInEnum();
+        RuleFor(x => x.Origin).MaximumLength(120);
+        RuleFor(x => x.RoastLevel).IsInEnum().When(x => x.RoastLevel.HasValue);
+        RuleFor(x => x.Process).IsInEnum().When(x => x.Process.HasValue);
     }
 }

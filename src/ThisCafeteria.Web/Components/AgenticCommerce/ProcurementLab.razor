@@ -48,7 +48,7 @@
            told by the robots and the live panels below — no workflow bar. *@
         <section class="pl-hero" aria-labelledby="pl-hero-title">
             <div class="pl-hero__copy">
-                <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
+                <p class="pl-hero__protocols pl-hero__protocols--heading" id="pl-hero-title" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
                     <span aria-hidden="true">
                         @{ var protoIdx = 0; }
                         @foreach (var word in ProtocolsText.Split(' '))
@@ -63,7 +63,6 @@
                         }
                     </span>
                 </p>
-                <h1 id="pl-hero-title">Welcome, x402 protocol</h1>
                 <p class="pl-hero__lede">
                     Explore agent-led procurement, scoped permissions, and escrowed payments
                     across the selected chain.

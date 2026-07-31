@@ -10,16 +10,16 @@ public sealed class DatabaseSeeder(AppDbContext dbContext, IOptions<CatalogOptio
 {
     private static readonly IReadOnlyList<CatalogSeedProduct> CatalogProducts =
     [
-        new("Ethiopia Yirgacheffe", ProductCategory.Beans, 29.60m),
-        new("Colombia Huila", ProductCategory.Beans, 28.20m),
-        new("Guatemala Antigua", ProductCategory.Beans, 27.40m),
-        new("Kenya Nyeri AA", ProductCategory.Beans, 31.20m),
-        new("Costa Rica Tarrazu", ProductCategory.Beans, 30.40m),
-        new("Brazil Cerrado", ProductCategory.Beans, 24.80m),
-        new("Rwanda Huye Mountain", ProductCategory.Beans, 30.80m),
-        new("Peru Cajamarca", ProductCategory.Beans, 26.40m),
-        new("Mexico Chiapas", ProductCategory.Beans, 25.20m),
-        new("Panama Boquete", ProductCategory.Beans, 32.00m),
+        new("Ethiopia Yirgacheffe", ProductCategory.Beans, 29.60m, "Ethiopia", RoastLevel.Light, CoffeeProcess.Washed),
+        new("Colombia Huila", ProductCategory.Beans, 28.20m, "Colombia", RoastLevel.Medium, CoffeeProcess.Washed),
+        new("Guatemala Antigua", ProductCategory.Beans, 27.40m, "Guatemala", RoastLevel.Medium, CoffeeProcess.Washed),
+        new("Kenya Nyeri AA", ProductCategory.Beans, 31.20m, "Kenya", RoastLevel.Medium, CoffeeProcess.Washed),
+        new("Costa Rica Tarrazu", ProductCategory.Beans, 30.40m, "Costa Rica", RoastLevel.Medium, CoffeeProcess.Honey),
+        new("Brazil Cerrado", ProductCategory.Beans, 24.80m, "Brazil", RoastLevel.Dark, CoffeeProcess.Natural),
+        new("Rwanda Huye Mountain", ProductCategory.Beans, 30.80m, "Rwanda", RoastLevel.Light, CoffeeProcess.Washed),
+        new("Peru Cajamarca", ProductCategory.Beans, 26.40m, "Peru", RoastLevel.Medium, CoffeeProcess.Washed),
+        new("Mexico Chiapas", ProductCategory.Beans, 25.20m, "Mexico", RoastLevel.Medium, CoffeeProcess.Natural),
+        new("Panama Boquete", ProductCategory.Beans, 32.00m, "Panama", RoastLevel.Light, CoffeeProcess.Honey),
         new("Ceramic Pour-Over Dripper", ProductCategory.BrewingEquipment, 58.00m),
         new("Gooseneck Kettle", ProductCategory.BrewingEquipment, 96.00m),
         new("Burr Hand Grinder", ProductCategory.BrewingEquipment, 128.00m),
@@ -75,6 +75,9 @@ public sealed class DatabaseSeeder(AppDbContext dbContext, IOptions<CatalogOptio
                 Price = seed.Price,
                 StockQuantity = 100,
                 Category = seed.Category,
+                Origin = seed.Origin,
+                RoastLevel = seed.RoastLevel,
+                Process = seed.Process,
                 IsActive = true,
                 CreatedAt = createdAt
             });
@@ -89,5 +92,11 @@ public sealed class DatabaseSeeder(AppDbContext dbContext, IOptions<CatalogOptio
     private static string SlugFor(string name) =>
         string.Join('-', name.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
-    private sealed record CatalogSeedProduct(string Name, ProductCategory Category, decimal Price);
+    private sealed record CatalogSeedProduct(
+        string Name,
+        ProductCategory Category,
+        decimal Price,
+        string? Origin = null,
+        RoastLevel? RoastLevel = null,
+        CoffeeProcess? Process = null);
 }

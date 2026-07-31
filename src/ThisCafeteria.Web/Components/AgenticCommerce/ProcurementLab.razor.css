@@ -399,6 +399,12 @@
     letter-spacing: 0.06em;
 }
 
+.pl-hero__protocols--heading {
+    font-size: clamp(1.4rem, 3vw, 2.45rem);
+    line-height: 1.3;
+    margin: 0 0 1rem;
+}
+
 .pl-proto__word {
     display: inline-block;
     white-space: nowrap;
@@ -1324,6 +1330,14 @@
         font-size: clamp(1.25rem, 4.5vw, 2.15rem);
     }
 
+    /* Now the primary hero heading (see pl-hero__protocols--heading), so it
+       needs to read as one rather than shrinking below the lede beneath it.
+       Sized to stay on a single row down to the narrowest common phones. */
+    .pl-hero__protocols--heading {
+        font-size: clamp(0.85rem, 2.6vw, 1.4rem);
+        white-space: nowrap;
+    }
+
     .procurement-lab--intro .pl-hero__copy,
     .procurement-lab--intro .pl-hero__action {
         /* The bridge occupies the lower deck on compact screens. Ease the
@@ -1378,9 +1392,15 @@
         line-height: 1.4;
     }
 
-    .pl-hero__protocols {
-        font-size: clamp(0.43rem, 2vw, 0.52rem);
-        line-height: 2.1;
+    .pl-hero__protocols--heading {
+        font-size: clamp(0.37rem, 1.85vw, 0.78rem);
+        letter-spacing: 0.01em;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .pl-hero__protocols--heading .pl-proto__word + .pl-proto__word {
+        margin-left: 0.3em;
     }
 
     .pl-hero__lede {

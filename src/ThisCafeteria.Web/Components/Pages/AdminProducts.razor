@@ -58,6 +58,32 @@
                 <label for="product-image">Image URL</label>
                 <InputText id="product-image" @bind-Value="_form.ImageUrl" maxlength="2048" />
 
+                <label for="product-origin">Origin</label>
+                <InputText id="product-origin" @bind-Value="_form.Origin" maxlength="120" placeholder="e.g. Ethiopia" />
+
+                <div class="admin-product-form__row">
+                    <div>
+                        <label for="product-roast">Roast level</label>
+                        <InputSelect id="product-roast" @bind-Value="_form.RoastLevel">
+                            <option value="">None</option>
+                            @foreach (var roastLevel in Enum.GetValues<RoastLevel>())
+                            {
+                                <option value="@roastLevel">@roastLevel</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div>
+                        <label for="product-process">Process</label>
+                        <InputSelect id="product-process" @bind-Value="_form.Process">
+                            <option value="">None</option>
+                            @foreach (var process in Enum.GetValues<CoffeeProcess>())
+                            {
+                                <option value="@process">@process</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
                 @if (_messages.Count > 0)
                 {
                     <ul class="admin-product-form__messages">
@@ -348,7 +374,10 @@
                 _form.Price,
                 _form.StockQuantity,
                 _form.ImageUrl,
-                _form.Category));
+                _form.Category,
+                _form.Origin,
+                _form.RoastLevel,
+                _form.Process));
 
             _form.Reset();
             await LoadProductsAsync();
@@ -383,6 +412,9 @@
                     _form.StockQuantity,
                     _form.ImageUrl,
                     _form.Category,
+                    _form.Origin,
+                    _form.RoastLevel,
+                    _form.Process,
                     _editingProductIsActive));
 
             if (updated is null)
@@ -439,6 +471,9 @@
                     product.StockQuantity,
                     product.ImageUrl,
                     product.Category,
+                    product.Origin,
+                    product.RoastLevel,
+                    product.Process,
                     !product.IsActive));
 
             if (_editingProductId == product.Id)
@@ -511,6 +546,9 @@
         public int StockQuantity { get; set; } = 1;
         public string? ImageUrl { get; set; }
         public ProductCategory Category { get; set; } = ProductCategory.Beans;
+        public string? Origin { get; set; }
+        public RoastLevel? RoastLevel { get; set; }
+        public CoffeeProcess? Process { get; set; }
 
         public void Reset()
         {
@@ -520,6 +558,9 @@
             StockQuantity = 1;
             ImageUrl = null;
             Category = ProductCategory.Beans;
+            Origin = null;
+            RoastLevel = null;
+            Process = null;
         }
 
         public void Load(ProductDto product)
@@ -530,6 +571,9 @@
             StockQuantity = product.StockQuantity;
             ImageUrl = product.ImageUrl;
             Category = product.Category;
+            Origin = product.Origin;
+            RoastLevel = product.RoastLevel;
+            Process = product.Process;
         }
     }
 }

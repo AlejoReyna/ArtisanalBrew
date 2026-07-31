@@ -16,5 +16,8 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(product => product.Price).HasPrecision(18, 2);
         builder.Property(product => product.ImageUrl).HasMaxLength(2_048);
         builder.Property(product => product.Category).HasConversion<string>().HasMaxLength(80);
+        builder.Property(product => product.Origin).HasMaxLength(120);
+        builder.Property(product => product.RoastLevel).HasConversion<string>().HasMaxLength(40);
+        builder.Property(product => product.Process).HasConversion<string>().HasMaxLength(40);
     }
 }
