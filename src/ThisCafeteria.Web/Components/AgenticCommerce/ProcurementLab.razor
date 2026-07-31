@@ -24,7 +24,18 @@
    entire screen down and made a working tool read as a landing page. The hero
    is now the signed-out state only; a connected wallet gets a console header
    (command bar, compact title, the station demoted to a status strip, and the
-   KPI rail) and the panels start near the fold. *@
+   KPI rail) and the panels start near the fold.
+
+   Both states are organised around one question — "what do I do now?". The
+   page used to answer it nowhere: it was named after protocol layers (authority
+   / identity / escrow projection), its only button said "create test mission"
+   without saying what a mission is, and its empty states reported absence
+   instead of offering the next move. So the spine is now the four-step escrow
+   lifecycle, told in plain words and pixel actors (buyer → vault → courier →
+   inspector): the hero teaches it before asking for a wallet, .pl-next names
+   the single next action for the connected wallet, and .pl-flow keeps the map
+   on screen with live counts. Protocol names survive as kickers and fine
+   print — they are the credential, not the instruction. *@
 <div class="procurement-lab @(IsConnected ? "procurement-lab--console" : "procurement-lab--intro")" data-page-theme-color="#100D0B">
     @* The lab is the ship around the shared GlobalScene, not a replacement for
        it. Transparent observation windows keep the same stars, planets,
@@ -43,12 +54,12 @@
   <div class="procurement-lab__inner">
     @if (!IsConnected)
     {
-        @* Hero: centered editorial copy, robot escrow station, connect action.
-           Decorative pixel work is hidden from screen readers; the lifecycle is
-           told by the robots and the live panels below — no workflow bar. *@
+        @* Hero: what this place does, in one sentence a first-time visitor can
+           act on, then the four steps, then the connect action. The protocol
+           string used to BE the headline; it is a kicker now. *@
         <section class="pl-hero" aria-labelledby="pl-hero-title">
             <div class="pl-hero__copy">
-                <p class="pl-hero__protocols pl-hero__protocols--heading" id="pl-hero-title" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
+                <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
                     <span aria-hidden="true">
                         @{ var protoIdx = 0; }
                         @foreach (var word in ProtocolsText.Split(' '))
@@ -63,16 +74,24 @@
                         }
                     </span>
                 </p>
+                <h1 id="pl-hero-title">Let a robot do the buying.</h1>
                 <p class="pl-hero__lede">
-                    Explore agent-led procurement, scoped permissions, and escrowed payments
-                    across the selected chain.
+                    You post a job, the payment waits in escrow, and it is released only once
+                    the delivery is signed off. Four steps, on @SelectedChainAccessor.SelectedChain.ShortName,
+                    with test funds.
                 </p>
             </div>
 
+            @FlowTrack
+
             <div class="pl-hero__action">
                 <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                    @(_isConnecting ? "Connecting…" : "Connect Wallet")
+                    @(_isConnecting ? "Connecting…" : "Connect wallet to start")
                 </button>
+                <p class="pl-hero__action-note">
+                    Connecting only proves the address is yours. Nothing is signed, spent or
+                    approved until you press a button that says so.
+                </p>
                 @if (!string.IsNullOrWhiteSpace(_connectError))
                 {
                     <p class="pl-hero__connect-error" role="alert">@_connectError</p>
@@ -86,22 +105,12 @@
     }
     else
     {
-        @* Command bar mirrors /staking's: which chain and wallet you are acting
-           as, and the way back out, on one line above the work. *@
+        @* Just the way back out. The chain name and wallet address used to open
+           the console on their own line, but the site header already names the
+           chain, the lede names it again, and "Signed in as" in the rail below
+           carries the address — three restatements of context nobody asked for
+           above the work itself. *@
         <header class="pl-commandbar">
-            <div class="pl-commandbar__id">
-                <span class="pl-commandbar__chain">@SelectedChainAccessor.SelectedChain.DisplayName</span>
-                <button type="button"
-                        class="pl-copy pl-commandbar__wallet @(_copiedKey == "commandbar-wallet" ? "is-copied" : null)"
-                        title="Copy @_walletAddress"
-                        @onclick='() => Copy("commandbar-wallet", _walletAddress)'>
-                    @ShortAddress(_walletAddress)<span class="pl-copy__flag">Copied</span>
-                </button>
-                @if (_activeEpoch is not null)
-                {
-                    <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>Agent authorised</span>
-                }
-            </div>
             <nav class="pl-commandbar__nav" aria-label="Account">
                 <a href="staking">Yield</a>
                 <a href="profile">Profile <span aria-hidden="true">↗</span></a>
@@ -110,17 +119,8 @@
 
         <section class="pl-console" aria-labelledby="pl-console-title">
             <div class="pl-console__copy">
-                <p class="panel-kicker">Agentic commerce · ERC-4337 · ERC-8004</p>
                 <h1 id="pl-console-title">Procurement lab.</h1>
-                <p class="pl-console__lede">
-                    Registered agents, the permissions they hold, and every escrowed job
-                    on @SelectedChainAccessor.SelectedChain.ShortName.
-                </p>
-                <div class="pl-console__actions">
-                    <button type="button" class="pl-cta" @onclick="CreateTestJob">
-                        Create test mission — wallet signed
-                    </button>
-                </div>
+                <p class="pl-console__lede">Escrowed missions on @SelectedChainAccessor.SelectedChain.ShortName. Test funds only.</p>
             </div>
 
             @* The station is not decoration here: the buyer reads the installed
@@ -131,208 +131,325 @@
                 @StationScene
             </div>
         </section>
-
-        <dl class="procurement-lab__summary" aria-label="Chain projection summary">
-            <div class="state-metric state-metric--agents">
-                <dd class="state-metric__value">@(Agents?.Count ?? 0)</dd>
-                <dt class="state-metric__label">Agents indexed</dt>
-            </div>
-            <div class="state-metric state-metric--jobs">
-                <dd class="state-metric__value">@(Jobs?.Count ?? 0)</dd>
-                <dt class="state-metric__label">My missions</dt>
-            </div>
-            <div class="state-metric state-metric--terminal">
-                <dd class="state-metric__value">@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</dd>
-                <dt class="state-metric__label">Settled</dt>
-            </div>
-            <div class="state-metric state-metric--wallet">
-                <dd class="state-metric__value">@ShortAddress(_walletAddress)</dd>
-                <dt class="state-metric__label">Acting as</dt>
-            </div>
-        </dl>
     }
 
     @if (IsConnected && _loading)
     {
-        <section class="projection-empty projection-empty--loading" role="status"><div class="projection-empty__pulse"></div><p>Loading the selected chain projection…</p></section>
+        <section class="projection-empty projection-empty--loading" role="status"><div class="projection-empty__pulse"></div><p>Loading…</p></section>
     }
     else if (IsConnected)
     {
-        <section class="projection-panel projection-panel--permission">
-            <div class="projection-panel__heading">
-                <div><span class="panel-kicker">Authority layer · ERC-4337 session keys</span><h2>Agent permissions</h2></div>
-                @if (_activeEpoch is not null)
+        @* The whole point of the redesign: exactly one recommended action,
+           named in plain words, with what it will do and what it will cost
+           spelled out before the wallet opens. Every branch below is one state
+           of the escrow lifecycle. *@
+        <section class="pl-next @(_isWorking ? "is-working" : null)" aria-labelledby="pl-next-title">
+            @{
+                var pending = NextActionableJob;
+                // The step you are ABOUT to take: one past where the mission currently sits.
+                // With no missions at all, that is step 1 — posting one. With missions that are
+                // all waiting on someone else, no step is yours, so the badge is dropped.
+                var step = pending is not null ? StageNumber(pending.Status) + 1
+                    : Jobs?.Any(job => !IsTerminal(job.Status)) == true ? 0
+                    : 1;
+            }
+            <div class="pl-next__actor">
+                <span class="pl-sprite @NextSpriteClass" aria-hidden="true"></span>
+                @if (step > 0)
                 {
-                    <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>Permission available</span>
+                    <span class="pl-next__step">Step @step of 4</span>
                 }
             </div>
 
-            @if (!_modularStackConfigured)
-            {
-                <p class="panel-note">
-                    @SelectedChainAccessor.SelectedChain.ShortName has no modular (session-key capable) account stack deployed,
-                    so agent-delegated funding is unavailable here. Funding falls back to signing with your own wallet.
-                </p>
-            }
-            else if (_modularAccountAddress is null)
-            {
-                <div class="panel-empty">
-                    <span class="panel-empty__icon">⬡</span>
-                    <p class="panel-empty__lede">No modular account registered on this chain.</p>
-                    <p class="panel-empty__hint">Register one from your profile to let a scoped agent fund jobs on your behalf.</p>
-                </div>
-            }
-            else if (_activeEpoch is null)
-            {
-                <div class="panel-empty">
-                    <span class="panel-empty__icon">◇</span>
-                    <p class="panel-empty__lede">No agent permission is installed.</p>
-                    <p class="panel-empty__hint">
-                        Your modular account @ShortAddress(_modularAccountAddress) exists, but has granted no agent any authority.
-                        Every action below is signed by your own wallet.
-                    </p>
-                </div>
-            }
-            else
-            {
-                <dl class="job-card__roles">
-                    <div><dt>Delegating account</dt><dd>@RoleAddress(-1, "delegator", _activeEpoch.DelegatorAddress)</dd></div>
-                    <div><dt>Authorised agent</dt><dd>@RoleAddress(-1, "agent", _activeEpoch.AgentAddress)</dd></div>
-                    <div><dt>Expires</dt><dd>@_activeEpoch.ValidBeforeUtc.ToLocalTime().ToString("MMM d, HH:mm")</dd></div>
-                    <div><dt>Scoped calls</dt><dd>@_activeEpoch.Grants.Count</dd></div>
-                </dl>
-                <p class="panel-note">
-                    The agent may make exactly these calls and nothing else — target, selector, and calldata are fixed on-chain,
-                    each usable once. Gas may be sponsored; that never widens what the agent can spend.
-                </p>
-                <div class="job-card__actions">
-                    <button class="pl-btn pl-btn--sm pl-btn--reject" disabled="@_isRevoking" @onclick="RevokeAgentPermissionAsync">
-                        @(_isRevoking ? "Revoking…" : "Revoke agent permission")
-                    </button>
-                </div>
-                @if (!string.IsNullOrWhiteSpace(_permissionNotice))
+            <div class="pl-next__copy">
+                @if (pending is null && Jobs is { Count: > 0 } && Jobs.All(job => IsTerminal(job.Status)))
                 {
-                    <p class="panel-note">@_permissionNotice</p>
+                    <h2 id="pl-next-title">All settled.</h2>
+                    <p class="pl-next__body">Nothing is waiting on you.</p>
+                    <div class="pl-next__actions">
+                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="CreateTestJob">
+                            @(_isWorking ? "Waiting for your wallet…" : "Create another mission")
+                        </button>
+                    </div>
                 }
-            }
+                else if (pending is null && Jobs is { Count: > 0 })
+                {
+                    var waiting = Jobs.First(job => !IsTerminal(job.Status));
+                    <h2 id="pl-next-title">Waiting on the @CounterpartyRole(waiting).</h2>
+                    <p class="pl-next__body">Mission @MissionLabel(waiting) comes back to you when they act.</p>
+                    <div class="pl-next__actions">
+                        <button type="button" class="pl-btn pl-btn--sm pl-btn--ghost" disabled="@_isWorking" @onclick="ReloadJobs">Refresh</button>
+                    </div>
+                }
+                else if (pending is null)
+                {
+                    <h2 id="pl-next-title">Create your first mission.</h2>
+                    <p class="pl-next__body">One signature posts the job. You play all three roles, so you can walk the four steps alone.</p>
+                    <div class="pl-next__actions">
+                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="CreateTestJob">
+                            @(_isWorking ? "Waiting for your wallet…" : "Create a test mission")
+                        </button>
+                    </div>
+                    <p class="pl-next__note">Test network — no real money.</p>
+                }
+                else if (pending.Status == "Open")
+                {
+                    <h2 id="pl-next-title">Fund mission @MissionLabel(pending).</h2>
+                    <p class="pl-next__body">10 test tokens go into escrow. Only the inspector's decision moves them out.</p>
+                    <div class="pl-next__actions">
+                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="() => FundJob(pending)">
+                            @(_isWorking ? "Waiting for your wallet…" : "Fund the escrow")
+                        </button>
+                    </div>
+                    <p class="pl-next__note">Two signatures.</p>
+                }
+                else if (pending.Status == "Funded")
+                {
+                    <h2 id="pl-next-title">Deliver mission @MissionLabel(pending).</h2>
+                    <p class="pl-next__body">You are the courier. Filing the proof hands the decision to the inspector.</p>
+                    <div class="pl-next__actions">
+                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="() => SubmitJob(pending)">
+                            @(_isWorking ? "Waiting for your wallet…" : "File the proof")
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <h2 id="pl-next-title">Review mission @MissionLabel(pending).</h2>
+                    <p class="pl-next__body">You are the inspector. Approve pays the courier; reject refunds the buyer.</p>
+                    <div class="pl-next__actions">
+                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="() => CompleteJob(pending)">
+                            @(_isWorking ? "Waiting for your wallet…" : "Approve & pay")
+                        </button>
+                        <button type="button" class="pl-btn pl-btn--sm pl-btn--reject" disabled="@_isWorking" @onclick="() => RejectJob(pending)">Reject</button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_activityNote))
+                {
+                    <p class="pl-next__activity" role="status">@_activityNote</p>
+                }
+            </div>
         </section>
 
-        <div class="procurement-lab__grid">
-            <section class="projection-panel">
-                <div class="projection-panel__heading"><div><span class="panel-kicker">Identity layer</span><h2>Agent directory</h2></div><span class="panel-count">@(Agents?.Count ?? 0)</span></div>
-            @if (Agents == null)
+        @* ── Dashboard ──────────────────────────────────────────────────
+           A board, not a briefing. The rail counts what sits on each step,
+           the mission list is one row per mission with a pixel progress bar,
+           and everything that used to be prose — role addresses, hashes,
+           panel introductions — is either a glyph or folded into "details".
+           Nothing here is a paragraph you have to read to act. *@
+        <ol class="pl-rail" aria-label="Missions by step">
+            @foreach (var railStep in Lifecycle)
             {
-                <p class="panel-note">Loading agents…</p>
+                var here = Jobs?.Count(job => StageKey(job.Status) == railStep.Key) ?? 0;
+                <li class="pl-rail__step @(here > 0 ? "is-occupied" : null)">
+                    <span class="pl-sprite pl-sprite--@railStep.Sprite pl-sprite--sm" aria-hidden="true"></span>
+                    <span class="pl-rail__label">@railStep.Number. @railStep.Label</span>
+                    <span class="pl-rail__count">@here</span>
+                </li>
             }
-            else if (!Agents.Any())
-            {
-                <div class="panel-empty">
-                    <span class="panel-empty__icon">⬡</span>
-                    <p class="panel-empty__lede">No agents indexed yet.</p>
-                    <p class="panel-empty__hint">Run the seeder or register an agent through the escrow contract to populate the identity layer.</p>
-                </div>
-            }
-            else
-            {
-                <ul class="agent-list">
-                    @foreach (var agent in Agents)
-                    {
-                        <li class="agent-list__item">
-                            <span class="agent-avatar" style="--pl-hue:@(agent.AgentId * 47 % 360)">@(agent.AgentId % 100)</span>
-                            <div class="agent-list__id">
-                                <strong>Agent #@agent.AgentId</strong>
-                                <button type="button" class="pl-copy agent-list__addr @(_copiedKey == $"agent-{agent.AgentId}" ? "is-copied" : null)" title="Copy @agent.OwnerAddress" @onclick='() => Copy($"agent-{agent.AgentId}", agent.OwnerAddress)'>@ShortAddress(agent.OwnerAddress)<span class="pl-copy__flag">Copied</span></button>
-                            </div>
-                            <span class="state-pill @(agent.IsActive ? "state-pill--active" : "state-pill--idle")">
-                                <span class="state-pill__dot"></span>@(agent.IsActive ? "Active" : "Inactive")
-                            </span>
-                        </li>
-                    }
-                </ul>
-            }
-            </section>
+        </ol>
 
-            <section class="projection-panel projection-panel--jobs">
-                <div class="projection-panel__heading"><div><span class="panel-kicker">Escrow projection</span><h2>My procurement state</h2></div><span class="panel-count">@(Jobs?.Count ?? 0)</span></div>
-            @if (Jobs == null)
+        <section class="pl-panel pl-panel--board" aria-labelledby="pl-board-title">
+            <div class="pl-panel__bar">
+                <h2 id="pl-board-title">Missions</h2>
+                <div class="pl-panel__tools">
+                    <span class="pl-panel__count">@(Jobs?.Count ?? 0)</span>
+                    <button type="button" class="pl-btn pl-btn--sm pl-btn--ghost" disabled="@_isWorking" @onclick="ReloadJobs">Refresh</button>
+                </div>
+            </div>
+
+            @if (Jobs is null)
             {
-                <p class="panel-note">Loading jobs…</p>
+                <p class="pl-panel__empty">Loading…</p>
             }
             else if (!Jobs.Any())
             {
-                <div class="panel-empty">
-                    <span class="panel-empty__icon">◇</span>
-                    <p class="panel-empty__lede">No missions on record for this wallet.</p>
-                    <p class="panel-empty__hint">Create a test mission above to watch it move through the open → funded → submitted → settled escrow lifecycle.</p>
-                </div>
+                <p class="pl-panel__empty">
+                    <span class="pl-sprite pl-sprite--buyer pl-sprite--sm" aria-hidden="true"></span>
+                    None yet.
+                </p>
             }
             else
             {
-                <div class="job-list">
+                <div class="mission-list">
                     @foreach (var job in Jobs)
                     {
-                        <article class="job-card">
-                            <div class="job-card__topline"><div><span class="job-card__id">JOB @job.JobId.ToString("D4")</span><h3>@StatusTitle(job.Status)</h3></div><span class="state-pill @StatusClass(job.Status)">@job.Status</span></div>
-                            <div class="job-card__meta"><span>Budget <strong>@job.Budget.ToString("0.##")</strong></span><span>Chain <strong>@job.ChainKey</strong></span><span>Updated <strong>@job.UpdatedAtUtc.ToLocalTime().ToString("MMM d, HH:mm")</strong></span></div>
-                            <div class="job-flow" aria-label="Job @job.JobId lifecycle">
-                                @foreach (var step in LifecycleSteps)
-                                {
-                                    var state = StepState(job.Status, step.Key);
-                                    <div class="job-flow__step @state">
-                                        <span class="job-flow__marker">@(state == "complete" ? "✓" : step.Number.ToString())</span>
-                                        <span class="job-flow__label">@step.Label</span>
-                                    </div>
-                                }
-                            </div>
-                            <dl class="job-card__roles">
-                                <div><dt>Client</dt><dd>@RoleAddress(job.JobId, "client", job.ClientAddress)</dd></div>
-                                <div><dt>Provider</dt><dd>@RoleAddress(job.JobId, "provider", job.ProviderAddress)</dd></div>
-                                <div><dt>Evaluator</dt><dd>@RoleAddress(job.JobId, "evaluator", job.EvaluatorAddress)</dd></div>
-                            </dl>
-                            <div class="job-card__commitment">
-                                <span>Commitment</span>
-                                @if (string.IsNullOrWhiteSpace(job.DescriptionCommitment))
-                                {
-                                    <code>not recorded</code>
-                                }
-                                else
-                                {
-                                    <button type="button" class="pl-copy job-card__commitment-code @(_copiedKey == $"job-{job.JobId}-commit" ? "is-copied" : null)" title="Copy @job.DescriptionCommitment" @onclick='() => Copy($"job-{job.JobId}-commit", job.DescriptionCommitment)'><code>@ShortCommitment(job.DescriptionCommitment)</code><span class="pl-copy__flag">Copied</span></button>
-                                }
-                            </div>
-                        
-                            <div class="job-card__actions">
-                                @if (job.Status == "Open" && string.Equals(_walletAddress, job.ClientAddress, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <button class="pl-btn pl-btn--sm pl-btn--fund" @onclick="() => FundJob(job)">Fund job</button>
-                                    @if (CanAgentFund(job))
-                                    {
-                                        <span class="state-pill state-pill--active" title="Agent @_activeEpoch!.AgentAddress holds a recorded permission scoped to this escrow">
-                                            <span class="state-pill__dot"></span>Permission recorded for this escrow
-                                        </span>
-                                    }
-                                    else if (_activeEpoch is not null)
-                                    {
-                                        <span class="state-pill state-pill--idle" title="The installed permission is not scoped to this job">
-                                            <span class="state-pill__dot"></span>Wallet-signed only
-                                        </span>
-                                    }
-                                }
-                                @if (job.Status == "Funded" && string.Equals(_walletAddress, job.ProviderAddress, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <button class="pl-btn pl-btn--sm pl-btn--submit" @onclick="() => SubmitJob(job)">Submit evidence</button>
-                                }
-                                @if (job.Status == "Submitted" && string.Equals(_walletAddress, job.EvaluatorAddress, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <button class="pl-btn pl-btn--sm pl-btn--complete" @onclick="() => CompleteJob(job)">Complete job</button>
-                                    <button class="pl-btn pl-btn--sm pl-btn--reject" @onclick="() => RejectJob(job)">Reject job</button>
-                                }
+                        <article class="mission @(IsMyTurn(job) ? "mission--mine" : null)">
+                            <span class="pl-sprite pl-sprite--@StageSprite(job.Status)" aria-hidden="true"></span>
+
+                            <div class="mission__top">
+                                <span class="mission__num">#@job.JobId.ToString("D4")</span>
+                                <span class="mission__state @StatusClass(job.Status)">@ShortStatus(job.Status)</span>
+                                <span class="mission__amount" title="Held in escrow">
+                                    <img src="images/coffee-coin-pixel.png" alt="" width="16" height="16" />@(job.Budget > 0 ? job.Budget.ToString("0.##") : "—")
+                                </span>
                             </div>
 
+                            <div class="mission__bottom">
+                                <span class="mission__bar" role="img" aria-label="Step @StageNumber(job.Status) of 4">
+                                    @foreach (var barStep in Lifecycle)
+                                    {
+                                        <span class="mission__seg is-@StepState(job.Status, barStep.Key)"></span>
+                                    }
+                                </span>
+                                <span class="mission__turn @(IsMyTurn(job) ? "is-yours" : null)">@ShortWaiting(job)</span>
+                                <details class="mission__more">
+                                    <summary>details</summary>
+                                    <dl class="mission__roles">
+                                        <div>
+                                            <dt><span class="pl-sprite pl-sprite--buyer pl-sprite--xs" aria-hidden="true"></span>Buyer</dt>
+                                            <dd>
+                                                @RoleAddress(job.JobId, "client", job.ClientAddress)
+                                                @if (IsMe(job.ClientAddress)) { <span class="mission__you">you</span> }
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt><span class="pl-sprite pl-sprite--courier pl-sprite--xs" aria-hidden="true"></span>Courier</dt>
+                                            <dd>
+                                                @RoleAddress(job.JobId, "provider", job.ProviderAddress)
+                                                @if (IsMe(job.ProviderAddress)) { <span class="mission__you">you</span> }
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt><span class="pl-sprite pl-sprite--inspector pl-sprite--xs" aria-hidden="true"></span>Inspector</dt>
+                                            <dd>
+                                                @RoleAddress(job.JobId, "evaluator", job.EvaluatorAddress)
+                                                @if (IsMe(job.EvaluatorAddress)) { <span class="mission__you">you</span> }
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt>Chain</dt>
+                                            <dd>@job.ChainKey</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Updated</dt>
+                                            <dd>@job.UpdatedAtUtc.ToLocalTime().ToString("MMM d, HH:mm")</dd>
+                                        </div>
+                                        <div>
+                                            <dt title="Hash of the job description, recorded on-chain">Fingerprint</dt>
+                                            <dd>
+                                                @if (string.IsNullOrWhiteSpace(job.DescriptionCommitment))
+                                                {
+                                                    <code>not recorded</code>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="pl-copy @(_copiedKey == $"job-{job.JobId}-commit" ? "is-copied" : null)" title="Copy @job.DescriptionCommitment" @onclick='() => Copy($"job-{job.JobId}-commit", job.DescriptionCommitment)'><code>@ShortCommitment(job.DescriptionCommitment)</code><span class="pl-copy__flag">Copied</span></button>
+                                                }
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </details>
+                            </div>
+
+                            <div class="mission__act">
+                                @if (job.Status == "Open" && IsMe(job.ClientAddress))
+                                {
+                                    <button class="pl-btn pl-btn--sm pl-btn--fund" disabled="@_isWorking" @onclick="() => FundJob(job)">Fund</button>
+                                    @if (CanAgentFund(job))
+                                    {
+                                        <span class="pl-sprite pl-sprite--key pl-sprite--xs" title="A robot holds a key scoped to this escrow" aria-label="A robot holds a key scoped to this escrow"></span>
+                                    }
+                                }
+                                @if (job.Status == "Funded" && IsMe(job.ProviderAddress))
+                                {
+                                    <button class="pl-btn pl-btn--sm pl-btn--submit" disabled="@_isWorking" @onclick="() => SubmitJob(job)">Deliver</button>
+                                }
+                                @if (job.Status == "Submitted" && IsMe(job.EvaluatorAddress))
+                                {
+                                    <button class="pl-btn pl-btn--sm pl-btn--complete" disabled="@_isWorking" @onclick="() => CompleteJob(job)">Pay</button>
+                                    <button class="pl-btn pl-btn--sm pl-btn--reject" disabled="@_isWorking" @onclick="() => RejectJob(job)">Refund</button>
+                                }
+                            </div>
                         </article>
                     }
                 </div>
             }
+        </section>
+
+        <div class="pl-dash-row">
+            <section class="pl-panel" aria-labelledby="pl-robots-title">
+                <div class="pl-panel__bar">
+                    <h2 id="pl-robots-title">Robots</h2>
+                    <span class="pl-panel__count">@(Agents?.Count ?? 0)</span>
+                </div>
+                @if (Agents is null)
+                {
+                    <p class="pl-panel__empty">Loading…</p>
+                }
+                else if (!Agents.Any())
+                {
+                    <p class="pl-panel__empty">
+                        <span class="pl-sprite pl-sprite--scout pl-sprite--sm" aria-hidden="true"></span>
+                        None registered — you can play every role yourself.
+                    </p>
+                }
+                else
+                {
+                    <ul class="robot-grid">
+                        @foreach (var agent in Agents)
+                        {
+                            <li class="robot-chip @(agent.IsActive ? "is-active" : null)">
+                                <span class="pl-sprite pl-sprite--scout pl-sprite--sm" aria-hidden="true"></span>
+                                <strong>#@agent.AgentId</strong>
+                                <button type="button" class="pl-copy @(_copiedKey == $"agent-{agent.AgentId}" ? "is-copied" : null)" title="Copy @agent.OwnerAddress" @onclick='() => Copy($"agent-{agent.AgentId}", agent.OwnerAddress)'>@ShortAddress(agent.OwnerAddress)<span class="pl-copy__flag">Copied</span></button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            @* Optional feature, so it gets a chip, not a chapter: the key sprite
+               plus one short line per state. *@
+            <section class="pl-panel" aria-labelledby="pl-key-title">
+                <div class="pl-panel__bar">
+                    <h2 id="pl-key-title">Robot key</h2>
+                    @if (_activeEpoch is not null)
+                    {
+                        <span class="state-pill state-pill--active"><span class="state-pill__dot"></span>installed</span>
+                    }
+                </div>
+
+                @if (!_modularStackConfigured)
+                {
+                    <p class="pl-panel__empty">
+                        <span class="pl-sprite pl-sprite--key pl-sprite--sm" aria-hidden="true"></span>
+                        Not available on @SelectedChainAccessor.SelectedChain.ShortName — you sign everything yourself.
+                    </p>
+                }
+                else if (_modularAccountAddress is null)
+                {
+                    <p class="pl-panel__empty">
+                        <span class="pl-sprite pl-sprite--key pl-sprite--sm" aria-hidden="true"></span>
+                        No smart account yet — <a href="profile">register one</a> to let a robot pay for you.
+                    </p>
+                }
+                else if (_activeEpoch is null)
+                {
+                    <p class="pl-panel__empty">
+                        <span class="pl-sprite pl-sprite--key pl-sprite--sm" aria-hidden="true"></span>
+                        No robot holds a key. You sign everything yourself.
+                    </p>
+                }
+                else
+                {
+                    <dl class="mission__roles">
+                        <div><dt>Robot</dt><dd>@RoleAddress(-1, "agent", _activeEpoch.AgentAddress)</dd></div>
+                        <div><dt>Account</dt><dd>@RoleAddress(-1, "delegator", _activeEpoch.DelegatorAddress)</dd></div>
+                        <div><dt>Expires</dt><dd>@_activeEpoch.ValidBeforeUtc.ToLocalTime().ToString("MMM d, HH:mm")</dd></div>
+                        <div><dt title="Each call is fixed on-chain by target, selector and calldata, and usable once">Calls</dt><dd>@_activeEpoch.Grants.Count</dd></div>
+                    </dl>
+                    <div class="mission__act">
+                        <button class="pl-btn pl-btn--sm pl-btn--reject" disabled="@_isRevoking" @onclick="RevokeAgentPermissionAsync">
+                            @(_isRevoking ? "Revoking…" : "Revoke")
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_permissionNotice))
+                    {
+                        <p class="pl-panel__note">@_permissionNotice</p>
+                    }
+                }
             </section>
         </div>
     }
@@ -341,15 +458,124 @@
 
 @code {
     private const string ProtocolsText = "Featuring ERC-4337 · ERC-8004 · ERC-7683 · ERC-8183";
-    private static readonly (int Number, string Key, string Label)[] LifecycleSteps =
-    [ (1, "Open", "Open"), (2, "Funded", "Funded"), (3, "Submitted", "Submitted"), (4, "Terminal", "Settled") ];
+
+    /// <summary>
+    /// One definition of the escrow lifecycle, used three ways: the teaching
+    /// track in the hero, the live map in the console, and the progress strip
+    /// inside every mission card. Keeping them literally the same list is what
+    /// makes "step 2 of 4" in the next-step card mean anything.
+    /// </summary>
+    private sealed record LifecycleStep(int Number, string Key, string Label, string ShortLabel, string Sprite, string Blurb);
+
+    private static readonly LifecycleStep[] Lifecycle =
+    [
+        new(1, "Open", "Post the mission", "Posted", "buyer",
+            "The buyer creates the job on-chain and names who will deliver it and who will sign it off."),
+        new(2, "Funded", "Lock the payment", "Funded", "vault",
+            "The payment moves into escrow. Everyone can see it is there; nobody can take it out."),
+        new(3, "Submitted", "Deliver the work", "Delivered", "courier",
+            "The courier robot does the job and files its proof of delivery against the escrow."),
+        new(4, "Terminal", "Release or refund", "Settled", "inspector",
+            "The inspector approves and the escrow pays the courier — or rejects, and the buyer is refunded."),
+    ];
+
     private List<AgentDirectoryEntry>? Agents;
     private List<AgenticJobProjection>? Jobs;
     private string? _walletAddress;
     private bool _loading = true;
     private string? _copiedKey;
+    private bool _isWorking;
+    private string? _activityNote;
 
     private bool IsConnected => _walletAddress is not null;
+
+    private bool IsMe(string? address) =>
+        !string.IsNullOrWhiteSpace(address) && string.Equals(_walletAddress, address, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The single mission whose next move is mine, in lifecycle order. This is
+    /// the whole navigation model of the page: if this is non-null the console
+    /// tells you to act on it, and if it is null it tells you what you are
+    /// waiting for instead.
+    /// </summary>
+    private AgenticJobProjection? NextActionableJob =>
+        Jobs?.FirstOrDefault(job => job.Status == "Open" && IsMe(job.ClientAddress))
+        ?? Jobs?.FirstOrDefault(job => job.Status == "Funded" && IsMe(job.ProviderAddress))
+        ?? Jobs?.FirstOrDefault(job => job.Status == "Submitted" && IsMe(job.EvaluatorAddress));
+
+    private bool IsMyTurn(AgenticJobProjection job) => job.Status switch
+    {
+        "Open" => IsMe(job.ClientAddress),
+        "Funded" => IsMe(job.ProviderAddress),
+        "Submitted" => IsMe(job.EvaluatorAddress),
+        _ => false,
+    };
+
+    private string NextSpriteClass
+    {
+        get
+        {
+            var pending = NextActionableJob;
+            if (pending is null) return "pl-sprite--buyer";
+            return pending.Status switch
+            {
+                "Open" => "pl-sprite--vault",
+                "Funded" => "pl-sprite--courier",
+                _ => "pl-sprite--inspector",
+            };
+        }
+    }
+
+    private static string MissionLabel(AgenticJobProjection job) => $"#{job.JobId:D4}";
+
+    private static string CounterpartyRole(AgenticJobProjection job) => job.Status switch
+    {
+        "Open" => "buyer",
+        "Funded" => "courier",
+        "Submitted" => "inspector",
+        _ => "chain",
+    };
+
+    /// <summary>Three words at most: whose move it is. The board has no room for a sentence.</summary>
+    private string ShortWaiting(AgenticJobProjection job) => job.Status switch
+    {
+        "Open" => IsMe(job.ClientAddress) ? "your move" : "waiting on buyer",
+        "Funded" => IsMe(job.ProviderAddress) ? "your move" : "waiting on courier",
+        "Submitted" => IsMe(job.EvaluatorAddress) ? "your move" : "waiting on inspector",
+        "Completed" => "paid out",
+        "Rejected" => "refunded",
+        "Expired" => "expired",
+        _ => string.Empty,
+    };
+
+    /// <summary>The actor who owns the mission's current step, drawn instead of named.</summary>
+    private static string StageSprite(string? status) => status switch
+    {
+        "Open" => "buyer",
+        "Funded" => "courier",
+        "Submitted" => "inspector",
+        "Completed" => "coin",
+        _ => "vault",
+    };
+
+    /// <summary>
+    /// The teaching track, signed-out only: four steps with a sentence each.
+    /// The connected dashboard shows the same four steps as .pl-rail — sprite,
+    /// name, count — because by then you need the board, not the lesson.
+    /// </summary>
+    private RenderFragment FlowTrack => @<ol class="pl-flow" aria-label="How a mission works">
+        @foreach (var step in Lifecycle)
+        {
+            <li class="pl-flow__step">
+                <span class="pl-flow__head">
+                    <span class="pl-sprite pl-sprite--@step.Sprite" aria-hidden="true"></span>
+                    <span class="pl-flow__num" aria-hidden="true">@step.Number</span>
+                </span>
+                <h3 class="pl-flow__title">@step.Label</h3>
+                <p class="pl-flow__blurb">@step.Blurb</p>
+            </li>
+        }
+    </ol>;
 
     /// <summary>
     /// The robot command bridge, rendered by both states — full width under the
@@ -487,26 +713,28 @@
         }
     }
 
-    private RenderFragment RoleAddress(long jobId, string role, string? address) => builder =>
+    /// <summary>
+    /// A copyable role address.
+    ///
+    /// Written as a Razor template, not a hand-built RenderTreeBuilder: elements
+    /// emitted by a builder never receive this component's CSS-isolation scope
+    /// attribute, so none of the scoped .pl-copy rules applied to them and the
+    /// "Copied" confirmation — which those rules keep hidden and positioned —
+    /// rendered as literal text after every address on the page.
+    /// </summary>
+    private RenderFragment RoleAddress(long jobId, string role, string? address)
     {
         if (string.IsNullOrWhiteSpace(address))
         {
-            builder.AddContent(0, "Not assigned");
-            return;
+            return @<span class="job-card__unassigned">Not assigned</span>;
         }
+
         var key = $"job-{jobId}-{role}";
-        builder.OpenElement(1, "button");
-        builder.AddAttribute(2, "type", "button");
-        builder.AddAttribute(3, "class", _copiedKey == key ? "pl-copy is-copied" : "pl-copy");
-        builder.AddAttribute(4, "title", $"Copy {address}");
-        builder.AddAttribute(5, "onclick", EventCallback.Factory.Create(this, () => Copy(key, address)));
-        builder.AddContent(6, ShortAddress(address));
-        builder.OpenElement(7, "span");
-        builder.AddAttribute(8, "class", "pl-copy__flag");
-        builder.AddContent(9, "Copied");
-        builder.CloseElement();
-        builder.CloseElement();
-    };
+        return @<button type="button"
+                        class="pl-copy @(_copiedKey == key ? "is-copied" : null)"
+                        title="Copy @address"
+                        @onclick="() => Copy(key, address)">@ShortAddress(address)<span class="pl-copy__flag">Copied</span></button>;
+    }
 
     private IJSObjectReference? _agenticCommerce;
     private IJSObjectReference? _stakingModule;
@@ -565,66 +793,77 @@
         }
     }
 
-    private async Task CreateTestJob()
+    /// <summary>
+    /// Every on-chain action goes through here so the page can say what it is
+    /// doing. Before, a click opened MetaMask and then the UI sat unchanged for
+    /// three seconds whether you signed, rejected, or the call reverted — the
+    /// single most common way to think the lab was broken.
+    /// </summary>
+    private async Task RunOnChain(string busyNote, Func<Task> action)
     {
-        if (_agenticCommerce == null || _walletAddress == null) return;
-        var chain = SelectedChainAccessor.SelectedChain;
-        var contract = chain.Deployment.AgenticEscrow;
-        // Provider = me, Evaluator = me, for testing
-        await _agenticCommerce.InvokeVoidAsync("createJob", contract, _walletAddress, _walletAddress, "Test agentic commerce job");
-        
-        // Wait briefly for tx to process and worker to pick it up (in a real app we'd wait for the tx receipt or use polling)
-        await Task.Delay(3000);
-        await ReloadJobs();
+        if (_agenticCommerce is null || _walletAddress is null) return;
+
+        _isWorking = true;
+        _activityNote = busyNote;
+        StateHasChanged();
+
+        try
+        {
+            await action();
+            _activityNote = "Transaction sent. Waiting for the chain to confirm it…";
+            StateHasChanged();
+
+            // The reconciliation worker writes the projection, so the new state is not readable the
+            // instant the transaction lands. One short wait plus an explicit Refresh beats polling.
+            await Task.Delay(3000);
+            await ReloadJobs();
+            _activityNote = "Done. If the mission below has not moved yet, press Refresh in a moment.";
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "On-chain action failed for {WalletAddress} on {ChainKey}.", _walletAddress, SelectedChainAccessor.SelectedChainKey);
+            _activityNote = "Cancelled or failed — nothing changed on-chain. You can try again.";
+        }
+        finally
+        {
+            _isWorking = false;
+            StateHasChanged();
+        }
     }
 
-    private async Task FundJob(AgenticJobProjection job)
-    {
-        if (_agenticCommerce == null) return;
-        var chain = SelectedChainAccessor.SelectedChain;
-        var contract = chain.Deployment.AgenticEscrow;
-        var token = chain.Deployment.PaymentToken;
-        
-        // We first need to set budget since it's 0 by default. Let's just set it to 10 for testing.
-        await _agenticCommerce.InvokeVoidAsync("setBudget", contract, job.OnChainJobId, 10);
-        await _agenticCommerce.InvokeVoidAsync("fundJob", contract, token, job.OnChainJobId, 10);
-        
-        await Task.Delay(3000);
-        await ReloadJobs();
-    }
+    private Task CreateTestJob() => RunOnChain(
+        "Sign the transaction in your wallet to post the mission…",
+        async () =>
+        {
+            var contract = SelectedChainAccessor.SelectedChain.Deployment.AgenticEscrow;
+            // Provider = me, Evaluator = me, so a single wallet can walk the whole lifecycle.
+            await _agenticCommerce!.InvokeVoidAsync("createJob", contract, _walletAddress, _walletAddress, "Test agentic commerce job");
+        });
 
-    private async Task SubmitJob(AgenticJobProjection job)
-    {
-        if (_agenticCommerce == null) return;
-        var chain = SelectedChainAccessor.SelectedChain;
-        var contract = chain.Deployment.AgenticEscrow;
-        await _agenticCommerce.InvokeVoidAsync("submitEvidence", contract, job.OnChainJobId, "IPFS_HASH_HERE");
-        
-        await Task.Delay(3000);
-        await ReloadJobs();
-    }
+    private Task FundJob(AgenticJobProjection job) => RunOnChain(
+        "Sign both transactions in your wallet to move the tokens into escrow…",
+        async () =>
+        {
+            var chain = SelectedChainAccessor.SelectedChain;
+            var contract = chain.Deployment.AgenticEscrow;
+            var token = chain.Deployment.PaymentToken;
 
-    private async Task CompleteJob(AgenticJobProjection job)
-    {
-        if (_agenticCommerce == null) return;
-        var chain = SelectedChainAccessor.SelectedChain;
-        var contract = chain.Deployment.AgenticEscrow;
-        await _agenticCommerce.InvokeVoidAsync("completeJob", contract, job.OnChainJobId);
-        
-        await Task.Delay(3000);
-        await ReloadJobs();
-    }
+            // Budget is 0 by default on a freshly created job; 10 is the test amount.
+            await _agenticCommerce!.InvokeVoidAsync("setBudget", contract, job.OnChainJobId, 10);
+            await _agenticCommerce.InvokeVoidAsync("fundJob", contract, token, job.OnChainJobId, 10);
+        });
 
-    private async Task RejectJob(AgenticJobProjection job)
-    {
-        if (_agenticCommerce == null) return;
-        var chain = SelectedChainAccessor.SelectedChain;
-        var contract = chain.Deployment.AgenticEscrow;
-        await _agenticCommerce.InvokeVoidAsync("rejectJob", contract, job.OnChainJobId);
-        
-        await Task.Delay(3000);
-        await ReloadJobs();
-    }
+    private Task SubmitJob(AgenticJobProjection job) => RunOnChain(
+        "Sign the transaction in your wallet to file the proof of delivery…",
+        () => _agenticCommerce!.InvokeVoidAsync("submitEvidence", SelectedChainAccessor.SelectedChain.Deployment.AgenticEscrow, job.OnChainJobId, "IPFS_HASH_HERE").AsTask());
+
+    private Task CompleteJob(AgenticJobProjection job) => RunOnChain(
+        "Sign the transaction in your wallet to release the escrow…",
+        () => _agenticCommerce!.InvokeVoidAsync("completeJob", SelectedChainAccessor.SelectedChain.Deployment.AgenticEscrow, job.OnChainJobId).AsTask());
+
+    private Task RejectJob(AgenticJobProjection job) => RunOnChain(
+        "Sign the transaction in your wallet to reject and refund…",
+        () => _agenticCommerce!.InvokeVoidAsync("rejectJob", SelectedChainAccessor.SelectedChain.Deployment.AgenticEscrow, job.OnChainJobId).AsTask());
 
     private async Task ReloadJobs()
     {
@@ -638,12 +877,13 @@
         // ?preview=connected renders the console state with fixture data and no
         // wallet — the only way to see and verify it without MetaMask. Same flag
         // and same contract as YieldPanel's: read-only, display state only, no
-        // chain calls and no writes.
+        // chain calls and no writes. Append &fixtures=1 for a populated board
+        // (one mission on each step) instead of the first-run empty state.
         if (Navigation.Uri.Contains("preview=connected", StringComparison.Ordinal))
         {
             _walletAddress = "0x9d53d4900000000000000000000000000000eceb";
             Agents = [];
-            Jobs = [];
+            Jobs = Navigation.Uri.Contains("fixtures=1", StringComparison.Ordinal) ? PreviewJobs() : [];
             _loading = false;
             return;
         }
@@ -656,11 +896,39 @@
         _loading = false;
     }
 
+    /// <summary>Display-only fixtures for ?preview=connected&amp;fixtures=1. Never persisted.</summary>
+    private List<AgenticJobProjection> PreviewJobs()
+    {
+        var chainKey = SelectedChainAccessor.SelectedChainKey;
+        AgenticJobProjection Make(long id, string status, string? provider = null) => new()
+        {
+            JobId = id,
+            OnChainJobId = id,
+            ChainKey = chainKey,
+            Status = status,
+            Budget = status == "Open" ? 0m : 10m,
+            ClientAddress = _walletAddress!,
+            ProviderAddress = provider ?? _walletAddress!,
+            EvaluatorAddress = _walletAddress!,
+            DescriptionCommitment = "0x8f2ac41d9b5e77c0a3d6e1b4f0928cd7e5a1b6c3",
+            UpdatedAtUtc = DateTime.UtcNow.AddMinutes(-id),
+        };
+
+        return
+        [
+            Make(1, "Open"),
+            Make(2, "Funded", "0x4b19aa7700000000000000000000000000001f0c"),
+            Make(3, "Completed"),
+        ];
+    }
+
     private static bool IsTerminal(string? status) => status is "Completed" or "Rejected" or "Expired";
-    private static string StatusTitle(string? status) => status switch { "Completed" => "Payment released", "Rejected" => "Refunded by evaluator", "Expired" => "Expired / refunded", "Submitted" => "Evidence submitted", "Funded" => "Awaiting delivery", _ => "Open proposal" };
+    private static string ShortStatus(string? status) => status switch { "Completed" => "paid", "Rejected" => "refunded", "Expired" => "expired", "Submitted" => "delivered", "Funded" => "funded", _ => "posted" };
     private static string StatusClass(string? status) => status switch { "Completed" => "state-pill--complete", "Rejected" or "Expired" => "state-pill--attention", "Submitted" => "state-pill--submitted", "Funded" => "state-pill--funded", _ => "state-pill--open" };
+    private static string StageKey(string? status) => status switch { "Funded" => "Funded", "Submitted" => "Submitted", "Completed" or "Rejected" or "Expired" => "Terminal", _ => "Open" };
+    private static int StageNumber(string? status) => status switch { "Funded" => 2, "Submitted" => 3, "Completed" or "Rejected" or "Expired" => 4, _ => 1 };
     private static string StepState(string? status, string step) {
-        var current = status switch { "Funded" => 2, "Submitted" => 3, "Completed" or "Rejected" or "Expired" => 4, _ => 1 };
+        var current = StageNumber(status);
         var target = step == "Open" ? 1 : step == "Funded" ? 2 : step == "Submitted" ? 3 : 4;
         return target < current ? "complete" : target == current ? "current" : "pending";
     }

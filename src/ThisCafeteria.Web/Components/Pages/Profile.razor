@@ -18,20 +18,40 @@
 
 <PageTitle>My Profile | Artisanal Brew</PageTitle>
 
+@* The account panel is the /procurement-lab console applied to a profile:
+   pixel furniture (square corners, hard offset shadows, Press Start 2P
+   headings) over the shared GlobalScene, frosted by one fixed plate so
+   addresses and hashes never sit on drifting stars.
+
+   Three things the previous dashboard did that this one does not. It kept a
+   full-height sidebar whose entire job was two anchor links to sections that
+   already fit on one screen — gone, the command bar carries the two real
+   destinations (Yield, log out). It stacked an uppercase kicker above every
+   heading that said the same words as the heading — gone, the heading is the
+   label. And it gave "Testnet gas" its own boxed fact card next to the wallet,
+   so the address and the faucet that funds it sat in different rows — they are
+   one identity line now: chain glyph, address, network, faucet. *@
 @if (_isLoading)
 {
-    <section class="staking-connect">
-        <p class="eyebrow">Customer Profile</p>
-        <h2>Loading your profile.</h2>
-    </section>
+    <div class="profile-lab" data-page-theme-color="#100D0B">
+        <div class="profile-lab__inner">
+            <section class="pf-state" role="status">
+                <span class="pf-state__pulse" aria-hidden="true"></span>
+                <h2>Loading…</h2>
+            </section>
+        </div>
+    </div>
 }
 else if (!string.IsNullOrWhiteSpace(_loadError))
 {
-    <section class="staking-connect">
-        <p class="eyebrow">Customer Profile</p>
-        <h2>We could not load your profile.</h2>
-        <p class="lede">@_loadError</p>
-    </section>
+    <div class="profile-lab" data-page-theme-color="#100D0B">
+        <div class="profile-lab__inner">
+            <section class="pf-state pf-state--error">
+                <h2>Profile unavailable.</h2>
+                <p>@_loadError</p>
+            </section>
+        </div>
+    </div>
 }
 else if (_dashboard is not null)
 {
@@ -41,94 +61,86 @@ else if (_dashboard is not null)
     }
     else
     {
-        <div class="yield-dashboard">
-            <aside class="yield-sidebar" aria-label="Profile navigation">
-                <section class="yield-sidebar__identity">
-                    <p class="yield-sidebar__kicker">Account Overview</p>
-                    <dl class="yield-sidebar__stats">
-                        <div>
-                            <dt>Total orders</dt>
-                            <dd>@_dashboard.TotalOrders</dd>
-                        </div>
-                    </dl>
-                </section>
+        <div class="profile-lab" data-page-theme-color="#100D0B">
+          <div class="profile-lab__inner">
 
-                <nav class="yield-sidebar__nav" aria-label="Profile sections">
-                    <ul class="yield-sidebar__list">
-                        <li>
-                            <a class="yield-sidebar__link" href="#identity">
-                                <span class="yield-sidebar__label">Identity &amp; Network</span>
-                                <span class="yield-sidebar__goto">
-                                    <span>View section</span>
-                                    <span aria-hidden="true">→</span>
-                                </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a class="yield-sidebar__link" href="#orders">
-                                <span class="yield-sidebar__label">Order History</span>
-                                <span class="yield-sidebar__goto">
-                                    <span>View section</span>
-                                    <span aria-hidden="true">→</span>
-                                </span>
-                            </a>
-                        </li>
-                    </ul>
+            @* The two places you actually go from here. The sidebar spent a
+               full column to say the same thing with four times the pixels. *@
+            <header class="pf-bar">
+                <nav class="pf-bar__nav" aria-label="Account">
+                    <button type="button" @onclick="ShowYieldView">Yield <span aria-hidden="true">↗</span></button>
+                    <a href="procurement-lab">Lab <span aria-hidden="true">↗</span></a>
                 </nav>
+                <form method="post" action="/api/wallet-auth/logout" class="pf-bar__logout">
+                    <button type="submit">Log out</button>
+                </form>
+            </header>
 
-                <div class="yield-sidebar__foot">
-                    <button type="button" class="yield-sidebar__new-stake" @onclick="ShowYieldView">
-                        Go to Yield
-                    </button>
-                    <form method="post" action="/api/wallet-auth/logout" class="yield-sidebar__disconnect">
-                        <button type="submit">Log out</button>
-                    </form>
-                </div>
-            </aside>
+            <section class="pf-id" aria-labelledby="pf-id-title">
+                <span class="pf-id__avatar" aria-hidden="true"></span>
 
-            <div class="profile-dash__main">
+                <div class="pf-id__body">
+                    @if (_isEditingName)
+                    {
+                        <EditForm Model="_editModel" OnSubmit="SaveDisplayNameAsync" class="pf-id__edit">
+                            <InputText class="pf-id__input"
+                                       @bind-Value="_editModel.DisplayName"
+                                       maxlength="160"
+                                       aria-label="Display name" />
+                            <button class="pf-icon-btn" type="submit" disabled="@_isSaving" aria-label="Save display name">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                            </button>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <h1 id="pf-id-title" class="pf-id__name">
+                            <span>@_dashboard.DisplayName</span>
+                            <button type="button"
+                                    class="pf-icon-btn"
+                                    aria-label="Edit display name"
+                                    @onclick="StartEditingName">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                            </button>
+                        </h1>
+                    }
 
-                <section id="overview" class="profile-dash__hero">
-                    <p class="profile-dash__kicker">Account Overview</p>
-                    <div class="profile-dash__title-row">
-                        @if (_isEditingName)
+                    @* One row, one identity: which chain, which address, which
+                       network, and where the gas comes from. *@
+                    <div class="pf-idline">
+                        <img class="pf-idline__chain" src="images/pl-chain-ethereum.png" alt="Ethereum" width="18" height="18" />
+
+                        @if (string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
                         {
-                            <EditForm Model="_editModel" OnSubmit="SaveDisplayNameAsync" class="profile-dash__name-edit">
-                                <InputText class="profile-dash__name-input"
-                                           @bind-Value="_editModel.DisplayName"
-                                           maxlength="160"
-                                           aria-label="Display name" />
-                                <button class="profile-dash__save-icon-btn" type="submit" disabled="@_isSaving" aria-label="Save display name">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                        <polyline points="7 3 7 8 15 8"></polyline>
-                                    </svg>
-                                </button>
-                            </EditForm>
+                            <span class="pf-idline__unlinked">No wallet linked</span>
                         }
                         else
                         {
-                            <h1 class="profile-dash__name-heading">
-                                <span class="profile-dash__name-text">@_dashboard.DisplayName</span>
-                                <button type="button"
-                                        class="profile-dash__edit-btn"
-                                        aria-label="Edit display name"
-                                        @onclick="StartEditingName">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                </button>
-                            </h1>
+                            <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@Chain.ExplorerUrl" />
                         }
+
+                        @if (_dashboard.WalletChainId is not null)
+                        {
+                            <ChainBadge NetworkName="@FormatChainName(_dashboard.WalletChainId.Value)"
+                                        ChainId="_dashboard.WalletChainId"
+                                        Connected="_dashboard.WalletChainId == Chain.ChainId" />
+                        }
+
+                        <a class="pf-idline__faucet" href="staking">Get Sepolia ETH <span aria-hidden="true">→</span></a>
                     </div>
 
                     @if (_isEditingName)
                     {
                         @if (_validationErrors.Count > 0)
                         {
-                            <ul class="profile-dash__errors">
+                            <ul class="pf-id__errors">
                                 @foreach (var error in _validationErrors)
                                 {
                                     <li>@error</li>
@@ -138,102 +150,83 @@ else if (_dashboard is not null)
 
                         @if (!string.IsNullOrWhiteSpace(_saveMessage))
                         {
-                            <p class="profile-dash__save-message">@_saveMessage</p>
+                            <p class="pf-id__saved">@_saveMessage</p>
                         }
                     }
-                </section>
+                </div>
+            </section>
 
-                <section id="identity" class="profile-dash__section">
-                    <p class="profile-dash__section-kicker">Identity &amp; Network</p>
-                    <h2 class="profile-dash__section-title">Identity summary</h2>
-                    <dl class="profile-dash__facts">
-                        <div>
-                            <dt>Wallet</dt>
-                            <dd>
-                                @if (string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
-                                {
-                                    <span>Not linked</span>
-                                }
-                                else
-                                {
-                                    <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@Chain.ExplorerUrl" />
-                                }
-                            </dd>
-                        </div>
-                        <div>
-                            <dt>Network</dt>
-                            <dd>
-                                @if (_dashboard.WalletChainId is null)
-                                {
-                                    <span>Not linked</span>
-                                }
-                                else
-                                {
-                                    <ChainBadge NetworkName="@FormatChainName(_dashboard.WalletChainId.Value)"
-                                                ChainId="_dashboard.WalletChainId"
-                                                Connected="_dashboard.WalletChainId == Chain.ChainId" />
-                                }
-                            </dd>
-                        </div>
-                        <div>
-                            <dt>Role</dt>
-                            <dd>@_dashboard.Role</dd>
-                        </div>
-                        <div>
-                            <dt>Member since</dt>
-                            <dd>@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</dd>
-                        </div>
-                        <div>
-                            <dt>Testnet gas</dt>
-                            <dd><a class="profile-dash__faucet-link" href="staking">Get Sepolia ETH <span aria-hidden="true">→</span></a></dd>
-                        </div>
-                    </dl>
+            @* Counts, not cards: the same reduction /procurement-lab's step rail
+               made when it replaced a row of boxed KPI tiles. *@
+            <ol class="pf-rail" aria-label="Account summary">
+                <li class="pf-rail__cell @(_dashboard.TotalOrders > 0 ? "is-occupied" : null)">
+                    <span class="pf-rail__k">Orders</span>
+                    <span class="pf-rail__v pf-rail__v--num">@_dashboard.TotalOrders</span>
+                </li>
+                <li class="pf-rail__cell">
+                    <span class="pf-rail__k">Role</span>
+                    <span class="pf-rail__v">@_dashboard.Role</span>
+                </li>
+                <li class="pf-rail__cell">
+                    <span class="pf-rail__k">Member since</span>
+                    <span class="pf-rail__v">@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>
+                </li>
+            </ol>
 
-                    @if (!string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
-                    {
-                        <SmartAccountPanel WalletAddress="@_dashboard.WalletAddress" />
-                    }
-                </section>
+            @if (!string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+            {
+                <div class="pf-smart">
+                    <SmartAccountPanel WalletAddress="@_dashboard.WalletAddress" />
+                </div>
+            }
 
-                <section id="orders" class="profile-dash__section">
-                    <p class="profile-dash__section-kicker">Order History</p>
-                    <h2 class="profile-dash__section-title">Recent orders</h2>
+            <section class="pf-panel" aria-labelledby="pf-orders-title">
+                <div class="pf-panel__bar">
+                    <h2 id="pf-orders-title">Orders</h2>
+                    <span class="pf-panel__count">@_orders.Count</span>
+                </div>
 
-                    @if (_orders.Count == 0)
-                    {
-                        <p class="profile-dash__empty">No orders are linked to your profile yet.</p>
-                    }
-                    else
-                    {
-                        <div class="profile-dash__orders">
-                            @foreach (var order in _orders)
-                            {
-                                <article class="profile-dash__order">
-                                    <div>
-                                        <span class="profile-dash__order-number">@order.OrderNumber</span>
-                                        <p>@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</p>
-                                        @if (!string.IsNullOrWhiteSpace(order.PaymentTransactionHash))
+                @if (_orders.Count == 0)
+                {
+                    <p class="pf-panel__empty">
+                        <span class="pf-panel__empty-sprite" aria-hidden="true"></span>
+                        None yet. <a href="products">Browse the shop →</a>
+                    </p>
+                }
+                else
+                {
+                    <div class="pf-orders">
+                        @foreach (var order in _orders)
+                        {
+                            <article class="pf-order">
+                                <div class="pf-order__top">
+                                    <span class="pf-order__num">@order.OrderNumber</span>
+                                    <span class="pf-order__state">@order.Status</span>
+                                    <strong class="pf-order__total tabular">@order.Total.ToString("C")</strong>
+                                </div>
+
+                                <div class="pf-order__bottom">
+                                    <span class="pf-order__when">@order.CreatedAt.ToLocalTime().ToString("MMM d, yyyy · HH:mm")</span>
+                                    @if (!string.IsNullOrWhiteSpace(order.PaymentTransactionHash))
+                                    {
+                                        <span class="pf-order__pay">
+                                            @ShortAddress(order.WalletAddress) · @order.PaymentNetworkName · <span class="tabular">@FormatEth(order.PaymentEthAmount)</span>
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(order.PaymentExplorerUrl))
                                         {
-                                            <p class="profile-dash__order-tx-meta">
-                                                <span class="profile-dash__mono">@ShortAddress(order.WalletAddress)</span> · @order.PaymentNetworkName · <span class="tabular">@FormatEth(order.PaymentEthAmount)</span>
-                                                @if (!string.IsNullOrWhiteSpace(order.PaymentExplorerUrl))
-                                                {
-                                                    <a class="profile-dash__tx-chip" href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
-                                                        @ShortAddress(order.PaymentTransactionHash) ↗
-                                                    </a>
-                                                }
-                                            </p>
+                                            <a class="pf-order__tx" href="@order.PaymentExplorerUrl" target="_blank" rel="noopener noreferrer">
+                                                @ShortAddress(order.PaymentTransactionHash) ↗
+                                            </a>
                                         }
-                                    </div>
-                                    <span class="profile-dash__status">@order.Status</span>
-                                    <strong class="tabular">@order.Total.ToString("C")</strong>
-                                </article>
-                            }
-                        </div>
-                    }
-                </section>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
 
-            </div>
+          </div>
         </div>
     }
 }

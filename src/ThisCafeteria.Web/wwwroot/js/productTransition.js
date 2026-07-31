@@ -68,16 +68,37 @@
         return value.replace(/["\\]/g, '\\$&');
     };
 
-    // Desktop only (mobile returns early from playFromCard). The detail media
-    // column is a fixed full-height panel occupying the left 58% of the
-    // viewport (flex 58/42 split in ProductDetails.razor.css), so the flight
-    // destination is exact — no guessed offsets.
-    const getTargetRect = () => ({
-        left: 0,
-        top: 0,
-        width: window.innerWidth * 0.58,
-        height: window.innerHeight
-    });
+    const readRootPx = name => parseFloat(
+        window.getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+
+    // Desktop only (mobile returns early from playFromCard). The detail page
+    // centres a square image stage between a fixed-width thumbnail rail and a
+    // fixed-width buy column, so this recomputes ProductDetails.razor.css's
+    // --pdp-stage from the same :root tokens (declared in app.css, which is
+    // loaded here on /products where the detail page's own styles are not).
+    // The destination is exact — no guessed offsets.
+    const getTargetRect = () => {
+        const padY = readRootPx('--pdp-pad-y');
+        const padX = readRootPx('--pdp-pad-x');
+        const rail = readRootPx('--pdp-rail');
+        const railGap = readRootPx('--pdp-rail-gap');
+        const colGap = readRootPx('--pdp-col-gap');
+        const info = readRootPx('--pdp-info');
+
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const stage = Math.min(
+            viewportHeight - 2 * padY,
+            viewportWidth - (2 * padX + rail + railGap + colGap + info));
+        const tracks = rail + railGap + stage + colGap + info;
+
+        return {
+            left: (viewportWidth - tracks) / 2 + rail + railGap,
+            top: (viewportHeight - stage) / 2,
+            width: stage,
+            height: stage
+        };
+    };
 
     const storeTransition = slug => {
         try {
@@ -208,7 +229,7 @@
                     height: `${imageRect.height}px`
                 },
                 {
-                    borderRadius: '0px',
+                    borderRadius: `${readRootPx('--pdp-stage-radius')}px`,
                     left: `${targetRect.left}px`,
                     top: `${targetRect.top}px`,
                     width: `${targetRect.width}px`,

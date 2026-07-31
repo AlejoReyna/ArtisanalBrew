@@ -85,6 +85,32 @@ h1:focus {
    those components dark everywhere. ProcurementLab.razor.css and Profile.razor.css
    reference the scoped tokens directly rather than keeping their own duplicate
    --pl-* / --dash-* copies. */
+/* Product-detail desktop geometry. Declared globally, in raw px, because two
+   places have to agree on it exactly: ProductDetails.razor.css lays the page
+   out from these, and productTransition.js reads them off :root to compute
+   where the grid card's image should fly to — the flight starts on /products,
+   before any of the detail page's own styles exist. Keep them unitless-px so
+   getComputedStyle values can be parsed with parseFloat. */
+:root {
+    --pdp-pad-y: 32px;
+    --pdp-pad-x: 40px;
+    --pdp-rail: 84px;
+    --pdp-rail-gap: 16px;
+    --pdp-col-gap: 56px;
+    --pdp-info: 384px;
+    --pdp-stage-radius: 12px;
+}
+
+/* Narrow desktops: the stage is width-limited there, so the fixed tracks beside
+   it give ground first rather than letting the photo shrink to a stamp. */
+@media (max-width: 1200px) {
+    :root {
+        --pdp-pad-x: 24px;
+        --pdp-col-gap: 40px;
+        --pdp-info: 320px;
+    }
+}
+
 :root {
     --surface: #fbf9f4;
     --surface-deep: #f2eee5;
