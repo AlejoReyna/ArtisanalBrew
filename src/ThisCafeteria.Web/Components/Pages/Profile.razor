@@ -14,6 +14,10 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject PersistentComponentState ApplicationState
+@using ThisCafeteria.Application.Services.Blockchain
+@using ThisCafeteria.Web.Services.Blockchain
+@inject WalletDashboardState DashboardState
+@inject IEthUsdPriceService EthUsdPriceService
 @implements IDisposable
 
 <PageTitle>My Profile | Artisanal Brew</PageTitle>
@@ -126,14 +130,17 @@ else if (_dashboard is not null)
                             <AddressChip Address="@_dashboard.WalletAddress" ExplorerUrl="@Chain.ExplorerUrl" />
                         }
 
-                        @if (_dashboard.WalletChainId is not null)
-                        {
-                            <ChainBadge NetworkName="@FormatChainName(_dashboard.WalletChainId.Value)"
-                                        ChainId="_dashboard.WalletChainId"
-                                        Connected="_dashboard.WalletChainId == Chain.ChainId" />
-                        }
-
-                        <a class="pf-idline__faucet" href="staking">Get Sepolia ETH <span aria-hidden="true">→</span></a>
+                        <div class="pf-faucet-group">
+                            <a class="pf-idline__faucet" href="staking">Get Sepolia ETH <span aria-hidden="true">→</span></a>
+                            <div class="pf-faucet-asset">
+                                <img class="pf-faucet-asset__icon" src="images/eth.png" alt="ETH" width="22" height="22" />
+                                <div class="pf-faucet-selector">
+                                    <a class="pf-faucet-selector__item is-active" href="staking">Sepolia</a>
+                                    <a class="pf-faucet-selector__item" href="staking">Holesky</a>
+                                    <a class="pf-faucet-selector__item" href="staking">Goerli</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     @if (_isEditingName)
@@ -159,17 +166,9 @@ else if (_dashboard is not null)
             @* Counts, not cards: the same reduction /procurement-lab's step rail
                made when it replaced a row of boxed KPI tiles. *@
             <ol class="pf-rail" aria-label="Account summary">
-                <li class="pf-rail__cell @(_dashboard.TotalOrders > 0 ? "is-occupied" : null)">
-                    <span class="pf-rail__k">Orders</span>
-                    <span class="pf-rail__v pf-rail__v--num">@_dashboard.TotalOrders</span>
-                </li>
                 <li class="pf-rail__cell">
-                    <span class="pf-rail__k">Role</span>
-                    <span class="pf-rail__v">@_dashboard.Role</span>
-                </li>
-                <li class="pf-rail__cell">
-                    <span class="pf-rail__k">Member since</span>
-                    <span class="pf-rail__v">@_dashboard.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>
+                    <span class="pf-rail__k">Wallet value</span>
+                    <span class="pf-rail__v pf-rail__v--num tabular">@FormatNativeWalletBalance()</span>
                 </li>
             </ol>
 
@@ -242,6 +241,8 @@ else if (_dashboard is not null)
     private string? _loadError;
     private string? _saveMessage;
     private List<string> _validationErrors = [];
+    private CoffeeDashboardModel? _stakingDashboard;
+    private decimal? _ethUsdPrice;
 
     private PersistingComponentStateSubscription _subscription;
 
@@ -290,6 +291,12 @@ else if (_dashboard is not null)
             _orders = orders!;
             ApplicationState.TryTakeFromJson<string?>("profileError", out _loadError);
             _isLoading = false;
+        }
+
+        if (_dashboard is not null && !string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        {
+            _stakingDashboard = await DashboardState.GetOrRefreshAsync(_dashboard.WalletAddress, TimeSpan.FromMinutes(1));
+            _ethUsdPrice = await EthUsdPriceService.GetEthUsdPriceAsync();
         }
     }
 
@@ -374,6 +381,21 @@ else if (_dashboard is not null)
 
     private string FormatChainName(int chainId) =>
         chainId == Chain.ChainId ? Chain.NetworkName : $"Chain {chainId}";
+
+    private string FormatNativeWalletBalance()
+    {
+        if (_stakingDashboard is null) return "Syncing...";
+
+        if (_ethUsdPrice is null)
+        {
+            return $"{FormatAmount(_stakingDashboard.NativeBalance)} {Chain.CurrencySymbol}";
+        }
+
+        var estimatedUsd = _stakingDashboard.NativeBalance * _ethUsdPrice.Value;
+        return $"{estimatedUsd:$#,##0.00}";
+    }
+
+    private static string FormatAmount(decimal amount) => amount.ToString("0.####");
 
     private sealed class ProfileEditModel
     {

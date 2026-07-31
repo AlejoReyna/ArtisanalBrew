@@ -205,7 +205,7 @@
     -webkit-appearance: none;
     appearance: none;
     align-items: center;
-    background: transparent;
+    background: #000000;
     border: 1px solid var(--nav-line);
     border-radius: 999px;
     box-sizing: border-box;

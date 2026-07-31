@@ -758,6 +758,15 @@ body:has(.products-catalog) .public-header {
     --nav-line: rgba(45, 36, 33, 0.14);
 }
 
+/* The logged-out Login pill stays solid black on every route (see
+   NavMenu.razor.css's .nav-login), so on this route's light cream bar it
+   needs its own literal white text/border instead of the flipped-dark
+   --nav-fg above, or the label would be dark-on-black and disappear. */
+body:has(.products-catalog) .public-header .nav-login:not(.nav-login--authorized) {
+    border-color: rgba(251, 249, 244, 0.3);
+    color: #fbf9f4;
+}
+
 /* Story keeps the default solid #100e0d bar rather than going transparent. The
    bar and .story-hero are the same near-black, so it still reads as seamless
    over the hero — but it stays opaque over the light sections below it, where a

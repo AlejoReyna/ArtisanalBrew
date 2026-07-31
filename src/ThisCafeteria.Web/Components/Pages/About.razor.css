@@ -1,0 +1,975 @@
+/* /about — the isometric café floor, plus one deep chapter per station.
+
+   Lives in the dark roast wing: StakingLayout wraps the page in .yield-page,
+   so the --stake-* tokens from app.css's ".yield-page, .procurement-lab" block
+   are in scope. They are referenced as var(--stake-x) directly throughout —
+   nested custom-property aliasing does not resolve reliably in this project.
+
+   App.razor gives /about scene route "none", so GlobalScene's pixel space is
+   hidden here and .page's flat --stake-bg-deep is the ground the room sits on.
+   That is deliberate: a drifting starfield behind an isometric room reads as
+   two drawings fighting, and the room already has its own window onto space.
+
+   Geometry: the room is one 272x200 sprite and the six props are separate
+   sprites positioned over it in percentages of that source. Everything scales
+   off .af-room's width, so the whole floor plan stays in register at every
+   viewport with no breakpoint-specific coordinates.
+
+   Below the room, the chapters share one small diagram vocabulary — .af-node,
+   .af-flow, .af-tree, .af-notes — rather than each inventing its own boxes.
+   Two state modifiers run through all of it: --live (green, running) and --off
+   (clay, provisioned but not running), which is the distinction the page is
+   actually about. */
+
+.af-page {
+    box-sizing: border-box;
+    color: var(--stake-ink);
+    font-family: var(--font-sans);
+    margin: 0 auto;
+    max-width: 78rem;
+    min-height: 100dvh;
+    padding: clamp(2.5rem, 7vh, 4.5rem) clamp(1.25rem, 4vw, 3rem) clamp(3rem, 8vh, 5rem);
+}
+
+.af-page img {
+    image-rendering: pixelated;
+}
+
+.af-page code {
+    background: var(--stake-surface-2);
+    color: var(--stake-amber);
+    font-family: var(--crypto-mono);
+    font-size: 0.86em;
+    padding: 0.1em 0.35em;
+    word-break: break-word;
+}
+
+/* ── Intro ───────────────────────────────────────────────────────────────── */
+
+.af-intro {
+    margin: 0 auto clamp(2rem, 5vh, 3.25rem);
+    max-width: 42rem;
+    text-align: center;
+}
+
+.af-eyebrow {
+    color: var(--stake-green);
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    margin: 0 0 0.9rem;
+    text-transform: uppercase;
+}
+
+/* 8-bit 3D title, same recipe as .ph-title3d and .story-title3d: white faces
+   with a 2px keyline, a stacked hard-edge extrusion stepping down-right, and
+   a staggered stepped bob. Each hero keeps its own copy — the originals are
+   component-scoped and there is no shared stylesheet to hoist them into. */
+.af-title3d {
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: clamp(1.35rem, 4vw, 2.4rem);
+    letter-spacing: 0.14em;
+    line-height: 1;
+    margin: 0 0 1.4rem;
+    padding-right: 0.45em; /* keeps the last letter's extrusion on-canvas */
+}
+
+.af-title3d__line {
+    display: block;
+}
+
+.af-title3d__line + .af-title3d__line {
+    margin-top: 0.75em;
+}
+
+.af-title3d__word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.af-title3d__word + .af-title3d__word {
+    margin-left: 1.1em;
+}
+
+.af-title3d__letter {
+    animation: af-title3d-bob 2.6s steps(4, end) infinite;
+    animation-delay: calc(var(--i) * 120ms);
+    color: #FFFDF9;
+    display: inline-block;
+    text-shadow:
+        -2px -2px 0 #0B0806,
+        0 -2px 0 #0B0806,
+        2px -2px 0 #0B0806,
+        -2px 0 0 #0B0806,
+        -2px 2px 0 #0B0806,
+        2px 2px 0 #2A1C11,
+        4px 4px 0 #2A1C11,
+        6px 6px 0 #241810,
+        8px 8px 0 #1A110A,
+        10px 10px 0 #0B0806;
+    will-change: transform;
+}
+
+@keyframes af-title3d-bob {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -0.22em, 0); }
+}
+
+.af-lede {
+    color: rgba(244, 239, 230, 0.85);
+    font-family: var(--crypto-mono);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    margin: 0 auto;
+    max-width: 36rem;
+}
+
+/* ── Floor plan: room beside the card, stacked under it when narrow ──────── */
+
+.af-floorplan {
+    align-items: center;
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 2.75rem);
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
+.af-room {
+    aspect-ratio: 272 / 200;
+    margin: 0 auto;
+    max-width: 46rem;
+    position: relative;
+    width: 100%;
+}
+
+.af-room__ground {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+/* ── Stations ────────────────────────────────────────────────────────────── */
+
+/* --x/--y are the prop's floor point and --w its width, both as percentages
+   of the room sprite; the translate drops the button's base onto that point.
+   --z is paint order: a prop nearer the front of the room covers one behind. */
+.af-station {
+    background: none;
+    border: 0;
+    cursor: pointer;
+    left: var(--x);
+    padding: 0;
+    position: absolute;
+    top: var(--y);
+    transform: translate(-50%, -100%);
+    transition: transform 140ms steps(3, end);
+    width: var(--w);
+    z-index: var(--z);
+}
+
+.af-station__prop {
+    display: block;
+    height: auto;
+    position: relative;
+    transition: filter 140ms ease;
+    width: 100%;
+    z-index: 1;
+}
+
+/* The lit floor patch under a prop. A clip-path diamond rather than a border
+   box, so the highlight follows the room's isometric grid instead of cutting
+   across it at right angles. */
+.af-station__spot {
+    aspect-ratio: 2 / 1;
+    background: transparent;
+    bottom: -6%;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+    transition: background-color 140ms ease;
+    width: 116%;
+}
+
+.af-station:hover .af-station__spot,
+.af-station:focus-visible .af-station__spot {
+    background: rgba(229, 192, 120, 0.14);
+}
+
+.af-station.is-active .af-station__spot {
+    background: rgba(229, 192, 120, 0.3);
+}
+
+/* The dormant station lights clay rather than amber — the same colour its
+   standby lamp is drawn in, and the same one --off carries in the chapters
+   below, so "not running" reads identically everywhere on the page. */
+.af-station--dormant:hover .af-station__spot,
+.af-station--dormant:focus-visible .af-station__spot {
+    background: rgba(229, 152, 128, 0.14);
+}
+
+.af-station--dormant.is-active .af-station__spot {
+    background: rgba(229, 152, 128, 0.26);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .af-station:hover {
+        transform: translate(-50%, calc(-100% - 3px));
+    }
+}
+
+/* Hard amber keyline traced around the sprite's own silhouette — four 1px
+   drop-shadows rather than an outline, which would box the whole sprite. */
+.af-station.is-active .af-station__prop {
+    filter:
+        drop-shadow(1px 0 0 var(--stake-amber))
+        drop-shadow(-1px 0 0 var(--stake-amber))
+        drop-shadow(0 1px 0 var(--stake-amber))
+        drop-shadow(0 -1px 0 var(--stake-amber));
+}
+
+.af-station--dormant.is-active .af-station__prop {
+    filter:
+        drop-shadow(1px 0 0 var(--stake-clay))
+        drop-shadow(-1px 0 0 var(--stake-clay))
+        drop-shadow(0 1px 0 var(--stake-clay))
+        drop-shadow(0 -1px 0 var(--stake-clay));
+}
+
+.af-station:focus-visible {
+    outline: 2px dashed var(--stake-green);
+    outline-offset: 4px;
+}
+
+/* Two stepped pixel puffs off the bar and the roaster. Positioned against the
+   button, so they ride along with the hover lift. */
+.af-station__steam {
+    animation: af-steam 2.4s steps(4, end) infinite;
+    background: rgba(244, 239, 230, 0.55);
+    height: 5%;
+    left: 46%;
+    position: absolute;
+    top: -6%;
+    width: 4%;
+    z-index: 1;
+}
+
+.af-station__steam::after {
+    animation: af-steam 2.4s steps(4, end) 1.2s infinite;
+    background: inherit;
+    content: "";
+    height: 100%;
+    left: 180%;
+    position: absolute;
+    top: 60%;
+    width: 100%;
+}
+
+@keyframes af-steam {
+    0% { opacity: 0; transform: translateY(0); }
+    35% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-180%); }
+}
+
+/* The station's accessible name, kept in the a11y tree at all times and
+   revealed on hover, focus or selection. */
+.af-station__name {
+    background: var(--stake-bg-deep);
+    border: 1px solid var(--stake-line-strong);
+    /* Clear of .af-station__steam, which vents just above the button's top
+       edge on the two props that carry it. */
+    bottom: calc(100% + 0.9rem);
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.55rem;
+    font-weight: 800;
+    left: 50%;
+    letter-spacing: 0.12em;
+    opacity: 0;
+    padding: 0.28rem 0.45rem;
+    pointer-events: none;
+    position: absolute;
+    transform: translateX(-50%);
+    transition: opacity 140ms ease;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+.af-station:hover .af-station__name,
+.af-station:focus-visible .af-station__name,
+.af-station.is-active .af-station__name {
+    opacity: 1;
+}
+
+.af-station.is-active .af-station__name {
+    border-color: var(--stake-amber);
+    color: var(--stake-amber);
+}
+
+.af-station--dormant.is-active .af-station__name {
+    border-color: var(--stake-clay);
+    color: var(--stake-clay);
+}
+
+/* ── The card the selected station fills ─────────────────────────────────── */
+
+.af-card {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line-strong);
+    padding: clamp(1.25rem, 3vw, 1.85rem);
+}
+
+.af-card__label {
+    align-items: center;
+    color: var(--stake-green);
+    display: flex;
+    flex-wrap: wrap;
+    font-family: var(--crypto-mono);
+    font-size: 0.6rem;
+    font-weight: 800;
+    gap: 0.5rem;
+    letter-spacing: 0.16em;
+    margin: 0 0 0.65rem;
+}
+
+.af-card__title {
+    color: var(--stake-ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0 0 0.85rem;
+}
+
+.af-card__copy {
+    color: var(--stake-muted);
+    font-size: 0.92rem;
+    line-height: 1.65;
+    margin: 0 0 1.25rem;
+}
+
+.af-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.af-specs {
+    border-top: 1px solid var(--stake-line);
+    margin: 0 0 1.5rem;
+}
+
+.af-specs__row {
+    border-bottom: 1px solid var(--stake-line);
+    display: grid;
+    gap: 0.35rem 1rem;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    padding: 0.6rem 0;
+}
+
+.af-specs dt {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding-top: 0.12rem;
+}
+
+.af-specs dd {
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ── Status tag ──────────────────────────────────────────────────────────── */
+
+.af-tag {
+    border: 1px solid currentColor;
+    font-family: var(--crypto-mono);
+    font-size: 0.5rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    padding: 0.16rem 0.38rem;
+    white-space: nowrap;
+}
+
+.af-tag--off {
+    color: var(--stake-clay);
+}
+
+/* ── Clipped pixel CTA — kimi_ui §2.1 recipe ─────────────────────────────── */
+
+.af-cta {
+    align-items: center;
+    background: var(--stake-ink);
+    border: 0;
+    border-radius: 0;
+    clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, 100% 3px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) 100%, 6px 100%, 6px calc(100% - 3px), 0 calc(100% - 3px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
+    color: var(--stake-bg-deep);
+    display: inline-flex;
+    filter: drop-shadow(5px 5px 0 var(--stake-copper));
+    font-family: var(--crypto-mono);
+    font-size: 0.62rem;
+    font-weight: 800;
+    justify-content: center;
+    letter-spacing: 0.12em;
+    min-height: 2.75rem;
+    padding-inline: 1.35rem;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, filter 160ms ease, transform 160ms ease-out;
+}
+
+.af-cta:hover {
+    background: var(--stake-amber);
+    filter: drop-shadow(7px 7px 0 var(--stake-copper));
+    transform: translate(-2px, -2px);
+}
+
+.af-cta:active {
+    filter: drop-shadow(2px 2px 0 var(--stake-copper));
+    transform: scale(0.97);
+}
+
+.af-cta:focus-visible {
+    outline: 2px dashed var(--stake-green);
+    outline-offset: 4px;
+}
+
+.af-cta--ghost {
+    background: var(--stake-surface-2);
+    color: var(--stake-ink);
+}
+
+.af-cta--ghost:hover {
+    background: var(--stake-amber);
+    color: var(--stake-bg-deep);
+}
+
+/* ── Chapters ────────────────────────────────────────────────────────────── */
+
+.af-chapter {
+    border-top: 1px solid var(--stake-line);
+    margin: clamp(3rem, 9vh, 5rem) auto 0;
+    max-width: 62rem;
+    padding-top: clamp(1.75rem, 5vh, 2.75rem);
+    /* The site header is fixed; without this an anchor jump parks the chapter
+       title underneath it. */
+    scroll-margin-top: 5rem;
+}
+
+.af-chapter__head {
+    margin-bottom: clamp(1.5rem, 4vh, 2.25rem);
+    max-width: 44rem;
+}
+
+.af-chapter__index {
+    color: var(--stake-copper);
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: 1.35rem;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.9rem;
+    text-shadow: 3px 3px 0 #1A110A;
+}
+
+.af-chapter__eyebrow {
+    align-items: center;
+    color: var(--stake-green);
+    display: flex;
+    flex-wrap: wrap;
+    font-family: var(--crypto-mono);
+    font-size: 0.62rem;
+    font-weight: 800;
+    gap: 0.6rem;
+    letter-spacing: 0.16em;
+    margin: 0 0 0.55rem;
+    text-transform: uppercase;
+}
+
+.af-chapter--dormant .af-chapter__eyebrow,
+.af-chapter--dormant .af-chapter__index {
+    color: var(--stake-clay);
+}
+
+.af-chapter__title {
+    color: var(--stake-ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.55rem, 3.2vw, 2.25rem);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0 0 0.9rem;
+}
+
+.af-chapter__intro {
+    color: var(--stake-muted);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* ── Diagram shell ───────────────────────────────────────────────────────── */
+
+.af-diagram {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line-strong);
+    margin-bottom: 1.25rem;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.af-diagram--dormant {
+    border-color: rgba(229, 152, 128, 0.32);
+}
+
+.af-diagram__caption {
+    border-bottom: 1px solid var(--stake-line);
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    margin: 0 0 1.1rem;
+    padding-bottom: 0.7rem;
+    text-transform: uppercase;
+}
+
+.af-diagram__note {
+    border-top: 1px solid var(--stake-line);
+    color: var(--stake-muted);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    margin: 1.1rem 0 0;
+    padding-top: 1rem;
+}
+
+/* ── Component tree ──────────────────────────────────────────────────────── */
+
+.af-tree,
+.af-tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.af-tree ul {
+    margin-top: 0.5rem;
+    padding-left: 1.1rem;
+}
+
+.af-tree li {
+    position: relative;
+}
+
+.af-tree li + li {
+    margin-top: 0.5rem;
+}
+
+/* Elbow connectors drawn as borders on a pseudo-element, so the tree keeps
+   its shape at any font size without box-drawing characters landing in the
+   accessibility tree. */
+.af-tree ul > li::before {
+    border-bottom: 1px solid var(--stake-line-strong);
+    border-left: 1px solid var(--stake-line-strong);
+    content: "";
+    height: 0.85rem;
+    left: -0.75rem;
+    position: absolute;
+    top: 0;
+    width: 0.6rem;
+}
+
+.af-tree ul > li:not(:last-child)::after {
+    border-left: 1px solid var(--stake-line-strong);
+    bottom: -0.5rem;
+    content: "";
+    left: -0.75rem;
+    position: absolute;
+    top: 0.85rem;
+}
+
+.af-chip {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line-strong);
+    color: var(--stake-ink);
+    display: inline-block;
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.3rem 0.55rem;
+}
+
+.af-chip--root {
+    border-color: var(--stake-amber);
+    color: var(--stake-amber);
+}
+
+.af-chip--leaf {
+    color: var(--stake-muted);
+}
+
+.af-chip__meta {
+    color: var(--stake-faint);
+    display: inline-block;
+    font-family: var(--crypto-mono);
+    font-size: 0.62rem;
+    line-height: 1.5;
+    margin-left: 0.6rem;
+}
+
+/* ── Flow row ────────────────────────────────────────────────────────────── */
+
+.af-flow {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.af-flow__step {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line-strong);
+    flex: 1 1 8rem;
+    min-width: 0;
+    padding: 0.7rem 0.75rem;
+    position: relative;
+}
+
+/* Stepped pixel arrow between steps, drawn on the gap rather than inside a
+   box so it never affects the steps' own widths. */
+.af-flow__step:not(:last-child)::after {
+    color: var(--stake-copper);
+    content: "→";
+    font-family: var(--crypto-mono);
+    font-size: 0.85rem;
+    left: calc(100% + 0.35rem);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.af-flow__step--accent {
+    border-color: var(--stake-amber);
+}
+
+.af-flow__step--terminal {
+    border-color: var(--stake-green);
+}
+
+.af-flow__name {
+    color: var(--stake-ink);
+    display: block;
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.af-flow__note {
+    color: var(--stake-faint);
+    display: block;
+    font-family: var(--crypto-mono);
+    font-size: 0.58rem;
+    line-height: 1.4;
+    margin-top: 0.28rem;
+}
+
+/* ── Resource nodes ──────────────────────────────────────────────────────── */
+
+.af-rack {
+    border: 1px dashed var(--stake-line-strong);
+    margin-bottom: 1.1rem;
+    padding: 0.9rem;
+}
+
+.af-rack__title {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.56rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    margin: 0 0 0.8rem;
+    text-transform: uppercase;
+}
+
+.af-rack__body,
+.af-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+}
+
+.af-grid--tight {
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+}
+
+.af-node {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line-strong);
+    min-width: 0;
+    padding: 0.7rem 0.75rem;
+}
+
+.af-node--live {
+    border-color: rgba(143, 185, 155, 0.5);
+}
+
+.af-node--off {
+    background: transparent;
+    border-color: rgba(229, 152, 128, 0.3);
+    border-style: dashed;
+}
+
+.af-node__name {
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.35;
+    margin: 0 0 0.3rem;
+    overflow-wrap: anywhere;
+}
+
+.af-node--off .af-node__name {
+    color: var(--stake-muted);
+}
+
+.af-node__spec {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.58rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.af-node__spec--on {
+    color: var(--stake-green);
+}
+
+.af-node__spec--off {
+    color: var(--stake-clay);
+}
+
+/* ── Address list ────────────────────────────────────────────────────────── */
+
+.af-addresses {
+    margin: 0;
+}
+
+.af-addresses__row {
+    border-bottom: 1px solid var(--stake-line);
+    display: grid;
+    gap: 0.2rem 1rem;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    padding: 0.5rem 0;
+}
+
+.af-addresses dt {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.af-addresses dd {
+    color: var(--stake-copper);
+    font-family: var(--crypto-mono);
+    font-size: 0.62rem;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* ── Notes ───────────────────────────────────────────────────────────────── */
+
+.af-notes {
+    margin: 0;
+}
+
+.af-notes__row {
+    border-top: 1px solid var(--stake-line);
+    display: grid;
+    gap: 0.4rem 1.5rem;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    padding: 1rem 0;
+}
+
+.af-notes__row:last-child {
+    border-bottom: 1px solid var(--stake-line);
+}
+
+.af-notes--compact .af-notes__row {
+    padding: 0.6rem 0;
+}
+
+.af-notes dt {
+    color: var(--stake-amber);
+    font-family: var(--crypto-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    padding-top: 0.2rem;
+    text-transform: uppercase;
+}
+
+.af-diagram--dormant .af-notes dt {
+    color: var(--stake-clay);
+}
+
+.af-notes dd {
+    color: var(--stake-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.af-notes--compact dd {
+    font-family: var(--crypto-mono);
+    font-size: 0.66rem;
+}
+
+/* ── Blockers ────────────────────────────────────────────────────────────── */
+
+.af-blockers {
+    counter-reset: blocker;
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.af-blockers__item {
+    border-left: 3px solid var(--stake-clay);
+    counter-increment: blocker;
+    min-width: 0;
+    padding-left: 0.9rem;
+}
+
+.af-blockers__name {
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.4;
+    margin: 0 0 0.45rem;
+}
+
+.af-blockers__name::before {
+    color: var(--stake-clay);
+    content: counter(blocker, decimal-leading-zero) " · ";
+}
+
+.af-blockers__copy {
+    color: var(--stake-muted);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* ── Outro ───────────────────────────────────────────────────────────────── */
+
+.af-outro {
+    border-top: 1px solid var(--stake-line);
+    margin-top: clamp(2.5rem, 7vh, 4rem);
+    padding-top: clamp(1.5rem, 4vh, 2.25rem);
+    text-align: center;
+}
+
+.af-outro__copy {
+    color: var(--stake-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    margin: 0 auto 1.5rem;
+    max-width: 36rem;
+}
+
+.af-outro__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* ── Narrow viewports ────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .af-floorplan {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* The label chips are the only affordance a touch user gets before
+       tapping, so they stay on permanently once the room is the full width. */
+    .af-station__name {
+        font-size: 0.5rem;
+        opacity: 1;
+    }
+}
+
+@media (max-width: 680px) {
+    .af-specs__row,
+    .af-addresses__row,
+    .af-notes__row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* The arrow sits in the horizontal gap; once the steps stack it has to
+       point down the column instead. */
+    .af-flow__step:not(:last-child)::after {
+        content: "↓";
+        left: 50%;
+        top: calc(100% + 0.1rem);
+        transform: translateX(-50%);
+    }
+
+    .af-chip__meta {
+        display: block;
+        margin: 0.35rem 0 0;
+    }
+}
+
+@media (max-width: 520px) {
+    /* Below this the chips collide with each other faster than they help;
+       the props themselves are still the tap targets and the card names
+       whatever was picked. */
+    .af-station__name {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .af-title3d__letter,
+    .af-station__steam,
+    .af-station__steam::after {
+        animation: none;
+    }
+
+    .af-station__steam {
+        opacity: 0.7;
+    }
+
+    .af-station,
+    .af-station__prop,
+    .af-station__spot,
+    .af-cta {
+        transition: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .af-station:hover {
+            transform: translate(-50%, -100%);
+        }
+    }
+
+    .af-cta:hover,
+    .af-cta:active {
+        transform: none;
+    }
+}

@@ -165,117 +165,126 @@ else
                 </div>
             }
 
-            <section class="yield-studio" aria-labelledby="liquid-staking-title">
-                <header class="yield-studio__heading">
-                    <p class="yield-hero__eyebrow">Yield / @SelectedChain.DisplayName</p>
-                    <div class="yield-title-row">
-                        <h1 id="liquid-staking-title">Liquid staking.</h1>
-                        <span class="yield-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
-                    </div>
-                </header>
-
-                <aside class="yield-position" aria-label="Staking position">
-                    <div class="yield-position__primary">
-                        <span>Your position</span>
-                        <strong class="tabular">@FormatAmount(_liquidDashboard.StCafeBalance)</strong>
-                        <small>stCAFE</small>
-                    </div>
-                    <dl class="yield-position__metrics">
-                        <div>
-                            <dt>Redeemable</dt>
-                            <dd class="tabular">@FormatAmount(_liquidDashboard.RedeemableCafe) <small>CAFE</small></dd>
+            @* ── Identity hero ─────────────────────────────────────────────
+               The golden pixel coin from the intro stands next to the headline
+               as a compact avatar. Position, metrics and APR badge all read in
+               a single glance, matching Profile's pf-id / pf-rail pattern. *@
+            <section class="yd-hero" aria-labelledby="liquid-staking-title">
+                <div class="yd-hero__coin" aria-hidden="true">
+                    <div class="yd-coin-scene">
+                        <div class="yd-coin3d">
+                            <img class="yd-coin-face" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                            <span class="yd-coin-layer" style="--layer: 1"></span>
+                            <span class="yd-coin-layer" style="--layer: 2"></span>
+                            <span class="yd-coin-layer" style="--layer: 3"></span>
+                            <span class="yd-coin-layer" style="--layer: 4"></span>
+                            <span class="yd-coin-layer" style="--layer: 5"></span>
+                            <span class="yd-coin-layer" style="--layer: 6"></span>
+                            <span class="yd-coin-layer" style="--layer: 7"></span>
+                            <span class="yd-coin-layer" style="--layer: 8"></span>
+                            <img class="yd-coin-face yd-coin-face--back" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
                         </div>
-                        <div class="yield-position__reward">
-                            <dt>Rewards</dt>
-                            <dd class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) <small>COFFEE</small></dd>
-                        </div>
-                    </dl>
-                </aside>
-
-                <div class="yield-token-stage" aria-label="CAFE converts one-to-one into stCAFE">
-                    <span class="yield-token-stage__label yield-token-stage__label--in">CAFE</span>
-                    <div class="yield-staked-orbit" aria-hidden="true">
-                        <div class="yield-staked-token-scene">
-                            <div class="yield-staked-token">
-                                <span class="yield-staked-token__face">
-                                    <img src="images/staked-coin-pixel.png" alt="" width="320" height="320" />
-                                    <span class="yield-staked-token__bean"></span>
-                                </span>
-                                <span class="yield-staked-token__layer" style="--layer: 1"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 2"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 3"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 4"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 5"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 6"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 7"></span>
-                                <span class="yield-staked-token__layer" style="--layer: 8"></span>
-                                <span class="yield-staked-token__face yield-staked-token__face--back">
-                                    <img src="images/staked-coin-pixel.png" alt="" width="320" height="320" />
-                                    <span class="yield-staked-token__bean"></span>
-                                </span>
-                            </div>
-                        </div>
-                        <span class="yield-token-orbit-line"></span>
                     </div>
-                    <span class="yield-token-stage__label yield-token-stage__label--out">stCAFE</span>
-                    <span class="yield-token-stage__rate">1 : 1</span>
                 </div>
 
-                <div class="yield-studio__actions">
-                    @if (!string.IsNullOrWhiteSpace(_liquidDashboard.UnavailableReason))
-                    {
-                        <p class="yield-config-card__body">@_liquidDashboard.UnavailableReason</p>
-                    }
-                    else if (_liquidDashboard.IsConfigured)
-                    {
-                        <div class="yield-action-card yield-action-card--primary">
-                            <div class="yield-action-card__label">
+                <div class="yd-hero__body">
+
+                    <div class="yd-hero__title-row">
+                        <h1 id="liquid-staking-title">Liquid staking.</h1>
+                        <span class="yd-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
+                    </div>
+                    <div class="yd-hero__position">
+                        <strong class="yd-hero__balance tabular">@FormatAmount(_liquidDashboard.StCafeBalance)</strong>
+                        <small class="yd-hero__unit">stCAFE</small>
+                    </div>
+                </div>
+            </section>
+
+            @* ── KPI Rail ──────────────────────────────────────────────────
+               Square cells, mono type, the same shape as Profile's pf-rail. *@
+            <ol class="yd-rail" aria-label="Wallet balances">
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">Wallet value</span>
+                    <span class="yd-rail__v yd-rail__v--num tabular">@FormatNativeWalletBalance()</span>
+                </li>
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">@_chain.CurrencySymbol</span>
+                    <span class="yd-rail__v tabular">@FormatAmount(_dashboard.NativeBalance)</span>
+                </li>
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">CAFE</span>
+                    <span class="yd-rail__v tabular">@FormatAmount(_dashboard.PaymentTokenBalance)</span>
+                </li>
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">COFFEE</span>
+                    <span class="yd-rail__v tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</span>
+                </li>
+            </ol>
+
+            @* ── Metrics panel ─────────────────────────────────────────────
+               Redeemable + Rewards, squared box with offset shadow. *@
+            <section class="yd-panel" aria-label="Staking metrics">
+                <div class="yd-panel__bar">
+                    <h2>Position</h2>
+                    <span class="yd-panel__count tabular">@FormatAmount(_liquidDashboard.StCafeBalance) stCAFE</span>
+                </div>
+                <dl class="yd-metrics">
+                    <div class="yd-metrics__cell">
+                        <dt>Redeemable</dt>
+                        <dd class="tabular">@FormatAmount(_liquidDashboard.RedeemableCafe) <small>CAFE</small></dd>
+                    </div>
+                    <div class="yd-metrics__cell yd-metrics__cell--reward">
+                        <dt>Rewards</dt>
+                        <dd class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) <small>COFFEE</small></dd>
+                    </div>
+                </dl>
+            </section>
+
+            @* ── Actions panel ─────────────────────────────────────────────
+               Deposit / Redeem / Claim in a unified squared panel. *@
+            <section class="yd-panel yd-panel--actions" aria-label="Staking actions">
+                <div class="yd-panel__bar">
+                    <h2>Actions</h2>
+                </div>
+                
+                <p class="yd-panel__desc">Stake CAFE to brew COFFEE rewards over time. Use COFFEE in the Procurement Lab to run testnet missions.</p>
+
+                @if (!string.IsNullOrWhiteSpace(_liquidDashboard.UnavailableReason))
+                {
+                    <p class="yield-config-card__body">@_liquidDashboard.UnavailableReason</p>
+                }
+                else if (_liquidDashboard.IsConfigured)
+                {
+                    <div class="yd-actions-grid">
+                        <div class="yd-action">
+                            <div class="yd-action__label">
                                 <span>Deposit</span>
                                 <small>@FormatAmount(_liquidDashboard.CafeBalance) CAFE available</small>
                             </div>
-                            <label class="yield-action-input" for="liquid-deposit-amount">
+                            <label class="yd-action__input" for="liquid-deposit-amount">
                                 <input id="liquid-deposit-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="0.00" />
                                 <span>CAFE</span>
                             </label>
-                            <button type="button" class="yield-cta-btn yield-cta-btn--dark btn-liquid-deposit">Stake</button>
+                            <button type="button" class="yd-btn yd-btn--dark btn-liquid-deposit">Stake</button>
                         </div>
-                        <div class="yield-action-card">
-                            <div class="yield-action-card__label">
+                        <div class="yd-action">
+                            <div class="yd-action__label">
                                 <span>Redeem</span>
                                 <small>@FormatAmount(_liquidDashboard.RedeemableCafe) CAFE available</small>
                             </div>
-                            <label class="yield-action-input" for="liquid-redeem-amount">
+                            <label class="yd-action__input" for="liquid-redeem-amount">
                                 <input id="liquid-redeem-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="0.00" />
                                 <span>stCAFE</span>
                             </label>
-                            <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-redeem">Redeem</button>
+                            <button type="button" class="yd-btn yd-btn--outline btn-liquid-redeem">Redeem</button>
                         </div>
-                        <button type="button" class="yield-claim-btn btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">
-                            <span>Claim rewards</span>
-                            <strong class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) COFFEE</strong>
-                            <span aria-hidden="true">→</span>
-                        </button>
-                    }
-                </div>
-
-                <dl class="yield-balance-rail" aria-label="Wallet balances">
-                    <div>
-                        <dt>Wallet value</dt>
-                        <dd class="tabular">@FormatNativeWalletBalance()</dd>
                     </div>
-                    <div>
-                        <dt>@_chain.CurrencySymbol</dt>
-                        <dd class="tabular">@FormatAmount(_dashboard.NativeBalance)</dd>
-                    </div>
-                    <div>
-                        <dt>CAFE</dt>
-                        <dd class="tabular">@FormatAmount(_dashboard.PaymentTokenBalance)</dd>
-                    </div>
-                    <div>
-                        <dt>COFFEE</dt>
-                        <dd class="tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
-                    </div>
-                </dl>
+                    <button type="button" class="yd-claim btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">
+                        <span>Claim rewards</span>
+                        <strong class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) COFFEE</strong>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                }
             </section>
 
             @if (!_liquidDashboard.IsConfigured)
@@ -473,8 +482,11 @@ else
             </section>
             }
 
-            <section class="yield-activity" aria-labelledby="yield-activity-title">
-                <h2 id="yield-activity-title" class="yield-activity-heading">Recent Activity</h2>
+            <section class="yd-panel yield-activity" aria-labelledby="yield-activity-title">
+                <div class="yd-panel__bar">
+                    <h2 id="yield-activity-title">Activity</h2>
+                    <span class="yd-panel__count">@_stakingLedger.Count</span>
+                </div>
                 @if (_stakingLedger.Count == 0)
                 {
                     <p class="yield-empty-note">No verified staking transactions are linked to this wallet yet.</p>
