@@ -83,12 +83,10 @@
         }
         <AuthorizeView>
             <Authorized>
-                <button class="@UserToggleCssClass nav-login--authorized"
+                <button class="nav-login nav-login--authorized"
                         type="button"
-                        aria-haspopup="dialog"
-                        aria-expanded="@_isUserMenuOpen"
-                        aria-label="Open account menu"
-                        @onclick="ToggleUserMenu">
+                        aria-label="Open profile"
+                        @onclick="@(() => Navigation.NavigateTo("profile"))">
                     <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
                     <span class="nav-login__text-stack">
                         <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
