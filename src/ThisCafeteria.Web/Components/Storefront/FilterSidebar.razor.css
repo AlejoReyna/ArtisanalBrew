@@ -1,3 +1,5 @@
+/* ── FilterSidebar — Artisanal premium styling ─────────────────────────── */
+
 .filter-panel {
     background-color: var(--surface);
     box-sizing: border-box;
@@ -12,24 +14,40 @@
     box-sizing: border-box;
 }
 
+/* ── Header ── */
 .filter-panel__header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid var(--accent);
+    position: relative;
+}
+
+.filter-panel__header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 4rem;
+    height: 2px;
+    background: var(--ink);
 }
 
 .filter-panel__title {
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    line-height: 1.15;
+    font-family: var(--font-sidebar-display);
+    font-size: 1.55rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
     margin: 0;
+    color: var(--ink);
 }
 
+/* ── Category list ── */
 .filter-panel__categories ul {
     display: grid;
-    gap: 0.15rem;
+    gap: 0;
     list-style: none;
-    margin: 0 0 1.75rem;
+    margin: 0 0 1.5rem;
     padding: 0;
 }
 
@@ -38,50 +56,89 @@
     border: 0;
     color: var(--muted);
     cursor: pointer;
-    display: block;
-    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    padding: 0.4rem 0;
+    padding: 0.55rem 0.75rem;
     text-align: left;
-    transition: color 140ms ease;
+    transition: color 200ms ease, background-color 200ms ease, padding-left 200ms ease;
     width: 100%;
+    border-radius: 0.5rem;
+    position: relative;
+}
+
+.filter-panel__category-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) scaleY(0);
+    width: 3px;
+    height: 60%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .filter-panel__category-link:hover {
     color: var(--ink);
+    background-color: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .filter-panel__category-link.is-active {
     color: var(--ink);
-    font-weight: 700;
+    font-weight: 600;
+    background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+    padding-left: 1rem;
 }
 
+.filter-panel__category-link.is-active::before {
+    transform: translateY(-50%) scaleY(1);
+}
+
+/* ── Sort control ── */
 .filter-panel__sort {
     align-items: center;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
     display: flex;
     gap: 0.75rem;
     justify-content: space-between;
-    padding: 1rem 0;
+    padding: 1.15rem 0;
 }
 
 .filter-panel__sort label {
     color: var(--ink);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .filter-panel__sort select {
+    appearance: none;
     background: var(--white);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23746a63' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
     border: 1px solid var(--line);
     border-radius: 0.5rem;
     color: var(--ink);
     font-family: inherit;
     font-size: 0.82rem;
+    font-weight: 500;
     max-width: 10rem;
-    padding: 0.4rem 0.6rem;
+    padding: 0.45rem 2rem 0.45rem 0.75rem;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+    cursor: pointer;
 }
 
+.filter-panel__sort select:hover {
+    border-color: var(--accent);
+}
+
+/* ── Focus visible ── */
 .filter-panel__sort select:focus-visible,
 .filter-panel__category-link:focus-visible,
 .filter-panel__section-header:focus-visible,
@@ -90,13 +147,14 @@
     outline-offset: 2px;
 }
 
+/* ── Collapsible sections ── */
 .filter-panel__sections {
     display: grid;
 }
 
 .filter-panel__section {
-    border-top: 1px solid var(--line);
-    padding: 1rem 0;
+    border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+    padding: 0;
 }
 
 .filter-panel__section-header {
@@ -107,17 +165,28 @@
     cursor: pointer;
     display: flex;
     font: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.82rem;
+    font-weight: 700;
     justify-content: space-between;
-    padding: 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1rem 0;
     text-align: left;
     width: 100%;
+    transition: color 160ms ease;
+}
+
+.filter-panel__section-header:hover {
+    color: var(--accent);
 }
 
 .filter-panel__chevron {
     color: var(--muted);
-    transition: transform 160ms ease;
+    transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1), color 160ms ease;
+}
+
+.filter-panel__section-header:hover .filter-panel__chevron {
+    color: var(--accent);
 }
 
 .filter-panel__chevron.is-open {
@@ -126,36 +195,91 @@
 
 .filter-panel__section-content {
     display: grid;
-    gap: 0.65rem;
-    margin-top: 0.9rem;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    animation: filterReveal 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes filterReveal {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Checkbox filters ── */
 .filter-panel__checkbox {
     align-items: center;
     cursor: pointer;
     display: flex;
     gap: 0.65rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+    transition: background-color 160ms ease;
 }
 
-.filter-panel__checkbox input {
-    accent-color: var(--accent);
-    height: 1.05rem;
+.filter-panel__checkbox:hover {
+    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.filter-panel__checkbox input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.3rem;
     margin: 0;
-    width: 1.05rem;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.filter-panel__checkbox input[type="checkbox"]:hover {
+    border-color: var(--accent);
+}
+
+.filter-panel__checkbox input[type="checkbox"]:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.filter-panel__checkbox input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    width: 0.35rem;
+    height: 0.6rem;
+    border: solid var(--white);
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .filter-panel__checkbox-label {
     color: var(--ink);
     flex: 1 1 auto;
-    font-size: 0.88rem;
+    font-size: 0.87rem;
+    font-weight: 450;
 }
 
 .filter-panel__checkbox-count {
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--line) 40%, transparent);
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 500;
+    line-height: 1.5;
 }
 
+/* ── Price range ── */
 .filter-panel__price-inputs {
     align-items: end;
     display: grid;
@@ -166,22 +290,30 @@
 .filter-panel__price-inputs label {
     color: var(--muted);
     display: grid;
-    font-size: 0.68rem;
-    gap: 0.2rem;
-    letter-spacing: 0.03em;
+    font-size: 0.65rem;
+    gap: 0.25rem;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+    font-weight: 600;
 }
 
 .filter-panel__price-inputs input {
     background: var(--white);
     border: 1px solid var(--line);
-    border-radius: 0.4rem;
+    border-radius: 0.5rem;
     color: var(--ink);
     font-family: inherit;
     font-size: 0.82rem;
     min-width: 0;
-    padding: 0.4rem 0.5rem;
+    padding: 0.45rem 0.6rem;
     width: 100%;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.filter-panel__price-inputs input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+    outline: none;
 }
 
 .filter-panel__range {
@@ -192,11 +324,12 @@
 
 .filter-panel__range-track,
 .filter-panel__range-fill {
-    height: 2px;
+    height: 3px;
     left: 0;
     position: absolute;
     right: 0;
-    top: calc(50% - 1px);
+    top: calc(50% - 1.5px);
+    border-radius: 2px;
 }
 
 .filter-panel__range-track {
@@ -204,7 +337,7 @@
 }
 
 .filter-panel__range-fill {
-    background: var(--accent);
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--ink)));
 }
 
 .filter-panel__range-input {
@@ -214,18 +347,26 @@
 .filter-panel__range-labels {
     color: var(--muted);
     display: flex;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+    font-weight: 500;
     justify-content: space-between;
-    margin-top: 0.35rem;
+    margin-top: 0.4rem;
+    letter-spacing: 0.02em;
 }
 
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
     .filter-panel__category-link,
     .filter-panel__chevron {
         transition: none;
     }
+
+    .filter-panel__section-content {
+        animation: none;
+    }
 }
 
+/* ── Mobile ── */
 @media (max-width: 1023px) {
     .filter-panel {
         padding: 0 0.25rem 1.5rem;
@@ -243,6 +384,9 @@
     .filter-panel {
         max-height: calc(100dvh - 3.325rem);
         overflow-y: auto;
+        /* Thin custom scrollbar that blends with the panel */
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--line) 60%, transparent) transparent;
         /* No left padding: the column's own margin-left cancellation
            (Products.razor.css .catalog-filter-sheet) already pulls this
            panel flush to the shell's left edge — padding here would just
@@ -250,5 +394,18 @@
         padding: 1.75rem 1.5rem 1.75rem 0;
         position: sticky;
         top: 3.325rem;
+    }
+
+    .filter-panel::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .filter-panel::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .filter-panel::-webkit-scrollbar-thumb {
+        background: color-mix(in srgb, var(--line) 60%, transparent);
+        border-radius: 4px;
     }
 }

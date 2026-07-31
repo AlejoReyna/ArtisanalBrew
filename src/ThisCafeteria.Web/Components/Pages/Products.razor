@@ -176,7 +176,7 @@
                            so opening one description would drag its neighbours' prices down
                            with it. The cards are a fixed composition and already share a
                            height, so nothing changes at rest. *@
-                        <div class="grid items-start gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
+                        <div class="grid items-stretch gap-6 @(_listView ? "grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3")"
                              data-animate="fade-up">
                             @for (var i = 0; i < cards.Count; i++)
                             {
@@ -417,30 +417,10 @@
             .ToList();
     }
 
-    // Seeded rows can point at /images/products/*.jpg assets that are not in wwwroot;
-    // the old grid hid those 404s behind CSS gradients, an <img> cannot. Fall back to a
-    // remote photo per product so the card always renders its beige image box with content.
-    private static readonly string[] FallbackImages =
-    [
-        "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1572119865084-43c285814d63?auto=format&fit=crop&w=800&q=80",
-        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
-    ];
-
-    private string? ResolveImageUrl(ProductDto product)
-    {
-        if (!string.IsNullOrWhiteSpace(product.ImageUrl)
-            && (product.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                || File.Exists(Path.Combine(
-                    WebHostEnvironment.WebRootPath ?? string.Empty,
-                    product.ImageUrl.TrimStart('/')))))
-        {
-            return product.ImageUrl;
-        }
-
-        return FallbackImages[product.Slug.Sum(c => c) % FallbackImages.Length];
-    }
+    // Shared with the detail page (CatalogImagery) so a card and the product page it flies
+    // into always show the same photo.
+    private string? ResolveImageUrl(ProductDto product) =>
+        CatalogImagery.Primary(product, WebHostEnvironment.WebRootPath);
 
     private void RemoveChip(string key)
     {

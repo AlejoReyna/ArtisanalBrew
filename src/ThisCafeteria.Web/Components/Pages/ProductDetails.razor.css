@@ -24,10 +24,16 @@
     padding: 0;
 }
 
+/* Three tracks — thumbnail rail, image stage, buy column — with the two gutters
+   as their own grid columns because the rail sits much closer to the stage than
+   the copy does (a single column-gap can't express that). Mobile restacks them
+   into one column further down. */
 .product-detail-card {
     background: var(--card-bg);
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-areas: "back" "stage" "rail" "info";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 0 auto auto 1fr;
     height: 100%;
     min-height: calc(100dvh + 5rem);
     overflow-y: auto;
@@ -54,10 +60,12 @@
     top: 1rem;
     transition: background 180ms ease, transform 120ms ease;
     width: 2.5rem;
-    z-index: 10;
+    z-index: 20;
 }
 
+/* Zero-height row on mobile: the control floats over the image instead. */
 .product-detail-card__back {
+    grid-area: back;
     margin: 0;
 }
 
@@ -66,6 +74,10 @@
     font-weight: 300;
     left: 1rem;
     text-decoration: none;
+}
+
+.product-detail-card__back-label {
+    display: none;
 }
 
 .product-detail-card__action-icon {
@@ -78,102 +90,308 @@
     transform: translateY(-1px);
 }
 
-.product-detail-card__header {
-    text-align: left;
-    min-width: 0;
-}
-
-.product-detail-card__title-row {
-    align-items: baseline;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-}
-
-.product-detail-card__name {
-    color: var(--card-ink);
-    font-family: 'Inter', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    line-height: 1.05;
-    margin: 0;
-    min-width: 0;
-    text-transform: uppercase;
-}
-
-.product-detail-card__tag {
-    color: var(--card-faint);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.66rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    margin: 0;
-    text-transform: uppercase;
-}
+/* ── Image stage ─────────────────────────────────────────────────────────── */
 
 .product-detail-card__media {
     background: var(--card-surface);
-    flex-shrink: 0;
-    padding: 0;
+    grid-area: stage;
+    min-width: 0;
     position: relative;
 }
 
 .product-detail-card__image {
     display: block;
-    height: 56dvh;
+    height: 100%;
     object-fit: cover;
     width: 100%;
 }
 
+.pdp-stage__badge {
+    align-items: center;
+    background: #ffffff;
+    border-radius: 999px;
+    box-shadow: 0 2px 10px rgba(28, 27, 26, 0.12);
+    color: var(--card-ink);
+    display: inline-flex;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    gap: 0.4rem;
+    left: 1rem;
+    padding: 0.5rem 0.9rem 0.5rem 0.75rem;
+    position: absolute;
+    top: 1rem;
+    z-index: 10;
+}
+
+.pdp-stage__nav {
+    bottom: 1rem;
+    display: flex;
+    gap: 0.6rem;
+    position: absolute;
+    right: 1rem;
+    z-index: 10;
+}
+
+.pdp-stage__nav button {
+    align-items: center;
+    background: #ffffff;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(28, 27, 26, 0.14);
+    color: var(--card-ink);
+    cursor: pointer;
+    display: inline-flex;
+    height: 2.6rem;
+    justify-content: center;
+    padding: 0;
+    transition: transform 120ms ease, background 180ms ease;
+    width: 2.6rem;
+}
+
+.pdp-stage__nav button:hover {
+    background: var(--card-surface);
+    transform: translateY(-1px);
+}
+
+/* ── Thumbnail rail ──────────────────────────────────────────────────────── */
+
+/* flex-start, not the default stretch: as a row the thumbs' aspect-ratio height
+   would otherwise resolve against a flex line that is itself still zero-high,
+   and they collapse to their borders. */
+.pdp-rail {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.5rem;
+    grid-area: rail;
+    min-width: 0;
+    scrollbar-width: none;
+}
+
+.pdp-rail::-webkit-scrollbar {
+    display: none;
+}
+
+.pdp-rail__thumb {
+    aspect-ratio: 1;
+    background: var(--card-surface);
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    transition: border-color 160ms ease, opacity 160ms ease;
+}
+
+.pdp-rail__thumb img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.pdp-rail__thumb:hover {
+    border-color: var(--card-line);
+}
+
+.pdp-rail__thumb--active,
+.pdp-rail__thumb--active:hover {
+    border-color: var(--card-ink);
+}
+
+/* ── Buy column ──────────────────────────────────────────────────────────── */
+
 /* Rhythm is per-block, not a uniform flex gap: tight inside logical groups
-   (title → stamp → desc → allergens), larger between groups. */
+   (title → subtitle → price), larger between groups. */
 .product-detail-card__sheet {
     background: var(--card-bg);
-    border-radius: 1.5rem 1.5rem 0 0;
     display: flex;
-    flex: 1;
     flex-direction: column;
-    margin-top: -1.5rem;
-    padding: 1.75rem 1.5rem 1.5rem;
+    grid-area: info;
+    min-width: 0;
     position: relative;
     z-index: 5;
+}
+
+.product-detail-card__header {
+    min-width: 0;
+    text-align: left;
+}
+
+.product-detail-card__name {
+    color: var(--card-ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    margin: 0;
+    min-width: 0;
+}
+
+.product-detail-card__subtitle {
+    color: var(--card-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.98rem;
+    margin: 0.25rem 0 0;
 }
 
 .product-detail-card__price {
     color: var(--card-ink);
     font-family: 'Inter', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin: 1.1rem 0 0;
+}
+
+.pdp-buy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 2rem;
+}
+
+.pdp-buy__row {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.pdp-buy__label {
+    color: var(--card-ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Pill stepper to match .btn-add-cart and the catalog's rounded-full buttons */
+.quantity-selector {
+    align-items: center;
+    border: 1px solid var(--card-line);
+    border-radius: 999px;
+    display: inline-flex;
+    height: 2.75rem;
+    overflow: hidden;
+}
+
+.quantity-btn {
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: var(--card-ink);
+    cursor: pointer;
+    display: inline-flex;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    height: 100%;
+    justify-content: center;
     line-height: 1;
+    padding: 0;
+    transition: background 180ms ease;
+    width: 2.4rem;
+}
+
+.quantity-btn:hover:not(:disabled) {
+    background: rgba(28, 27, 26, 0.06);
+}
+
+.quantity-btn:disabled {
+    color: rgba(28, 27, 26, 0.28);
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.quantity-value {
+    align-items: center;
+    color: var(--card-ink);
+    display: inline-flex;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    height: 100%;
+    justify-content: center;
+    min-width: 1.8rem;
+    padding: 0 0.25rem;
+}
+
+.btn-add-cart,
+.btn-favorite {
+    align-items: center;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    gap: 0.5rem;
+    justify-content: center;
+    min-height: 3.4rem;
+    padding: 0.6rem 1.5rem;
+    transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+    width: 100%;
+}
+
+.btn-add-cart {
+    background: var(--card-ink);
+    border: 1px solid var(--card-ink);
+    color: #f5f3ee;
+}
+
+.btn-add-cart:hover:not(:disabled) {
+    background: var(--card-accent);
+    border-color: var(--card-accent);
+}
+
+.btn-add-cart:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.btn-favorite {
+    background: transparent;
+    border: 1px solid var(--card-line);
+    color: var(--card-ink);
+}
+
+.btn-favorite:hover {
+    border-color: var(--card-ink);
+}
+
+.pdp-note {
+    margin-top: 1.75rem;
+}
+
+.pdp-note__title {
+    color: var(--card-ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
     margin: 0;
-    white-space: nowrap;
 }
 
-.product-detail-card__price-symbol {
-    color: var(--card-accent);
+.pdp-note__body {
+    color: var(--card-muted);
+    font-family: 'Inter', sans-serif;
     font-size: 0.85rem;
-    font-weight: 600;
-    margin-right: 0.05em;
-    vertical-align: 0.55em;
+    line-height: 1.6;
+    margin: 0.35rem 0 0;
 }
 
-.product-detail-card__price-int {
-    font-size: 1.7rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-}
+/* ── Details below the buy box ───────────────────────────────────────────── */
 
-.product-detail-card__price-frac {
-    font-size: 0.85rem;
-    font-weight: 600;
-    vertical-align: 0.55em;
+.pdp-details {
+    margin-top: 2rem;
 }
 
 .product-detail-card__stamp {
     align-items: center;
     display: inline-flex;
     gap: 0.5rem;
-    margin: 1.25rem 0 0;
+    margin: 0;
 }
 
 .product-detail-card__stamp-icon {
@@ -232,24 +450,6 @@
     height: 1.7rem;
     justify-content: center;
     width: 1.7rem;
-}
-
-.product-detail-card__pill {
-    align-items: center;
-    background: var(--card-bg);
-    border: 1px solid var(--card-ink);
-    border-radius: 999px;
-    color: var(--card-ink);
-    display: inline-flex;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 500;
-    gap: 0.35rem;
-    padding: 0.32rem 0.75rem 0.32rem 0.6rem;
-}
-
-.product-detail-card__pill-icon {
-    flex-shrink: 0;
 }
 
 .product-detail-card__divider {
@@ -332,105 +532,6 @@
     color: var(--card-faint);
 }
 
-/* Action bar sits just below the copy, kept clear of the screen edge */
-.product-detail-card__buybar {
-    align-items: stretch;
-    border-top: 1px solid var(--card-line);
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-}
-
-.product-detail-quantity {
-    align-items: center;
-    display: flex;
-    flex-shrink: 0;
-}
-
-/* Pill stepper to match .btn-add-cart and the catalog's rounded-full buttons */
-.quantity-selector {
-    align-items: center;
-    border: 1px solid var(--card-ink);
-    border-radius: 999px;
-    display: inline-flex;
-    height: 3.2rem;
-    overflow: hidden;
-}
-
-.quantity-btn {
-    align-items: center;
-    background: transparent;
-    border: none;
-    color: var(--card-ink);
-    cursor: pointer;
-    display: inline-flex;
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-    font-weight: 300;
-    height: 100%;
-    justify-content: center;
-    line-height: 1;
-    padding: 0;
-    transition: background 180ms ease;
-    width: 2.4rem;
-}
-
-.quantity-btn:hover:not(:disabled) {
-    background: rgba(28, 27, 26, 0.06);
-}
-
-.quantity-btn:disabled {
-    color: rgba(28, 27, 26, 0.28);
-    cursor: not-allowed;
-    opacity: 0.45;
-}
-
-.quantity-value {
-    align-items: center;
-    color: var(--card-ink);
-    display: inline-flex;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    height: 100%;
-    justify-content: center;
-    min-width: 1.8rem;
-    padding: 0 0.25rem;
-}
-
-.btn-add-cart {
-    align-items: center;
-    background: var(--card-ink);
-    border: 1px solid var(--card-ink);
-    border-radius: 999px;
-    color: #f5f3ee;
-    cursor: pointer;
-    display: inline-flex;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 800;
-    justify-content: center;
-    letter-spacing: 0.08em;
-    flex: 1;
-    min-height: 3.2rem;
-    padding: 0.6rem 1.5rem;
-    text-transform: uppercase;
-    transition: background 180ms ease, border-color 180ms ease, transform 120ms ease;
-    width: auto;
-}
-
-.btn-add-cart:hover:not(:disabled) {
-    background: var(--card-accent);
-    border-color: var(--card-accent);
-    transform: translateY(-1px);
-}
-
-.btn-add-cart:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
 .product-detail--empty h1 {
     color: var(--card-ink);
     font-size: clamp(2rem, 4vw, 3rem);
@@ -442,16 +543,20 @@
 }
 
 /* Entry animations from card transition. The clone from productTransition.js
-   lands exactly on the media panel and cross-fades into the real image, so
-   only the sheet's copy blocks animate — staggered, one item at a time. */
+   lands exactly on the image stage and cross-fades into the real image, so
+   only the rail and the buy column's copy animate — staggered, one item at a
+   time. */
+.product-detail-hero--from-card .pdp-rail,
 .product-detail-hero--from-card .product-detail-card__sheet > * {
     opacity: 0;
 }
 
+.product-detail-hero--from-card.product-detail-hero--ready .pdp-rail,
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > * {
     animation: product-detail-item-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.product-detail-hero--from-card.product-detail-hero--ready .pdp-rail { animation-delay: 100ms; }
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(1) { animation-delay: 120ms; }
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(2) { animation-delay: 160ms; }
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(3) { animation-delay: 200ms; }
@@ -460,9 +565,6 @@
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(6) { animation-delay: 320ms; }
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(7) { animation-delay: 360ms; }
 .product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(8) { animation-delay: 400ms; }
-.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(9) { animation-delay: 440ms; }
-.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(10) { animation-delay: 480ms; }
-.product-detail-hero--from-card.product-detail-hero--ready .product-detail-card__sheet > *:nth-child(11) { animation-delay: 520ms; }
 
 @keyframes product-detail-item-in {
     from {
@@ -493,16 +595,45 @@
         right: 0;
         width: 100%;
         z-index: 100;
+
+        /* The rail row is sized explicitly rather than left `auto`: it is a
+           horizontal scroll container, and next to a copy row that already
+           overflows the fixed-height sheet its automatic contribution resolves
+           to zero, which drops the thumbnails behind the copy. One row of
+           3.6rem thumbs plus the rail's own 1.5rem of padding. */
+        grid-template-rows: 0 auto calc(3.6rem + 1.5rem) 1fr;
     }
 
-    .product-detail-card__image {
-        height: 52dvh;
+    .product-detail-card__media {
+        height: 46dvh;
+    }
+
+    /* The rail is the first band of the white sheet on mobile, so it carries the
+       rounded lift over the image that the copy panel carries on desktop. */
+    .pdp-rail {
+        background: var(--card-bg);
+        border-radius: 1.5rem 1.5rem 0 0;
+        margin-top: -1.5rem;
+        overflow-x: auto;
+        padding: 1.25rem 1.5rem 0.25rem;
+        position: relative;
+        z-index: 5;
+    }
+
+    .pdp-rail__thumb {
+        height: 3.6rem;
+        width: 3.6rem;
+    }
+
+    /* Bottom-left, so it never lands under the floating back control. */
+    .pdp-stage__badge {
+        bottom: 1rem;
+        top: auto;
     }
 
     .product-detail-card__sheet {
-        min-height: auto;
         /* Keep the add-to-cart bar clearly above the mobile browser chrome. */
-        padding-bottom: calc(max(2rem, env(safe-area-inset-bottom)) + 4.5rem);
+        padding: 1.25rem 1.5rem calc(max(2rem, env(safe-area-inset-bottom)) + 4.5rem);
     }
 
     /* Bottom-sheet entry: same appear motion as the filter receipt sheet
@@ -545,12 +676,33 @@
     z-index: 1000;
 }
 
-/* Desktop: full-viewport split view — image left, info sheet right */
+/* Desktop: rail | square image stage | buy column, centred in the viewport.
+   --pdp-stage is the whole layout's one free dimension: the stage is square and
+   as large as the shorter of (viewport height less its padding) and (viewport
+   width less every fixed track beside it), so the three columns always fit
+   without scrolling. productTransition.js recomputes this same expression to
+   aim the shared-element flight — see the :root block in app.css. */
 @media (min-width: 961px) {
     .product-detail-card {
-        flex-direction: row;
+        --pdp-stage: min(
+            calc(100dvh - 2 * var(--pdp-pad-y)),
+            calc(100vw - (2 * var(--pdp-pad-x) + var(--pdp-rail) + var(--pdp-rail-gap) + var(--pdp-col-gap) + var(--pdp-info)))
+        );
+
+        align-content: center;
+        grid-template-areas:
+            "rail . stage . back"
+            "rail . stage . info";
+        grid-template-columns:
+            var(--pdp-rail)
+            var(--pdp-rail-gap)
+            var(--pdp-stage)
+            var(--pdp-col-gap)
+            var(--pdp-info);
+        grid-template-rows: auto auto;
         height: 100dvh;
         inset: 0;
+        justify-content: center;
         min-height: 100dvh;
         overflow: hidden;
         position: fixed;
@@ -558,72 +710,89 @@
         z-index: 100;
     }
 
+    /* Both centre themselves: when the buy column is the taller of the two, the
+       rows it defines are deeper than the stage, and start-aligned artwork would
+       leave all of that slack pooled underneath it. */
     .product-detail-card__media {
-        flex: 1 1 58%;
-        height: 100dvh;
-        min-width: 0;
+        align-self: center;
+        border-radius: var(--pdp-stage-radius);
+        height: var(--pdp-stage);
+        overflow: hidden;
     }
 
-    .product-detail-card__image {
-        height: 100%;
+    /* Exactly the stage's height, not merely capped by it, so the first
+       thumbnail lines up with the top edge of the artwork. */
+    .pdp-rail {
+        align-self: center;
+        flex-direction: column;
+        height: var(--pdp-stage);
+        overflow-y: auto;
+    }
+
+    .pdp-rail__thumb {
         width: 100%;
     }
 
-    .product-detail-card__back a,
     .product-detail-card__action-icon {
         height: 2.75rem;
+        right: 1rem;
         top: 1.5rem;
         width: 2.75rem;
     }
 
+    /* Back leaves the artwork and becomes a plain link heading the buy column. */
     .product-detail-card__back a {
-        left: 1.5rem;
+        align-items: center;
+        backdrop-filter: none;
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
+        color: var(--card-muted);
+        display: inline-flex;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 500;
+        gap: 0.45rem;
+        height: auto;
+        left: auto;
+        margin-bottom: 1.25rem;
+        position: static;
+        top: auto;
+        width: auto;
     }
 
-    .product-detail-card__action-icon {
-        right: 1.5rem;
+    .product-detail-card__back a:hover {
+        background: transparent;
+        color: var(--card-ink);
+        transform: none;
+    }
+
+    .product-detail-card__back-label {
+        display: inline;
     }
 
     .product-detail-card__sheet {
-        align-items: center;
-        border-left: 1px solid var(--card-line);
-        border-radius: 0;
-        flex: 1 1 42%;
-        justify-content: center;
-        margin-top: 0;
-        min-width: 0;
+        /* The back link above it already spends part of the stage's height. */
+        max-height: calc(100dvh - 2 * var(--pdp-pad-y) - 3rem);
         overflow-y: auto;
-        padding: clamp(2.5rem, 5vw, 4.5rem) clamp(2rem, 4vw, 4rem);
-    }
-
-    .product-detail-card__sheet > * {
-        max-width: 30rem;
-        width: 100%;
-    }
-
-    .product-detail-card__tag {
-        font-size: 0.72rem;
+        padding-right: 0.5rem;
+        scrollbar-width: thin;
     }
 
     .product-detail-card__name {
-        font-size: clamp(2.2rem, 3.2vw, 3rem);
+        font-size: 1.85rem;
     }
 
-    .product-detail-card__price-int {
-        font-size: 2.2rem;
-    }
-
-    .product-detail-card__price-symbol,
-    .product-detail-card__price-frac {
+    .product-detail-card__subtitle {
         font-size: 1.05rem;
     }
 
-    .product-detail-card__desc {
-        font-size: 1rem;
+    .product-detail-card__price {
+        font-size: 1.1rem;
     }
 
-    .product-detail-card__highlight {
-        font-size: 0.78rem;
+    .product-detail-card__desc {
+        font-size: 0.95rem;
     }
 
     .product-detail-card__stamp-label {
@@ -640,11 +809,6 @@
         width: 1.9rem;
     }
 
-    .product-detail-card__pill {
-        font-size: 0.8rem;
-        padding: 0.36rem 0.85rem 0.36rem 0.7rem;
-    }
-
     .product-detail-card__media-row-label {
         font-size: 0.98rem;
     }
@@ -657,13 +821,10 @@
     .product-detail-card__section-header {
         font-size: 1.15rem;
     }
-
-    .product-detail-card__buybar {
-        padding-top: 1.75rem;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .product-detail-hero--from-card .pdp-rail,
     .product-detail-hero--from-card .product-detail-card__sheet > *,
     .product-detail-card:not(.product-detail-sheet-dismiss-clone) {
         animation: none;

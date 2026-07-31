@@ -233,34 +233,11 @@
     column-gap: 1rem;
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
-    min-height: 3.4rem;
+    min-height: 2.6rem;
     padding-bottom: 0.75rem;
     row-gap: 0.5rem;
-}
-
-.pl-commandbar__id {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    min-width: 0;
-}
-
-.pl-commandbar__chain {
-    color: var(--stake-ink);
-    font: 700 0.62rem/1 var(--crypto-mono);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-/* .pl-copy sets `font: inherit` and is declared later in this file, so the
-   selector has to out-specify it rather than just come first. */
-.pl-commandbar__id .pl-commandbar__wallet {
-    color: var(--stake-copper);
-    font: 600 0.72rem/1 var(--crypto-mono);
-    letter-spacing: 0.06em;
 }
 
 .pl-commandbar__nav {
@@ -317,13 +294,6 @@
     max-width: 30rem;
 }
 
-.pl-console__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.7rem;
-    margin-top: clamp(1rem, 2vw, 1.4rem);
-}
-
 .pl-console__station {
     min-width: 0;
 }
@@ -340,14 +310,6 @@
 }
 
 /* ── Hero: editorial copy + robot station ── */
-.panel-kicker {
-    color: var(--stake-green);
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    font-size: 0.68rem;
-    font-weight: 700;
-}
-
 .procurement-lab h1 {
     margin: 0.6rem 0 0.75rem;
     font-family: var(--font-display);
@@ -399,11 +361,6 @@
     letter-spacing: 0.06em;
 }
 
-.pl-hero__protocols--heading {
-    font-size: clamp(1.4rem, 3vw, 2.45rem);
-    line-height: 1.3;
-    margin: 0 0 1rem;
-}
 
 .pl-proto__word {
     display: inline-block;
@@ -518,6 +475,18 @@
     z-index: 2;
 }
 
+/* The hero's lower deck is the bridge artwork, so this line is always read
+   against pixel robots — it needs its own shadow to stay legible. */
+.pl-hero__action-note {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 30rem;
+    text-shadow: 0 1px 4px rgba(5, 3, 2, 0.95), 0 0 12px rgba(5, 3, 2, 0.8);
+}
+
 .pl-hero__connect-error {
     color: var(--stake-clay);
     font-size: 0.85rem;
@@ -550,6 +519,12 @@
         filter: drop-shadow(7px 7px 0 var(--stake-copper));
         transform: translate(-2px, -2px);
     }
+}
+
+.pl-cta--sm {
+    font-size: 0.64rem;
+    min-height: 2.6rem;
+    padding-inline: 1.35rem;
 }
 
 .pl-cta:focus-visible {
@@ -623,6 +598,264 @@
 .pl-btn--reject:hover {
     background: rgba(229, 152, 128, 0.2);
 }
+
+.pl-btn--ghost {
+    background: transparent;
+    border-color: var(--stake-line);
+    color: var(--stake-muted);
+}
+
+.pl-btn--ghost:hover {
+    border-color: var(--stake-copper);
+    color: var(--stake-ink);
+}
+
+.pl-btn:disabled,
+.pl-cta:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+/* ── Pixel actors ───────────────────────────────────────────────────────────
+   The four roles of the escrow lifecycle, drawn rather than named: buyer,
+   vault, courier, inspector. Each robot sheet is 4 frames of 64px laid out
+   horizontally (256×64), so a 400% background steps through them; the vault is
+   a single cel and simply sits still. These are the only glyphs on the page
+   that survive translation — a first-time reader recognises "the one with the
+   box" before reading a word of it. */
+.pl-sprite {
+    animation: pl-sprite-frames 900ms steps(4, end) infinite;
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 400% 100%;
+    display: block;
+    flex: none;
+    height: 2.75rem;
+    image-rendering: pixelated;
+    width: 2.75rem;
+}
+
+@keyframes pl-sprite-frames {
+    to { background-position: 133.334% 0; }
+}
+
+.pl-sprite--sm {
+    height: 2rem;
+    width: 2rem;
+}
+
+.pl-sprite--xs {
+    height: 1.15rem;
+    width: 1.15rem;
+}
+
+.pl-sprite--buyer { background-image: url("images/pl-robot-buyer.png"); }
+.pl-sprite--courier { background-image: url("images/pl-robot-courier.png"); }
+.pl-sprite--inspector { background-image: url("images/pl-robot-inspector.png"); }
+.pl-sprite--scout { background-image: url("images/pl-robot-scout.png"); }
+
+/* Single-cel props: no sheet to step through. */
+.pl-sprite--vault,
+.pl-sprite--key,
+.pl-sprite--coin {
+    animation: none;
+    background-position: center;
+    background-size: contain;
+}
+
+.pl-sprite--vault { background-image: url("images/pl-vault.png"); }
+.pl-sprite--key { background-image: url("images/pl-key.png"); }
+.pl-sprite--coin { background-image: url("images/coffee-coin-pixel.png"); }
+
+@media (prefers-reduced-motion: reduce) {
+    .pl-sprite {
+        animation: none;
+    }
+}
+
+/* ── Next step ──────────────────────────────────────────────────────────────
+   The console's answer to "what do I do now?" — one action, named in plain
+   words, with its consequence stated before the wallet opens. Framed like the
+   .pl-cta (clipped pixel corners, hard copper shadow) so it reads as the one
+   thing on the page you are meant to press. */
+.pl-next {
+    align-items: center;
+    background: linear-gradient(150deg, rgba(212, 165, 116, 0.13), rgba(16, 13, 11, 0.55) 62%), var(--stake-surface);
+    clip-path: polygon(10px 0, calc(100% - 10px) 0, calc(100% - 10px) 5px, 100% 5px, 100% calc(100% - 10px), calc(100% - 5px) calc(100% - 10px), calc(100% - 5px) 100%, 10px 100%, 10px calc(100% - 5px), 0 calc(100% - 5px), 0 10px, 5px 10px, 5px 5px, 10px 5px);
+    column-gap: clamp(1.1rem, 2.5vw, 2rem);
+    display: grid;
+    /* Direct literal, not var(--stake-copper-dim): its 0.14 alpha disappears
+       against the frosted console plate, and the hard offset block is what
+       makes the card read as pressable pixel furniture. */
+    filter: drop-shadow(6px 6px 0 rgba(200, 155, 106, 0.42));
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-bottom: 1.25rem;
+    padding: clamp(1.35rem, 3vw, 1.9rem) clamp(1.4rem, 3vw, 2.1rem);
+}
+
+.pl-next__actor {
+    display: grid;
+    gap: 0.55rem;
+    justify-items: center;
+}
+
+.pl-next .pl-sprite {
+    height: 4rem;
+    width: 4rem;
+}
+
+.pl-next__step {
+    color: var(--stake-amber);
+    font: 400 0.5rem/1 'Press Start 2P', var(--crypto-mono);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.pl-next__copy {
+    min-width: 0;
+}
+
+/* No kicker above it: the sentence IS the label. */
+.pl-next h2 {
+    color: var(--stake-ink);
+    font: 400 clamp(0.82rem, 1.6vw, 1.02rem)/1.5 'Press Start 2P', var(--crypto-mono);
+    margin: 0 0 0.7rem;
+}
+
+.pl-next__body {
+    color: var(--stake-muted);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 46rem;
+}
+
+.pl-next__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-top: 1.15rem;
+}
+
+.pl-next__note {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    line-height: 1.55;
+    margin: 0.75rem 0 0;
+}
+
+/* The live line for a transaction in flight. Before this, a click opened
+   MetaMask and the page said nothing for three seconds. */
+.pl-next__activity {
+    align-items: center;
+    color: var(--stake-amber);
+    display: flex;
+    font-family: var(--crypto-mono);
+    font-size: 0.76rem;
+    gap: 0.5rem;
+    margin: 0.85rem 0 0;
+}
+
+.pl-next__activity::before {
+    animation: pl-activity-blink 1s steps(2, end) infinite;
+    background: var(--stake-amber);
+    content: "";
+    flex: none;
+    height: 0.4rem;
+    width: 0.4rem;
+}
+
+@keyframes pl-activity-blink {
+    to { opacity: 0.15; }
+}
+
+/* ── Lifecycle track ────────────────────────────────────────────────────────
+   The same four steps the whole page is built on, kept permanently on screen:
+   a map when signed out, a live board when connected (each card counts the
+   missions parked on it). */
+.pl-flow {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0;
+}
+
+.pl-flow__step {
+    align-content: start;
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    border-radius: 14px;
+    display: grid;
+    gap: 0.55rem;
+    padding: 1.1rem 1.2rem 1.2rem;
+    position: relative;
+}
+
+/* Pixel chevron between the cards: six blocks, no anti-aliased edges. */
+.pl-flow__step:not(:last-child)::after {
+    background: var(--stake-copper);
+    box-shadow:
+        0 -6px var(--stake-copper), 0 6px var(--stake-copper),
+        3px -3px var(--stake-copper), 3px 3px var(--stake-copper),
+        6px 0 var(--stake-copper);
+    content: "";
+    height: 3px;
+    opacity: 0.55;
+    position: absolute;
+    right: -0.72rem;
+    top: 2.2rem;
+    width: 3px;
+}
+
+.pl-flow__head {
+    align-items: center;
+    display: flex;
+    gap: 0.6rem;
+}
+
+.pl-flow__num {
+    background: var(--stake-copper-dim);
+    color: var(--stake-copper);
+    font: 400 0.58rem/1 'Press Start 2P', var(--crypto-mono);
+    padding: 0.4rem 0.42rem 0.32rem;
+}
+
+.pl-flow__title {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1.55 'Press Start 2P', var(--crypto-mono);
+    margin: 0;
+}
+
+.pl-flow__blurb {
+    color: var(--stake-muted);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+/* In the hero the track teaches; it must not outweigh the headline above it. */
+.pl-hero .pl-flow {
+    margin: clamp(1rem, 2.5vh, 1.6rem) 0 0;
+    max-width: 64rem;
+    position: relative;
+    text-align: left;
+    width: 100%;
+    z-index: 2;
+}
+
+/* Visual order in the hero is copy → CTA → track, while the DOM keeps
+   teach-before-act. The bridge crew is fixed to the lower third of the
+   viewport, so whatever lands last is read against pixel robots: the four
+   opaque cards survive that, the connect button and its one-line disclaimer
+   did not. (No focus-order cost — the track holds nothing focusable.) */
+.procurement-lab--intro .pl-hero__copy { order: 1; }
+.procurement-lab--intro .pl-hero__action { order: 2; }
+.procurement-lab--intro .pl-flow { order: 3; }
+.procurement-lab--intro .pl-hero__scene { order: 4; }
 
 /* ── Galactic robot station ──
    The scene is decorative (role="img" in markup); every animation below is a
@@ -767,200 +1000,159 @@
     }
 }
 
-/* ── Summary KPI row ── */
-.procurement-lab__summary {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: var(--stake-line);
-    border: 1px solid var(--stake-line);
-    border-radius: 14px;
-    overflow: hidden;
-    margin-bottom: 1.25rem;
-}
-
-.state-metric {
-    position: relative;
-    background: var(--stake-surface);
-    padding: 1.35rem 1.4rem 1.25rem;
-    display: grid;
-    gap: 0.4rem;
-}
-
-.state-metric::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 2.25rem;
-    height: 2px;
-    background: var(--stake-faint);
-}
-
-.state-metric--agents::before { background: var(--stake-green); }
-.state-metric--jobs::before { background: var(--stake-amber); }
-.state-metric--terminal::before { background: var(--stake-clay); }
-.state-metric--wallet::before { background: var(--stake-copper); }
-
-.state-metric__value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.state-metric--wallet .state-metric__value {
-    color: var(--stake-copper);
-    font-family: var(--crypto-mono);
-    font-size: 1.05rem;
-}
-
-.state-metric__label {
-    color: var(--stake-faint);
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.11em;
-}
-
-/* ── Panels ── */
-.procurement-lab__grid {
-    display: grid;
-    grid-template-columns: minmax(15rem, 0.72fr) minmax(0, 1.55fr);
-    gap: 1.25rem;
-}
-
-.projection-panel,
-.projection-empty {
+/* ── Dashboard shell ────────────────────────────────────────────────────────
+   The connected half of the page is a board, so its furniture is pixel
+   furniture: square corners, a hard offset shadow instead of a soft one, and
+   pixel-font headings small enough to act as labels rather than chapters. The
+   old console used 14px-radius cards, 1.7rem Playfair headings and a prose
+   paragraph under each — a reading surface pretending to be a dashboard. */
+.pl-panel {
     background: var(--stake-surface);
     border: 1px solid var(--stake-line);
-    border-radius: 14px;
-    padding: 1.6rem 1.75rem;
+    border-radius: 0;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+    margin-bottom: 0.9rem;
+    padding: 1rem 1.1rem 1.15rem;
 }
 
-/* Sits full-width above the grid: which authority is about to sign is context for every panel
-   below it, not one column's concern. */
-.projection-panel--permission {
-    margin-bottom: 1.25rem;
-}
-
-.projection-panel__heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.4rem;
-    padding-bottom: 1.1rem;
-    border-bottom: 1px solid var(--stake-line);
-}
-
-.projection-panel h2,
-.projection-empty h2 {
-    margin: 0.3rem 0 0;
-    color: var(--stake-ink);
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: 1.7rem;
-}
-
-.panel-count {
-    color: var(--stake-green);
-    font-size: 1.5rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-}
-
-.panel-note {
-    color: var(--stake-muted);
-    font-size: 0.85rem;
-}
-
-/* ── Panel-level empty states ── */
-.panel-empty {
-    display: grid;
-    justify-items: start;
-    gap: 0.4rem;
-    padding: 1.5rem 0 0.5rem;
-}
-
-.panel-empty__icon {
-    color: var(--stake-green);
-    font-size: 1.6rem;
-    opacity: 0.7;
-    margin-bottom: 0.35rem;
-}
-
-.panel-empty__lede {
-    margin: 0;
-    color: var(--stake-ink);
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-.panel-empty__hint {
-    margin: 0;
-    color: var(--stake-muted);
-    font-size: 0.82rem;
-    line-height: 1.55;
-    max-width: 34rem;
-}
-
-/* ── Agent identity cards ── */
-.agent-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: 0.25rem;
-}
-
-.agent-list__item {
-    display: flex;
+.pl-panel__bar {
     align-items: center;
-    gap: 0.85rem;
-    padding: 0.85rem 0;
-    border-top: 1px solid var(--stake-line);
+    border-bottom: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.9rem;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
 }
 
-.agent-list__item:first-child {
-    border-top: 0;
+.pl-panel h2 {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
+    margin: 0;
 }
 
-.agent-avatar {
-    flex: none;
+.pl-panel__tools {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.pl-panel__count {
+    color: var(--stake-green);
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+/* Every empty state on the board is one line with its actor in front of it. */
+.pl-panel__empty {
+    align-items: center;
+    color: var(--stake-muted);
+    display: flex;
+    font-size: 0.82rem;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0.35rem 0 0.2rem;
+}
+
+.pl-panel__empty a {
+    color: var(--stake-copper);
+}
+
+.pl-panel__note {
+    color: var(--stake-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    margin: 0.7rem 0 0;
+}
+
+.pl-dash-row {
     display: grid;
-    place-items: center;
-    width: 2.1rem;
-    height: 2.1rem;
-    border-radius: 9px;
-    font-family: var(--crypto-mono);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #12100e;
-    background: linear-gradient(135deg,
-        hsl(var(--pl-hue, 140) 42% 66%),
-        hsl(calc(var(--pl-hue, 140) + 38) 40% 52%));
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    gap: 0.9rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.agent-list__id {
+.pl-dash-row .pl-panel {
+    margin-bottom: 0;
+}
+
+/* ── Step rail ──────────────────────────────────────────────────────────────
+   The same four steps as the hero track, reduced to sprite + name + count.
+   It replaced the KPI row, which restated three numbers already visible in
+   the panel headers below it. */
+.pl-rail {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    list-style: none;
+    margin: 0 0 0.9rem;
+    padding: 0;
+}
+
+.pl-rail__step {
+    align-items: center;
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.55rem;
+    padding: 0.6rem 0.75rem;
+}
+
+.pl-rail__label {
+    color: var(--stake-muted);
     flex: 1;
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
     min-width: 0;
 }
 
-.agent-list__id strong {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 600;
+.pl-rail__count {
+    color: var(--stake-faint);
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
 }
 
-.agent-list__id small,
-.agent-list__addr {
-    display: block;
-    color: var(--stake-faint);
-    margin-top: 0.15rem;
+.pl-rail__step.is-occupied {
+    border-color: rgba(229, 192, 120, 0.4);
+}
+
+.pl-rail__step.is-occupied .pl-rail__label {
+    color: var(--stake-ink);
+}
+
+.pl-rail__step.is-occupied .pl-rail__count {
+    color: var(--stake-amber);
+}
+
+/* ── Robot roster ── */
+.robot-grid {
+    display: grid;
+    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.robot-chip {
+    align-items: center;
+    border: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+}
+
+.robot-chip strong {
+    color: var(--stake-ink);
     font-family: var(--crypto-mono);
     font-size: 0.72rem;
+}
+
+.robot-chip .pl-copy {
+    color: var(--stake-copper);
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+}
+
+.robot-chip.is-active {
+    border-color: rgba(143, 185, 155, 0.42);
 }
 
 /* ── Copy-to-clipboard affordance ── */
@@ -1055,192 +1247,196 @@
 .state-pill--open { color: var(--stake-copper); background: var(--stake-copper-dim); }
 .state-pill--idle { color: var(--stake-faint); background: rgba(244, 239, 230, 0.06); }
 
-/* ── Job cards ── */
-.job-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: 1.25rem;
-}
-
-.job-card {
-    border: 1px solid var(--stake-line);
-    border-radius: 12px;
-    background: var(--stake-surface-2);
-    padding: 1.35rem 1.45rem 1.5rem;
-    transition: box-shadow 200ms ease, border-color 200ms ease;
-}
-
-.job-card:hover {
-    border-color: var(--stake-line-strong);
-    box-shadow: 0 6px 26px rgba(0, 0, 0, 0.35);
-}
-
-.job-card__topline {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: flex-start;
-}
-
-.job-card__id {
-    color: var(--stake-copper);
-    font-family: var(--crypto-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-}
-
-.job-card h3 {
-    margin: 0.35rem 0 0;
-    color: var(--stake-ink);
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: 1.4rem;
-}
-
-.job-card__meta,
-.job-card__roles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem 1.5rem;
-    color: var(--stake-muted);
-    font-size: 0.76rem;
-    margin: 1rem 0;
-}
-
-.job-card__meta strong {
-    color: var(--stake-ink);
-    font-weight: 600;
-}
-
-/* ── Escrow lifecycle flow ── */
-.job-flow {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    margin: 1.35rem 0;
-}
-
-.job-flow__step {
-    position: relative;
+/* ── Mission rows ───────────────────────────────────────────────────────────
+   One mission is one row: the actor whose turn it is, its number, its state,
+   what is in escrow, a four-block progress bar, and the single button that
+   moves it. Addresses, chain, timestamp and the description hash — six lines
+   of text that were open on every card — now live inside <details>. */
+.mission-list {
     display: grid;
     gap: 0.5rem;
-    justify-items: center;
-    text-align: center;
-    color: var(--stake-faint);
-    font-size: 0.68rem;
-    font-weight: 500;
 }
 
-.job-flow__step::before {
-    content: "";
-    position: absolute;
-    top: 0.85rem;
-    left: -50%;
-    width: 100%;
-    height: 2px;
-    background: var(--stake-line);
-    z-index: 0;
-}
-
-.job-flow__step:first-child::before {
-    display: none;
-}
-
-.job-flow__marker {
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border: 1px solid var(--stake-line-strong);
-    border-radius: 50%;
-    background: var(--stake-surface);
-    font-size: 0.7rem;
-    font-weight: 600;
-    transition: all 200ms ease;
-}
-
-.job-flow__step.complete {
-    color: var(--stake-green);
-}
-
-.job-flow__step.complete::before {
-    background: var(--stake-green);
-}
-
-.job-flow__step.complete .job-flow__marker {
-    border-color: var(--stake-green);
-    background: rgba(143, 185, 155, 0.9);
-    color: #14231a;
-}
-
-.job-flow__step.current {
-    color: var(--stake-ink);
-}
-
-.job-flow__step.current .job-flow__marker {
-    border-color: var(--stake-green);
-    background: #2f4a39;
-    color: #fff;
-    box-shadow: 0 0 0 4px rgba(143, 185, 155, 0.16), 0 0 14px rgba(143, 185, 155, 0.35);
-}
-
-/* ── Roles / commitment ── */
-.job-card__roles {
-    margin: 1.35rem 0 0;
-    gap: 1rem 1.75rem;
-}
-
-.job-card__roles div {
-    min-width: 5rem;
-}
-
-.job-card__roles dt {
-    color: var(--stake-faint);
-    font-size: 0.64rem;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-}
-
-.job-card__roles dd {
-    margin: 0.3rem 0 0;
-    color: var(--stake-copper);
-    font-family: var(--crypto-mono);
-    font-size: 0.75rem;
-}
-
-.job-card__commitment {
-    display: flex;
-    justify-content: space-between;
+.mission {
     align-items: center;
-    gap: 1rem;
-    margin-top: 1.25rem;
-    padding-top: 0.9rem;
-    border-top: 1px dashed var(--stake-line);
-    color: var(--stake-faint);
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
+    column-gap: 0.9rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 0.7rem 0.85rem;
+    row-gap: 0.35rem;
 }
 
-.job-card__commitment code {
-    color: var(--stake-copper);
-    font-family: var(--crypto-mono);
-    font-size: 0.75rem;
-    text-transform: none;
-    letter-spacing: 0;
+/* Explicit placement, all four children: with only grid-row set, sparse
+   auto-placement dropped the action button into the text column. */
+.mission > .pl-sprite {
+    grid-column: 1;
+    grid-row: 1 / 3;
 }
 
-.job-card__actions {
+.mission--mine {
+    border-color: rgba(229, 192, 120, 0.45);
+}
+
+.mission__top {
+    grid-column: 2;
+    grid-row: 1;
+    align-items: baseline;
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-    margin-top: 1.25rem;
+}
+
+.mission__num {
+    color: var(--stake-ink);
+    font: 400 0.62rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+.mission__state {
+    font-family: var(--crypto-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    padding: 0.18rem 0.4rem;
+    text-transform: uppercase;
+}
+
+.mission__amount {
+    align-items: center;
+    color: var(--stake-amber);
+    display: flex;
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+    gap: 0.3rem;
+    margin-left: auto;
+}
+
+.mission__amount img {
+    image-rendering: pixelated;
+}
+
+.mission__bottom {
+    grid-column: 2;
+    grid-row: 2;
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+/* Four blocks, no numerals: done / here / not yet. */
+.mission__bar {
+    display: flex;
+    gap: 2px;
+}
+
+.mission__seg {
+    background: var(--stake-line);
+    display: block;
+    height: 7px;
+    width: 1.5rem;
+}
+
+.mission__seg.is-complete {
+    background: var(--stake-green);
+}
+
+.mission__seg.is-current {
+    background: var(--stake-amber);
+}
+
+.mission__turn {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+}
+
+.mission__turn.is-yours {
+    color: var(--stake-amber);
+}
+
+.mission__more {
+    margin-left: auto;
+}
+
+.mission__more summary {
+    color: var(--stake-faint);
+    cursor: pointer;
+    font-family: var(--crypto-mono);
+    font-size: 0.66rem;
+    list-style: none;
+}
+
+.mission__more summary::-webkit-details-marker {
+    display: none;
+}
+
+.mission__more summary::after {
+    content: " ▸";
+}
+
+.mission__more[open] summary::after {
+    content: " ▾";
+}
+
+.mission__more summary:hover {
+    color: var(--stake-ink);
+}
+
+.mission__roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.4rem;
+    margin: 0.7rem 0 0.2rem;
+}
+
+.mission__roles dt {
+    align-items: center;
+    color: var(--stake-faint);
+    display: flex;
+    font-family: var(--crypto-mono);
+    font-size: 0.6rem;
+    gap: 0.35rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.mission__roles dd {
+    align-items: center;
+    color: var(--stake-copper);
+    display: flex;
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+    gap: 0.35rem;
+    margin: 0.25rem 0 0;
+}
+
+.mission__roles code {
+    font-size: 0.68rem;
+}
+
+.mission__you {
+    background: var(--stake-copper-dim);
+    color: var(--stake-copper);
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    padding: 0.1rem 0.3rem;
+    text-transform: uppercase;
+}
+
+.mission__act {
+    align-items: center;
+    display: flex;
+    gap: 0.4rem;
+    grid-column: 3;
+    grid-row: 1 / 3;
 }
 
 /* ── Page-level empty / loading states ── */
 .projection-empty {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    padding: 1.6rem 1.75rem;
     display: flex;
     align-items: center;
     gap: 1.25rem;
@@ -1248,20 +1444,10 @@
     color: var(--stake-muted);
 }
 
-.projection-empty h2 {
-    color: var(--stake-ink);
-}
-
 .projection-empty p {
     margin: 0.5rem 0 0;
     max-width: 42rem;
     line-height: 1.55;
-}
-
-.projection-empty__icon {
-    color: var(--stake-green);
-    font-size: 2.25rem;
-    flex: none;
 }
 
 .projection-empty--loading {
@@ -1284,9 +1470,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .pl-btn,
-    .pl-cta,
-    .job-card,
-    .job-flow__marker { transition: none; }
+    .pl-cta { transition: none; }
     .pl-btn:hover { transform: none; }
     .projection-empty__pulse { animation-duration: 1.6s; }
 
@@ -1312,8 +1496,12 @@
         overflow-x: clip;
     }
 
-    .procurement-lab__grid {
-        grid-template-columns: 1fr;
+    .pl-dash-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pl-rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .pl-console {
@@ -1330,12 +1518,24 @@
         font-size: clamp(1.25rem, 4.5vw, 2.15rem);
     }
 
-    /* Now the primary hero heading (see pl-hero__protocols--heading), so it
-       needs to read as one rather than shrinking below the lede beneath it.
-       Sized to stay on a single row down to the narrowest common phones. */
-    .pl-hero__protocols--heading {
-        font-size: clamp(0.85rem, 2.6vw, 1.4rem);
-        white-space: nowrap;
+    /* Two rows of two. The chevrons only make sense along a single row. */
+    .pl-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pl-flow__step:not(:last-child)::after {
+        display: none;
+    }
+
+    .pl-next {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 1rem;
+    }
+
+    .pl-next__actor {
+        grid-auto-flow: column;
+        justify-content: start;
+        justify-items: start;
     }
 
     .procurement-lab--intro .pl-hero__copy,
@@ -1379,12 +1579,23 @@
         padding-inline: clamp(1rem, 5vw, 1.5rem);
     }
 
-    .procurement-lab__summary {
-        grid-template-columns: repeat(2, 1fr);
+    .pl-flow {
+        grid-template-columns: minmax(0, 1fr);
     }
 
-    .job-flow__label {
-        display: none;
+    /* The row collapses to sprite + text, with the action underneath: at this
+       width a three-column row squeezes the progress bar out of existence. */
+    .mission {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .mission__act {
+        grid-column: 2;
+        grid-row: 3;
+    }
+
+    .pl-hero .pl-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .pl-hero h1 {
@@ -1392,15 +1603,38 @@
         line-height: 1.4;
     }
 
-    .pl-hero__protocols--heading {
-        font-size: clamp(0.37rem, 1.85vw, 0.78rem);
+    .pl-hero__protocols {
+        font-size: clamp(0.37rem, 1.85vw, 0.58rem);
         letter-spacing: 0.01em;
-        line-height: 1.4;
         white-space: nowrap;
     }
 
-    .pl-hero__protocols--heading .pl-proto__word + .pl-proto__word {
+    .pl-hero__protocols .pl-proto__word + .pl-proto__word {
         margin-left: 0.3em;
+    }
+
+    /* On a phone the hero has to fit above the crew: the track keeps its four
+       named steps and drops the explanatory sentence, which the console below
+       still carries in full. */
+    .pl-hero .pl-flow {
+        gap: 0.4rem;
+    }
+
+    .pl-hero .pl-flow__step {
+        padding: 0.7rem 0.75rem 0.8rem;
+    }
+
+    .pl-hero .pl-flow__blurb {
+        display: none;
+    }
+
+    .pl-hero .pl-sprite {
+        height: 1.9rem;
+        width: 1.9rem;
+    }
+
+    .pl-hero .pl-flow__title {
+        font-size: 0.52rem;
     }
 
     .pl-hero__lede {
