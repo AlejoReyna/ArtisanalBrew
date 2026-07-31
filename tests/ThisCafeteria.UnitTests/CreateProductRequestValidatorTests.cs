@@ -17,7 +17,10 @@ public sealed class CreateProductRequestValidatorTests
             3.50m,
             10,
             null,
-            ProductCategory.Beans);
+            ProductCategory.Beans,
+            "Brazil",
+            RoastLevel.Dark,
+            CoffeeProcess.Natural);
 
         var result = validator.Validate(request);
 

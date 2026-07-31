@@ -126,7 +126,16 @@
                                MaxPrice="@_maxPrice"
                                MaxPriceChanged="value => { _maxPrice = value; _currentPage = 1; }"
                                PriceFloor="@_priceFloor"
-                               PriceCeiling="@_priceCeiling" />
+                               PriceCeiling="@_priceCeiling"
+                               OriginOptions="@OriginOptions"
+                               SelectedOrigins="@_selectedOrigins"
+                               OriginToggled="ToggleOrigin"
+                               RoastOptions="@RoastOptions"
+                               SelectedRoasts="@_selectedRoasts"
+                               RoastToggled="ToggleRoast"
+                               ProcessOptions="@ProcessOptions"
+                               SelectedProcesses="@_selectedProcesses"
+                               ProcessToggled="ToggleProcess" />
                 </div>
 
                 <div class="min-w-0 flex-1 mt-10">
@@ -217,6 +226,9 @@
     private decimal _priceFloor;
     private decimal _priceCeiling;
     private string _sort = CatalogToolbar.SortDefault;
+    private readonly HashSet<string> _selectedOrigins = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _selectedRoasts = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _selectedProcesses = new(StringComparer.Ordinal);
     private bool _listView;
     private bool _filtersOpen;
     private string? _addingSlug;
@@ -243,6 +255,30 @@
                 group.Count()))
             .ToList();
 
+    private IReadOnlyList<CatalogCategoryOption> OriginOptions =>
+        _products
+            .Where(product => product.IsActive && !string.IsNullOrWhiteSpace(product.Origin))
+            .GroupBy(product => product.Origin!, StringComparer.Ordinal)
+            .OrderBy(group => group.Key, StringComparer.Ordinal)
+            .Select(group => new CatalogCategoryOption(group.Key, group.Key, group.Count()))
+            .ToList();
+
+    private IReadOnlyList<CatalogCategoryOption> RoastOptions =>
+        _products
+            .Where(product => product.IsActive && product.RoastLevel.HasValue)
+            .GroupBy(product => product.RoastLevel!.Value)
+            .OrderBy(group => (int)group.Key)
+            .Select(group => new CatalogCategoryOption(group.Key.ToString(), group.Key.ToString(), group.Count()))
+            .ToList();
+
+    private IReadOnlyList<CatalogCategoryOption> ProcessOptions =>
+        _products
+            .Where(product => product.IsActive && product.Process.HasValue)
+            .GroupBy(product => product.Process!.Value)
+            .OrderBy(group => (int)group.Key)
+            .Select(group => new CatalogCategoryOption(group.Key.ToString(), group.Key.ToString(), group.Count()))
+            .ToList();
+
     private IReadOnlyList<CatalogFilterChip> AppliedChips
     {
         get
@@ -259,8 +295,39 @@
                 chips.Add(new("price", $"{_minPrice:0} – {_maxPrice:0} $"));
             }
 
+            foreach (var origin in _selectedOrigins.OrderBy(value => value, StringComparer.Ordinal))
+            {
+                chips.Add(new($"origin:{origin}", $"Origin: {origin}"));
+            }
+
+            foreach (var roast in _selectedRoasts.OrderBy(value => value, StringComparer.Ordinal))
+            {
+                chips.Add(new($"roast:{roast}", $"Roast: {roast}"));
+            }
+
+            foreach (var process in _selectedProcesses.OrderBy(value => value, StringComparer.Ordinal))
+            {
+                chips.Add(new($"process:{process}", $"Process: {process}"));
+            }
+
             return chips;
         }
+    }
+
+    private void ToggleOrigin(string key) => ToggleFacet(_selectedOrigins, key);
+
+    private void ToggleRoast(string key) => ToggleFacet(_selectedRoasts, key);
+
+    private void ToggleProcess(string key) => ToggleFacet(_selectedProcesses, key);
+
+    private void ToggleFacet(HashSet<string> facet, string key)
+    {
+        if (!facet.Add(key))
+        {
+            facet.Remove(key);
+        }
+
+        _currentPage = 1;
     }
 
     protected override async Task OnInitializedAsync()
@@ -321,7 +388,13 @@
             .Where(product => product.IsActive)
             .Where(product => string.IsNullOrEmpty(_selectedCategory) || product.Category.ToString() == _selectedCategory)
             .Where(product => product.StockQuantity > 0)
-            .Where(product => product.Price >= _minPrice && product.Price <= _maxPrice);
+            .Where(product => product.Price >= _minPrice && product.Price <= _maxPrice)
+            .Where(product => _selectedOrigins.Count == 0
+                || (product.Origin is not null && _selectedOrigins.Contains(product.Origin)))
+            .Where(product => _selectedRoasts.Count == 0
+                || (product.RoastLevel.HasValue && _selectedRoasts.Contains(product.RoastLevel.Value.ToString())))
+            .Where(product => _selectedProcesses.Count == 0
+                || (product.Process.HasValue && _selectedProcesses.Contains(product.Process.Value.ToString())));
 
         var ordered = _sort switch
         {
@@ -372,6 +445,25 @@
     private void RemoveChip(string key)
     {
         _currentPage = 1;
+
+        if (key.StartsWith("origin:", StringComparison.Ordinal))
+        {
+            _selectedOrigins.Remove(key["origin:".Length..]);
+            return;
+        }
+
+        if (key.StartsWith("roast:", StringComparison.Ordinal))
+        {
+            _selectedRoasts.Remove(key["roast:".Length..]);
+            return;
+        }
+
+        if (key.StartsWith("process:", StringComparison.Ordinal))
+        {
+            _selectedProcesses.Remove(key["process:".Length..]);
+            return;
+        }
+
         switch (key)
         {
             case "category":
@@ -389,6 +481,9 @@
         _selectedCategory = string.Empty;
         _minPrice = _priceFloor;
         _maxPrice = _priceCeiling;
+        _selectedOrigins.Clear();
+        _selectedRoasts.Clear();
+        _selectedProcesses.Clear();
         _currentPage = 1;
     }
 

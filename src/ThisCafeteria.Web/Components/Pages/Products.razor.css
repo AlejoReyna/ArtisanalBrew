@@ -658,14 +658,14 @@
     }
 
     .catalog-filter-sheet {
-        /* Matches --receipt-paper (FilterSidebar.razor.css). The sticky
-           ticket has to be shorter than this column for sticky to have any
-           room to hold — that's unavoidable, and once scroll passes the
+        /* Matches --surface (FilterSidebar.razor.css .filter-panel). The
+           sticky panel has to be shorter than this column for sticky to have
+           any room to hold — that's unavoidable, and once scroll passes the
            bottom of the grid it detaches and settles at the column's end,
            same as any sticky sidebar. Painting the column this color means
-           whatever sliver shows below the ticket at that point reads as more
-           receipt paper, not a gap — no need to fight the detach itself. */
-        background-color: #f8f1df;
+           whatever sliver shows below the panel at that point reads as more
+           panel, not a gap — no need to fight the detach itself. */
+        background-color: var(--surface);
         margin-left: -2rem;
     }
 }

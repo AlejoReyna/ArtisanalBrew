@@ -42,6 +42,9 @@ public sealed class ProductService(
             StockQuantity = request.StockQuantity,
             ImageUrl = request.ImageUrl,
             Category = request.Category,
+            Origin = request.Origin,
+            RoastLevel = request.RoastLevel,
+            Process = request.Process,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -67,6 +70,9 @@ public sealed class ProductService(
         product.StockQuantity = request.StockQuantity;
         product.ImageUrl = request.ImageUrl;
         product.Category = request.Category;
+        product.Origin = request.Origin;
+        product.RoastLevel = request.RoastLevel;
+        product.Process = request.Process;
         product.IsActive = request.IsActive;
         product.UpdatedAt = DateTime.UtcNow;
 
@@ -95,5 +101,8 @@ public sealed class ProductService(
         product.StockQuantity,
         product.ImageUrl,
         product.Category,
-        product.IsActive);
+        product.IsActive,
+        product.Origin,
+        product.RoastLevel,
+        product.Process);
 }

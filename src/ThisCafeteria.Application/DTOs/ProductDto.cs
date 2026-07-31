@@ -11,4 +11,7 @@ public sealed record ProductDto(
     int StockQuantity,
     string? ImageUrl,
     ProductCategory Category,
-    bool IsActive);
+    bool IsActive,
+    string? Origin,
+    RoastLevel? RoastLevel,
+    CoffeeProcess? Process);
