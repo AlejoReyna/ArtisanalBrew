@@ -654,6 +654,11 @@
    column's height the way that did. */
 @media (min-width: 1024px) {
     .catalog-shell {
+        /* Kill the centered max-width box so the sidebar can sit flush
+           against the viewport edge instead of being trapped inside a
+           1280px island. The grid area still has lg:px-8 right padding. */
+        margin-inline: 0;
+        max-width: none;
         padding-top: 0;
     }
 
