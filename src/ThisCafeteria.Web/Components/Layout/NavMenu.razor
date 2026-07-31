@@ -42,7 +42,10 @@
             Lab
         </NavLink>
 
-        <NavLink class="nav-link nav-link--about" href="story" @onclick="CloseNav">
+        @* About now lands on the isometric café floor (/about), which is the
+           short version; /story is the long build log and is reachable from
+           the bottom of that page rather than from here. *@
+        <NavLink class="nav-link nav-link--about" href="about" @onclick="CloseNav">
             About
         </NavLink>
     </div>
@@ -180,7 +183,7 @@
                 </span>
                 <span class="nav-drawer__tile-label">Lab</span>
             </NavLink>
-            <NavLink class="nav-drawer__tile" href="story" @onclick="CloseNav">
+            <NavLink class="nav-drawer__tile" href="about" @onclick="CloseNav">
                 <span class="nav-drawer__tile-icon" aria-hidden="true">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                 </span>

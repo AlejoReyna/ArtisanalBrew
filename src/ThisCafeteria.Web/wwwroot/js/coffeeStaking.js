@@ -131,7 +131,7 @@ async function getWeb3() {
     return web3Instance;
 }
 
-async function resolveMetaMaskProvider() {
+export async function resolveMetaMaskProvider() {
     const providers = await getAvailableProviders();
     return findMetaMaskProvider(providers);
 }

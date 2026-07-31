@@ -321,6 +321,14 @@
             "story",
             StringComparison.OrdinalIgnoreCase);
 
+    // /about is the isometric café floor: another full-page roast surface, so
+    // it takes the same near-black first paint as the home hero.
+    private bool IsAboutRoute =>
+        string.Equals(
+            InitialPath,
+            "about",
+            StringComparison.OrdinalIgnoreCase);
+
     // Drives which layer of the GlobalScene background scenario is visible
     // (Components/Layout/GlobalScene.razor + the matching rules in app.css).
     // The scene's containers are data-permanent, so enhanced navigation only
@@ -342,7 +350,7 @@
     private string InitialThemeColor =>
         IsStoryRoute
             ? "#0f0f11"
-            : IsHomeRoute
+            : IsHomeRoute || IsAboutRoute
                 ? "#100D0B"
                 : "#958276";
 
@@ -351,5 +359,7 @@
     // hero routes' backgrounds in the initial HTML so their safe areas never
     // start cream.
     private string? InitialDocumentBackground =>
-        IsStoryRoute || IsHomeRoute ? $"background-color: {InitialThemeColor};" : null;
+        IsStoryRoute || IsHomeRoute || IsAboutRoute
+            ? $"background-color: {InitialThemeColor};"
+            : null;
 }

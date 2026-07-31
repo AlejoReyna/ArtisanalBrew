@@ -261,6 +261,13 @@
     font-size: 0.78rem;
 }
 
+.pf-faucet-group {
+    align-items: center;
+    display: flex;
+    gap: 0.45rem;
+    white-space: nowrap;
+}
+
 .pf-idline__faucet {
     color: var(--stake-copper);
     font-family: var(--crypto-mono);
@@ -274,6 +281,80 @@
     color: var(--stake-amber);
     text-decoration: underline;
 }
+
+/* --- ETH asset icon + hover selector --- */
+.pf-faucet-asset {
+    position: relative;
+    flex: none;
+    cursor: pointer;
+}
+
+.pf-faucet-asset__icon {
+    display: block;
+    width: 1.35rem;
+    height: 1.35rem;
+    object-fit: contain;
+    animation: asset-rainbow 4s linear infinite;
+    transition: transform 220ms cubic-bezier(.23,1,.32,1);
+}
+
+@keyframes asset-rainbow {
+    0%   { filter: sepia(1) saturate(4) hue-rotate(0deg); }
+    100% { filter: sepia(1) saturate(4) hue-rotate(360deg); }
+}
+
+.pf-faucet-asset:hover .pf-faucet-asset__icon {
+    transform: scale(1.18) translateY(-1px);
+}
+
+/* Selector dropdown beneath the asset icon */
+.pf-faucet-selector {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    display: flex;
+    flex-direction: column;
+    min-width: 7rem;
+    padding: 0.3rem 0;
+    background: var(--stake-surface-2, #1e1e1e);
+    border: 1px solid var(--stake-line-strong, #333);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease,
+                transform 180ms cubic-bezier(.23,1,.32,1);
+    z-index: 20;
+}
+
+.pf-faucet-asset:hover .pf-faucet-selector {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.pf-faucet-selector__item {
+    color: var(--stake-ink, #c8c0b4);
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    padding: 0.35rem 0.75rem;
+    text-decoration: none;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.pf-faucet-selector__item:hover {
+    background: rgba(151, 117, 250, .12);
+    color: #c4b5fd;
+}
+
+.pf-faucet-selector__item.is-active {
+    color: #9775fa;
+    font-weight: 600;
+}
+
+
 
 /* Both chips arrive from shared components as rounded pills on a light-ish
    surface; on this board they are pixel furniture. Selectors carry

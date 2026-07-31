@@ -658,15 +658,17 @@
     }
 
     .catalog-filter-sheet {
-        /* Matches --surface (FilterSidebar.razor.css .filter-panel). The
+        /* Matches --surface-deep (FilterSidebar.razor.css .filter-panel). The
            sticky panel has to be shorter than this column for sticky to have
            any room to hold — that's unavoidable, and once scroll passes the
            bottom of the grid it detaches and settles at the column's end,
            same as any sticky sidebar. Painting the column this color means
            whatever sliver shows below the panel at that point reads as more
            panel, not a gap — no need to fight the detach itself. */
-        background-color: var(--surface);
+        background-color: var(--surface-deep);
         margin-left: -2rem;
+        margin-bottom: -6rem; /* Extends the column into the pb-24 padding of .catalog-shell */
+        padding-bottom: 6rem; /* Prevents the sticky panel from entering the padded area */
     }
 }
 
@@ -768,4 +770,33 @@
     .catalog-subnav__tab:first-child {
         padding-left: 0.35rem;
     }
+}
+
+/* ── Paginator buttons ── */
+.catalog-paginator-btn {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--color-line, #e5e0d8);
+    border-radius: 50%;
+    color: var(--color-ink, #1c1b1a);
+    cursor: pointer;
+    display: flex;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    height: 2.75rem;
+    justify-content: center;
+    transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+    width: 2.75rem;
+}
+
+.catalog-paginator-btn:hover {
+    border-color: var(--color-ink, #1c1b1a);
+}
+
+.catalog-paginator-btn.is-active {
+    background: var(--color-accent, #e8781e);
+    border-color: var(--color-accent, #e8781e);
+    color: #ffffff;
+    font-weight: 600;
 }

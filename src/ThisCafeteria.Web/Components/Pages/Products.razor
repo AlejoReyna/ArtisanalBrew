@@ -194,12 +194,12 @@
                         @if (_totalFilteredCount > _pageSize)
                         {
                             var totalPages = (int)Math.Ceiling((double)_totalFilteredCount / _pageSize);
-                            <div class="mt-12 flex justify-center gap-2" data-animate="fade-up">
+                            <div class="mt-12 flex justify-center gap-3" data-animate="fade-up">
                                 @for (int p = 1; p <= totalPages; p++)
                                 {
                                     var pageNum = p;
                                     <button type="button"
-                                            class="flex h-10 w-10 items-center justify-center rounded-full border @(pageNum == _currentPage ? "border-accent bg-accent text-white" : "border-line bg-transparent text-ink hover:border-ink") text-sm font-medium transition-colors"
+                                            class="catalog-paginator-btn @(pageNum == _currentPage ? "is-active" : "")"
                                             @onclick="() => { _currentPage = pageNum; }">
                                         @pageNum
                                     </button>

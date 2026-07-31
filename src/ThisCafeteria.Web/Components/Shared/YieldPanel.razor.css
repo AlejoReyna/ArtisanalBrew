@@ -1167,32 +1167,17 @@
 .yield-liquid-summary__actions .yield-token-input { border: 1px solid var(--stake-line-strong); border-radius: 999px; min-width: 9rem; padding: .7rem .85rem; }
 @media (max-width: 800px) { .yield-liquid-summary { grid-template-columns: 1fr; } }
 
-/* ── Connected liquid-staking studio ──────────────────────────────────────
-   Three zones: position, physical token, and transaction desk. Secondary
-   faucet/legacy tools remain below this primary screen.
-
-   The panel sizes to its content. It used to be pinned to 100dvh at three
-   levels (dashboard, main, studio), which made a tall window tear the three
-   columns apart with dead space and a short one squeeze them; heights are
-   capped now and the page just scrolls. */
+/* ── Connected liquid-staking dashboard ───────────────────────────────────
+   Profile / ProcurementLab pixel furniture: square corners, offset shadows,
+   Press Start 2P headings, frosted backdrop. The 3-column yield-studio grid
+   was replaced by a stacked layout: hero → rail → panels → activity. */
 .yield-dashboard--liquid {
     background: transparent;
     display: block;
     position: relative;
 }
 
-/* The pixel-space scenario is the ground for every StakingLayout page, but a
-   wallet dashboard is a reading surface: balances, inputs and labels were
-   sitting straight on drifting coins, chain badges and stars, and neither the
-   figures nor the sky read. While the connected panel is mounted, this fixed
-   plate frosts the whole viewport behind it — the scene survives as soft
-   bokeh, the numbers stay legible.
-
-   Deliberately NOT isolation/filter/opacity anywhere up the ancestor chain:
-   any of those would make an ancestor the backdrop root and leave this
-   backdrop-filter with nothing to blur. z-index: -1 keeps it under the
-   dashboard's own content while still painting over .gs-scene, which is
-   outside <main>'s stacking context. */
+/* Frosted backdrop — same technique as Profile.razor.css. */
 .yield-dashboard--liquid::before {
     backdrop-filter: blur(22px) saturate(118%);
     -webkit-backdrop-filter: blur(22px) saturate(118%);
@@ -1206,9 +1191,6 @@
     z-index: -1;
 }
 
-/* Without the blur the scene stays sharp behind the panel, so the scrim has
-   to carry the legibility on its own. Same for anyone who asked for less
-   transparency. */
 @supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
     .yield-dashboard--liquid::before {
         background: rgba(16, 13, 11, 0.93);
@@ -1221,23 +1203,20 @@
         -webkit-backdrop-filter: none;
         background: var(--stake-bg-deep);
     }
-
-    .yield-studio {
-        background: var(--stake-bg);
-    }
 }
 
 .yield-main--liquid {
     align-content: start;
     display: grid;
-    gap: 1rem;
+    gap: 0.9rem;
     margin: 0 auto;
-    max-width: 90rem;
-    padding: clamp(1rem, 2.2vw, 1.75rem) clamp(1rem, 3vw, 2.5rem) 4rem;
+    max-width: 72rem;
+    padding: clamp(1rem, 2.2vw, 1.75rem) clamp(1rem, 4vw, 3.5rem) 4rem;
     position: relative;
     width: 100%;
 }
 
+/* ── Command bar ─────────────────────────────────────────────────────── */
 .yield-commandbar {
     align-items: center;
     border-bottom: 1px solid var(--stake-line);
@@ -1245,7 +1224,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    min-height: 3.4rem;
+    min-height: 2.6rem;
     padding-bottom: 0.75rem;
     row-gap: 0.5rem;
 }
@@ -1299,7 +1278,7 @@
     padding: 0.5rem 0;
     text-decoration: none;
     text-transform: uppercase;
-    transition: color 160ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+    transition: color 160ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1309,354 +1288,272 @@
     }
 }
 
-.yield-commandbar__nav a:active,
-.yield-commandbar__nav button:active {
-    transform: scale(0.97);
-}
-
-/* The studio carries its own surface so the frosted sky behind it reads as
-   depth rather than as noise under the figures. min-height still wants a
-   screenful, but capped: past ~38rem the three columns only gain dead space.
-   The middle track floors at min-content instead of a fixed 22rem so a short
-   window shrinks it rather than overflowing into overflow: hidden. */
-.yield-studio {
-    background: rgba(23, 19, 16, 0.78);
-    border: 1px solid var(--stake-line);
+/* ── Identity hero ───────────────────────────────────────────────────── */
+.yd-hero {
+    align-items: center;
+    column-gap: clamp(1rem, 2.5vw, 1.6rem);
     display: grid;
-    grid-template-columns: minmax(13rem, 0.72fr) minmax(20rem, 1.15fr) minmax(19rem, 0.94fr);
-    grid-template-rows: auto minmax(min-content, 1fr) auto;
-    min-height: min(calc(100dvh - var(--yield-header-offset) - 6.15rem), 38rem);
-    overflow: hidden;
-    position: relative;
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-bottom: 0.25rem;
 }
 
-.yield-studio::before {
-    background:
-        radial-gradient(circle at 48% 48%, rgba(143, 185, 155, 0.08), transparent 29%),
-        linear-gradient(90deg, transparent 0 68%, rgba(244, 239, 230, 0.018) 68% 100%);
-    content: "";
+/* ── 3D Golden Coin avatar ───────────────────────────────────────────── */
+.yd-hero__coin {
+    flex: none;
+    filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, 0.36))
+            drop-shadow(0 0 18px rgba(229, 192, 120, 0.35));
+    height: clamp(4.5rem, 9vw, 6.5rem);
+    perspective: 32rem;
+    width: clamp(4.5rem, 9vw, 6.5rem);
+}
+
+.yd-coin-scene {
+    height: 100%;
+    width: 100%;
+}
+
+.yd-coin3d {
+    animation: yd-coin-turn 4.6s linear infinite;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    width: 100%;
+}
+
+.yd-coin-face,
+.yd-coin-layer {
+    height: 100%;
+    image-rendering: pixelated;
     inset: 0;
-    pointer-events: none;
     position: absolute;
+    width: 100%;
 }
 
-.yield-studio__heading {
-    align-items: end;
-    display: flex;
-    grid-column: 1 / -1;
-    justify-content: space-between;
-    padding: clamp(1.25rem, 2vw, 1.75rem);
-    position: relative;
-    z-index: 2;
+.yd-coin-face {
+    backface-visibility: hidden;
+    transform: translateZ(5px);
 }
 
-.yield-hero__eyebrow {
+.yd-coin-face--back {
+    transform: translateZ(-5px) rotateY(180deg);
+}
+
+.yd-coin-layer {
+    background: url("images/coffee-coin-pixel.png") center / contain no-repeat;
+    filter: brightness(0.42);
+    image-rendering: pixelated;
+    transform: translateZ(calc(-5px + var(--layer) * 1.25px));
+}
+
+@keyframes yd-coin-turn {
+    from { transform: rotateX(12deg) rotateY(0deg); }
+    to { transform: rotateX(12deg) rotateY(-360deg); }
+}
+
+.yd-hero__body {
+    min-width: 0;
+}
+
+.yd-hero__eyebrow {
     color: var(--stake-green);
     font: 700 0.62rem/1.2 var(--crypto-mono);
     letter-spacing: 0.16em;
-    margin: 0 0 0.65rem;
+    margin: 0 0 0.5rem;
     text-transform: uppercase;
 }
 
-.yield-studio .yield-title-row {
-    align-items: flex-end;
-    gap: 0.85rem;
+.yd-hero__title-row {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
 }
 
-.yield-studio h1 {
+.yd-hero__title-row h1 {
     color: var(--stake-ink);
-    font-family: var(--font-display);
-    font-size: clamp(2.75rem, 5.4vw, 5.5rem);
-    font-weight: 500;
-    letter-spacing: -0.045em;
-    line-height: 0.86;
+    font: 400 clamp(1rem, 2.6vw, 1.65rem)/1.35 'Press Start 2P', var(--crypto-mono);
+    letter-spacing: 0.04em;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.yd-apr-badge {
+    background: var(--stake-green-dim);
+    border: 1px solid color-mix(in srgb, var(--stake-green) 30%, transparent);
+    color: var(--stake-green);
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.55rem;
+    white-space: nowrap;
+}
+
+.yd-hero__position {
+    align-items: baseline;
+    display: flex;
+    gap: 0.55rem;
+    margin-top: 0.75rem;
+}
+
+.yd-hero__balance {
+    color: var(--stake-amber);
+    font: 500 clamp(2rem, 4vw, 3.2rem)/0.9 var(--font-display);
+    letter-spacing: -0.04em;
+}
+
+.yd-hero__unit {
+    color: var(--stake-muted);
+    font: 700 0.66rem/1 var(--crypto-mono);
+    letter-spacing: 0.12em;
+}
+
+/* ── KPI Rail ────────────────────────────────────────────────────────── */
+.yd-rail {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.yd-rail__cell {
+    align-items: center;
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.6rem;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+}
+
+.yd-rail__k {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    min-width: 0;
+}
+
+.yd-rail__v {
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.76rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.yd-rail__v--num {
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+/* ── Panels ──────────────────────────────────────────────────────────── */
+.yd-panel {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+    padding: 1rem 1.1rem 1.15rem;
+}
+
+.yd-panel__bar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.9rem;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
+}
+
+.yd-panel h2 {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
     margin: 0;
 }
 
-.yield-studio .yield-apr-badge {
-    margin-bottom: 0.18rem;
+.yd-panel__count {
+    color: var(--stake-green);
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
 }
 
-.yield-position {
-    border-top: 1px solid var(--stake-line);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-width: 0;
-    padding: clamp(1.25rem, 2.5vw, 2rem);
-    position: relative;
-    z-index: 1;
+.yd-panel__desc {
+    color: var(--stake-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: -0.25rem 0 1rem;
 }
 
-.yield-position__primary {
+/* ── Metrics ─────────────────────────────────────────────────────────── */
+.yd-metrics {
     display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    margin: 0;
 }
 
-.yield-position__primary > span,
-.yield-position dt,
-.yield-balance-rail dt {
+.yd-metrics__cell {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
+    padding: 0.7rem 0.85rem;
+}
+
+.yd-metrics__cell dt {
     color: var(--stake-faint);
     font: 700 0.59rem/1.2 var(--crypto-mono);
     letter-spacing: 0.13em;
     text-transform: uppercase;
 }
 
-.yield-position__primary strong {
-    color: var(--stake-ink);
-    font: 500 clamp(2.65rem, 4.1vw, 4.6rem)/0.86 var(--font-display);
-    letter-spacing: -0.055em;
-    margin-top: 1rem;
-    white-space: nowrap;
-}
-
-.yield-position__primary small {
-    color: var(--stake-muted);
-    font: 700 0.66rem/1 var(--crypto-mono);
-    letter-spacing: 0.12em;
-    margin-top: 0.65rem;
-}
-
-.yield-position__metrics {
-    border-top: 1px solid var(--stake-line);
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 1fr;
-    margin: 2rem 0 0;
-    padding-top: 1rem;
-}
-
-.yield-position__metrics dd {
+.yd-metrics__cell dd {
     color: var(--stake-ink);
     font: 600 1rem/1.2 var(--font-sans);
     margin: 0.4rem 0 0;
 }
 
-.yield-position__metrics dd small {
+.yd-metrics__cell dd small {
     color: var(--stake-faint);
     font-size: 0.6rem;
 }
 
-.yield-position__reward dd {
+.yd-metrics__cell--reward dd {
     color: var(--stake-green);
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: 0.74rem;
+    font-weight: 400;
 }
 
-.yield-position__reward button {
-    background: none;
-    border: 0;
-    color: var(--stake-clay);
-    cursor: pointer;
-    font: 700 0.6rem/1 var(--crypto-mono);
-    margin-top: 0.35rem;
-    padding: 0;
-    text-decoration: underline;
-    text-underline-offset: 0.2rem;
-}
-
-/* The stage keeps the token unframed so it reads as an object in the shared
-   space scene rather than an illustration inside another card. */
-.yield-token-stage {
-    align-items: center;
-    border-left: 1px solid var(--stake-line);
-    border-top: 1px solid var(--stake-line);
-    display: flex;
-    justify-content: center;
-    min-width: 0;
-    overflow: hidden;
-    perspective: 60rem;
-    position: relative;
-}
-
-.yield-token-stage::before,
-.yield-token-stage::after {
-    background: var(--stake-line);
-    content: "";
-    pointer-events: none;
-    position: absolute;
-}
-
-.yield-token-stage::before {
-    height: 1px;
-    left: 8%;
-    right: 8%;
-    top: 50%;
-}
-
-.yield-token-stage::after {
-    bottom: 8%;
-    left: 50%;
-    top: 8%;
-    width: 1px;
-}
-
-/* Sized off the short viewport axis as well as the long one: the token is the
-   one element that used to force the panel taller than a laptop window. */
-.yield-staked-orbit {
-    align-items: center;
-    animation: yield-token-float 5.4s cubic-bezier(0.77, 0, 0.175, 1) infinite alternate;
-    display: flex;
-    height: min(26vw, 34dvh, 22rem);
-    justify-content: center;
-    min-height: 11rem;
-    min-width: 11rem;
-    position: relative;
-    width: min(26vw, 34dvh, 22rem);
-    z-index: 2;
-}
-
-.yield-staked-token-scene {
-    filter:
-        drop-shadow(12px 16px 0 rgba(0, 0, 0, 0.34))
-        drop-shadow(0 0 24px rgba(255, 250, 240, 0.24));
-    height: min(clamp(9rem, 22vw, 19rem), 30dvh);
-    perspective: 46rem;
-    width: min(clamp(9rem, 22vw, 19rem), 30dvh);
-}
-
-.yield-staked-token {
-    animation: yield-staked-token-turn 4.8s linear infinite;
-    height: 100%;
-    position: relative;
-    transform-style: preserve-3d;
-    width: 100%;
-}
-
-.yield-staked-token__face,
-.yield-staked-token__layer {
-    height: 100%;
-    image-rendering: pixelated;
-    inset: 0;
-    position: absolute;
-    transform-style: preserve-3d;
-    width: 100%;
-}
-
-.yield-staked-token__face {
-    backface-visibility: hidden;
-    transform: translateZ(9px);
-}
-
-.yield-staked-token__face--back {
-    transform: translateZ(-9px) rotateY(180deg);
-}
-
-.yield-staked-token__face img {
-    display: block;
-    height: 100%;
-    image-rendering: pixelated;
-    width: 100%;
-}
-
-.yield-staked-token__layer {
-    background: url("images/staked-coin-pixel.png") center / contain no-repeat;
-    filter: brightness(0.44);
-    transform: translateZ(calc(-9px + var(--layer) * 2px));
-}
-
-.yield-staked-token__bean {
-    animation: yield-staked-bean-chain 6s linear infinite;
-    background: #627eea;
-    filter: drop-shadow(0 0 5px rgba(98, 126, 234, 0.75));
-    inset: 0;
-    -webkit-mask: url("images/staked-coin-bean.png") center / contain no-repeat;
-    mask: url("images/staked-coin-bean.png") center / contain no-repeat;
-    position: absolute;
-    transform: translateZ(1px);
-}
-
-.yield-token-orbit-line {
-    border: 1px solid rgba(244, 239, 230, 0.12);
-    border-radius: 50%;
-    height: 88%;
-    position: absolute;
-    transform: rotateX(68deg) rotateZ(-9deg);
-    width: 118%;
-    z-index: -1;
-}
-
-.yield-token-orbit-line::after {
-    background: var(--stake-green);
-    box-shadow: 0 0 10px rgba(143, 185, 155, 0.8);
-    content: "";
-    height: 5px;
-    left: 14%;
-    position: absolute;
-    top: 11%;
-    width: 5px;
-}
-
-.yield-token-stage__label,
-.yield-token-stage__rate {
-    font-family: var(--crypto-mono);
-    position: absolute;
-    z-index: 3;
-}
-
-.yield-token-stage__label {
-    color: var(--stake-faint);
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-}
-
-.yield-token-stage__label--in {
-    left: 1rem;
-    top: 1rem;
-}
-
-.yield-token-stage__label--out {
-    bottom: 1rem;
-    color: var(--stake-green);
-    right: 1rem;
-}
-
-.yield-token-stage__rate {
-    bottom: 1rem;
-    color: var(--stake-faint);
-    font-size: 0.58rem;
-    left: 1rem;
-    letter-spacing: 0.12em;
-}
-
-.yield-studio__actions {
-    align-content: center;
-    backdrop-filter: blur(18px) saturate(125%);
-    background: rgba(31, 25, 21, 0.74);
-    border-left: 1px solid var(--stake-line);
-    border-top: 1px solid var(--stake-line);
+/* ── Actions ─────────────────────────────────────────────────────────── */
+.yd-actions-grid {
     display: grid;
-    min-width: 0;
-    position: relative;
-    z-index: 2;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
 }
 
-.yield-action-card {
+.yd-action {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
     display: grid;
     gap: 0.75rem;
-    padding: clamp(1rem, 2vw, 1.4rem);
+    padding: clamp(0.85rem, 1.5vw, 1.1rem);
 }
 
-.yield-action-card + .yield-action-card {
-    border-top: 1px solid var(--stake-line);
-}
-
-.yield-action-card__label {
+.yd-action__label {
     align-items: baseline;
     display: flex;
     justify-content: space-between;
 }
 
-.yield-action-card__label > span {
+.yd-action__label > span {
     color: var(--stake-ink);
     font: 600 0.88rem/1 var(--font-sans);
 }
 
-.yield-action-card__label small {
+.yd-action__label small {
     color: var(--stake-faint);
     font: 500 0.58rem/1.2 var(--crypto-mono);
 }
 
-.yield-action-input {
+.yd-action__input {
     align-items: center;
     background: var(--stake-bg-deep);
     border: 1px solid var(--stake-line-strong);
@@ -1666,36 +1563,77 @@
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.yield-action-input:focus-within {
+.yd-action__input:focus-within {
     border-color: var(--stake-green);
     box-shadow: 0 0 0 3px var(--stake-green-dim);
 }
 
-.yield-action-input .yield-token-input {
+.yd-action__input .yield-token-input {
     font-family: var(--crypto-mono);
     font-size: 0.95rem;
     padding: 0;
 }
 
-.yield-action-input > span {
+.yd-action__input > span {
     color: var(--stake-faint);
     font: 700 0.61rem/1 var(--crypto-mono);
     letter-spacing: 0.08em;
 }
 
-.yield-action-card .yield-cta-btn {
+/* Buttons — pixel furniture: no border-radius, offset shadow on hover. */
+.yd-btn {
     border-radius: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
     min-height: 2.8rem;
+    padding: 0.62rem 1.35rem;
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
     width: 100%;
-    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.yield-action-card .yield-cta-btn:active:not(:disabled),
-.yield-claim-btn:active:not(:disabled) {
+.yd-btn--dark {
+    background: var(--stake-ink);
+    border: 1px solid var(--stake-ink);
+    color: var(--stake-bg);
+}
+
+.yd-btn--dark:hover:not(:disabled) {
+    background: var(--stake-amber);
+    border-color: var(--stake-amber);
+    box-shadow: 4px 4px 0 var(--stake-copper-dim);
+    color: var(--stake-bg-deep);
+    transform: translate(-2px, -2px);
+}
+
+.yd-btn--outline {
+    background: transparent;
+    border: 1.5px solid color-mix(in srgb, var(--stake-ink) 35%, transparent);
+    color: var(--stake-ink);
+}
+
+.yd-btn--outline:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--stake-ink) 6%, transparent);
+    border-color: var(--stake-ink);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+    transform: translate(-2px, -2px);
+}
+
+.yd-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+}
+
+.yd-btn:active:not(:disabled),
+.yd-claim:active:not(:disabled) {
     transform: scale(0.97);
 }
 
-.yield-claim-btn {
+/* Claim rewards strip at the bottom of the actions panel. */
+.yd-claim {
     align-items: center;
     background: var(--stake-green-dim);
     border: 0;
@@ -1706,61 +1644,70 @@
     font-family: var(--crypto-mono);
     gap: 0.65rem;
     grid-template-columns: auto 1fr auto;
-    padding: 1rem clamp(1rem, 2vw, 1.4rem);
+    margin-top: 0.55rem;
+    padding: 1rem clamp(0.85rem, 1.5vw, 1.1rem);
     text-align: left;
     transition: background-color 160ms ease, opacity 160ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.yield-claim-btn > span:first-child {
+.yd-claim > span:first-child {
     font-size: 0.61rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
-.yield-claim-btn strong {
-    font-size: 0.66rem;
-    font-weight: 600;
+.yd-claim strong {
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: 0.6rem;
+    font-weight: 400;
     justify-self: end;
 }
 
-.yield-claim-btn:disabled {
+.yd-claim:disabled {
     cursor: not-allowed;
     opacity: 0.38;
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .yield-claim-btn:hover:not(:disabled) {
+    .yd-claim:hover:not(:disabled) {
         background: color-mix(in srgb, var(--stake-green) 22%, transparent);
     }
 }
 
-.yield-balance-rail {
-    border-top: 1px solid var(--stake-line);
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: 0;
-    position: relative;
-    z-index: 2;
+/* ── Activity ────────────────────────────────────────────────────────── */
+/* The activity section is now a yd-panel — its heading/count sit inside
+   .yd-panel__bar. The existing yield-activity-* row classes still style
+   the inner transaction rows. */
+.yd-panel.yield-activity {
+    border-top: 0;
+    padding-top: 1rem;
 }
 
-.yield-balance-rail > div {
-    min-width: 0;
-    padding: 0.85rem 1rem;
-}
-
-.yield-balance-rail > div + div {
-    border-left: 1px solid var(--stake-line);
-}
-
-.yield-balance-rail dd {
+.yield-activity-heading {
     color: var(--stake-ink);
-    font: 600 clamp(0.92rem, 1.5vw, 1.1rem)/1 var(--font-sans);
-    margin: 0.4rem 0 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
+    margin: 0 0 1rem;
+}
+
+/* Keep existing yield-faucet, yield-config-card, yield-allocation-grid
+   (legacy) and yield-activity-row styles functional — they still render
+   inside the new dashboard layout. Minor squared-off overrides follow. */
+.yield-main--liquid .yield-config-card {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-faucet {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-faucet__summary {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-faucet-cafe {
+    background: color-mix(in srgb, var(--stake-amber) 7%, transparent);
+    border-radius: 0;
 }
 
 .yield-main--liquid .yield-config-card__body {
@@ -1768,9 +1715,20 @@
     margin: 1.5rem;
 }
 
-.yield-main--liquid .yield-faucet-cafe {
-    background: color-mix(in srgb, var(--stake-amber) 7%, transparent);
-    border-radius: 8px;
+.yield-main--liquid .yield-asset-card {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-cta-btn {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-input-group {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-max-btn {
+    border-radius: 0;
 }
 
 @keyframes yield-staked-token-turn {
@@ -1802,139 +1760,73 @@
     }
 }
 
-@media (max-width: 1040px) {
-    .yield-studio {
-        grid-template-columns: minmax(12rem, 0.7fr) minmax(18rem, 1fr);
-        grid-template-rows: auto minmax(min-content, 1fr) auto auto;
-        min-height: 0;
-    }
-
-    .yield-studio__actions {
-        border-left: 0;
-        grid-column: 1 / -1;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .yield-action-card + .yield-action-card {
-        border-left: 1px solid var(--stake-line);
-        border-top: 0;
-    }
-
-    .yield-claim-btn {
-        grid-column: 1 / -1;
-    }
-
-    .yield-balance-rail {
-        grid-row: 4;
-    }
-}
-
+/* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
     .yield-main--liquid {
         padding: 1rem 0.75rem 3rem;
     }
 
-    /* "Activity" and "Profile" both land on /profile — drop the duplicate,
-       keep one real way out of the page. */
     .yield-commandbar__nav a:first-child,
     .yield-live-status {
         display: none;
     }
 
-    /* Content-driven on a phone: a forced screenful only pushed Deposit
-       further down. Order is position → token → desk, so the balance the
-       user came for is the first thing under the title and the controls sit
-       within one thumb-scroll instead of two. */
-    .yield-studio {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto minmax(min-content, 34dvh) auto auto;
-        min-height: 0;
+    .yd-hero {
+        column-gap: 0.8rem;
     }
 
-    .yield-studio__heading {
-        align-items: flex-start;
+    .yd-hero__coin {
+        height: clamp(3.5rem, 14vw, 4.5rem);
+        width: clamp(3.5rem, 14vw, 4.5rem);
+    }
+
+    .yd-hero__title-row h1 {
+        font-size: clamp(0.8rem, 3.5vw, 1rem);
+    }
+
+    .yd-hero__balance {
+        font-size: clamp(1.6rem, 8vw, 2.2rem);
+    }
+
+    .yd-rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .yd-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .yd-action__label {
+        align-items: start;
         flex-direction: column;
-        gap: 0.25rem;
-        padding-bottom: 1rem;
+        gap: 0.4rem;
     }
 
-    .yield-studio h1 {
-        font-size: clamp(2.35rem, 11.5vw, 3.4rem);
+    .yd-claim {
+        grid-template-columns: 1fr auto;
     }
 
-    .yield-token-stage {
-        border-left: 0;
-        grid-row: 3;
-        padding-block: 1rem;
+    .yd-claim strong {
+        display: none;
     }
 
-    .yield-position {
-        border-bottom: 1px solid var(--stake-line);
-        grid-row: 2;
-        padding-block: 1rem;
-    }
-
-    .yield-position__primary {
-        align-items: baseline;
-        display: flex;
-        gap: 0.55rem;
-    }
-
-    .yield-position__primary strong {
-        font-size: 2.4rem;
-        margin-left: auto;
-        margin-top: 0;
-    }
-
-    .yield-position__primary small {
-        margin-top: 0;
-    }
-
-    .yield-position__metrics {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        margin-top: 1rem;
-    }
-
-    .yield-studio__actions {
-        grid-column: 1;
-        grid-row: 4;
+    .yield-allocation-grid {
         grid-template-columns: 1fr;
     }
 
-    .yield-action-card + .yield-action-card {
-        border-left: 0;
-        border-top: 1px solid var(--stake-line);
+    .yield-activity-row {
+        gap: 0.45rem 0.7rem;
+        grid-template-columns: 2rem 1fr max-content max-content;
+        padding: 0.75rem 0;
     }
 
-    .yield-claim-btn {
-        grid-column: 1;
+    .yield-activity-line {
+        display: none;
     }
 
-    .yield-balance-rail {
-        grid-column: 1;
-        grid-row: 5;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .yield-balance-rail > div:nth-child(3) {
-        border-left: 0;
-        border-top: 1px solid var(--stake-line);
-    }
-
-    .yield-balance-rail > div:nth-child(4) {
-        border-top: 1px solid var(--stake-line);
-    }
-
-    .yield-staked-orbit {
-        height: min(17rem, 30dvh);
-        min-height: 9rem;
-        min-width: 9rem;
-        width: min(17rem, 30dvh);
-    }
-
-    .yield-staked-token-scene {
-        height: min(14rem, 26dvh);
-        width: min(14rem, 26dvh);
+    .yield-activity-tx {
+        grid-column: 3 / 5;
+        justify-self: end;
     }
 }
 
@@ -1943,28 +1835,24 @@
         min-width: 0;
     }
 
-    /* Was display: none, which left a phone with no way back to the profile
-       from this page at all. The bar wraps instead. */
     .yield-commandbar__nav {
         gap: 0.9rem;
-    }
-
-    .yield-action-card__label {
-        align-items: start;
-        flex-direction: column;
-        gap: 0.4rem;
-    }
-
-    .yield-claim-btn {
-        grid-template-columns: 1fr auto;
-    }
-
-    .yield-claim-btn strong {
-        display: none;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .yd-coin3d {
+        animation: none;
+        transform: rotateX(12deg) rotateY(-18deg);
+    }
+
+    .yield-commandbar__nav a,
+    .yield-commandbar__nav button,
+    .yd-btn,
+    .yd-claim {
+        transition: none;
+    }
+
     .yield-staked-orbit,
     .yield-staked-token,
     .yield-staked-token__bean {
@@ -1974,18 +1862,10 @@
     .yield-staked-token {
         transform: rotateX(14deg) rotateY(-18deg);
     }
-
-    .yield-commandbar__nav a,
-    .yield-commandbar__nav button,
-    .yield-action-card .yield-cta-btn,
-    .yield-claim-btn {
-        transition: none;
-    }
 }
 
 @media (prefers-reduced-transparency: reduce) {
-    .yield-studio__actions {
-        backdrop-filter: none;
+    .yd-action {
         background: var(--stake-surface);
     }
 }
