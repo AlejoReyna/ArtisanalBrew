@@ -1,0 +1,78 @@
+/* The account robot.
+
+   The circle is a 16-unit staircase, not border-radius: a smooth curve next
+   to 64px nearest-neighbour sprites reads as two different art directions in
+   one component. Both the ring and the disc are clipped by the same polygon,
+   inset from each other by one grid unit, which is what makes the ring itself
+   look drawn rather than stroked. */
+.rbt {
+    --rbt-circle: polygon(37.5% 0%, 62.5% 0%, 62.5% 6.25%, 75% 6.25%, 75% 12.5%, 81.25% 12.5%, 81.25% 18.75%, 87.5% 18.75%, 87.5% 25%, 93.75% 25%, 93.75% 37.5%, 100% 37.5%, 100% 62.5%, 93.75% 62.5%, 93.75% 75%, 87.5% 75%, 87.5% 81.25%, 81.25% 81.25%, 81.25% 87.5%, 75% 87.5%, 75% 93.75%, 62.5% 93.75%, 62.5% 100%, 37.5% 100%, 37.5% 93.75%, 25% 93.75%, 25% 87.5%, 18.75% 87.5%, 18.75% 81.25%, 12.5% 81.25%, 12.5% 75%, 6.25% 75%, 6.25% 62.5%, 0% 62.5%, 0% 37.5%, 6.25% 37.5%, 6.25% 25%, 12.5% 25%, 12.5% 18.75%, 18.75% 18.75%, 18.75% 12.5%, 25% 12.5%, 25% 6.25%, 37.5% 6.25%);
+
+    /* One unit of the same 16-step grid the polygon is built on, so the ring
+       stays exactly one "pixel" thick at any Size. */
+    --rbt-ring: calc(var(--rbt-size) / 16);
+
+    block-size: var(--rbt-size);
+    display: inline-block;
+    flex: none;
+    inline-size: var(--rbt-size);
+    position: relative;
+    vertical-align: middle;
+}
+
+.rbt::before {
+    background: var(--stake-line-strong, rgba(20, 16, 12, 0.35));
+    clip-path: var(--rbt-circle);
+    content: "";
+    inset: 0;
+    position: absolute;
+}
+
+.rbt__disc {
+    clip-path: var(--rbt-circle);
+    inset: var(--rbt-ring);
+    overflow: hidden;
+    position: absolute;
+}
+
+/* The robot sits inside the disc rather than filling it: at full bleed the
+   circle clips the toque and the boots, which are exactly the two things a
+   dress-up avatar is meant to show off. */
+.rbt__body {
+    inset: 7%;
+    position: absolute;
+}
+
+.rbt__layer {
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    inset: 0;
+    position: absolute;
+}
+
+/* A two-state bob, not a smooth float: the hold-then-jump is what reads as
+   sprite animation. The 1% window between stops is the whole transition. */
+@keyframes rbt-bob {
+    0%, 49% { transform: translateY(0); }
+    50%, 100% { transform: translateY(-2.6%); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .rbt--idle .rbt__body {
+        animation: rbt-bob 2.4s infinite;
+    }
+}
+
+/* Backdrops are colour, not sprites — deliberately muted, because their job
+   is to separate the robot from whatever is behind the circle, not to compete
+   with it. Kept as literals: this component renders both inside the dark
+   --stake-* wing and, later, in the light header, and a token that resolves
+   differently in each place would change the user's chosen backdrop. */
+.rbt[data-backdrop="roast"] .rbt__disc { background: #241C16; }
+.rbt[data-backdrop="espresso"] .rbt__disc { background: #120E0B; }
+.rbt[data-backdrop="teal"] .rbt__disc { background: #2B4A5C; }
+.rbt[data-backdrop="copper"] .rbt__disc { background: #6B4526; }
+.rbt[data-backdrop="clay"] .rbt__disc { background: #6E3A35; }
+.rbt[data-backdrop="moss"] .rbt__disc { background: #3B5342; }
+.rbt[data-backdrop="night"] .rbt__disc { background: #191B2E; }
+.rbt[data-backdrop="gold"] .rbt__disc { background: #6B5320; }

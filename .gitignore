@@ -25,3 +25,7 @@ appsettings.Local.json
 # Client build tooling (Tailwind CSS)
 node_modules/
 src/ThisCafeteria.Web/package-lock.json
+
+# Byte-code from the sprite generators; generate_avatar_parts.py imports the
+# procurement sheet's palette, which makes Python cache it.
+tools/__pycache__/

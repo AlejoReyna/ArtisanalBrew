@@ -8,4 +8,5 @@ public sealed record ProfileDashboardDto(
     int? WalletChainId,
     DateTime CreatedAt,
     string Role,
-    int TotalOrders);
+    int TotalOrders,
+    RobotAvatarDto Avatar);

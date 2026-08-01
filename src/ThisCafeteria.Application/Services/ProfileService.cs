@@ -8,7 +8,8 @@ namespace ThisCafeteria.Application.Services;
 
 public sealed class ProfileService(
     IUserProfileRepository userProfileRepository,
-    IValidator<UpdateUserProfileRequest> updateValidator) : IProfileService
+    IValidator<UpdateUserProfileRequest> updateValidator,
+    IValidator<UpdateAvatarRequest> avatarValidator) : IProfileService
 {
     public async Task<Guid> EnsureProfileLinkedAsync(
         string applicationUserId,
@@ -73,7 +74,8 @@ public sealed class ProfileService(
             applicationUser?.WalletChainId,
             profile.CreatedAt,
             profile.Role.ToString(),
-            totalOrders);
+            totalOrders,
+            RobotAvatarDto.Resolve(profile.Avatar, applicationUser?.WalletAddress));
     }
 
     public async Task<UserProfileDto> UpdateDisplayNameAsync(
@@ -90,8 +92,60 @@ public sealed class ProfileService(
 
         await userProfileRepository.UpdateAsync(profile, cancellationToken);
 
+        return await DescribeAsync(profile, cancellationToken);
+    }
+
+    public async Task<UserProfileDto> UpdateAvatarAsync(
+        Guid userProfileId,
+        UpdateAvatarRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await avatarValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var profile = await userProfileRepository.GetByIdAsync(userProfileId, cancellationToken)
+            ?? throw new InvalidOperationException("The requested profile could not be found.");
+
+        // Stored exactly as chosen. The catalog already vouched for every id
+        // above, and normalising on write would erase the user's pick the day
+        // an item is renamed rather than the day it is rendered.
+        profile.Avatar = request.ToRobotAvatar();
+
+        await userProfileRepository.UpdateAsync(profile, cancellationToken);
+
+        return await DescribeAsync(profile, cancellationToken);
+    }
+
+    public async Task<UserProfileDto> ResetAvatarAsync(
+        Guid userProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        var profile = await userProfileRepository.GetByIdAsync(userProfileId, cancellationToken)
+            ?? throw new InvalidOperationException("The requested profile could not be found.");
+
+        // Null, not the seed's current values: the profile has to go back to
+        // *tracking* its seed, not freeze a copy of today's version of it.
+        profile.Avatar = null;
+
+        await userProfileRepository.UpdateAsync(profile, cancellationToken);
+
+        return await DescribeAsync(profile, cancellationToken);
+    }
+
+    public async Task DeleteAccountAsync(Guid userProfileId, CancellationToken cancellationToken = default)
+    {
+        await userProfileRepository.DeleteProfileCascadeAsync(userProfileId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Builds the profile DTO, resolving the avatar against the wallet the
+    /// account is linked to.
+    /// </summary>
+    private async Task<UserProfileDto> DescribeAsync(
+        UserProfile profile,
+        CancellationToken cancellationToken)
+    {
         var applicationUser = await userProfileRepository.GetApplicationUserProfileByProfileIdAsync(
-            userProfileId,
+            profile.Id,
             cancellationToken);
 
         return new UserProfileDto(
@@ -101,12 +155,8 @@ public sealed class ProfileService(
             applicationUser?.WalletAddress,
             applicationUser?.WalletChainId,
             profile.CreatedAt,
-            profile.Role.ToString());
-    }
-
-    public async Task DeleteAccountAsync(Guid userProfileId, CancellationToken cancellationToken = default)
-    {
-        await userProfileRepository.DeleteProfileCascadeAsync(userProfileId, cancellationToken);
+            profile.Role.ToString(),
+            RobotAvatarDto.Resolve(profile.Avatar, applicationUser?.WalletAddress));
     }
 
     private static string CreateSyntheticEmail(string walletAddress)
