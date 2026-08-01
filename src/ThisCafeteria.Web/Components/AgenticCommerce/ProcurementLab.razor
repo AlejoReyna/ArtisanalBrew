@@ -17,6 +17,8 @@
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
 @inject NavigationManager Navigation
 @inject ILogger<ProcurementLab> Logger
+@implements IDisposable
+@inject ILogger<ProcurementLab> Logger
 
 @* Two states, not one. The lab used to render the full marketing hero —
    protocol list, 44rem headline, full-width robot station — above the console
@@ -55,47 +57,52 @@
     @if (!IsConnected)
     {
         @* Hero: what this place does, in one sentence a first-time visitor can
-           act on, then the four steps, then the connect action. The protocol
-           string used to BE the headline; it is a kicker now. *@
+           act on, then the four steps as an auto-rotating stepper, then the connect action. *@
         <section class="pl-hero" aria-labelledby="pl-hero-title">
-            <div class="pl-hero__copy">
-                <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
-                    <span aria-hidden="true">
-                        @{ var protoIdx = 0; }
-                        @foreach (var word in ProtocolsText.Split(' '))
-                        {
-                            <span class="pl-proto__word">
-                                @foreach (var ch in word)
+            <div class="pl-hero__grid">
+                <div class="pl-hero__col pl-hero__col--copy">
+                    <div class="pl-hero__copy">
+                        <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
+                            <span aria-hidden="true">
+                                @{ var protoIdx = 0; }
+                                @foreach (var word in ProtocolsText.Split(' '))
                                 {
-                                    <span class="pl-proto__char" style="--i: @protoIdx;">@ch</span>
-                                    protoIdx++;
+                                    <span class="pl-proto__word">
+                                        @foreach (var ch in word)
+                                        {
+                                            <span class="pl-proto__char" style="--i: @protoIdx;">@ch</span>
+                                            protoIdx++;
+                                        }
+                                    </span>
                                 }
                             </span>
+                        </p>
+                        <h1 id="pl-hero-title">Let a robot do the buying.</h1>
+                        <p class="pl-hero__lede">
+                            You post a job, the payment waits in escrow, and it is released only once
+                            the delivery is signed off. Four steps, on @SelectedChainAccessor.SelectedChain.ShortName,
+                            with test funds.
+                        </p>
+                    </div>
+
+                    <div class="pl-hero__action">
+                        <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                            @(_isConnecting ? "Connecting…" : "Connect wallet to start")
+                        </button>
+                        <p class="pl-hero__action-note">
+                            Connecting only proves the address is yours. Nothing is signed, spent or
+                            approved until you press a button that says so.
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(_connectError))
+                        {
+                            <p class="pl-hero__connect-error" role="alert">@_connectError</p>
                         }
-                    </span>
-                </p>
-                <h1 id="pl-hero-title">Let a robot do the buying.</h1>
-                <p class="pl-hero__lede">
-                    You post a job, the payment waits in escrow, and it is released only once
-                    the delivery is signed off. Four steps, on @SelectedChainAccessor.SelectedChain.ShortName,
-                    with test funds.
-                </p>
-            </div>
+                    </div>
+                </div>
 
-            @FlowTrack
-
-            <div class="pl-hero__action">
-                <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                    @(_isConnecting ? "Connecting…" : "Connect wallet to start")
-                </button>
-                <p class="pl-hero__action-note">
-                    Connecting only proves the address is yours. Nothing is signed, spent or
-                    approved until you press a button that says so.
-                </p>
-                @if (!string.IsNullOrWhiteSpace(_connectError))
-                {
-                    <p class="pl-hero__connect-error" role="alert">@_connectError</p>
-                }
+                <div class="pl-hero__col pl-hero__col--stepper">
+                    @HeroStepper
+                </div>
             </div>
 
             <div class="pl-hero__scene">
@@ -487,6 +494,10 @@
     private bool _isWorking;
     private string? _activityNote;
 
+    // Hero stepper state
+    private int _heroStepIndex;
+    private System.Timers.Timer? _heroStepTimer;
+
     private bool IsConnected => _walletAddress is not null;
 
     private bool IsMe(string? address) =>
@@ -557,6 +568,52 @@
         "Completed" => "coin",
         _ => "vault",
     };
+
+    /// <summary>
+    /// The teaching track for the signed-out hero: one step at a time in a
+    /// two-column layout, with pixel-arrow navigation and a 3-second auto-advance.
+    /// </summary>
+    private RenderFragment HeroStepper => @<div class="pl-stepper" aria-label="How a mission works">
+        @{ var active = Lifecycle[_heroStepIndex]; }
+        <div class="pl-stepper__card" @key="active.Number">
+            <span class="pl-stepper__head">
+                <span class="pl-sprite pl-sprite--@active.Sprite" aria-hidden="true"></span>
+                <span class="pl-stepper__num" aria-hidden="true">@active.Number</span>
+            </span>
+            <h3 class="pl-stepper__title">@active.Label</h3>
+            <p class="pl-stepper__blurb">@active.Blurb</p>
+        </div>
+
+        <div class="pl-stepper__controls">
+            <button type="button"
+                    class="pl-stepper__arrow pl-stepper__arrow--left"
+                    aria-label="Previous step"
+                    @onclick="PrevHeroStep">
+                <span aria-hidden="true"></span>
+            </button>
+
+            <div class="pl-stepper__dots" role="tablist" aria-label="Steps">
+                @for (int i = 0; i < Lifecycle.Length; i++)
+                {
+                    var idx = i;
+                    <button type="button"
+                            class="pl-stepper__dot @(_heroStepIndex == idx ? "is-active" : null)"
+                            role="tab"
+                            aria-selected="@(_heroStepIndex == idx)"
+                            aria-label="Step @(idx + 1)"
+                            @onclick="() => GoToHeroStep(idx)">
+                    </button>
+                }
+            </div>
+
+            <button type="button"
+                    class="pl-stepper__arrow pl-stepper__arrow--right"
+                    aria-label="Next step"
+                    @onclick="NextHeroStep">
+                <span aria-hidden="true"></span>
+            </button>
+        </div>
+    </div>;
 
     /// <summary>
     /// The teaching track, signed-out only: four steps with a sentence each.
@@ -872,8 +929,49 @@
     }
 
 
+    // ── Hero stepper ──
+    private void NextHeroStep()
+    {
+        _heroStepIndex = (_heroStepIndex + 1) % Lifecycle.Length;
+        ResetHeroTimer();
+        StateHasChanged();
+    }
+
+    private void PrevHeroStep()
+    {
+        _heroStepIndex = (_heroStepIndex - 1 + Lifecycle.Length) % Lifecycle.Length;
+        ResetHeroTimer();
+        StateHasChanged();
+    }
+
+    private void GoToHeroStep(int idx)
+    {
+        _heroStepIndex = idx;
+        ResetHeroTimer();
+        StateHasChanged();
+    }
+
+    private void ResetHeroTimer()
+    {
+        if (_heroStepTimer is not null)
+        {
+            _heroStepTimer.Stop();
+            _heroStepTimer.Start();
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        // Start the hero stepper auto-advance timer
+        _heroStepTimer = new System.Timers.Timer(3000);
+        _heroStepTimer.Elapsed += (_, _) =>
+        {
+            _heroStepIndex = (_heroStepIndex + 1) % Lifecycle.Length;
+            InvokeAsync(StateHasChanged);
+        };
+        _heroStepTimer.AutoReset = true;
+        _heroStepTimer.Start();
+
         // ?preview=connected renders the console state with fixture data and no
         // wallet — the only way to see and verify it without MetaMask. Same flag
         // and same contract as YieldPanel's: read-only, display state only, no
@@ -934,4 +1032,11 @@
     }
     private static string ShortAddress(string? address) => string.IsNullOrWhiteSpace(address) ? "Not assigned" : address.Length >= 12 ? $"{address[..6]}…{address[^4..]}" : address;
     private static string ShortCommitment(string? value) => string.IsNullOrWhiteSpace(value) ? "not recorded" : value.Length > 24 ? $"{value[..12]}…{value[^8..]}" : value;
+
+    public void Dispose()
+    {
+        _heroStepTimer?.Stop();
+        _heroStepTimer?.Dispose();
+    }
+}"not recorded" : value.Length > 24 ? $"{value[..12]}…{value[^8..]}" : value;
 }

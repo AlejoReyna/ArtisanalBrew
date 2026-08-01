@@ -514,8 +514,11 @@
     .catalog-filter-bar {
         align-items: center;
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 1.25rem;
+        flex: none;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0 1rem;
     }
 
     .catalog-filter-bar__trigger {
@@ -562,6 +565,7 @@
         font-family: 'Inter', sans-serif;
         font-size: 0.78rem;
         font-weight: 500;
+        white-space: nowrap;
     }
 
     .catalog-filter-backdrop {
@@ -685,8 +689,9 @@
 
 @media (max-width: 1023px) {
     .catalog-subnav {
-        display: block;
+        align-items: stretch;
         border-bottom: 1px solid var(--color-line, #e5e0d8);
+        display: flex;
         margin: 0 -1rem 1rem;
         padding: 0;
         position: sticky;
@@ -697,9 +702,11 @@
 
     .catalog-subnav__list {
         display: flex;
+        flex: 1 1 auto;
         gap: 0;
         list-style: none;
         margin: 0;
+        min-width: 0;
         overflow-x: auto;
         padding: 0 1rem;
         scrollbar-width: none;
@@ -758,9 +765,8 @@
    treatment from the block above. */
 @media (max-width: 640px) {
     .catalog-subnav__list {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        overflow-x: visible;
+        display: flex;
+        overflow-x: auto;
         padding: 0;
     }
 

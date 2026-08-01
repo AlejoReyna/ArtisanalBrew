@@ -76,6 +76,12 @@ window.themeColor = {
     }
 };
 
+// How far the page has to move before the scroll-veil routes (/, /staking,
+// /procurement-lab, /about) trade their fully transparent bar for the
+// translucent plate: 1% of the viewport, so it reads as "the moment you leave
+// the top" and behaves identically on a short page and a long one.
+const SCROLL_VEIL_RATIO = 0.01;
+
 window.initPublicHeader = () => {
     const hero = document.querySelector('.editorial-hero, .journal-hero, .story-hero, .ph-hero');
     const header = document.querySelector('.public-header');
@@ -98,6 +104,43 @@ window.initPublicHeader = () => {
     if (window.publicHeaderController) {
         window.publicHeaderController.abort();
         window.publicHeaderController = null;
+    }
+
+    if (window.publicHeaderVeilController) {
+        window.publicHeaderVeilController.abort();
+        window.publicHeaderVeilController = null;
+    }
+
+    // Wired before the hero branch below, and on its own AbortController,
+    // because the scroll-veil routes have no hero element at all — they take
+    // the early return, which would otherwise leave the bar with no scroll
+    // listener. The class is toggled on every route rather than gated on
+    // --scroll-veil: interactive navigation calls this through queuePublicHeader
+    // before the server's re-render has necessarily added the route class, so
+    // reading it here would be a race. Only NavMenu.razor.css's
+    // .public-header--scroll-veil.public-header--scrolled pair actually paints
+    // anything, so the class is inert everywhere else.
+    if (header) {
+        const updateScrollVeil = () => {
+            // innerHeight can still read 0 immediately after a navigation, before
+            // the viewport has been measured; clientHeight is the fallback, and
+            // the 1px floor keeps "in its original position" meaning the very top
+            // rather than collapsing the threshold to zero.
+            const viewport = window.innerHeight || document.documentElement.clientHeight || 0;
+
+            header.classList.toggle(
+                'public-header--scrolled',
+                window.scrollY > Math.max(viewport * SCROLL_VEIL_RATIO, 1)
+            );
+        };
+
+        window.publicHeaderVeilController = new AbortController();
+        const veilSignal = window.publicHeaderVeilController.signal;
+
+        window.addEventListener('scroll', updateScrollVeil, { passive: true, signal: veilSignal });
+        window.addEventListener('resize', updateScrollVeil, { signal: veilSignal });
+
+        updateScrollVeil();
     }
 
     if (!hero || !header) {

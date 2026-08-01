@@ -43,6 +43,40 @@
     border-bottom: 0;
 }
 
+.public-header--home {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* /, /staking (Yield), /procurement-lab and /about all render over GlobalScene's
+   pixel-space background, so the bar starts with no plate at all and lets the
+   scene run straight through it. publicHeader.js adds --scrolled once the page
+   has moved past 1% of the viewport height, which fades the translucent plate
+   (and its blur) back in; scrolling back to the very top removes it again, so
+   the bar returns to full transparency in its original position. The plate
+   values here are the same ones .public-header--transparent carries — this rule
+   only gates *when* they apply. */
+.public-header--scroll-veil {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: background-color 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
+}
+
+.public-header--scroll-veil.public-header--scrolled {
+    background: rgba(16, 14, 13, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* The homepage never had the blur (see .public-header--home above); it keeps
+   the flat translucent plate once scrolled. Same specificity as the rule
+   directly above, so this has to stay after it to win. */
+.public-header--home.public-header--scrolled {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
 /* Safari extends the background of an opaque fixed element touching the
    viewport edge into the Dynamic Island/status-bar area. Keep the hero routes
    visually transparent on larger screens, but give their mobile headers the

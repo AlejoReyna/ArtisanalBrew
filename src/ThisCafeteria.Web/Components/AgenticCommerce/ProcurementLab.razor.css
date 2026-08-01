@@ -1693,3 +1693,226 @@
         animation: none;
     }
 }
+
+/* ── Two-column hero grid (signed-out only) ── */
+.pl-hero__grid {
+    align-items: stretch;
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    min-height: calc(100dvh - 4.75rem - clamp(2.5rem, 5vw, 4.5rem) - 6rem);
+    text-align: left;
+    width: 100%;
+    z-index: 2;
+}
+
+.pl-hero__col--copy {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.9rem, 2vh, 1.25rem);
+    justify-content: center;
+}
+
+.pl-hero__col--stepper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+.pl-hero__grid {
+    align-items: center;
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    text-align: left;
+    width: 100%;
+    z-index: 2;
+}
+
+.pl-hero__col--copy {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.9rem, 2vh, 1.25rem);
+}
+
+.pl-hero__col--stepper {
+    min-width: 0;
+}
+
+@media (max-width: 860px) {
+    .pl-hero__grid {
+        grid-template-columns: minmax(0, 1fr);
+        text-align: center;
+    }
+    .pl-hero__col--copy {
+        align-items: center;
+    }
+}
+
+/* ── Stepper carousel ── */
+.pl-stepper {
+    background: rgba(16, 13, 11, 0.55);
+    backdrop-filter: blur(10px) saturate(110%);
+    -webkit-backdrop-filter: blur(10px) saturate(110%);
+    border: 1px solid rgba(255, 253, 249, 0.1);
+    border-radius: 14px;
+    display: grid;
+    gap: 1rem;
+    padding: 1.4rem 1.6rem 1.2rem;
+    position: relative;
+}
+.pl-stepper {
+    background: rgba(16, 13, 11, 0.45);
+    backdrop-filter: blur(8px) saturate(110%);
+    -webkit-backdrop-filter: blur(8px) saturate(110%);
+    border: 1px solid rgba(255, 253, 249, 0.08);
+    border-radius: 14px;
+    display: grid;
+    gap: 1rem;
+    padding: 1.4rem 1.6rem 1.2rem;
+    position: relative;
+}
+.pl-stepper {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    border-radius: 14px;
+    display: grid;
+    gap: 1rem;
+    padding: 1.4rem 1.6rem 1.2rem;
+    position: relative;
+}
+
+.pl-stepper__card {
+    animation: pl-stepper-fade-in 500ms cubic-bezier(0.23, 1, 0.32, 1);
+    display: grid;
+    gap: 0.6rem;
+}
+
+@keyframes pl-stepper-fade-in {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.pl-stepper__head {
+    align-items: center;
+    display: flex;
+    gap: 0.6rem;
+}
+
+.pl-stepper__num {
+    background: var(--stake-copper-dim);
+    color: var(--stake-copper);
+    font: 400 0.58rem/1 'Press Start 2P', var(--crypto-mono);
+    padding: 0.4rem 0.42rem 0.32rem;
+}
+
+.pl-stepper__title {
+    color: var(--stake-ink);
+    font: 400 0.72rem/1.5 'Press Start 2P', var(--crypto-mono);
+    margin: 0;
+}
+
+.pl-stepper__blurb {
+    color: var(--stake-muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Pixel-arrow controls */
+.pl-stepper__controls {
+    align-items: center;
+    display: flex;
+    gap: 0.9rem;
+    justify-content: center;
+    margin-top: 0.4rem;
+}
+
+.pl-stepper__arrow {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    display: flex;
+    height: 2.2rem;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    width: 2.2rem;
+}
+
+.pl-stepper__arrow span {
+    display: block;
+    height: 3px;
+    position: relative;
+    width: 3px;
+}
+
+/* Pixel left arrow (←): box-shadow forming a left-pointing triangle */
+.pl-stepper__arrow--left span {
+    background: var(--stake-copper);
+    box-shadow:
+        3px -3px var(--stake-copper), 3px 3px var(--stake-copper),
+        6px -6px var(--stake-copper), 6px 0 var(--stake-copper), 6px 6px var(--stake-copper);
+}
+
+/* Pixel right arrow (→): box-shadow forming a right-pointing triangle */
+.pl-stepper__arrow--right span {
+    background: var(--stake-copper);
+    box-shadow:
+        -3px -3px var(--stake-copper), -3px 3px var(--stake-copper),
+        -6px -6px var(--stake-copper), -6px 0 var(--stake-copper), -6px 6px var(--stake-copper);
+}
+
+.pl-stepper__arrow:hover span {
+    background: var(--stake-amber);
+    box-shadow: none;
+}
+
+.pl-stepper__arrow--left:hover span {
+    box-shadow:
+        3px -3px var(--stake-amber), 3px 3px var(--stake-amber),
+        6px -6px var(--stake-amber), 6px 0 var(--stake-amber), 6px 6px var(--stake-amber);
+}
+
+.pl-stepper__arrow--right:hover span {
+    box-shadow:
+        -3px -3px var(--stake-amber), -3px 3px var(--stake-amber),
+        -6px -6px var(--stake-amber), -6px 0 var(--stake-amber), -6px 6px var(--stake-amber);
+}
+
+.pl-stepper__arrow:focus-visible {
+    outline: 2px dashed var(--stake-green);
+    outline-offset: 2px;
+}
+
+/* Step dots */
+.pl-stepper__dots {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pl-stepper__dot {
+    background: var(--stake-line);
+    border: 0;
+    border-radius: 0;
+    cursor: pointer;
+    height: 6px;
+    padding: 0;
+    transition: background 200ms ease, transform 200ms ease;
+    width: 6px;
+}
+
+.pl-stepper__dot.is-active {
+    background: var(--stake-amber);
+    transform: scale(1.3);
+}
+
+.pl-stepper__dot:hover {
+    background: var(--stake-copper);
+}
+
+.pl-stepper__dot:focus-visible {
+    outline: 2px dashed var(--stake-green);
+    outline-offset: 2px;
+}
