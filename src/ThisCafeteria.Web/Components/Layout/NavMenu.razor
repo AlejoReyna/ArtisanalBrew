@@ -540,32 +540,43 @@
     // StakingLayout opts into the transparent header explicitly. Story uses
     // MainLayout, so its route opts in here and lets the hero artwork continue
     // beneath the same component-owned transparent treatment.
-    private bool IsStoryRoute
+    private string CurrentRoutePath =>
+        Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/');
+
+    private bool IsStoryRoute =>
+        CurrentRoutePath.Equals("story", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsHomeRoute => string.IsNullOrEmpty(CurrentRoutePath);
+
+    // The bar opens fully transparent on these four and only fades its plate in
+    // after ~1% of a viewport of scroll (publicHeader.js owns the --scrolled
+    // toggle; NavMenu.razor.css owns what it looks like). Kept as an explicit
+    // list rather than keyed off TransparentHeader because /profile shares
+    // StakingLayout but is not part of this treatment. "staking" is the route
+    // behind the nav's "Yield" label — there is no /yield page.
+    private static readonly string[] ScrollVeilRoutes =
+    {
+        "", "staking", "procurement-lab", "about"
+    };
+
+    private bool IsScrollVeilRoute =>
+        ScrollVeilRoutes.Contains(CurrentRoutePath, StringComparer.OrdinalIgnoreCase);
+
+    private string HeaderCssClass
     {
         get
         {
-            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
-            var path = relativePath.Split('?', '#')[0].Trim('/');
-            return path.Equals("story", StringComparison.OrdinalIgnoreCase);
+            var baseClass = IsStoryRoute
+                ? "public-header public-header--transparent public-header--story"
+                : IsHomeRoute
+                    ? "public-header public-header--transparent public-header--home"
+                    : TransparentHeader
+                        ? "public-header public-header--transparent"
+                        : "public-header";
+
+            return IsScrollVeilRoute ? $"{baseClass} public-header--scroll-veil" : baseClass;
         }
     }
-
-    private bool IsHomeRoute
-    {
-        get
-        {
-            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
-            var path = relativePath.Split('?', '#')[0].Trim('/');
-            return string.IsNullOrEmpty(path);
-        }
-    }
-
-    private string HeaderCssClass =>
-        IsStoryRoute
-            ? "public-header public-header--transparent public-header--story"
-            : IsHomeRoute || TransparentHeader
-                ? "public-header public-header--transparent"
-                : "public-header";
 
     private string UserToggleCssClass => _isUserMenuOpen ? "nav-login active" : "nav-login";
 

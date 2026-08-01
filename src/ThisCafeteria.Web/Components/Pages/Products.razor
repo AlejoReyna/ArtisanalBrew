@@ -99,6 +99,21 @@
                         </button>
                     </li>
                 </ul>
+                <div class="catalog-filter-bar">
+                    <button type="button"
+                            class="catalog-filter-bar__trigger"
+                            aria-haspopup="dialog"
+                            aria-expanded="@_filtersOpen"
+                            @onclick="OpenFilters">
+                        <LucideIcon Name="sliders-horizontal" Size="14" />
+                        <span>Filters</span>
+                        @if (AppliedChips.Count > 0)
+                        {
+                            <span class="catalog-filter-bar__count">@AppliedChips.Count</span>
+                        }
+                    </button>
+                    <span class="catalog-filter-bar__section">@CurrentSectionLabel</span>
+                </div>
             </nav>
 
             <div class="flex flex-col gap-8 lg:flex-row">
@@ -139,21 +154,6 @@
                 </div>
 
                 <div class="min-w-0 flex-1 mt-10">
-                    <div class="catalog-filter-bar">
-                        <button type="button"
-                                class="catalog-filter-bar__trigger"
-                                aria-haspopup="dialog"
-                                aria-expanded="@_filtersOpen"
-                                @onclick="OpenFilters">
-                            <LucideIcon Name="sliders-horizontal" Size="14" />
-                            <span>Filters</span>
-                            @if (AppliedChips.Count > 0)
-                            {
-                                <span class="catalog-filter-bar__count">@AppliedChips.Count</span>
-                            }
-                        </button>
-                        <span class="catalog-filter-bar__section">@CurrentSectionLabel</span>
-                    </div>
                     @{
                         var cards = VisibleCards();
                     }
