@@ -12,6 +12,8 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IProfileService ProfileService
+@inject ThisCafeteria.Web.Services.ProfileAvatarState AvatarState
+@using ThisCafeteria.Application.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using ThisCafeteria.Application.Configuration
@@ -83,11 +85,22 @@
                         <span class="nav-cart__badge">@_cartItemCount</span>
                     }
                 </a>
+                @* The account's own robot stands where the chain glyph used to.
+                   The chain is already named in the text stack an inch to the
+                   right, so the glyph was saying it twice; who you are was not
+                   being said at all. *@
                 <button class="nav-login nav-login--authorized"
                         type="button"
                         aria-label="Open profile"
                         @onclick="@(() => Navigation.NavigateTo("profile"))">
-                    <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
+                    @if (_avatar is not null)
+                    {
+                        <RobotAvatarView Avatar="_avatar" Size="1.85rem" Class="nav-login__robot" />
+                    }
+                    else
+                    {
+                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
+                    }
                     <span class="nav-login__text-stack">
                         <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
                         <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
@@ -478,6 +491,7 @@
     private bool _isNavOpen;
     private int _cartItemCount;
     private CoffeeDashboardModel? _walletSnapshot;
+    private RobotAvatarDto? _avatar;
     private ChainDefinition SelectedChain => SelectedChainAccessor.SelectedChain;
     private bool _isLoadingWalletStats;
     private IJSObjectReference? _walletModule;
@@ -626,10 +640,12 @@
         Logger.LogInformation("NavMenu OnInitializedAsync START");
         CartService.Changed += OnCartChanged;
         DashboardState.Changed += OnWalletDashboardChanged;
+        AvatarState.Changed += OnAvatarChanged;
         Navigation.LocationChanged += OnLocationChanged;
         _walletSnapshot = DashboardState.Snapshot;
         await CartService.RefreshFromStorageAsync();
         await RefreshCartCountAsync();
+        await LoadAvatarAsync();
         Logger.LogInformation("NavMenu OnInitializedAsync END. CartItemCount={Count}", _cartItemCount);
     }
 
@@ -690,6 +706,37 @@
     {
         _walletSnapshot = DashboardState.Snapshot;
         _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnAvatarChanged()
+    {
+        _avatar = AvatarState.Current;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Reads the account's robot once per circuit.
+    /// </summary>
+    /// <remarks>
+    /// Best-effort: the header is not worth failing over. If this throws the
+    /// button falls back to the chain glyph it always showed.
+    /// </remarks>
+    private async Task LoadAvatarAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            _avatar = await AvatarState.GetOrLoadAsync(UserManager.GetUserId(authState.User));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "NavMenu could not load the account avatar.");
+        }
     }
 
     private async Task HandleChainChangedAsync(ChainDefinition chain)
@@ -946,6 +993,7 @@
     {
         CartService.Changed -= OnCartChanged;
         DashboardState.Changed -= OnWalletDashboardChanged;
+        AvatarState.Changed -= OnAvatarChanged;
         Navigation.LocationChanged -= OnLocationChanged;
     }
 

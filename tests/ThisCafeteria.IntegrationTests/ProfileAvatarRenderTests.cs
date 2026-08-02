@@ -113,6 +113,39 @@ public sealed class ProfileAvatarRenderTests(ThisCafeteriaWebApplicationFactory 
         body.Should().NotContain("data-backdrop=\"\"");
     }
 
+    [Fact]
+    public async Task TheHeaderShowsTheSameRobotAsThePage()
+    {
+        // StakingLayout mounts NavMenu, so one authenticated render exercises
+        // the whole header path: auth -> ProfileAvatarState -> ProfileService.
+        // The two must agree, or the account is two different robots at once.
+        var body = await LoadProfileAsync();
+
+        body.Should().Contain("nav-login__robot", "the header button should show the account's robot");
+        body.Should().NotContain("eth-mark\" src=\"images/pl-chain",
+            "the chain glyph is replaced once the robot is available");
+
+        var seeded = AvatarSeed.FromWallet(_wallet);
+        var chassis = AvatarCatalog.GetSlot(AvatarCatalog.ChassisSlot);
+        var layer = AvatarSheetStyle.Layer(chassis, chassis.Resolve(seeded.Chassis));
+
+        // Twice on the page: once in the header, once in the identity row.
+        CountOccurrences(body, layer).Should().BeGreaterThanOrEqualTo(2);
+    }
+
+    private static int CountOccurrences(string haystack, string needle)
+    {
+        var count = 0;
+        var index = haystack.IndexOf(needle, StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            count++;
+            index = haystack.IndexOf(needle, index + needle.Length, StringComparison.Ordinal);
+        }
+
+        return count;
+    }
+
     private async Task<string> LoadProfileAsync()
     {
         var client = _factory!.CreateClient();

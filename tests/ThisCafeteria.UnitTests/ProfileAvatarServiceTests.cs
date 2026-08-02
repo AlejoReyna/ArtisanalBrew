@@ -143,6 +143,76 @@ public sealed class ProfileAvatarServiceTests : IDisposable
             "reading must not quietly overwrite what the user actually picked");
     }
 
+    [Fact]
+    public async Task TheHeaderLookupReturnsTheStoredRobotForALinkedAccount()
+    {
+        var profileId = await SeedAsync();
+        var userId = await ApplicationUserIdAsync(profileId);
+        await CreateService(out _).UpdateAvatarAsync(
+            profileId,
+            new UpdateAvatarRequest("gold", "clay", "hivis", "shades", "crown", "coin"));
+
+        var avatar = await CreateService(out _).GetAvatarForApplicationUserAsync(userId);
+
+        avatar.Should().Be(new RobotAvatarDto("gold", "clay", "hivis", "shades", "crown", "coin"));
+    }
+
+    [Fact]
+    public async Task TheHeaderLookupNeverCreatesAProfile()
+    {
+        // A wallet that signed in but has not visited /profile yet has no
+        // UserProfile row. Rendering the header must not conjure one — that is
+        // the whole reason this path exists instead of EnsureProfileLinkedAsync.
+        var userId = await SeedUnlinkedUserAsync();
+
+        int Before;
+        await using (var context = new AppDbContext(_options))
+        {
+            Before = await context.UserProfiles.CountAsync();
+        }
+
+        var avatar = await CreateService(out _).GetAvatarForApplicationUserAsync(userId);
+
+        await using var after = new AppDbContext(_options);
+        (await after.UserProfiles.CountAsync()).Should().Be(Before, "the header is a read");
+        (await after.Carts.CountAsync()).Should().Be(0);
+
+        // It still gets a robot: the wallet is all the seed ever needed.
+        avatar.Should().Be(RobotAvatarDto.Resolve(null, Wallet));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    [InlineData("a-user-that-does-not-exist")]
+    public async Task TheHeaderLookupFallsBackToDefaultsRatherThanThrowing(string userId)
+    {
+        var avatar = await CreateService(out _).GetAvatarForApplicationUserAsync(userId);
+
+        avatar.Should().Be(RobotAvatarDto.Resolve(null, null));
+    }
+
+    private async Task<string> ApplicationUserIdAsync(Guid profileId)
+    {
+        await using var context = new AppDbContext(_options);
+        return (await context.Users.SingleAsync(user => user.UserProfileId == profileId)).Id;
+    }
+
+    private async Task<string> SeedUnlinkedUserAsync()
+    {
+        await using var context = new AppDbContext(_options);
+        var user = new ApplicationUser
+        {
+            UserName = Wallet,
+            WalletAddress = Wallet,
+            UserProfileId = null
+        };
+
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        return user.Id;
+    }
+
     private ProfileService CreateService(out AppDbContext context)
     {
         context = new AppDbContext(_options);

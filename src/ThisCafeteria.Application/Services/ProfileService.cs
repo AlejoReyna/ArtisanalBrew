@@ -78,6 +78,34 @@ public sealed class ProfileService(
             RobotAvatarDto.Resolve(profile.Avatar, applicationUser?.WalletAddress));
     }
 
+    public async Task<RobotAvatarDto> GetAvatarForApplicationUserAsync(
+        string applicationUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(applicationUserId))
+        {
+            return RobotAvatarDto.Resolve(null, null);
+        }
+
+        var applicationUser = await userProfileRepository.GetApplicationUserProfileAsync(
+            applicationUserId,
+            cancellationToken);
+
+        if (applicationUser is null)
+        {
+            return RobotAvatarDto.Resolve(null, null);
+        }
+
+        // No linked profile yet means nothing has been saved, which is exactly
+        // the case the wallet seed exists for — no row needs to be created to
+        // answer this.
+        UserProfile? profile = applicationUser.UserProfileId is { } userProfileId
+            ? await userProfileRepository.GetByIdAsync(userProfileId, cancellationToken)
+            : null;
+
+        return RobotAvatarDto.Resolve(profile?.Avatar, applicationUser.WalletAddress);
+    }
+
     public async Task<UserProfileDto> UpdateDisplayNameAsync(
         Guid userProfileId,
         UpdateUserProfileRequest request,

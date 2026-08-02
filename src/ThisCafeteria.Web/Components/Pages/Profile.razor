@@ -17,6 +17,7 @@
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Web.Services.Blockchain
 @inject WalletDashboardState DashboardState
+@inject ThisCafeteria.Web.Services.ProfileAvatarState AvatarState
 @inject IEthUsdPriceService EthUsdPriceService
 @implements IDisposable
 
@@ -264,6 +265,7 @@ else if (_dashboard is not null)
     private IReadOnlyCollection<OrderDto> _orders = [];
     private bool _isLoading = true;
     private bool _isSaving;
+    private string? _applicationUserId;
     private bool _isEditingName;
     private bool _isEditingAvatar;
     private bool _showYield;
@@ -294,6 +296,7 @@ else if (_dashboard is not null)
             return;
         }
 
+        _applicationUserId = applicationUserId;
         _subscription = ApplicationState.RegisterOnPersisting(PersistProfile);
 
         if (!ApplicationState.TryTakeFromJson<ProfileDashboardDto>("profileDashboard", out var dashboard) ||
@@ -430,6 +433,14 @@ else if (_dashboard is not null)
             var updated = await write(_dashboard.UserProfileId);
             _dashboard = _dashboard with { Avatar = updated.Avatar };
             _avatarError = null;
+
+            // The header outlives this page, so it has to be told. Without
+            // this it keeps the robot it read at sign-in and disagrees with
+            // the one on screen for the rest of the session.
+            if (_applicationUserId is not null)
+            {
+                AvatarState.Publish(_applicationUserId, updated.Avatar);
+            }
         }
         catch (ValidationException exception)
         {

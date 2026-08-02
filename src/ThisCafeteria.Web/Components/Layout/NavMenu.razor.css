@@ -326,6 +326,18 @@
     object-fit: cover;
 }
 
+/* The robot occupies the glyph's slot. It brings its own pixel ring and sizes
+   itself from --rbt-size, so this only has to keep it out of the ::before
+   hover wash the button paints behind its contents.
+
+   ::deep because the class lands on RobotAvatarView's own root element, which
+   carries that component's scope attribute and not this file's — without it
+   the rule compiles to a selector nothing on the page matches. */
+.nav-login--authorized ::deep .nav-login__robot {
+    position: relative;
+    z-index: 1;
+}
+
 .nav-login__text-stack {
     display: flex;
     flex-direction: column;

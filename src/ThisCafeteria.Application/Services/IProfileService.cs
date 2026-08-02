@@ -6,6 +6,20 @@ public interface IProfileService
 {
     Task<Guid> EnsureProfileLinkedAsync(string applicationUserId, CancellationToken cancellationToken = default);
     Task<ProfileDashboardDto> GetProfileDashboardAsync(Guid userProfileId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The account's robot, for callers that only need the avatar.
+    /// </summary>
+    /// <remarks>
+    /// Read-only on purpose. <see cref="EnsureProfileLinkedAsync"/> would also
+    /// get here but it <em>creates</em> a profile and cart as a side effect,
+    /// which has no business happening because someone rendered a header. An
+    /// account with no linked profile yet still gets a robot — seeded from its
+    /// wallet, which is all the seed ever needed.
+    /// </remarks>
+    Task<RobotAvatarDto> GetAvatarForApplicationUserAsync(
+        string applicationUserId,
+        CancellationToken cancellationToken = default);
     Task<UserProfileDto> UpdateDisplayNameAsync(
         Guid userProfileId,
         UpdateUserProfileRequest request,
