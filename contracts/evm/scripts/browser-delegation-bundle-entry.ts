@@ -20,4 +20,4 @@ export {
     contracts
 } from "@metamask/delegation-toolkit";
 export { getDelegationHashOffchain } from "@metamask/delegation-toolkit/utils";
-export { createPublicClient, createWalletClient, custom, toHex, encodeFunctionData, parseUnits } from "viem";
+export { createPublicClient, createWalletClient, custom, http, toHex, encodeFunctionData, parseUnits } from "viem";

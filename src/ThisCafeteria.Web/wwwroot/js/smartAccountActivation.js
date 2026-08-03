@@ -38,6 +38,7 @@ const FUND_DELEGATION_SALT = 12n;
 export async function buildActivationPayload({
     ownerAddress,
     chainIdHex,
+    rpcUrl,
     entryPoint,
     delegationManager,
     factory,
@@ -58,11 +59,11 @@ export async function buildActivationPayload({
     dotNetRef
 }) {
     const toolkit = requireToolkit();
-    const { toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, toHex, createDelegation, contracts, encodeFunctionData, parseUnits, getDelegationHashOffchain } = toolkit;
+    const { toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, http, toHex, createDelegation, contracts, encodeFunctionData, parseUnits, getDelegationHashOffchain } = toolkit;
 
     const { account, publicClient, environment, delegatorAddress } = await buildAccount({
-        toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, toHex,
-        ownerAddress, chainIdHex, entryPoint, delegationManager, factory, hybridImplementation,
+        toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, http, toHex,
+        ownerAddress, chainIdHex, rpcUrl, entryPoint, delegationManager, factory, hybridImplementation,
         allowedTargetsEnforcer, allowedMethodsEnforcer, exactCalldataEnforcer, limitedCallsEnforcer,
         nonceEnforcer, timestampEnforcer, deploySalt
     });
@@ -122,7 +123,7 @@ export async function buildActivationPayload({
         approvePermission = await signPermission(unsignedPermission(tokenAddress, approveData, APPROVE_DELEGATION_SALT));
         fundPermission = await signPermission(unsignedPermission(escrowAddress, fundData, FUND_DELEGATION_SALT));
     } catch (error) {
-        throw new Error(`The owner declined to sign a delegation: ${normalizeProviderError(error)}`);
+        throw new Error(describeSigningFailure(error, "a delegation", ownerAddress));
     }
 
     const incrementNonceData = contracts.NonceEnforcer.encode.incrementNonce(delegationManager);
@@ -130,7 +131,8 @@ export async function buildActivationPayload({
         account,
         publicClient,
         [{ to: nonceEnforcer, data: incrementNonceData }],
-        dotNetRef
+        dotNetRef,
+        ownerAddress
     );
 
     return {
@@ -168,6 +170,7 @@ export async function buildActivationPayload({
 export async function buildRevocationPayload({
     ownerAddress,
     chainIdHex,
+    rpcUrl,
     entryPoint,
     delegationManager,
     factory,
@@ -182,11 +185,11 @@ export async function buildRevocationPayload({
     dotNetRef
 }) {
     const toolkit = requireToolkit();
-    const { toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, toHex, contracts } = toolkit;
+    const { toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, http, toHex, contracts } = toolkit;
 
     const { account, publicClient, delegatorAddress } = await buildAccount({
-        toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, toHex,
-        ownerAddress, chainIdHex, entryPoint, delegationManager, factory, hybridImplementation,
+        toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, http, toHex,
+        ownerAddress, chainIdHex, rpcUrl, entryPoint, delegationManager, factory, hybridImplementation,
         allowedTargetsEnforcer, allowedMethodsEnforcer, exactCalldataEnforcer, limitedCallsEnforcer,
         nonceEnforcer, timestampEnforcer, deploySalt
     });
@@ -196,7 +199,8 @@ export async function buildRevocationPayload({
         account,
         publicClient,
         [{ to: nonceEnforcer, data: incrementNonceData }],
-        dotNetRef
+        dotNetRef,
+        ownerAddress
     );
 
     return { operation, delegatorAddress };
@@ -214,8 +218,8 @@ function requireToolkit() {
 }
 
 async function buildAccount({
-    toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, toHex,
-    ownerAddress, chainIdHex, entryPoint, delegationManager, factory, hybridImplementation,
+    toMetaMaskSmartAccount, Implementation, createPublicClient, createWalletClient, custom, http, toHex,
+    ownerAddress, chainIdHex, rpcUrl, entryPoint, delegationManager, factory, hybridImplementation,
     allowedTargetsEnforcer, allowedMethodsEnforcer, exactCalldataEnforcer, limitedCallsEnforcer,
     nonceEnforcer, timestampEnforcer, deploySalt
 }) {
@@ -224,11 +228,14 @@ async function buildAccount({
         id: chainId,
         name: "configured-chain",
         nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-        rpcUrls: { default: { http: [] } }
+        rpcUrls: { default: { http: rpcUrl ? [rpcUrl] : [] } }
     };
-    const transport = custom(window.ethereum);
-    const publicClient = createPublicClient({ chain, transport });
-    const walletClient = createWalletClient({ account: ownerAddress, chain, transport });
+    // Reads (eth_call, getBlock, fee estimation) go straight to the chain's own RPC - routing
+    // them through the wallet's injected provider instead is what threw "Request method eth_call
+    // is not supported" against wallets (Brave among them) that don't proxy arbitrary reads.
+    // Only the wallet client (signing) needs the injected provider.
+    const publicClient = createPublicClient({ chain, transport: http(rpcUrl) });
+    const walletClient = createWalletClient({ account: ownerAddress, chain, transport: custom(window.ethereum) });
 
     const environment = {
         DelegationManager: delegationManager,
@@ -266,7 +273,7 @@ async function buildAccount({
  * Nothing here broadcasts; it only produces a signed BundlerUserOperation-shaped payload for
  * the caller to submit after explicit user confirmation.
  */
-async function buildAndSignUserOperation(account, publicClient, calls, dotNetRef) {
+async function buildAndSignUserOperation(account, publicClient, calls, dotNetRef, ownerAddress) {
     const [sender, nonce, factoryArgs, callData, stubSignature, fees] = await Promise.all([
         account.getAddress(),
         account.getNonce(),
@@ -321,7 +328,7 @@ async function buildAndSignUserOperation(account, publicClient, calls, dotNetRef
             signature: "0x"
         });
     } catch (error) {
-        throw new Error(`The owner declined to sign the UserOperation: ${normalizeProviderError(error)}`);
+        throw new Error(describeSigningFailure(error, "the UserOperation", ownerAddress ?? sender));
     }
 
     return {
@@ -344,6 +351,25 @@ function packHiLo(hi, lo) {
 
 function toHexQuantity(value) {
     return `0x${value.toString(16)}`;
+}
+
+/**
+ * EIP-1193 code 4001 (user rejected) and 4100 (requested account not authorized) both
+ * surface from the same signing call, but they aren't the same failure: 4100 means the
+ * wallet's currently-active account differs from the one this operation is signing for,
+ * and no approval prompt is ever shown for it - "the owner declined" is actively misleading
+ * there, since there was nothing to decline.
+ */
+function describeSigningFailure(error, subject, expectedAddress) {
+    const code = error?.code ?? error?.cause?.code;
+    if (code === 4100) {
+        return `The wallet's active account is not authorized to sign ${subject} as ${expectedAddress}. `
+            + "Switch your wallet extension to that account (or reconnect with the account it's currently on) and try again.";
+    }
+    if (code === 4001) {
+        return `You declined to sign ${subject}.`;
+    }
+    return `Signing ${subject} failed: ${normalizeProviderError(error)}`;
 }
 
 /**
