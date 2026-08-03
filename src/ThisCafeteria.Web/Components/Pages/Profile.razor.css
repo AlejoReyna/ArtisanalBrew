@@ -142,23 +142,63 @@
     margin-bottom: clamp(1.1rem, 2.4vw, 1.6rem);
 }
 
-/* 4 frames of 64px laid out horizontally (256×64), so a 400% background steps
-   through them — the same sheet geometry as .pl-sprite. */
-.pf-id__avatar {
-    animation: pf-sprite-frames 900ms steps(4, end) infinite;
-    background-image: url("images/pl-robot-buyer.png");
-    background-position: 0 0;
-    background-repeat: no-repeat;
-    background-size: 400% 100%;
+/* The avatar used to be a decorative sprite of the lab's buyer robot — the
+   same picture on every account. It is now the account's own robot and it is
+   editable, so it has to look pressable: a bare image with a click handler
+   reads as decoration and nobody finds it. The pencil badge is the whole
+   affordance, and it only leaves the corner on hover. */
+.pf-avatar {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
     display: block;
     flex: none;
-    height: clamp(3.25rem, 7vw, 4.5rem);
-    image-rendering: pixelated;
-    width: clamp(3.25rem, 7vw, 4.5rem);
+    line-height: 0;
+    padding: 0;
+    position: relative;
 }
 
-@keyframes pf-sprite-frames {
-    to { background-position: 133.334% 0; }
+.pf-avatar__pen {
+    align-items: center;
+    background: var(--stake-bg-deep);
+    border: 1px solid var(--stake-line-strong);
+    bottom: -2px;
+    color: var(--stake-muted);
+    display: flex;
+    height: 1.35rem;
+    justify-content: center;
+    position: absolute;
+    right: -2px;
+    transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+    width: 1.35rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pf-avatar:hover .pf-avatar__pen {
+        border-color: var(--stake-copper);
+        color: var(--stake-ink);
+        transform: translate(1px, 1px);
+    }
+}
+
+.pf-avatar:focus-visible {
+    outline: 2px solid var(--stake-copper);
+    outline-offset: 3px;
+}
+
+.pf-avatar:focus-visible .pf-avatar__pen {
+    border-color: var(--stake-copper);
+    color: var(--stake-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pf-avatar__pen {
+        transition: none;
+    }
+
+    .pf-avatar:hover .pf-avatar__pen {
+        transform: none;
+    }
 }
 
 .pf-id__body {
@@ -722,8 +762,10 @@
     }
 }
 
+/* RobotAvatar gates its own idle bob on prefers-reduced-motion, and it has to:
+   its animation lives in that component's scoped stylesheet, which this file
+   cannot reach. */
 @media (prefers-reduced-motion: reduce) {
-    .pf-id__avatar,
     .pf-panel__empty-sprite,
     .pf-state__pulse {
         animation: none;

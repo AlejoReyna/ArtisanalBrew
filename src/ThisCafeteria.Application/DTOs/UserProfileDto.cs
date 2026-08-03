@@ -7,4 +7,5 @@ public sealed record UserProfileDto(
     string? WalletAddress,
     int? WalletChainId,
     DateTime CreatedAt,
-    string Role);
+    string Role,
+    RobotAvatarDto Avatar);

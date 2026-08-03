@@ -1,0 +1,288 @@
+/* Dress-up console.
+
+   Same pixel furniture as /profile and /procurement-lab: square corners, hard
+   offset shadows instead of soft ones, Press Start 2P used at label size. The
+   --stake-* tokens are inherited from the .yield-page wrapper this dialog sits
+   inside; each is given a light fallback the way AddressChip and StatTile do,
+   so the component survives being reused outside the dark wing. */
+
+.rae {
+    background: transparent;
+    border: 0;
+    color: var(--stake-ink, #2A211B);
+    inline-size: min(56rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 2rem);
+    overflow: visible;
+    padding: 0;
+}
+
+.rae::backdrop {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    background: rgba(9, 7, 6, 0.72);
+}
+
+.rae__frame {
+    background: var(--stake-bg, #FFFDF9);
+    border: 1px solid var(--stake-line-strong, rgba(20, 16, 12, 0.18));
+    box-shadow: 8px 8px 0 rgba(9, 7, 6, 0.55);
+    display: flex;
+    flex-direction: column;
+    max-block-size: calc(100dvh - 2rem);
+}
+
+/* ── Bar ────────────────────────────────────────────────────────────────── */
+
+.rae__bar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line, rgba(20, 16, 12, 0.1));
+    display: flex;
+    justify-content: space-between;
+    padding: 0.9rem 1.1rem;
+}
+
+.rae__bar h2 {
+    color: var(--stake-ink, #2A211B);
+    font: 400 0.72rem/1.4 'Press Start 2P', var(--crypto-mono, monospace);
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+
+.rae__close {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--stake-line-strong, rgba(20, 16, 12, 0.18));
+    color: var(--stake-muted, rgba(42, 33, 27, 0.6));
+    cursor: pointer;
+    display: inline-flex;
+    block-size: 1.9rem;
+    inline-size: 1.9rem;
+    justify-content: center;
+    padding: 0;
+    transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.rae__close:hover {
+    border-color: var(--stake-clay, #C2553A);
+    color: var(--stake-ink, #2A211B);
+    transform: translate(-1px, -1px);
+}
+
+/* ── Panes ──────────────────────────────────────────────────────────────── */
+
+.rae__panes {
+    display: grid;
+    gap: 0;
+    grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+    min-block-size: 0;
+}
+
+.rae__stage {
+    align-items: center;
+    border-right: 1px solid var(--stake-line, rgba(20, 16, 12, 0.1));
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1.4rem 1.1rem;
+}
+
+.rae__caption {
+    color: var(--stake-muted, rgba(42, 33, 27, 0.6));
+    font: 400 0.62rem/1.6 var(--crypto-mono, monospace);
+    letter-spacing: 0.02em;
+    margin: 0;
+    text-align: center;
+}
+
+.rae__stage-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.rae__ghost {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--stake-line-strong, rgba(20, 16, 12, 0.18));
+    color: var(--stake-muted, rgba(42, 33, 27, 0.6));
+    cursor: pointer;
+    display: inline-flex;
+    font: 700 0.58rem/1 var(--crypto-mono, monospace);
+    gap: 0.4rem;
+    letter-spacing: 0.08em;
+    padding: 0.5rem 0.7rem;
+    text-transform: uppercase;
+    transition: border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.rae__ghost:hover:not(:disabled) {
+    border-color: var(--stake-copper, #A9754A);
+    box-shadow: 3px 3px 0 var(--stake-copper-dim, rgba(169, 117, 74, 0.16));
+    color: var(--stake-ink, #2A211B);
+    transform: translate(-1px, -1px);
+}
+
+.rae__ghost:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+/* ── Picker ─────────────────────────────────────────────────────────────── */
+
+.rae__picker {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+}
+
+.rae__tabs {
+    border-bottom: 1px solid var(--stake-line, rgba(20, 16, 12, 0.1));
+    display: flex;
+    gap: 0.15rem;
+    overflow-x: auto;
+    padding: 0.55rem 0.7rem 0;
+    scrollbar-width: thin;
+}
+
+/* Muted, not faint: these are the six things you came here to click, and at
+   --stake-faint over the panel they read as disabled. */
+.rae__tab {
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--stake-muted, rgba(42, 33, 27, 0.6));
+    cursor: pointer;
+    flex: none;
+    font: 700 0.58rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.08em;
+    padding: 0.6rem 0.6rem;
+    text-transform: uppercase;
+    transition: color 160ms ease, border-color 160ms ease;
+    white-space: nowrap;
+}
+
+.rae__tab:hover {
+    color: var(--stake-ink, #2A211B);
+}
+
+.rae__tab.is-active {
+    border-bottom-color: var(--stake-copper, #A9754A);
+    color: var(--stake-ink, #2A211B);
+}
+
+.rae__grid {
+    display: grid;
+    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
+    overflow-y: auto;
+    padding: 0.8rem;
+}
+
+.rae__swatch {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--stake-muted, rgba(42, 33, 27, 0.6));
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.45rem 0.25rem 0.35rem;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.rae__swatch:hover {
+    background: var(--stake-surface, rgba(20, 16, 12, 0.05));
+    border-color: var(--stake-line-strong, rgba(20, 16, 12, 0.18));
+    color: var(--stake-ink, #2A211B);
+}
+
+.rae__swatch.is-chosen {
+    background: var(--stake-copper-dim, rgba(169, 117, 74, 0.16));
+    border-color: var(--stake-copper, #A9754A);
+    color: var(--stake-ink, #2A211B);
+}
+
+.rae__swatch-name {
+    font: 400 0.55rem/1.3 var(--crypto-mono, monospace);
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────── */
+
+.rae__actions {
+    border-top: 1px solid var(--stake-line, rgba(20, 16, 12, 0.1));
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    padding: 0.85rem 1.1rem;
+}
+
+.rae__cancel,
+.rae__save {
+    border: 1px solid var(--stake-line-strong, rgba(20, 16, 12, 0.18));
+    cursor: pointer;
+    font: 700 0.6rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.08em;
+    padding: 0.65rem 1.1rem;
+    text-transform: uppercase;
+    transition: box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.rae__cancel {
+    background: transparent;
+    color: var(--stake-muted, rgba(42, 33, 27, 0.6));
+}
+
+.rae__save {
+    background: var(--stake-copper, #A9754A);
+    border-color: var(--stake-copper, #A9754A);
+    color: #17110C;
+}
+
+.rae__cancel:hover,
+.rae__save:hover:not(:disabled) {
+    box-shadow: 3px 3px 0 rgba(9, 7, 6, 0.5);
+    transform: translate(-1px, -1px);
+}
+
+.rae__save:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+/* ── Narrow ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 44rem) {
+    .rae__panes {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rae__stage {
+        border-bottom: 1px solid var(--stake-line, rgba(20, 16, 12, 0.1));
+        border-right: 0;
+        padding: 1rem;
+    }
+
+    .rae__grid {
+        max-block-size: 42vh;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rae__close,
+    .rae__ghost,
+    .rae__cancel,
+    .rae__save {
+        transition: none;
+    }
+
+    .rae__close:hover,
+    .rae__ghost:hover:not(:disabled),
+    .rae__cancel:hover,
+    .rae__save:hover:not(:disabled) {
+        transform: none;
+    }
+}

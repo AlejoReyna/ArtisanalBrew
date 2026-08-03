@@ -126,6 +126,7 @@ builder.Services.AddScoped<SolanaLiquidStakingGateway>();
 builder.Services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
+builder.Services.AddScoped<ThisCafeteria.Web.Services.ProfileAvatarState>();
 builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
 {
     client.BaseAddress = new Uri("https://api.coingecko.com/api/v3/");
