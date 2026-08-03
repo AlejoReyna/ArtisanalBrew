@@ -1,32 +1,31 @@
 @using ThisCafeteria.Application.DTOs
 @using ThisCafeteria.Domain.Avatars
+@using ThisCafeteria.Web.Services
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 
 @* Dress-up console for the account robot.
 
-   Every swatch is a whole miniature robot wearing the working look with just
-   that one slot swapped, rather than a cut-out of the garment. It costs more
-   DOM and it is worth it twice over: you compare against what you are actually
-   building, and the visor slot becomes pickable at all — its sprites are only
-   the screen, so shown alone they are six floating rectangles. *@
+   Every swatch is a whole robot wearing the working look with just that one
+   slot swapped, rather than a cut-out of the garment. It costs more DOM and it
+   is worth it twice over: you compare against what you are actually building,
+   and the visor slot becomes pickable at all — its sprites are only the screen,
+   so shown alone they are six floating rectangles.
+
+   What the card *shows* of that robot is a crop. The active tab picks the
+   window (AvatarLenses), the grid carries it as custom properties, and every
+   card inherits the same framing: the part you came here to change, filling the
+   card and standing on its bottom edge. Whole-robot thumbnails hid the choice —
+   six hats differ by fourteen rows of a sixty-four row sprite, which at that
+   size is a couple of pixels between one card and the next. *@
 
 <dialog @ref="_dialog" class="rae" aria-labelledby="rae-title">
     <div class="rae__frame">
 
-        <header class="rae__bar">
-            <h2 id="rae-title">Your robot</h2>
-            <button type="button" class="rae__close" @onclick="CloseAsync" aria-label="Close editor">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-                    <path d="M6 6 18 18M18 6 6 18" />
-                </svg>
-            </button>
-        </header>
-
         <div class="rae__panes">
 
             <section class="rae__stage" aria-label="Preview">
-                <RobotAvatarView Avatar="_preview" Size="clamp(9rem, 30vw, 13rem)" />
+                <RobotAvatarView Avatar="_preview" Class="rae__robot" Size="clamp(16rem, 32vw, 30rem)" />
                 <p class="rae__caption">
                     @if (_isSeed)
                     {
@@ -56,6 +55,24 @@
             </section>
 
             <section class="rae__picker">
+                <header class="rae__bar">
+                    <div class="rae__bar-copy">
+                        <span class="rae__eyebrow">Robot workshop // live preview</span>
+                        <h2 id="rae-title">Your robot</h2>
+                    </div>
+                    <button type="button" class="rae__close" @onclick="CloseAsync" aria-label="Close editor">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M6 6 18 18M18 6 6 18" />
+                        </svg>
+                    </button>
+                </header>
+                <div class="rae__picker-head">
+                    <div>
+                        <span class="rae__eyebrow">Modify your look</span>
+                        <h3>@ActiveSlot.Label</h3>
+                    </div>
+                    <span class="rae__picker-count">@ActiveSlot.Items.Count options</span>
+                </div>
                 <div class="rae__tabs" role="tablist" aria-label="Parts">
                     @foreach (var slot in AvatarCatalog.Slots)
                     {
@@ -70,7 +87,11 @@
                     }
                 </div>
 
-                <div class="rae__grid" role="tabpanel" aria-label="@ActiveSlot.Label options">
+                @* The lens rides on the grid, not on each card: it is the same
+                   window for every item in the tab, and setting it once is what
+                   keeps the cards a comparable set rather than six unrelated
+                   crops. *@
+                <div class="rae__grid" role="tabpanel" aria-label="@ActiveSlot.Label options" style="@Lens.Style()">
                     @foreach (var item in ActiveSlot.Items)
                     {
                         var isChosen = item.Id == _working[ActiveSlot.Key];
@@ -78,22 +99,33 @@
                         <button type="button"
                                 class="rae__swatch @(isChosen ? "is-chosen" : null)"
                                 aria-pressed="@isChosen"
+                                aria-label="@item.Label"
                                 title="@item.Label"
                                 @onclick="() => Choose(item.Id)">
-                            <RobotAvatarView Avatar="swatch" Size="3.5rem" Idle="false" />
-                            <span class="rae__swatch-name">@item.Label</span>
+                            <RobotAvatarView Avatar="swatch" Class="rae__lens-robot" Idle="false" />
+                            @* The name rode under the robot in a strip of its own
+                               until that strip was eating a fifth of the card and
+                               pushing the sprite away from the bottom edge it is
+                               supposed to stand on. It is a corner chip now:
+                               always up for what you are wearing, on hover and
+                               keyboard focus for everything else. *@
+                            <span class="rae__tag" aria-hidden="true">
+                                <span class="rae__tag-index">@ItemIndex(item)</span>
+                                <span class="rae__tag-name">@item.Label</span>
+                            </span>
                         </button>
                     }
                 </div>
+
+                <footer class="rae__actions">
+                    <button type="button" class="rae__cancel" @onclick="CloseAsync">Cancel</button>
+                    <button type="button" class="rae__save" @onclick="SaveAsync" disabled="@(_isSaving || !HasChanges)">
+                        @(_isSaving ? "Saving…" : "Save robot")
+                    </button>
+                </footer>
             </section>
         </div>
 
-        <footer class="rae__actions">
-            <button type="button" class="rae__cancel" @onclick="CloseAsync">Cancel</button>
-            <button type="button" class="rae__save" @onclick="SaveAsync" disabled="@(_isSaving || !HasChanges)">
-                @(_isSaving ? "Saving…" : "Save robot")
-            </button>
-        </footer>
     </div>
 </dialog>
 
@@ -127,6 +159,9 @@
     private bool _isSaving;
 
     private AvatarSlot ActiveSlot => AvatarCatalog.GetSlot(_activeSlotKey);
+
+    /// <summary>The region of the robot this tab's cards frame.</summary>
+    private AvatarLens Lens => AvatarLenses.For(_activeSlotKey);
 
     private bool HasChanges => !_preview.Equals(Avatar);
 
@@ -167,6 +202,9 @@
         _working[_activeSlotKey] = itemId;
         Refresh();
     }
+
+    private string ItemIndex(AvatarItem item) =>
+        (ActiveSlot.Items.TakeWhile(candidate => candidate.Id != item.Id).Count() + 1).ToString("00");
 
     /// <summary>The working look with one slot swapped — what a swatch shows.</summary>
     private RobotAvatarDto Preview(string slotKey, string itemId)
