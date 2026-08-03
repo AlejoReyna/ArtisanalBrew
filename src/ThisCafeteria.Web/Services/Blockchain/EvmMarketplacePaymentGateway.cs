@@ -36,7 +36,15 @@ public sealed class EvmMarketplacePaymentGateway(
         {
             var web3 = new Web3(chain.EffectiveServerRpcUrl);
             var receipt = await web3.Eth.Transactions.GetTransactionReceipt.SendRequestAsync(transactionHash).ConfigureAwait(false);
-            if (receipt is null || receipt.Status?.Value != BigInteger.One || !AddressMatches(receipt.To, chain.Deployment.LegacyPool))
+            if (receipt is null)
+            {
+                // Not yet mined - this is the expected state on the first poll or two right after a
+                // broadcast, not a failure. The caller retries on Pending and only gives up on a
+                // genuine Failed (wrong recipient, reverted), so this must not throw prematurely.
+                return StakingVerificationResult.Pending(0, chain.MinimumConfirmations);
+            }
+
+            if (receipt.Status?.Value != BigInteger.One || !AddressMatches(receipt.To, chain.Deployment.LegacyPool))
             {
                 return StakingVerificationResult.Failed;
             }

@@ -43,7 +43,7 @@
     "liquidStaking": true,
     "legacyExit": false,
     "faucet": true,
-    "marketplacePayment": false,
+    "marketplacePayment": true,
     "rewardMinting": true,
     "agenticCommerce": true,
     "agenticSessionPayments": false

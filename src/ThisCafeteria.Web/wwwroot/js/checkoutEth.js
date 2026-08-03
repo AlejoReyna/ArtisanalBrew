@@ -1,64 +1,87 @@
 export async function connectWalletForCheckout(config) {
-    const provider = await resolveMetaMaskProvider();
-    if (!provider) {
-        throw new Error("MetaMask is not installed.");
+    try {
+        const provider = await resolveMetaMaskProvider();
+        if (!provider) {
+            throw new Error("MetaMask is not installed.");
+        }
+
+        const accounts = await provider.request({ method: "eth_requestAccounts" });
+        const fromAddress = accounts?.[0];
+        if (!fromAddress) {
+            throw new Error("No wallet account was selected.");
+        }
+
+        validateExpectedWallet(fromAddress, config.expectedWalletAddress);
+        await ensureConfiguredNetwork(config, provider);
+
+        return fromAddress;
+    } catch (error) {
+        throw normalizeProviderError(error);
     }
-
-    const accounts = await provider.request({ method: "eth_requestAccounts" });
-    const fromAddress = accounts?.[0];
-    if (!fromAddress) {
-        throw new Error("No wallet account was selected.");
-    }
-
-    validateExpectedWallet(fromAddress, config.expectedWalletAddress);
-    await ensureConfiguredNetwork(config, provider);
-
-    return fromAddress;
 }
 
 export async function payWithNativeEth(config) {
-    const provider = await resolveMetaMaskProvider();
-    if (!provider) {
-        throw new Error("MetaMask is not installed.");
+    try {
+        const provider = await resolveMetaMaskProvider();
+        if (!provider) {
+            throw new Error("MetaMask is not installed.");
+        }
+
+        const accounts = await provider.request({ method: "eth_requestAccounts" });
+        const fromAddress = accounts?.[0];
+        if (!fromAddress) {
+            throw new Error("No wallet account was selected.");
+        }
+
+        validateExpectedWallet(fromAddress, config.expectedWalletAddress);
+        await ensureConfiguredNetwork(config, provider);
+
+        const amountWei = parseEtherToWei(config.amountEth);
+        const balanceWei = BigInt(await provider.request({
+            method: "eth_getBalance",
+            params: [fromAddress, "latest"]
+        }));
+        const gasPriceWei = BigInt(await provider.request({ method: "eth_gasPrice" }));
+        const estimatedGasWei = 21000n * gasPriceWei;
+        const requiredWei = amountWei + estimatedGasWei;
+
+        if (balanceWei < requiredWei) {
+            throw new Error(
+                `Insufficient Sepolia ETH. Required ${formatWei(requiredWei)} ETH including estimated gas; wallet has ${formatWei(balanceWei)} ETH.`
+            );
+        }
+
+        const transactionHash = await provider.request({
+            method: "eth_sendTransaction",
+            params: [{
+                from: fromAddress,
+                to: config.marketplaceWallet,
+                value: toHex(amountWei)
+            }]
+        });
+
+        return {
+            transactionHash,
+            fromAddress
+        };
+    } catch (error) {
+        throw normalizeProviderError(error);
+    }
+}
+
+// EIP-1193 providers frequently reject with a plain { code, message } object rather than a real
+// Error instance. Left unnormalized, that crosses the Blazor JS-interop boundary as an object with
+// no usable .Message on the .NET side, and surfaces to the user as the literal text
+// "[object Object]" instead of the wallet's actual reason (e.g. "user rejected the request").
+function normalizeProviderError(error) {
+    if (error instanceof Error) {
+        return error;
     }
 
-    const accounts = await provider.request({ method: "eth_requestAccounts" });
-    const fromAddress = accounts?.[0];
-    if (!fromAddress) {
-        throw new Error("No wallet account was selected.");
-    }
-
-    validateExpectedWallet(fromAddress, config.expectedWalletAddress);
-    await ensureConfiguredNetwork(config, provider);
-
-    const amountWei = parseEtherToWei(config.amountEth);
-    const balanceWei = BigInt(await provider.request({
-        method: "eth_getBalance",
-        params: [fromAddress, "latest"]
-    }));
-    const gasPriceWei = BigInt(await provider.request({ method: "eth_gasPrice" }));
-    const estimatedGasWei = 21000n * gasPriceWei;
-    const requiredWei = amountWei + estimatedGasWei;
-
-    if (balanceWei < requiredWei) {
-        throw new Error(
-            `Insufficient Sepolia ETH. Required ${formatWei(requiredWei)} ETH including estimated gas; wallet has ${formatWei(balanceWei)} ETH.`
-        );
-    }
-
-    const transactionHash = await provider.request({
-        method: "eth_sendTransaction",
-        params: [{
-            from: fromAddress,
-            to: config.marketplaceWallet,
-            value: toHex(amountWei)
-        }]
-    });
-
-    return {
-        transactionHash,
-        fromAddress
-    };
+    const message = typeof error === "string"
+        ? error
+        : error?.message ?? "The wallet reported an unexpected error.";
+    return new Error(message);
 }
 
 async function resolveMetaMaskProvider() {
