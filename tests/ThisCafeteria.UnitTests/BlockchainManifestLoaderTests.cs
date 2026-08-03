@@ -165,6 +165,45 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
+    public void ReadsLegacyPoolFromTheEvmManifest()
+    {
+        var path = WriteEvmManifest();
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", legacyPool: Address('L')));
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+            deployed.Deployment.LegacyPool.Should().Be(Address('L'));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void AllowsMarketplacePaymentBackedByALegacyPoolAloneWithNoEscrow()
+    {
+        // The OR branch of the settlement-venue rule: a legacy-pool-only manifest (no escrow)
+        // must still validate, matching the native-transfer checkout rail.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true, includeEscrow: false, legacyPool: Address('L')));
+        try
+        {
+            var deployed = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null)).GetRequired("bsc-testnet");
+
+            deployed.Capabilities.MarketplacePayment.Should().BeTrue();
+            deployed.Deployment.LegacyPool.Should().Be(Address('L'));
+            deployed.Deployment.AgenticEscrow.Should().BeEmpty();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void LeavesBundlerRpcUrlUnsetWhenTheManifestOmitsIt()
     {
         var path = WriteEvmManifest();
@@ -350,7 +389,7 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
-    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true) =>
+    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true, string? legacyPool = null) =>
         $$"""
         {
           "schemaVersion": 1,
@@ -366,6 +405,7 @@ public sealed class BlockchainManifestLoaderTests
             "liquidVault": "{{Address('A')}}",
             "faucet": "{{Address('F')}}",
             {{(includeEscrow ? $"\"erc8183Escrow\": \"{Address('E')}\"," : "")}}
+            {{(legacyPool is null ? "" : $"\"legacyPool\": \"{legacyPool}\",")}}
             "entryPoint": "{{Address('P')}}",
             "erc8004Registry": "{{Address('R')}}",
             "erc7683Resolver": "{{Address('S')}}",
