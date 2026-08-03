@@ -269,6 +269,37 @@ app.Use((context, next) =>
     return next(context);
 });
 
+// Static assets referenced by plain paths (CSS url() sprites, JS-fetched files) can't
+// use MapStaticAssets' fingerprinted immutable URLs, and its production default for
+// those is max-age=3600 — repeat visitors were re-downloading ~26 MB of images every
+// hour. Give plain-path statics a day instead. Fingerprinted URLs keep their year-long
+// immutable policy ("immutable" directive), and Development's no-cache responses are
+// left alone so local edits don't go stale.
+app.Use((context, next) =>
+{
+    var path = context.Request.Path;
+    if ((HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)) &&
+        (path.StartsWithSegments("/images", StringComparison.OrdinalIgnoreCase) ||
+         path.StartsWithSegments("/videos", StringComparison.OrdinalIgnoreCase) ||
+         path.StartsWithSegments("/js", StringComparison.OrdinalIgnoreCase)))
+    {
+        context.Response.OnStarting(() =>
+        {
+            var cacheControl = context.Response.Headers.CacheControl.ToString();
+            if (context.Response.StatusCode == StatusCodes.Status200OK &&
+                !cacheControl.Contains("immutable", StringComparison.OrdinalIgnoreCase) &&
+                !cacheControl.Contains("no-cache", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.Headers.CacheControl = "public, max-age=86400, must-revalidate";
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+
+    return next(context);
+});
+
 app.MapStaticAssets();
 app.MapControllers();
 app.MapHealthChecks("/health/live", new HealthCheckOptions
