@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Numerics;
 using System.Text.Json;
 using FluentAssertions;
 using ThisCafeteria.Application.Configuration;
@@ -100,6 +101,100 @@ public sealed class RundlerBundlerClientTests
         op.GetProperty("paymasterVerificationGasLimit").GetString().Should().Be($"0x{verifGas}");
         op.GetProperty("paymasterPostOpGasLimit").GetString().Should().Be($"0x{postOpGas}");
         op.GetProperty("paymasterData").GetString().Should().Be($"0x{validUntilAfter}{signature}");
+    }
+
+    [Fact]
+    public async Task EstimateGas_SendsCorrectlyShapedRequestAndParsesRundlerResponse()
+    {
+        JsonDocument? request = null;
+        var calls = 0;
+        using var http = new HttpClient(new Handler(message =>
+        {
+            request = JsonDocument.Parse(message.Content!.ReadAsStringAsync().Result);
+            calls++;
+            object result = calls == 1
+                ? new[] { EntryPoint }
+                : new { preVerificationGas = "0xc350", verificationGasLimit = "0x249f0", callGasLimit = "0x186a0" };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { jsonrpc = "2.0", id = 1, result }) };
+        }))
+        { BaseAddress = new Uri("http://bundler.test") };
+        var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
+        {
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
+            Deployment = new ChainDeployment { EntryPoint = EntryPoint }
+        }));
+
+        var estimate = await client.EstimateUserOperationGasAsync(ChainKey, Operation("0x") with { Signature = "0x" });
+
+        var rpc = request!.RootElement;
+        rpc.GetProperty("method").GetString().Should().Be("eth_estimateUserOperationGas");
+        rpc.GetProperty("params")[1].GetString().Should().Be(EntryPoint);
+        estimate.PreVerificationGas.Should().Be(50_000);
+        estimate.VerificationGasLimit.Should().Be(150_000);
+        estimate.CallGasLimit.Should().Be(100_000);
+        estimate.PaymasterVerificationGasLimit.Should().BeNull();
+        estimate.PaymasterPostOpGasLimit.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task EstimateGas_ParsesPaymasterGasFieldsWhenPresent()
+    {
+        var calls = 0;
+        using var http = new HttpClient(new Handler(message =>
+        {
+            calls++;
+            object result = calls == 1
+                ? new[] { EntryPoint }
+                : new
+                {
+                    preVerificationGas = "0xc350",
+                    verificationGasLimit = "0x249f0",
+                    callGasLimit = "0x186a0",
+                    paymasterVerificationGasLimit = "0x30d40",
+                    paymasterPostOpGasLimit = "0x186a0"
+                };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { jsonrpc = "2.0", id = 1, result }) };
+        }))
+        { BaseAddress = new Uri("http://bundler.test") };
+        var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
+        {
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
+            Deployment = new ChainDeployment { EntryPoint = EntryPoint }
+        }));
+
+        var estimate = await client.EstimateUserOperationGasAsync(ChainKey, Operation("0x") with { Signature = "0x" });
+
+        estimate.PaymasterVerificationGasLimit.Should().Be((BigInteger)200_000);
+        estimate.PaymasterPostOpGasLimit.Should().Be((BigInteger)100_000);
+    }
+
+    [Fact]
+    public async Task EstimateGas_ThrowsWhenBundlerOmitsARequiredField()
+    {
+        var calls = 0;
+        using var http = new HttpClient(new Handler(message =>
+        {
+            calls++;
+            object result = calls == 1
+                ? new[] { EntryPoint }
+                : new { preVerificationGas = "0xc350", callGasLimit = "0x186a0" };
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new { jsonrpc = "2.0", id = 1, result }) };
+        }))
+        { BaseAddress = new Uri("http://bundler.test") };
+        var client = new RundlerBundlerClient(http, new Registry(new ChainDefinition
+        {
+            Key = ChainKey,
+            Family = ChainFamily.Evm,
+            BundlerRpcUrl = "http://bundler.test/rpc",
+            Deployment = new ChainDeployment { EntryPoint = EntryPoint }
+        }));
+
+        await FluentActions.Invoking(() => client.EstimateUserOperationGasAsync(ChainKey, Operation("0x") with { Signature = "0x" }))
+            .Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]

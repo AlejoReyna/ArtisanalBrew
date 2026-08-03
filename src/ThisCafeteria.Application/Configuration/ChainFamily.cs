@@ -44,6 +44,12 @@ public sealed record ChainDeployment
     // See docs/erc4337-session-key-provenance.md for the provenance matrix. Every field here must
     // point at unmodified, audited contract deployments — SmartAccountService fails closed unless
     // all of them (plus EntryPoint) are present.
+    // The audited HybridDeleGator implementation's immutable EntryPoint is the canonical ERC-4337
+    // v0.7 singleton (0x0000000071727De22E5E9d8BAf0edAc6f37da032) - NOT necessarily the same address
+    // as this chain's legacy EntryPoint above, which some chains deploy their own instance of for the
+    // unrelated SimpleAccount stack. Every service that submits or reads a UserOperation for a
+    // modular/HybridDeleGator account must resolve this field, never the legacy EntryPoint field.
+    public string ModularEntryPoint { get; init; } = string.Empty;
     public string ModularAccountFactory { get; init; } = string.Empty;
     public string DelegationManager { get; init; } = string.Empty;
     public string HybridDeleGatorImplementation { get; init; } = string.Empty;
@@ -89,6 +95,15 @@ public sealed record ChainDefinition
     public string? ServerRpcUrl { get; init; }
     /// <summary>Trusted server-side ERC-4337 bundler endpoint. Never returned by public chain metadata.</summary>
     public string? BundlerRpcUrl { get; init; }
+    /// <summary>
+    /// A separate bundler endpoint for modular/HybridDeleGator operations, when the chain's bundler
+    /// cannot serve both the legacy <see cref="ChainDeployment.EntryPoint"/> and the canonical
+    /// <see cref="ChainDeployment.ModularEntryPoint"/> from one instance (each ERC-4337 bundler
+    /// instance is commonly configured for exactly one v0.7 EntryPoint address). Falls back to
+    /// <see cref="BundlerRpcUrl"/> when unset - i.e. when one bundler instance happens to serve both.
+    /// Never returned by public chain metadata.
+    /// </summary>
+    public string? ModularBundlerRpcUrl { get; init; }
     public string ExplorerAddressTemplate { get; init; } = string.Empty;
     public string ExplorerTransactionTemplate { get; init; } = string.Empty;
     public int MinimumConfirmations { get; init; } = 2;
@@ -97,5 +112,6 @@ public sealed record ChainDefinition
     public ChainCapabilities Capabilities { get; init; } = new();
 
     public string EffectiveServerRpcUrl => string.IsNullOrWhiteSpace(ServerRpcUrl) ? PublicRpcUrl : ServerRpcUrl;
+    public string? EffectiveModularBundlerRpcUrl => string.IsNullOrWhiteSpace(ModularBundlerRpcUrl) ? BundlerRpcUrl : ModularBundlerRpcUrl;
     public string FamilyName => Family.ToString();
 }

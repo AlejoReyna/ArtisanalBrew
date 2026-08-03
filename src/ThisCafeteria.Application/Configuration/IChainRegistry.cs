@@ -51,6 +51,14 @@ public sealed class ChainRegistry : IChainRegistry
             // legacy pool deployment. Either satisfies the "no capability without a contract behind it" rule;
             // a manifest that turns the flag on while carrying neither fails closed.
             if (chain.Capabilities.MarketplacePayment && chain.Family == ChainFamily.Evm && string.IsNullOrWhiteSpace(chain.Deployment.AgenticEscrow) && string.IsNullOrWhiteSpace(chain.Deployment.LegacyPool)) throw new InvalidOperationException($"Chain '{chain.Key}' enables marketplace payment without an escrow or legacy pool deployment.");
+            // Session-key permissions redeem through the MetaMask Delegation Framework's
+            // DelegationManager, executed by a HybridDeleGator account - without both deployed and
+            // addressed, there is no contract for a signed delegation to redeem against. The modular
+            // EntryPoint is required separately from the legacy EntryPoint above: HybridDeleGator's
+            // immutable EntryPoint is the canonical ERC-4337 singleton, which is not necessarily the
+            // same address as this chain's legacy EntryPoint (some chains deploy their own instance
+            // for the unrelated SimpleAccount stack) - see ChainDeployment.ModularEntryPoint.
+            if (chain.Capabilities.AgenticSessionPayments && chain.Family == ChainFamily.Evm && (string.IsNullOrWhiteSpace(chain.Deployment.DelegationManager) || string.IsNullOrWhiteSpace(chain.Deployment.HybridDeleGatorImplementation) || string.IsNullOrWhiteSpace(chain.Deployment.ModularEntryPoint))) throw new InvalidOperationException($"Chain '{chain.Key}' enables agentic session payments without a DelegationManager, HybridDeleGator, and modular EntryPoint deployment.");
             if (chain.Family == ChainFamily.Solana && chain.Capabilities.LiquidStaking && string.IsNullOrWhiteSpace(chain.Deployment.Program)) throw new InvalidOperationException($"Solana chain '{chain.Key}' enables staking without a program deployment.");
             // A Solana CAFE faucet mints under the CAFE mint authority, so it needs both the CAFE mint and
             // the administrator authority allowed to mint it. See docs/solana-devnet-faucet.md.

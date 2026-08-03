@@ -105,6 +105,35 @@ public interface ISmartAccountService
     Task<SmartAccountInfo> RegisterModularAccountAsync(string chainKey, string ownerAddress, string accountAddress, string salt);
 
     /// <summary>
+    /// Relays an already owner-signed UserOperation to the configured bundler, for the modular
+    /// account already registered to <paramref name="ownerAddress"/> on <paramref name="chainKey"/>
+    /// (via <see cref="RegisterModularAccountAsync"/>), then waits for it to be mined — it never
+    /// signs, constructs, or re-derives anything, and never asserts that the operation activated or
+    /// revoked a permission epoch, only that it was mined; <see cref="RecordPermissionEpochInstalledAsync"/>
+    /// and <see cref="RevokeSessionPermissionsAsync"/> independently re-verify on-chain state
+    /// afterward and remain the actual trust boundary — but they read that state live, so the caller
+    /// must not call them until this method returns. Fails closed if the modular stack is not
+    /// configured for this chain, or if <paramref name="operation"/>'s sender does not match the
+    /// account already registered to this owner — this cannot be used as an open relay for an
+    /// arbitrary account. Throws <see cref="InvalidOperationException"/> if the operation is mined
+    /// but its inner call reverted, or if it is not confirmed within the poll window. Returns the
+    /// real on-chain transaction hash once mined — not the bundler-assigned UserOperation hash.
+    /// </summary>
+    Task<string> SubmitOwnerUserOperationAsync(string chainKey, string ownerAddress, BundlerUserOperation operation, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Convenience forward to the bundler's own <c>eth_estimateUserOperationGas</c>, resolved
+    /// against <c>ChainDeployment.ModularEntryPoint</c> - never the legacy
+    /// <c>ChainDeployment.EntryPoint</c>. This is not a trust boundary (it asserts nothing and
+    /// persists nothing); the point is the same reason <see cref="IUserOperationSimulator"/> favors
+    /// the EntryPoint's own simulation over a self-computed guess - a number this codebase invented
+    /// would agree with itself and nothing else, whereas the bundler's estimate is what will actually
+    /// be charged against. Fails closed with <see cref="NotSupportedException"/> if the modular stack
+    /// is not configured for this chain.
+    /// </summary>
+    Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns the currently active permission epoch for a modular account (delegator), if any, after
     /// confirming against a live NonceEnforcer.currentNonce read that the persisted epoch is still the
     /// one in effect on-chain. Returns null if there is no epoch, it was never activated, or it has been

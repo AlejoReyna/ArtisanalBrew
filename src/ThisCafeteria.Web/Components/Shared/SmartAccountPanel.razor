@@ -1,3 +1,6 @@
+@using System.Globalization
+@using System.Numerics
+@using System.Text.Json
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Application.Services
 @using ThisCafeteria.Application.Services.Blockchain
@@ -85,10 +88,138 @@
                     </div>
                 </dl>
             </div>
+
+            @if (_pendingRevocation is null)
+            {
+                <button type="button"
+                        class="smart-account-panel__danger-button"
+                        disabled="@_isPreparingRevocation"
+                        @onclick="PrepareRevocationAsync">
+                    @(_isPreparingRevocation ? "Preparing…" : "Revoke agent permission")
+                </button>
+            }
+            else
+            {
+                <div class="smart-account-panel__review">
+                    <p class="smart-account-panel__review-kicker">Ready to revoke</p>
+                    <p class="smart-account-panel__empty">
+                        This broadcasts a real on-chain UserOperation that advances the account's permission
+                        epoch, ending the agent's access. The owner's wallet will prompt you to sign it.
+                    </p>
+                    <div class="smart-account-panel__review-actions">
+                        <button type="button"
+                                class="smart-account-panel__danger-button"
+                                disabled="@_isBroadcastingRevocation"
+                                @onclick="ConfirmRevocationAsync">
+                            @(_isBroadcastingRevocation ? "Broadcasting…" : "Confirm revoke")
+                        </button>
+                        <button type="button"
+                                class="smart-account-panel__ghost-button"
+                                disabled="@_isBroadcastingRevocation"
+                                @onclick="CancelRevocation">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_revocationError))
+            {
+                <p class="smart-account-panel__empty smart-account-panel__error">@_revocationError</p>
+            }
         }
         else if (_modularAccountRegistered)
         {
-            <p class="smart-account-panel__empty">No active agent permission is installed on this account.</p>
+            @if (_pendingActivation is null)
+            {
+                <div class="smart-account-panel__activation">
+                    <p class="smart-account-panel__empty">
+                        No active agent permission is installed on this account. Grant an agent a one-time,
+                        exact-amount budget against a specific job:
+                    </p>
+                    <label class="smart-account-panel__field">
+                        <span>Agent wallet address</span>
+                        <input type="text" placeholder="0x…" @bind="_agentAddressInput" @bind:event="oninput" />
+                    </label>
+                    <label class="smart-account-panel__field">
+                        <span>Job ID</span>
+                        <input type="number" min="1" @bind="_jobIdInput" @bind:event="oninput" />
+                    </label>
+                    <label class="smart-account-panel__field">
+                        <span>Amount (CAFE)</span>
+                        <input type="text" inputmode="decimal" placeholder="10" @bind="_amountInput" @bind:event="oninput" />
+                    </label>
+                    <label class="smart-account-panel__field">
+                        <span>Valid for</span>
+                        <select @bind="_validForHours">
+                            <option value="1">1 hour</option>
+                            <option value="24">24 hours</option>
+                            <option value="168">7 days</option>
+                        </select>
+                    </label>
+                    <button type="button"
+                            class="smart-account-panel__register-button"
+                            disabled="@_isPreparingActivation"
+                            @onclick="PrepareActivationAsync">
+                        @(_isPreparingActivation ? "Signing…" : "Sign delegations & activation")
+                    </button>
+                    @if (!string.IsNullOrWhiteSpace(_activationError))
+                    {
+                        <p class="smart-account-panel__empty smart-account-panel__error">@_activationError</p>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="smart-account-panel__review">
+                    <p class="smart-account-panel__review-kicker">Ready to activate</p>
+                    <dl class="smart-account-panel__permission-facts">
+                        <div>
+                            <dt>Agent</dt>
+                            <dd><AddressChip Address="@_pendingActivation.AgentAddress" /></dd>
+                        </div>
+                        <div>
+                            <dt>Epoch</dt>
+                            <dd>@_pendingActivation.Epoch</dd>
+                        </div>
+                        <div>
+                            <dt>Expires</dt>
+                            <dd>@DateTimeOffset.FromUnixTimeSeconds(_pendingActivation.ValidBeforeUnix).ToLocalTime().ToString("MMM d, yyyy h:mm tt")</dd>
+                        </div>
+                        <div>
+                            <dt>Grants</dt>
+                            <dd>@_pendingActivation.Grants.Count scoped call@(_pendingActivation.Grants.Count == 1 ? "" : "s")</dd>
+                        </div>
+                    </dl>
+                    <details class="smart-account-panel__raw-details">
+                        <summary>Signed delegations (inspect before broadcasting)</summary>
+                        <pre class="smart-account-panel__raw">@string.Join("\n\n", _pendingActivation.SignedDelegations.Select(d => d.GetRawText()))</pre>
+                    </details>
+                    <p class="smart-account-panel__empty">
+                        This broadcasts a real on-chain UserOperation that activates this epoch. The signed
+                        delegations above are not sent anywhere by this app — deliver them to the agent
+                        separately.
+                    </p>
+                    <div class="smart-account-panel__review-actions">
+                        <button type="button"
+                                class="smart-account-panel__register-button"
+                                disabled="@_isBroadcastingActivation"
+                                @onclick="ConfirmActivationAsync">
+                            @(_isBroadcastingActivation ? "Broadcasting…" : "Broadcast activation")
+                        </button>
+                        <button type="button"
+                                class="smart-account-panel__ghost-button"
+                                disabled="@_isBroadcastingActivation"
+                                @onclick="CancelActivation">
+                            Cancel
+                        </button>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_activationError))
+                    {
+                        <p class="smart-account-panel__empty smart-account-panel__error">@_activationError</p>
+                    }
+                </div>
+            }
         }
         else if (IsModularConfigured)
         {
@@ -124,6 +255,23 @@
     private string? _registerError;
     private IJSObjectReference? _registrationModule;
 
+    private IJSObjectReference? _activationModule;
+    private DotNetObjectReference<SmartAccountPanel>? _dotNetRef;
+
+    private string _agentAddressInput = string.Empty;
+    private string _jobIdInput = string.Empty;
+    private string _amountInput = string.Empty;
+    private int _validForHours = 1;
+    private bool _isPreparingActivation;
+    private bool _isBroadcastingActivation;
+    private string? _activationError;
+    private ActivationPayloadDto? _pendingActivation;
+
+    private bool _isPreparingRevocation;
+    private bool _isBroadcastingRevocation;
+    private string? _revocationError;
+    private RevocationPayloadDto? _pendingRevocation;
+
     private bool IsWalletUsable => WalletAddressRules.TryNormalizeWallet(WalletAddress, out _);
 
     private bool IsModularConfigured
@@ -131,7 +279,7 @@
         get
         {
             var deployment = SelectedChainAccessor.SelectedChain.Deployment;
-            return !string.IsNullOrWhiteSpace(deployment.EntryPoint)
+            return !string.IsNullOrWhiteSpace(deployment.ModularEntryPoint)
                 && !string.IsNullOrWhiteSpace(deployment.ModularAccountFactory)
                 && !string.IsNullOrWhiteSpace(deployment.DelegationManager)
                 && !string.IsNullOrWhiteSpace(deployment.HybridDeleGatorImplementation)
@@ -161,6 +309,20 @@
                 // The circuit can disconnect before module disposal during hot reload or navigation.
             }
         }
+
+        if (_activationModule is not null)
+        {
+            try
+            {
+                await _activationModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit can disconnect before module disposal during hot reload or navigation.
+            }
+        }
+
+        _dotNetRef?.Dispose();
     }
 
     private void OnSelectionChanged() => InvokeAsync(StateHasChanged);
@@ -241,7 +403,7 @@
             {
                 ownerAddress = WalletAddress,
                 chainIdHex = chain.EvmChainIdHex,
-                entryPoint = deployment.EntryPoint,
+                entryPoint = deployment.ModularEntryPoint,
                 delegationManager = deployment.DelegationManager,
                 factory = deployment.ModularAccountFactory,
                 hybridImplementation = deployment.HybridDeleGatorImplementation,
@@ -275,4 +437,343 @@
     }
 
     private sealed record DerivedModularAddress(string Address, string DeploySalt);
+
+    /// <summary>
+    /// Called by smartAccountActivation.js when it needs real gas figures for a partially-built
+    /// activation/revocation UserOperation - the browser never has the bundler URL (see
+    /// ChainDefinition.BundlerRpcUrl), so this forwards to the bundler's own
+    /// eth_estimateUserOperationGas via ISmartAccountService, never a client-guessed number.
+    /// </summary>
+    [JSInvokable]
+    public async Task<GasEstimateDto> EstimateActivationGasAsync(PartialUserOperationDto partial)
+    {
+        var operation = new BundlerUserOperation
+        {
+            Sender = partial.Sender,
+            Nonce = ParseHexQuantity(partial.Nonce),
+            InitCode = partial.InitCode,
+            CallData = partial.CallData,
+            AccountGasLimits = partial.AccountGasLimits,
+            PreVerificationGas = ParseHexQuantity(partial.PreVerificationGas),
+            GasFees = partial.GasFees,
+            PaymasterAndData = partial.PaymasterAndData,
+            Signature = partial.Signature
+        };
+
+        var estimate = await SmartAccountService.EstimateUserOperationGasAsync(SelectedChainAccessor.SelectedChainKey, operation);
+
+        return new GasEstimateDto(
+            ToHexQuantity(estimate.PreVerificationGas),
+            ToHexQuantity(estimate.VerificationGasLimit),
+            ToHexQuantity(estimate.CallGasLimit));
+    }
+
+    private async Task PrepareActivationAsync()
+    {
+        _activationError = null;
+
+        if (!long.TryParse(_jobIdInput, NumberStyles.Integer, CultureInfo.InvariantCulture, out var jobId) || jobId <= 0)
+        {
+            _activationError = "Enter a valid job ID.";
+            return;
+        }
+
+        if (!decimal.TryParse(_amountInput, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount) || amount <= 0)
+        {
+            _activationError = "Enter a valid CAFE amount.";
+            return;
+        }
+
+        if (!WalletAddressRules.TryNormalizeWallet(_agentAddressInput, out _))
+        {
+            _activationError = "Enter a valid agent wallet address.";
+            return;
+        }
+
+        _isPreparingActivation = true;
+        StateHasChanged();
+
+        try
+        {
+            var chain = SelectedChainAccessor.SelectedChain;
+            var deployment = chain.Deployment;
+
+            _activationModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/smartAccountActivation.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            _pendingActivation = await _activationModule.InvokeAsync<ActivationPayloadDto>("buildActivationPayload", new
+            {
+                ownerAddress = WalletAddress,
+                chainIdHex = chain.EvmChainIdHex,
+                entryPoint = deployment.ModularEntryPoint,
+                delegationManager = deployment.DelegationManager,
+                factory = deployment.ModularAccountFactory,
+                hybridImplementation = deployment.HybridDeleGatorImplementation,
+                allowedTargetsEnforcer = deployment.AllowedTargetsEnforcer,
+                allowedMethodsEnforcer = deployment.AllowedMethodsEnforcer,
+                exactCalldataEnforcer = deployment.ExactCalldataEnforcer,
+                limitedCallsEnforcer = deployment.LimitedCallsEnforcer,
+                nonceEnforcer = deployment.NonceEnforcer,
+                timestampEnforcer = deployment.TimestampEnforcer,
+                // Matches RegisterModularAccountAsync's own fixed salt - one modular account per owner today.
+                deploySalt = "0",
+                agentAddress = _agentAddressInput,
+                escrowAddress = deployment.AgenticEscrow,
+                tokenAddress = deployment.PaymentToken,
+                jobId,
+                amountDecimal = amount.ToString(CultureInfo.InvariantCulture),
+                validForSeconds = _validForHours * 3600,
+                dotNetRef = _dotNetRef
+            });
+        }
+        catch (JSException exception)
+        {
+            Logger.LogWarning(exception, "Failed to sign an activation UserOperation for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _activationError = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Unexpected error preparing activation for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _activationError = "Could not prepare the activation. Try again shortly.";
+        }
+        finally
+        {
+            _isPreparingActivation = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmActivationAsync()
+    {
+        if (_pendingActivation is null)
+        {
+            return;
+        }
+
+        _isBroadcastingActivation = true;
+        _activationError = null;
+        StateHasChanged();
+
+        try
+        {
+            var chainKey = SelectedChainAccessor.SelectedChainKey;
+            var modular = _accounts.FirstOrDefault(a => a.AccountType == SmartAccountType.ModularHybridDeleGator)
+                ?? throw new InvalidOperationException("No registered modular account for this owner.");
+
+            var operation = ToOperation(_pendingActivation.Operation);
+            var txHash = await SmartAccountService.SubmitOwnerUserOperationAsync(chainKey, WalletAddress, operation);
+
+            var grants = _pendingActivation.Grants.Select(g => new AgentPermissionGrantInput
+            {
+                TargetAddress = g.TargetAddress,
+                Selector = g.Selector,
+                TokenAddress = g.TokenAddress,
+                AmountWei = g.AmountWei,
+                DelegationHash = g.DelegationHash,
+                Description = g.Description
+            }).ToList();
+
+            await SmartAccountService.RecordPermissionEpochInstalledAsync(
+                chainKey,
+                modular.AccountAddress,
+                _pendingActivation.AgentAddress,
+                _pendingActivation.Epoch,
+                DateTimeOffset.FromUnixTimeSeconds(_pendingActivation.ValidAfterUnix).UtcDateTime,
+                DateTimeOffset.FromUnixTimeSeconds(_pendingActivation.ValidBeforeUnix).UtcDateTime,
+                txHash,
+                grants);
+
+            _pendingActivation = null;
+            _agentAddressInput = string.Empty;
+            _jobIdInput = string.Empty;
+            _amountInput = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Failed to broadcast/record an activation for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _activationError = $"The activation could not be completed: {exception.Message}";
+        }
+        finally
+        {
+            _isBroadcastingActivation = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelActivation()
+    {
+        _pendingActivation = null;
+        _activationError = null;
+    }
+
+    private async Task PrepareRevocationAsync()
+    {
+        _revocationError = null;
+        _isPreparingRevocation = true;
+        StateHasChanged();
+
+        try
+        {
+            var chain = SelectedChainAccessor.SelectedChain;
+            var deployment = chain.Deployment;
+
+            _activationModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/smartAccountActivation.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            _pendingRevocation = await _activationModule.InvokeAsync<RevocationPayloadDto>("buildRevocationPayload", new
+            {
+                ownerAddress = WalletAddress,
+                chainIdHex = chain.EvmChainIdHex,
+                entryPoint = deployment.ModularEntryPoint,
+                delegationManager = deployment.DelegationManager,
+                factory = deployment.ModularAccountFactory,
+                hybridImplementation = deployment.HybridDeleGatorImplementation,
+                allowedTargetsEnforcer = deployment.AllowedTargetsEnforcer,
+                allowedMethodsEnforcer = deployment.AllowedMethodsEnforcer,
+                exactCalldataEnforcer = deployment.ExactCalldataEnforcer,
+                limitedCallsEnforcer = deployment.LimitedCallsEnforcer,
+                nonceEnforcer = deployment.NonceEnforcer,
+                timestampEnforcer = deployment.TimestampEnforcer,
+                deploySalt = "0",
+                dotNetRef = _dotNetRef
+            });
+        }
+        catch (JSException exception)
+        {
+            Logger.LogWarning(exception, "Failed to sign a revocation UserOperation for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _revocationError = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Unexpected error preparing revocation for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _revocationError = "Could not prepare the revocation. Try again shortly.";
+        }
+        finally
+        {
+            _isPreparingRevocation = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmRevocationAsync()
+    {
+        if (_pendingRevocation is null)
+        {
+            return;
+        }
+
+        _isBroadcastingRevocation = true;
+        _revocationError = null;
+        StateHasChanged();
+
+        try
+        {
+            var chainKey = SelectedChainAccessor.SelectedChainKey;
+            var operation = ToOperation(_pendingRevocation.Operation);
+            await SmartAccountService.SubmitOwnerUserOperationAsync(chainKey, WalletAddress, operation);
+            await SmartAccountService.RevokeSessionPermissionsAsync(chainKey, WalletAddress);
+
+            _pendingRevocation = null;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "Failed to broadcast/record a revocation for {WalletAddress} on {ChainKey}.", WalletAddress, SelectedChainAccessor.SelectedChainKey);
+            _revocationError = $"The revocation could not be completed: {exception.Message}";
+        }
+        finally
+        {
+            _isBroadcastingRevocation = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelRevocation()
+    {
+        _pendingRevocation = null;
+        _revocationError = null;
+    }
+
+    private static BundlerUserOperation ToOperation(SignedOperationDto dto) => new()
+    {
+        Sender = dto.Sender,
+        Nonce = ParseHexQuantity(dto.Nonce),
+        InitCode = dto.InitCode,
+        CallData = dto.CallData,
+        AccountGasLimits = dto.AccountGasLimits,
+        PreVerificationGas = ParseHexQuantity(dto.PreVerificationGas),
+        GasFees = dto.GasFees,
+        PaymasterAndData = dto.PaymasterAndData,
+        Signature = dto.Signature
+    };
+
+    /// <summary>Mirrors RundlerBundlerClient's own private hex-quantity helpers (not shared across the assembly boundary).</summary>
+    private static BigInteger ParseHexQuantity(string hex)
+    {
+        var trimmed = hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? hex[2..] : hex;
+        return trimmed.Length == 0 ? BigInteger.Zero : BigInteger.Parse("0" + trimmed, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+    }
+
+    private static string ToHexQuantity(BigInteger value)
+    {
+        var hex = value.ToString("x").TrimStart('0');
+        return hex.Length == 0 ? "0x0" : $"0x{hex}";
+    }
+
+    public sealed record PartialUserOperationDto
+    {
+        public string Sender { get; init; } = string.Empty;
+        public string Nonce { get; init; } = "0x0";
+        public string InitCode { get; init; } = "0x";
+        public string CallData { get; init; } = "0x";
+        public string AccountGasLimits { get; init; } = string.Empty;
+        public string PreVerificationGas { get; init; } = "0x0";
+        public string GasFees { get; init; } = string.Empty;
+        public string PaymasterAndData { get; init; } = "0x";
+        public string Signature { get; init; } = "0x";
+    }
+
+    public sealed record GasEstimateDto(string PreVerificationGas, string VerificationGasLimit, string CallGasLimit);
+
+    private sealed record SignedOperationDto
+    {
+        public string Sender { get; init; } = string.Empty;
+        public string Nonce { get; init; } = "0x0";
+        public string InitCode { get; init; } = "0x";
+        public string CallData { get; init; } = "0x";
+        public string AccountGasLimits { get; init; } = string.Empty;
+        public string PreVerificationGas { get; init; } = "0x0";
+        public string GasFees { get; init; } = string.Empty;
+        public string PaymasterAndData { get; init; } = "0x";
+        public string Signature { get; init; } = string.Empty;
+    }
+
+    private sealed record GrantDto
+    {
+        public string TargetAddress { get; init; } = string.Empty;
+        public string Selector { get; init; } = string.Empty;
+        public string? TokenAddress { get; init; }
+        public string AmountWei { get; init; } = "0";
+        public string DelegationHash { get; init; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
+    }
+
+    private sealed record ActivationPayloadDto
+    {
+        public SignedOperationDto Operation { get; init; } = new();
+        public string Epoch { get; init; } = string.Empty;
+        public long ValidAfterUnix { get; init; }
+        public long ValidBeforeUnix { get; init; }
+        public string DelegatorAddress { get; init; } = string.Empty;
+        public string AgentAddress { get; init; } = string.Empty;
+        public List<GrantDto> Grants { get; init; } = [];
+        public List<JsonElement> SignedDelegations { get; init; } = [];
+    }
+
+    private sealed record RevocationPayloadDto
+    {
+        public SignedOperationDto Operation { get; init; } = new();
+        public string DelegatorAddress { get; init; } = string.Empty;
+    }
 }

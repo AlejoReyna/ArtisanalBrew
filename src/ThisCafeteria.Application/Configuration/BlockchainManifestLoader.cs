@@ -19,23 +19,33 @@ public static class BlockchainManifestLoader
     }
 
     /// <summary>
-    /// Applies a server-side-only bundler RPC URL override per chain, sourced from environment
-    /// variables named <c>ARTISANALBREW_BUNDLER_RPC_URL__{CHAIN_KEY}</c> (chain key upper-cased,
-    /// hyphens replaced with underscores - e.g. <c>ARTISANALBREW_BUNDLER_RPC_URL__ETHEREUM_SEPOLIA</c>).
-    /// This mirrors how <c>Sponsorship__VerifyingSignerPrivateKey</c> is already sourced: a hosted
-    /// bundler's URL typically embeds a live API key, and a committed deployment manifest is not
-    /// where that belongs - it would leak into git history. Call this after
-    /// <see cref="LoadDeploymentManifests"/> so the override wins over whatever the manifest set
-    /// (including an absent/empty field), letting a chain pick up a bundler endpoint the committed
-    /// manifest deliberately doesn't carry.
+    /// Applies server-side-only bundler RPC URL overrides per chain, sourced from environment
+    /// variables named <c>ARTISANALBREW_BUNDLER_RPC_URL__{CHAIN_KEY}</c> and, separately,
+    /// <c>ARTISANALBREW_MODULAR_BUNDLER_RPC_URL__{CHAIN_KEY}</c> (chain key upper-cased, hyphens
+    /// replaced with underscores - e.g. <c>ARTISANALBREW_BUNDLER_RPC_URL__ETHEREUM_SEPOLIA</c>). The
+    /// modular variable is separate because a single ERC-4337 bundler instance is commonly
+    /// configured for exactly one v0.7 EntryPoint address - a chain whose bundler cannot serve both
+    /// the legacy and canonical modular EntryPoints needs two distinct bundler endpoints, not two
+    /// EntryPoints on one endpoint (see <see cref="ChainDefinition.EffectiveModularBundlerRpcUrl"/>,
+    /// which falls back to the legacy override when the modular one is unset). This mirrors how
+    /// <c>Sponsorship__VerifyingSignerPrivateKey</c> is already sourced: a hosted bundler's URL
+    /// typically embeds a live API key, and a committed deployment manifest is not where that
+    /// belongs - it would leak into git history. Call this after <see cref="LoadDeploymentManifests"/>
+    /// so the overrides win over whatever the manifest set (including an absent/empty field),
+    /// letting a chain pick up bundler endpoints the committed manifest deliberately doesn't carry.
     /// </summary>
     public static BlockchainOptions ApplyBundlerRpcUrlOverrides(BlockchainOptions options, Func<string, string?> lookupEnvironmentVariable)
     {
         var chains = options.Chains.Select(chain =>
         {
-            var variableName = $"ARTISANALBREW_BUNDLER_RPC_URL__{chain.Key.ToUpperInvariant().Replace('-', '_')}";
-            var overrideUrl = lookupEnvironmentVariable(variableName);
-            return string.IsNullOrWhiteSpace(overrideUrl) ? chain : chain with { BundlerRpcUrl = overrideUrl };
+            var suffix = chain.Key.ToUpperInvariant().Replace('-', '_');
+            var overrideUrl = lookupEnvironmentVariable($"ARTISANALBREW_BUNDLER_RPC_URL__{suffix}");
+            var modularOverrideUrl = lookupEnvironmentVariable($"ARTISANALBREW_MODULAR_BUNDLER_RPC_URL__{suffix}");
+            return chain with
+            {
+                BundlerRpcUrl = string.IsNullOrWhiteSpace(overrideUrl) ? chain.BundlerRpcUrl : overrideUrl,
+                ModularBundlerRpcUrl = string.IsNullOrWhiteSpace(modularOverrideUrl) ? chain.ModularBundlerRpcUrl : modularOverrideUrl
+            };
         }).ToList();
         return new BlockchainOptions { DefaultChainKey = options.DefaultChainKey, Chains = chains };
     }
@@ -114,6 +124,7 @@ public static class BlockchainManifestLoader
                     VerifyingPaymaster = Optional(addresses, "verifyingPaymaster") ?? string.Empty,
                     ERC8004Registry = Optional(addresses, "erc8004Registry") ?? string.Empty,
                     ERC7683Resolver = Optional(addresses, "erc7683Resolver") ?? string.Empty,
+                    ModularEntryPoint = Optional(addresses, "modularEntryPoint") ?? string.Empty,
                     ModularAccountFactory = Optional(addresses, "modularSimpleFactory") ?? string.Empty,
                     DelegationManager = Optional(addresses, "delegationManager") ?? string.Empty,
                     HybridDeleGatorImplementation = Optional(addresses, "hybridDeleGatorImplementation") ?? string.Empty,

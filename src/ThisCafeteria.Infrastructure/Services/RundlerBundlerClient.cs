@@ -16,24 +16,56 @@ public sealed class RundlerBundlerClient(HttpClient httpClient, IChainRegistry c
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private long _requestId;
 
-    public async Task<string> SendUserOperationAsync(string chainKey, BundlerUserOperation operation, CancellationToken cancellationToken = default)
+    public async Task<string> SendUserOperationAsync(string chainKey, BundlerUserOperation operation, string? entryPointOverride = null, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default)
     {
-        var chain = GetChain(chainKey);
+        var (chain, bundlerUrl) = GetChain(chainKey, bundlerUrlOverride);
         ValidateOperation(operation);
-        var supported = await CallAsync<string[]>(chain, "eth_supportedEntryPoints", [], cancellationToken).ConfigureAwait(false);
-        if (!supported.Any(address => string.Equals(address, chain.Deployment.EntryPoint, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException($"Configured bundler does not advertise the trusted EntryPoint '{chain.Deployment.EntryPoint}'.");
+        var entryPoint = string.IsNullOrWhiteSpace(entryPointOverride) ? chain.Deployment.EntryPoint : entryPointOverride;
+        var supported = await CallAsync<string[]>(bundlerUrl, "eth_supportedEntryPoints", [], cancellationToken).ConfigureAwait(false);
+        if (!supported.Any(address => string.Equals(address, entryPoint, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"Configured bundler does not advertise the trusted EntryPoint '{entryPoint}'.");
         var packed = ToRpc(operation);
-        var result = await CallAsync<string>(chain, "eth_sendUserOperation", [packed, chain.Deployment.EntryPoint], cancellationToken).ConfigureAwait(false);
+        var result = await CallAsync<string>(bundlerUrl, "eth_sendUserOperation", [packed, entryPoint], cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(result)) throw new InvalidOperationException("Bundler returned an empty UserOperation hash.");
         return result;
     }
 
-    public async Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, CancellationToken cancellationToken = default)
+    public async Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, string? entryPointOverride = null, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default)
     {
-        var chain = GetChain(chainKey);
+        var (chain, bundlerUrl) = GetChain(chainKey, bundlerUrlOverride);
+        ValidateOperation(operation);
+        var entryPoint = string.IsNullOrWhiteSpace(entryPointOverride) ? chain.Deployment.EntryPoint : entryPointOverride;
+        var supported = await CallAsync<string[]>(bundlerUrl, "eth_supportedEntryPoints", [], cancellationToken).ConfigureAwait(false);
+        if (!supported.Any(address => string.Equals(address, entryPoint, StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException($"Configured bundler does not advertise the trusted EntryPoint '{entryPoint}'.");
+        var packed = ToRpc(operation);
+        var result = await CallAsync<JsonElement>(bundlerUrl, "eth_estimateUserOperationGas", [packed, entryPoint], cancellationToken).ConfigureAwait(false);
+        return ParseGasEstimate(result);
+    }
+
+    private static BundlerGasEstimate ParseGasEstimate(JsonElement element) => new()
+    {
+        PreVerificationGas = ParseHexQuantity(RequireString(element, "preVerificationGas", "eth_estimateUserOperationGas")),
+        VerificationGasLimit = ParseHexQuantity(RequireString(element, "verificationGasLimit", "eth_estimateUserOperationGas")),
+        CallGasLimit = ParseHexQuantity(RequireString(element, "callGasLimit", "eth_estimateUserOperationGas")),
+        PaymasterVerificationGasLimit = element.TryGetProperty("paymasterVerificationGasLimit", out var pvgl) && pvgl.ValueKind == JsonValueKind.String
+            ? ParseHexQuantity(pvgl.GetString())
+            : null,
+        PaymasterPostOpGasLimit = element.TryGetProperty("paymasterPostOpGasLimit", out var ppogl) && ppogl.ValueKind == JsonValueKind.String
+            ? ParseHexQuantity(ppogl.GetString())
+            : null
+    };
+
+    private static string RequireString(JsonElement element, string property, string method) =>
+        element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString())
+            ? value.GetString()!
+            : throw new InvalidOperationException($"Bundler {method} response is missing '{property}'.");
+
+    public async Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default)
+    {
+        var (_, bundlerUrl) = GetChain(chainKey, bundlerUrlOverride);
         if (!IsHash(userOperationHash)) throw new ArgumentException("A 32-byte UserOperation hash is required.", nameof(userOperationHash));
-        var result = await CallAsync<JsonElement?>(chain, "eth_getUserOperationReceipt", [userOperationHash], cancellationToken).ConfigureAwait(false);
+        var result = await CallAsync<JsonElement?>(bundlerUrl, "eth_getUserOperationReceipt", [userOperationHash], cancellationToken).ConfigureAwait(false);
         return result is { ValueKind: JsonValueKind.Object } element ? ParseReceipt(element) : null;
     }
 
@@ -62,9 +94,9 @@ public sealed class RundlerBundlerClient(HttpClient httpClient, IChainRegistry c
             ? value
             : BigInteger.Zero;
 
-    private async Task<T> CallAsync<T>(ChainDefinition chain, string method, object[] parameters, CancellationToken cancellationToken)
+    private async Task<T> CallAsync<T>(string bundlerUrl, string method, object[] parameters, CancellationToken cancellationToken)
     {
-        using var response = await httpClient.PostAsJsonAsync(chain.BundlerRpcUrl, new
+        using var response = await httpClient.PostAsJsonAsync(bundlerUrl, new
         {
             jsonrpc = "2.0",
             id = Interlocked.Increment(ref _requestId),
@@ -82,14 +114,22 @@ public sealed class RundlerBundlerClient(HttpClient httpClient, IChainRegistry c
             : result.Deserialize<T>(JsonOptions) ?? throw new InvalidOperationException($"Bundler {method} returned a null result.");
     }
 
-    private ChainDefinition GetChain(string chainKey)
+    /// <summary>
+    /// Resolves the chain and the bundler endpoint the caller should actually hit. <paramref
+    /// name="bundlerUrlOverride"/> (typically <c>chain.EffectiveModularBundlerRpcUrl</c> for a
+    /// modular/HybridDeleGator operation) wins over the chain's default legacy <c>BundlerRpcUrl</c> -
+    /// this is what lets one chain use two separate bundler instances when the legacy and canonical
+    /// modular EntryPoints aren't served by the same one.
+    /// </summary>
+    private (ChainDefinition Chain, string BundlerUrl) GetChain(string chainKey, string? bundlerUrlOverride)
     {
         var chain = chains.All.FirstOrDefault(c => string.Equals(c.Key, chainKey, StringComparison.OrdinalIgnoreCase));
-        if (chain is null || chain.Family != ChainFamily.Evm || string.IsNullOrWhiteSpace(chain.BundlerRpcUrl) || string.IsNullOrWhiteSpace(chain.Deployment.EntryPoint))
+        var bundlerUrl = string.IsNullOrWhiteSpace(bundlerUrlOverride) ? chain?.BundlerRpcUrl : bundlerUrlOverride;
+        if (chain is null || chain.Family != ChainFamily.Evm || string.IsNullOrWhiteSpace(bundlerUrl) || string.IsNullOrWhiteSpace(chain.Deployment.EntryPoint))
             throw new NotSupportedException($"ERC-4337 bundler submission is not configured for chain '{chainKey}'.");
-        if (!Uri.TryCreate(chain.BundlerRpcUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+        if (!Uri.TryCreate(bundlerUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
             throw new InvalidOperationException($"Bundler endpoint for '{chainKey}' is not an absolute HTTP(S) URL.");
-        return chain;
+        return (chain, bundlerUrl);
     }
 
     private static void ValidateOperation(BundlerUserOperation operation)

@@ -33,12 +33,17 @@ namespace ThisCafeteria.Infrastructure.Services;
 public class SmartAccountService(
     IChainRegistry chains,
     ISponsorshipPolicyService sponsorship,
+    IBundlerClient bundler,
     AppDbContext db,
     TimeProvider timeProvider,
     ILogger<SmartAccountService> logger) : ISmartAccountService
 {
     /// <summary>Salt used for legacy SimpleAccount derivation. One account per owner for now.</summary>
     private const int AccountSalt = 0;
+
+    /// <summary>Same poll cadence as <see cref="UserOperationSubmitter"/>'s identical submit-then-poll sequence.</summary>
+    private static readonly TimeSpan UserOperationPollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan UserOperationPollTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>EIP-1967 implementation storage slot: bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1).</summary>
     private const string Erc1967ImplementationSlot = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bb";
@@ -270,6 +275,70 @@ public class SmartAccountService(
         await db.SaveChangesAsync().ConfigureAwait(false);
 
         return ToInfo(record);
+    }
+
+    public async Task<string> SubmitOwnerUserOperationAsync(string chainKey, string ownerAddress, BundlerUserOperation operation, CancellationToken cancellationToken = default)
+    {
+        if (!TryGetConfiguredModularChain(chainKey, out var chain))
+        {
+            throw new NotSupportedException($"Modular smart accounts are not configured for chain '{chainKey}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(ownerAddress) || !ownerAddress.IsValidEthereumAddressHexFormat())
+        {
+            throw new ArgumentException($"'{ownerAddress}' is not a valid Ethereum address.", nameof(ownerAddress));
+        }
+
+        var owner = Normalize(ownerAddress);
+        var record = await db.SmartAccountRecords.FirstOrDefaultAsync(a =>
+            a.ChainKey == chainKey && a.OwnerAddress == owner && a.AccountType == SmartAccountType.ModularHybridDeleGator, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"No registered modular account for owner '{owner}' on '{chainKey}'. Call RegisterModularAccountAsync first.");
+
+        if (!string.Equals(Normalize(operation.Sender), record.AccountAddress, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The UserOperation's sender does not match the modular account registered to this owner.");
+        }
+
+        var modularBundlerUrl = chain.EffectiveModularBundlerRpcUrl;
+        var userOpHash = await bundler.SendUserOperationAsync(chainKey, operation, entryPointOverride: chain.Deployment.ModularEntryPoint, bundlerUrlOverride: modularBundlerUrl, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        // The caller (activation/revocation) immediately reads live on-chain state afterward
+        // (NonceEnforcer.currentNonce) to decide whether to persist anything - that state cannot
+        // have changed yet the instant the bundler merely accepts the operation into its mempool.
+        // Wait for it to actually mine, same submit-then-poll sequence as UserOperationSubmitter,
+        // so the epoch/revocation nonce check that follows this call has something real to see.
+        var deadline = timeProvider.GetUtcNow() + UserOperationPollTimeout;
+        while (true)
+        {
+            var receipt = await bundler.GetUserOperationReceiptAsync(chainKey, userOpHash, bundlerUrlOverride: modularBundlerUrl, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (receipt is not null)
+            {
+                if (!receipt.Success)
+                {
+                    throw new InvalidOperationException($"UserOperation {userOpHash} was mined but its inner call reverted.");
+                }
+
+                return receipt.TransactionHash;
+            }
+
+            if (timeProvider.GetUtcNow() >= deadline)
+            {
+                throw new InvalidOperationException($"UserOperation {userOpHash} was not confirmed on-chain within the poll window.");
+            }
+
+            await Task.Delay(UserOperationPollInterval, timeProvider, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, CancellationToken cancellationToken = default)
+    {
+        if (!TryGetConfiguredModularChain(chainKey, out var chain))
+        {
+            throw new NotSupportedException($"Modular smart accounts are not configured for chain '{chainKey}'.");
+        }
+
+        return await bundler.EstimateUserOperationGasAsync(chainKey, operation, entryPointOverride: chain.Deployment.ModularEntryPoint, bundlerUrlOverride: chain.EffectiveModularBundlerRpcUrl, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AgentPermissionEpochInfo?> GetActivePermissionEpochAsync(string chainKey, string delegatorAddress)
@@ -571,7 +640,9 @@ public class SmartAccountService(
     }
 
     /// <summary>
-    /// A chain supports modular accounts only when every audited component is present: EntryPoint,
+    /// A chain supports modular accounts only when every audited component is present: the modular
+    /// EntryPoint (the canonical ERC-4337 singleton HybridDeleGator's immutable is bound to - not
+    /// necessarily this chain's legacy EntryPoint, see <see cref="ChainDeployment.ModularEntryPoint"/>),
     /// the modular factory, DelegationManager, the HybridDeleGator implementation, and all six
     /// caveat enforcers this architecture relies on. Missing any one of them fails closed.
     /// </summary>
@@ -586,7 +657,7 @@ public class SmartAccountService(
         }
 
         var d = match.Deployment;
-        if (string.IsNullOrWhiteSpace(d.EntryPoint)
+        if (string.IsNullOrWhiteSpace(d.ModularEntryPoint)
             || string.IsNullOrWhiteSpace(d.ModularAccountFactory)
             || string.IsNullOrWhiteSpace(d.DelegationManager)
             || string.IsNullOrWhiteSpace(d.HybridDeleGatorImplementation)
