@@ -57,7 +57,7 @@ public sealed class UserOperationSubmitter(
         {
             // Never EntryPoint.handleOps directly - the whole point of this class is that a real
             // bundler mines it, not that this process broadcasts a transaction itself.
-            userOpHash = await bundler.SendUserOperationAsync(operation.ChainKey, bundlerOp, cancellationToken).ConfigureAwait(false);
+            userOpHash = await bundler.SendUserOperationAsync(operation.ChainKey, bundlerOp, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException or ArgumentException)
         {
@@ -147,7 +147,7 @@ public sealed class UserOperationSubmitter(
     {
         try
         {
-            var receipt = await bundler.GetUserOperationReceiptAsync(chainKey, userOpHash, cancellationToken).ConfigureAwait(false);
+            var receipt = await bundler.GetUserOperationReceiptAsync(chainKey, userOpHash, cancellationToken: cancellationToken).ConfigureAwait(false);
             return string.IsNullOrWhiteSpace(receipt?.TransactionHash) ? null : receipt!.TransactionHash;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

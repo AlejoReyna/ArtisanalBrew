@@ -66,3 +66,86 @@ receipt validation are still live. This is sufficient for local functional
 acceptance, but production requires a safe-mode bundler backed by a tracer-capable
 node. The acceptance used the explicitly allowed user-paid fallback; it did not
 claim a production paymaster integration.
+
+### Browser activation/revocation UI (built and unit/integration-tested; not yet run live)
+
+This session built the browser UI that was previously missing: delegation signing,
+on-chain activation, and revocation, wired into `SmartAccountPanel.razor`. It composes
+only already-audited pieces — the vendored `@metamask/delegation-toolkit` browser
+bundle (`js/delegation-toolkit.iife.min.js`, rebuilt to also export
+`createDelegation`/`createExecution`/`ExecutionMode`/`contracts`/`getDelegationHashOffchain`)
+and the server's existing fail-closed `ISmartAccountService` verification
+(`RecordPermissionEpochInstalledAsync`'s and `RevokeSessionPermissionsAsync`'s on-chain
+`NonceEnforcer.currentNonce` re-checks, unmodified).
+
+New pieces:
+- `IBundlerClient.EstimateUserOperationGasAsync` / `RundlerBundlerClient` — wraps
+  `eth_estimateUserOperationGas`, resolved against `ChainDeployment.ModularEntryPoint`.
+  Unit-tested against a realistic Rundler response shape (request shape, paymaster-field
+  parsing, and a required-field-missing failure case).
+- `ISmartAccountService.EstimateUserOperationGasAsync` — thin passthrough, not a trust
+  boundary (same reasoning as `IUserOperationSimulator`'s own doc comment: a self-computed
+  gas guess would only agree with itself).
+- `wwwroot/js/smartAccountActivation.js` — builds and signs the two scoped delegations
+  (exact `approve(escrow, amount)` and `escrow.fund(jobId, amount, 0x)`), mirroring
+  `metamask-session-key-e2e.ts`'s `unsignedPermission`/`signPermission` and
+  `agenticPayments.ts`'s `encodePermissionEpochChange` exactly (same enforcer set,
+  same one-time `LimitedCallsEnforcer(1)`, same `NonceEnforcer.currentNonce` epoch
+  binding read live through the public RPC). Gas figures come from the bundler's own
+  estimate via a `[JSInvokable]` callback into `SmartAccountPanel` (the browser never
+  has the bundler URL), never a client-guessed number.
+- `SmartAccountPanel.razor` — a form to start a permission (agent address, job ID,
+  amount, duration), a review step showing the signed delegations before broadcast, an
+  explicit "Broadcast activation" action that calls `SubmitOwnerUserOperationAsync` then
+  `RecordPermissionEpochInstalledAsync`, and symmetric "Revoke agent permission" /
+  "Confirm revoke" actions.
+
+**Scope decision, stated plainly:** the activation form takes the agent address, job
+ID, and amount as direct owner input. It does not integrate with `ProcurementLab.razor`'s
+job-creation flow — the owner must already know a job ID with a budget set on-chain. Job
+creation/selection UI was out of this task's stated scope (delegation signing/activation/
+revocation UI only).
+
+**Not done, explicitly out of scope for this task:** delivering the signed delegations to
+the agent for redemption (wiring `agenticPayments.ts` into `server.ts`). The panel surfaces
+the signed delegation JSON for the owner to inspect and copy out manually; nothing
+persists or transmits the raw delegation bytes server-side (only `DelegationHash` +
+metadata are recorded, matching the existing `AgentPermissionGrant` schema, which this
+task did not change).
+
+**Verification status — say this plainly:** all new C# is unit-tested (47 assertions in
+`RundlerBundlerClientTests`/`SmartAccountServiceTests`/`UserOperationSubmitterTests`), the
+full existing `.NET` unit suite (339 tests) and integration suite (17 tests, including
+`SmartAccountPanelRenderTests`) pass against the real Postgres fixture. The browser-side
+JS (delegation signing, `account.signUserOperation` call shape, gas-estimate round trip)
+was **not** exercised against a real wallet or a real bundler in this session — that
+needs an actual browser with a connected wallet and Sepolia funds, which this environment
+does not have. Do not treat "builds and unit-tests pass" as "the live flow works."
+
+**Step 0 gate result — checked live, and it fails.** Queried the self-hosted Rundler on
+`thiscafeteria-sepolia-aa` via `az vm run-command` (read-only, against `127.0.0.1:4338`,
+no SSH, no secrets, operator-authorized):
+
+```
+eth_supportedEntryPoints -> {"jsonrpc":"2.0","id":1,"result":["0xdD9A61064eF9E2d9612dA1f1307E168B85fE43A6"]}
+```
+
+Only the legacy custom EntryPoint is advertised. The canonical modular EntryPoint
+`0x0000000071727De22E5E9d8BAf0edAc6f37da032` — the one every modular/HybridDeleGator
+operation must resolve — is **not** in the supported set. Concretely: `RundlerBundlerClient`'s
+own trusted-EntryPoint check means `SubmitOwnerUserOperationAsync` and
+`EstimateUserOperationGasAsync` both fail closed against this bundler today, for any
+modular operation, on Sepolia. (Side note, unrelated to this gate: the legacy EntryPoint
+Rundler actually advertises, `0xdD9A...E43A6`, does not match
+`deployments/ethereum-sepolia.json`'s `addresses.entryPoint`,
+`0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217` — that manifest field looks stale against
+what's actually configured on the bundler; not investigated further here.)
+
+This is an infrastructure gap, not an application bug — the fix is reconfiguring/relaunching
+Rundler with the canonical EntryPoint added to its supported set (touches the running
+bundler's own config and its signer secret context), out of scope for this build task.
+Until that's done, `agenticSessionPayments` must remain `false` on `ethereum-sepolia`/
+`bsc-testnet`; no capability flag flips to `true` without a working, verified live flow
+behind it, per this project's own rule. The application code built this session is ready
+to exercise the moment Rundler supports the canonical EntryPoint — no further app changes
+are expected to be needed for that alone.

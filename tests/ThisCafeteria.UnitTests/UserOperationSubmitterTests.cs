@@ -236,10 +236,13 @@ public sealed class UserOperationSubmitterTests
 
     private sealed class StubBundler(Func<BundlerUserOperation, string>? send = null, Func<BundlerReceipt?>? receipt = null) : IBundlerClient
     {
-        public Task<string> SendUserOperationAsync(string chainKey, BundlerUserOperation operation, CancellationToken cancellationToken = default) =>
+        public Task<string> SendUserOperationAsync(string chainKey, BundlerUserOperation operation, string? entryPointOverride = null, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(send is null ? "0xhash" : send(operation));
 
-        public Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, CancellationToken cancellationToken = default) =>
+        public Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, string? entryPointOverride = null, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new BundlerGasEstimate { PreVerificationGas = 50_000, VerificationGasLimit = 150_000, CallGasLimit = 100_000 });
+
+        public Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default) =>
             Task.FromResult(receipt is null ? null : receipt());
     }
 

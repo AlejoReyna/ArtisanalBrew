@@ -116,6 +116,12 @@ public sealed class SmartAccountPanelRenderTests : IClassFixture<ThisCafeteriaWe
         public Task<SmartAccountInfo> RegisterModularAccountAsync(string chainKey, string ownerAddress, string accountAddress, string salt) =>
             throw new NotSupportedException("Smart accounts are not configured for this chain.");
 
+        public Task<string> SubmitOwnerUserOperationAsync(string chainKey, string ownerAddress, BundlerUserOperation operation, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
+        public Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
         public Task<AgentPermissionEpochInfo?> GetActivePermissionEpochAsync(string chainKey, string delegatorAddress) =>
             Task.FromResult<AgentPermissionEpochInfo?>(null);
 

@@ -104,6 +104,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Capabilities.AgenticCommerce.Should().BeTrue();
             deployed.Capabilities.AgenticSessionPayments.Should().BeTrue();
             deployed.Deployment.ModularAccountFactory.Should().Be(Address('M'));
+            deployed.Deployment.ModularEntryPoint.Should().Be(Address('Q'));
             deployed.Deployment.DelegationManager.Should().Be(Address('D'));
             deployed.Deployment.HybridDeleGatorImplementation.Should().Be(Address('H'));
             deployed.Deployment.AllowedTargetsEnforcer.Should().Be(Address('1'));
@@ -196,6 +197,24 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Capabilities.MarketplacePayment.Should().BeTrue();
             deployed.Deployment.LegacyPool.Should().Be(Address('L'));
             deployed.Deployment.AgenticEscrow.Should().BeEmpty();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void RejectsAnAgenticSessionPaymentsManifestThatOmitsTheModularStack()
+    {
+        // Inconsistent manifest: agenticSessionPayments on (the WriteEvmManifest default), but no
+        // DelegationManager/HybridDeleGator deployment for a signed delegation to redeem against.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", includeModularStack: false));
+        try
+        {
+            var action = () => new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null));
+            action.Should().Throw<InvalidOperationException>().WithMessage("*agentic session payments*");
         }
         finally
         {
@@ -389,7 +408,7 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
-    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true, string? legacyPool = null) =>
+    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true, string? legacyPool = null, bool includeModularStack = true) =>
         $$"""
         {
           "schemaVersion": 1,
@@ -410,8 +429,9 @@ public sealed class BlockchainManifestLoaderTests
             "erc8004Registry": "{{Address('R')}}",
             "erc7683Resolver": "{{Address('S')}}",
             "modularSimpleFactory": "{{Address('M')}}",
-            "delegationManager": "{{Address('D')}}",
-            "hybridDeleGatorImplementation": "{{Address('H')}}",
+            {{(includeModularStack ? $"\"modularEntryPoint\": \"{Address('Q')}\"," : "")}}
+            {{(includeModularStack ? $"\"delegationManager\": \"{Address('D')}\"," : "")}}
+            {{(includeModularStack ? $"\"hybridDeleGatorImplementation\": \"{Address('H')}\"," : "")}}
             "allowedTargetsEnforcer": "{{Address('1')}}",
             "allowedMethodsEnforcer": "{{Address('2')}}",
             "exactCalldataEnforcer": "{{Address('3')}}",

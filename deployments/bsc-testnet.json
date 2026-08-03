@@ -29,13 +29,23 @@
     "erc8004Registry": "0x932d50e20f917b9bbbe2c40f30d43bcef0e93f90",
     "erc7683Resolver": "0xa572f04495c58b41b8d12500447f3aa0f75856fa",
     "erc8183Escrow": "0x676660a302046b0a8be1e78a3b329464189fc172",
-    "legacyPool": "0x9d5305a9621aafb5b5f8ba7a9977e3d96ea7eceb"
+    "legacyPool": "0x9d5305a9621aafb5b5f8ba7a9977e3d96ea7eceb",
+    "modularEntryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    "modularSimpleFactory": "0x69Aa2f9fe1572F1B640E1bbc512f5c3a734fc77c",
+    "delegationManager": "0xdb9B1e94B5b69Df7e401DDbedE43491141047dB3",
+    "hybridDeleGatorImplementation": "0x48dBe696A4D990079e039489bA2053B36E8FFEC4",
+    "allowedTargetsEnforcer": "0x7F20f61b1f09b08D970938F6fa563634d65c4EeB",
+    "allowedMethodsEnforcer": "0x2c21fD0Cb9DC8445CB3fb0DC5E7Bb0Aca01842B5",
+    "exactCalldataEnforcer": "0x99F2e9bF15ce5eC84685604836F71aB835DBBdED",
+    "limitedCallsEnforcer": "0x04658B29F6b82ed55274221a06Fc97D318E25416",
+    "nonceEnforcer": "0xDE4f2FAC4B3D87A1d9953Ca5FC09FCa7F366254f",
+    "timestampEnforcer": "0x1046bb45C8d673d4ea75321280DB34899413c069"
   },
   "accountAbstraction": {
     "entryPointVersion": "0.7",
     "legacyAccountType": "simple-v0.7",
-    "modularAccountType": null,
-    "modularFrameworkRevision": null,
+    "modularAccountType": "metamask-hybrid-delegator-v1.3.0",
+    "modularFrameworkRevision": "bfbdf9795a976833ed2fa000baf42fbb83958b03",
     "modularCompiler": null
   },
   "capabilities": {
