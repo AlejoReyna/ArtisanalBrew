@@ -12,7 +12,7 @@
          data-theme attribute to <html> before app.css is fetched, so the CSS
          variable tiers in app.css resolve correctly on the very first paint
          instead of flashing light-then-dark (or vice versa). -->
-    <script src="js/theme.js"></script>
+    <script src="@Assets["js/theme.js"]"></script>
     <ResourcePreloader />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,10 +32,10 @@
     <link rel="icon" type="image/png" href="images/favicon.png" />
     <!-- In <head>, and deliberately blocking: it marks <html> before the hero markup is
          parsed, so the headline is never painted in full before it types itself out. -->
-    <script src="js/heroType.js"></script>
+    <script src="@Assets["js/heroType.js"]"></script>
     <!-- Also blocking, for the same reason: it marks <html> before the product grid is
          parsed, so the cards paint collapsed instead of snapping shut a frame later. -->
-    <script src="js/productCardBlurb.js"></script>
+    <script src="@Assets["js/productCardBlurb.js"]"></script>
     <HeadOutlet />
 </head>
 
@@ -44,19 +44,19 @@
     <ReconnectModal />
     <IdleTimeoutModal />
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js" defer></script>
-    <script src="js/solana-web3.iife.min.js" defer></script>
-    <script src="js/delegation-toolkit.iife.min.js" defer></script>
+    <script src="@Assets["js/solana-web3.iife.min.js"]" defer></script>
+    <script src="@Assets["js/delegation-toolkit.iife.min.js"]" defer></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="js/cartToast.js"></script>
-    <script src="js/publicHeader.js"></script>
-    <script src="js/productTransition.js"></script>
-    <script src="js/recruiterMotion.js"></script>
-    <script src="js/storyTechShowcase.js"></script>
-    <script src="js/storyDataPath.js"></script>
-    <script src="js/storyGuessType.js"></script>
-    <script src="js/journalProgress.js"></script>
-    <script src="js/heroWebGL.js"></script>
-    <script src="js/chainSelector.js"></script>
+    <script src="@Assets["js/cartToast.js"]" defer></script>
+    <script src="@Assets["js/publicHeader.js"]" defer></script>
+    <script src="@Assets["js/productTransition.js"]" defer></script>
+    <script src="@Assets["js/recruiterMotion.js"]" defer></script>
+    <script src="@Assets["js/storyTechShowcase.js"]" defer></script>
+    <script src="@Assets["js/storyDataPath.js"]" defer></script>
+    <script src="@Assets["js/storyGuessType.js"]" defer></script>
+    <script src="@Assets["js/journalProgress.js"]" defer></script>
+    <script src="@Assets["js/heroWebGL.js"]" defer></script>
+    <script src="@Assets["js/chainSelector.js"]" defer></script>
     <script>
         window.animationObserver = null;
 

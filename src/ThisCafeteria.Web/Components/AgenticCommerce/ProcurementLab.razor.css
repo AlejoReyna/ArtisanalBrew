@@ -52,7 +52,7 @@
 }
 
 .pl-cabin::before {
-    background: url("images/pl-spaceship-frame.png") center / cover no-repeat;
+    background: url("images/pl-spaceship-frame.webp") center / cover no-repeat;
     content: "";
     image-rendering: pixelated;
     inset: 0;
@@ -957,7 +957,7 @@
 }
 
 .pl-scene__captain-arms {
-    background-image: url("images/pl-captain-steering-poses.png");
+    background-image: url("images/pl-captain-steering-poses.webp");
     background-position: var(--captain-pose) 0;
     background-repeat: no-repeat;
     background-size: 300% 100%;
