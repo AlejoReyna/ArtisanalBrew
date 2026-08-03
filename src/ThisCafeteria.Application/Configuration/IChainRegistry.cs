@@ -46,7 +46,23 @@ public sealed class ChainRegistry : IChainRegistry
             if (chain.Family == ChainFamily.Solana && string.IsNullOrWhiteSpace(chain.SolanaCluster)) throw new InvalidOperationException($"Solana chain '{chain.Key}' must define a cluster.");
             if (chain.Family == ChainFamily.Evm && chain.Capabilities.LiquidStaking && string.IsNullOrWhiteSpace(chain.Deployment.LiquidVault)) throw new InvalidOperationException($"Chain '{chain.Key}' enables liquid staking without a vault deployment.");
             if (chain.Capabilities.LegacyExit && string.IsNullOrWhiteSpace(chain.Deployment.LegacyPool)) throw new InvalidOperationException($"Chain '{chain.Key}' enables legacy exit without a pool deployment.");
+            // Marketplace payment needs a settlement venue: the new liquid-chain rail settles through the
+            // ERC-8183 agentic escrow, while the legacy Sepolia rail verifies a native transfer against its
+            // legacy pool deployment. Either satisfies the "no capability without a contract behind it" rule;
+            // a manifest that turns the flag on while carrying neither fails closed.
+            if (chain.Capabilities.MarketplacePayment && chain.Family == ChainFamily.Evm && string.IsNullOrWhiteSpace(chain.Deployment.AgenticEscrow) && string.IsNullOrWhiteSpace(chain.Deployment.LegacyPool)) throw new InvalidOperationException($"Chain '{chain.Key}' enables marketplace payment without an escrow or legacy pool deployment.");
+            // Session-key permissions redeem through the MetaMask Delegation Framework's
+            // DelegationManager, executed by a HybridDeleGator account - without both deployed and
+            // addressed, there is no contract for a signed delegation to redeem against. The modular
+            // EntryPoint is required separately from the legacy EntryPoint above: HybridDeleGator's
+            // immutable EntryPoint is the canonical ERC-4337 singleton, which is not necessarily the
+            // same address as this chain's legacy EntryPoint (some chains deploy their own instance
+            // for the unrelated SimpleAccount stack) - see ChainDeployment.ModularEntryPoint.
+            if (chain.Capabilities.AgenticSessionPayments && chain.Family == ChainFamily.Evm && (string.IsNullOrWhiteSpace(chain.Deployment.DelegationManager) || string.IsNullOrWhiteSpace(chain.Deployment.HybridDeleGatorImplementation) || string.IsNullOrWhiteSpace(chain.Deployment.ModularEntryPoint))) throw new InvalidOperationException($"Chain '{chain.Key}' enables agentic session payments without a DelegationManager, HybridDeleGator, and modular EntryPoint deployment.");
             if (chain.Family == ChainFamily.Solana && chain.Capabilities.LiquidStaking && string.IsNullOrWhiteSpace(chain.Deployment.Program)) throw new InvalidOperationException($"Solana chain '{chain.Key}' enables staking without a program deployment.");
+            // A Solana CAFE faucet mints under the CAFE mint authority, so it needs both the CAFE mint and
+            // the administrator authority allowed to mint it. See docs/solana-devnet-faucet.md.
+            if (chain.Family == ChainFamily.Solana && chain.Capabilities.Faucet && (string.IsNullOrWhiteSpace(chain.Deployment.Cafe) || string.IsNullOrWhiteSpace(chain.Deployment.Admin))) throw new InvalidOperationException($"Solana chain '{chain.Key}' enables the faucet without a CAFE mint and administrator authority.");
             if (chain.Enabled && chain.Family == ChainFamily.Solana && chain.Capabilities.LiquidStaking)
             {
                 var deploymentKeys = new[]

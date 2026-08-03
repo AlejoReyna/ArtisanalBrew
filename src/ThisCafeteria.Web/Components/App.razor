@@ -1,16 +1,23 @@
+@inject NavigationManager Navigation
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="@InitialDocumentBackground" data-scene-route="@SceneRoute">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#050505" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="@InitialThemeColor" />
     <base href="/" />
+    <!-- Blocking, and deliberately first: applies the stored/OS-preferred
+         data-theme attribute to <html> before app.css is fetched, so the CSS
+         variable tiers in app.css resolve correctly on the very first paint
+         instead of flashing light-then-dark (or vice versa). -->
+    <script src="@Assets["js/theme.js"]"></script>
     <ResourcePreloader />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["ThisCafeteria.Web.styles.css"]" />
@@ -22,24 +29,34 @@
             }
         }
     </script>
-    <link rel="icon" type="image/svg+xml" href="images/green_bean.svg" />
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <!-- In <head>, and deliberately blocking: it marks <html> before the hero markup is
+         parsed, so the headline is never painted in full before it types itself out. -->
+    <script src="@Assets["js/heroType.js"]"></script>
+    <!-- Also blocking, for the same reason: it marks <html> before the product grid is
+         parsed, so the cards paint collapsed instead of snapping shut a frame later. -->
+    <script src="@Assets["js/productCardBlurb.js"]"></script>
     <HeadOutlet />
 </head>
 
-<body>
+<body style="@InitialDocumentBackground">
     <Routes />
     <ReconnectModal />
+    <IdleTimeoutModal />
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js" defer></script>
-    <script src="js/solana-web3.iife.min.js" defer></script>
-    <script src="js/delegation-toolkit.iife.min.js" defer></script>
+    <script src="@Assets["js/solana-web3.iife.min.js"]" defer></script>
+    <script src="@Assets["js/delegation-toolkit.iife.min.js"]" defer></script>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="js/cartToast.js"></script>
-    <script src="js/publicHeader.js"></script>
-    <script src="js/productTransition.js"></script>
-    <script src="js/recruiterMotion.js"></script>
-    <script src="js/journalProgress.js"></script>
-    <script src="js/heroWebGL.js"></script>
-    <script src="js/chainSelector.js"></script>
+    <script src="@Assets["js/cartToast.js"]" defer></script>
+    <script src="@Assets["js/publicHeader.js"]" defer></script>
+    <script src="@Assets["js/productTransition.js"]" defer></script>
+    <script src="@Assets["js/recruiterMotion.js"]" defer></script>
+    <script src="@Assets["js/storyTechShowcase.js"]" defer></script>
+    <script src="@Assets["js/storyDataPath.js"]" defer></script>
+    <script src="@Assets["js/storyGuessType.js"]" defer></script>
+    <script src="@Assets["js/journalProgress.js"]" defer></script>
+    <script src="@Assets["js/heroWebGL.js"]" defer></script>
+    <script src="@Assets["js/chainSelector.js"]" defer></script>
     <script>
         window.animationObserver = null;
 
@@ -186,6 +203,26 @@
             });
         };
 
+        window.queueStoryTechShowcase = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.storyTechShowcase) {
+                        window.storyTechShowcase.init();
+                    }
+                });
+            });
+        };
+
+        window.queueStoryGuessType = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.storyGuessType) {
+                        window.storyGuessType.init();
+                    }
+                });
+            });
+        };
+
         window.queueHeroWebGL = () => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -194,6 +231,16 @@
                         window.heroWebGL.init('hero-webgl-canvas');
                     } else {
                         window.heroWebGL.destroyAll();
+                    }
+                });
+            });
+        };
+
+        window.queueHeroType = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (window.heroTypewriter) {
+                        window.heroTypewriter.init();
                     }
                 });
             });
@@ -226,15 +273,29 @@
         document.addEventListener('DOMContentLoaded', () => window.queueAnimations(false));
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
+        document.addEventListener('DOMContentLoaded', window.queueStoryTechShowcase);
+        document.addEventListener('DOMContentLoaded', window.queueStoryGuessType);
         document.addEventListener('DOMContentLoaded', window.queueHeroWebGL);
         document.addEventListener('DOMContentLoaded', window.queueHeroVideo);
+        document.addEventListener('DOMContentLoaded', window.queueHeroType);
 
         const onEnhancedLoad = () => {
+            // Blazor's enhanced navigation replaces <html>'s attributes with
+            // whatever the server rendered for the new page — which never
+            // includes data-theme, since only client-side JS (theme.js) knows
+            // the stored/OS-preferred choice. Confirmed via testing that this
+            // silently resets the theme on every route change without this
+            // reapply; the initial <head> bootstrap script only covers a full
+            // page load, not this SPA-style transition.
+            window.artisanalTheme.apply(window.artisanalTheme.getStored());
             window.queueAnimations(true);
             window.queuePublicHeader();
             window.queueRecruiterMotion();
+            window.queueStoryTechShowcase();
+            window.queueStoryGuessType();
             window.queueHeroWebGL();
             window.queueHeroVideo();
+            window.queueHeroType();
         };
 
         if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
@@ -247,3 +308,58 @@
 </body>
 
 </html>
+
+@code {
+    private string InitialPath =>
+        Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+
+    private bool IsHomeRoute => string.IsNullOrEmpty(InitialPath);
+
+    private bool IsStoryRoute =>
+        string.Equals(
+            InitialPath,
+            "story",
+            StringComparison.OrdinalIgnoreCase);
+
+    // /about is the isometric café floor: another full-page roast surface, so
+    // it takes the same near-black first paint as the home hero.
+    private bool IsAboutRoute =>
+        string.Equals(
+            InitialPath,
+            "about",
+            StringComparison.OrdinalIgnoreCase);
+
+    // Drives which layer of the GlobalScene background scenario is visible
+    // (Components/Layout/GlobalScene.razor + the matching rules in app.css).
+    // The scene's containers are data-permanent, so enhanced navigation only
+    // has to swap this <html> attribute for the per-route layers to cross-fade
+    // over the preserved sky. "lab" shows the base sky with no extra layer;
+    // "none" hides the scenario entirely (every page without it). /profile
+    // shares the staking layer: it hosts the same YieldPanel intro, and its
+    // dashboard views paint an opaque ground over the scene anyway.
+    private string SceneRoute =>
+        IsHomeRoute
+            ? "home"
+            : InitialPath.StartsWith("staking", StringComparison.OrdinalIgnoreCase) ||
+              InitialPath.StartsWith("profile", StringComparison.OrdinalIgnoreCase)
+                ? "staking"
+                : InitialPath.StartsWith("procurement-lab", StringComparison.OrdinalIgnoreCase)
+                    ? "lab"
+                    : "none";
+
+    private string InitialThemeColor =>
+        IsStoryRoute
+            ? "#0f0f11"
+            : IsHomeRoute || IsAboutRoute
+                ? "#100D0B"
+                : "#958276";
+
+    // Safari 26 derives its top chrome from the document background instead of
+    // reliably honoring a theme-color mutation after the first paint. Emit the
+    // hero routes' backgrounds in the initial HTML so their safe areas never
+    // start cream.
+    private string? InitialDocumentBackground =>
+        IsStoryRoute || IsHomeRoute || IsAboutRoute
+            ? $"background-color: {InitialThemeColor};"
+            : null;
+}

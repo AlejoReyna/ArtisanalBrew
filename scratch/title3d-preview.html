@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --stake-bg-deep: #100D0B;
+    --stake-ink: #F4EFE6;
+  }
+  body { background: var(--stake-bg-deep); margin: 0; padding: 6rem 3rem; box-sizing: border-box; }
+  .ph-hero__copy { max-width: 44rem; }
+
+  .ph-title3d {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1.65rem, 4.4vw, 3rem);
+      letter-spacing: 0.14em;
+      line-height: 1;
+      margin: 0 0 1.5rem;
+      padding-right: 0.45em;
+  }
+  .ph-title3d__line { display: block; }
+  .ph-title3d__line + .ph-title3d__line { margin-top: 0.75em; }
+  .ph-title3d__word { display: inline-block; white-space: nowrap; }
+  .ph-title3d__word + .ph-title3d__word { margin-left: 1.1em; }
+
+  .ph-title3d__letter {
+      animation: ph-title3d-bob 2.6s steps(4, end) infinite;
+      animation-delay: calc(var(--i) * 120ms);
+      color: #FFFDF9;
+      display: inline-block;
+      text-shadow:
+          -2px -2px 0 #0B0806,
+          0 -2px 0 #0B0806,
+          2px -2px 0 #0B0806,
+          -2px 0 0 #0B0806,
+          -2px 2px 0 #0B0806,
+          2px 2px 0 #2A1C11,
+          4px 4px 0 #2A1C11,
+          6px 6px 0 #241810,
+          8px 8px 0 #1A110A,
+          10px 10px 0 #0B0806;
+      will-change: transform;
+  }
+
+  @keyframes ph-title3d-bob {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(0, -0.22em, 0); }
+  }
+</style>
+</head>
+<body>
+  <div class="ph-hero__copy">
+    <h1 class="ph-title3d" id="t"></h1>
+  </div>
+<script>
+  const lines = ["YOUR NEXT", "COFFEE,", "ON-CHAIN"];
+  const h1 = document.getElementById("t");
+  let i = 0;
+  for (const line of lines) {
+    const lineEl = document.createElement("span");
+    lineEl.className = "ph-title3d__line";
+    for (const word of line.split(" ")) {
+      const w = document.createElement("span");
+      w.className = "ph-title3d__word";
+      for (const ch of word) {
+        const l = document.createElement("span");
+        l.className = "ph-title3d__letter";
+        l.style.setProperty("--i", i);
+        l.textContent = ch;
+        w.appendChild(l);
+        i++;
+      }
+      lineEl.appendChild(w);
+    }
+    h1.appendChild(lineEl);
+  }
+</script>
+</body>
+</html>

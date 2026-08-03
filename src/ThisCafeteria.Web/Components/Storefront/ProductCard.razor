@@ -1,0 +1,106 @@
+@* Storefront product card. Mirrors the reference: white rounded-2xl card, beige image box,
+ * floating wishlist button, rating stars, brand, two-line name, price + compare-at. *@
+<article class="@CardCss"
+         data-product-card
+         data-product-slug="@Card.Slug">
+    <a class="@(Horizontal ? "block w-44 shrink-0 sm:w-56" : "block")"
+       href="@($"products/{Card.Slug}")"
+       @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
+       @onclick:preventDefault="true">
+        <div class="relative aspect-[4/3] overflow-hidden bg-sand @(Horizontal ? "rounded-l-2xl" : "rounded-t-2xl")">
+            @if (!string.IsNullOrWhiteSpace(Card.ImageUrl))
+            {
+                <img src="@Card.ImageUrl"
+                     alt="@Card.Name"
+                     loading="lazy"
+                     class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            }
+        </div>
+    </a>
+
+    <button type="button"
+            class="absolute @(Horizontal ? "left-auto" : "") right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink shadow-sm transition-colors hover:text-accent"
+            aria-label="Save @Card.Name for later">
+        <LucideIcon Name="heart" Size="16" StrokeWidth="1.75" />
+    </button>
+
+    <div class="flex flex-1 flex-col gap-1 px-5 pb-5 pt-3">
+        <RatingStars Rating="@Card.Rating" />
+        <span class="mt-1 text-xs text-mute">@Card.Brand</span>
+        @* The two-line reserve lives on this block rather than on the <h3> so that a
+           one-line name doesn't push the description down past the slack it isn't using:
+           the blurb opens directly under the title text and grows into the reserve first.
+           Cards still agree on a resting height whether their name wraps or not.
+           text-[15px] is repeated on the <h3> because the site's global heading rules set
+           an explicit size there — inheriting the block's is not enough. *@
+        <div class="product-card__title-block text-[15px]">
+            <a href="@($"products/{Card.Slug}")"
+               @onclick="() => OnNavigate.InvokeAsync(Card.Slug)"
+               @onclick:preventDefault="true">
+                <h3 class="line-clamp-2 text-[15px] font-medium leading-snug text-ink">
+                    @Card.Name
+                </h3>
+            </a>
+
+            @* Collapsed to nothing until the card is hovered or focused, then it opens and
+               types itself out — see wwwroot/js/productCardBlurb.js. The copy is real
+               markup, so with no script it is simply a visible line of description. *@
+            @if (!string.IsNullOrWhiteSpace(Card.Description))
+            {
+                <div class="product-card__blurb" data-card-blurb>
+                    @* The clip element carries no padding of its own — anything it did
+                       carry would survive the collapse and leave the closed card that
+                       much taller. *@
+                    <div class="product-card__blurb-clip">
+                        <p class="product-card__blurb-text text-[13px] leading-relaxed text-mute"
+                           data-card-blurb-text>@Card.Description</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-auto flex items-end justify-between pt-1">
+            <div class="flex items-baseline gap-2">
+                <span class="text-lg font-semibold tracking-tight text-ink">@FormatPrice(Card.Price)</span>
+                @if (Card.CompareAtPrice is { } compareAt)
+                {
+                    <span class="text-sm text-faint line-through">@FormatPrice(compareAt)</span>
+                }
+            </div>
+            <button type="button"
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-white transition-colors hover:bg-accent disabled:opacity-60"
+                    disabled="@(Adding || !Card.IsAvailable)"
+                    aria-label="Add @Card.Name to cart"
+                    @onclick="() => OnAddToCart.InvokeAsync(Card.Slug)">
+                <LucideIcon Name="shopping-bag" Size="15" StrokeWidth="1.75" />
+            </button>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public CatalogProductCard Card { get; set; } = default!;
+    [Parameter] public bool Elevated { get; set; }
+    [Parameter] public bool Horizontal { get; set; }
+    [Parameter] public bool Adding { get; set; }
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+    [Parameter] public EventCallback<string> OnAddToCart { get; set; }
+
+    private string CardCss
+    {
+        get
+        {
+            var layout = Horizontal ? "flex-row gap-5 items-stretch" : "flex-col h-full";
+            // The elevated state is the reference's interactive central card: lifted,
+            // slightly scaled, soft deep shadow. Hover reaches the same state.
+            var elevation = Elevated
+                ? "z-10 -translate-y-1 scale-[1.05] shadow-[0_24px_48px_-12px_rgba(28,27,26,0.28)]"
+                : "shadow-sm hover:z-10 hover:-translate-y-1 hover:shadow-xl hover:shadow-ink/10";
+
+            return $"group relative flex {layout} rounded-2xl bg-white {elevation} " +
+                   "transition-all duration-300";
+        }
+    }
+
+    private static string FormatPrice(decimal price) => price.ToString("$#,0.00");
+}

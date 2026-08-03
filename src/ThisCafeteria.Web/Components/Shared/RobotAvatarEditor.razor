@@ -1,0 +1,313 @@
+@using ThisCafeteria.Application.DTOs
+@using ThisCafeteria.Domain.Avatars
+@using ThisCafeteria.Web.Services
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@* Dress-up console for the account robot.
+
+   Every swatch is a whole robot wearing the working look with just that one
+   slot swapped, rather than a cut-out of the garment. It costs more DOM and it
+   is worth it twice over: you compare against what you are actually building,
+   and the visor slot becomes pickable at all — its sprites are only the screen,
+   so shown alone they are six floating rectangles.
+
+   What the card *shows* of that robot is a crop. The active tab picks the
+   window (AvatarLenses), the grid carries it as custom properties, and every
+   card inherits the same framing: the part you came here to change, filling the
+   card and standing on its bottom edge. Whole-robot thumbnails hid the choice —
+   six hats differ by fourteen rows of a sixty-four row sprite, which at that
+   size is a couple of pixels between one card and the next. *@
+
+<dialog @ref="_dialog" class="rae" aria-labelledby="rae-title">
+    <div class="rae__frame">
+
+        <div class="rae__panes">
+
+            <section class="rae__stage" aria-label="Preview">
+                <RobotAvatarView Avatar="_preview" Class="rae__robot" Size="clamp(16rem, 32vw, 30rem)" />
+                <p class="rae__caption">
+                    @if (_isSeed)
+                    {
+                        <span>Generated from your wallet</span>
+                    }
+                    else
+                    {
+                        <span>@DescribeLook()</span>
+                    }
+                </p>
+                <div class="rae__stage-actions">
+                    @* Drawn, not typed: U+2684 (⚄) has no glyph in the mono
+                       stack this page uses and renders as a tofu box. *@
+                    <button type="button" class="rae__ghost" @onclick="Randomize">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <rect x="1.5" y="1.5" width="13" height="13" />
+                            <circle cx="5" cy="5" r="1.1" fill="currentColor" stroke="none" />
+                            <circle cx="11" cy="11" r="1.1" fill="currentColor" stroke="none" />
+                            <circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none" />
+                        </svg>
+                        Surprise me
+                    </button>
+                    <button type="button" class="rae__ghost" @onclick="RevertToSeed" disabled="@_isSeed">
+                        Wallet default
+                    </button>
+                </div>
+            </section>
+
+            <section class="rae__picker">
+                <header class="rae__bar">
+                    <div class="rae__bar-copy">
+                        <span class="rae__eyebrow">Robot workshop // live preview</span>
+                        <h2 id="rae-title">Your robot</h2>
+                    </div>
+                    <button type="button" class="rae__close" @onclick="CloseAsync" aria-label="Close editor">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                            <path d="M6 6 18 18M18 6 6 18" />
+                        </svg>
+                    </button>
+                </header>
+                <div class="rae__picker-head">
+                    <div>
+                        <span class="rae__eyebrow">Modify your look</span>
+                        <h3>@ActiveSlot.Label</h3>
+                    </div>
+                    <span class="rae__picker-count">@ActiveSlot.Items.Count options</span>
+                </div>
+                <div class="rae__tabs" role="tablist" aria-label="Parts">
+                    @foreach (var slot in AvatarCatalog.Slots)
+                    {
+                        var isActive = slot.Key == _activeSlotKey;
+                        <button type="button"
+                                role="tab"
+                                class="rae__tab @(isActive ? "is-active" : null)"
+                                aria-selected="@isActive"
+                                @onclick="() => _activeSlotKey = slot.Key">
+                            @slot.Label
+                        </button>
+                    }
+                </div>
+
+                @* The lens rides on the grid, not on each card: it is the same
+                   window for every item in the tab, and setting it once is what
+                   keeps the cards a comparable set rather than six unrelated
+                   crops. *@
+                <div class="rae__grid" role="tabpanel" aria-label="@ActiveSlot.Label options" style="@Lens.Style()">
+                    @foreach (var item in ActiveSlot.Items)
+                    {
+                        var isChosen = item.Id == _working[ActiveSlot.Key];
+                        var swatch = Preview(ActiveSlot.Key, item.Id);
+                        <button type="button"
+                                class="rae__swatch @(isChosen ? "is-chosen" : null)"
+                                aria-pressed="@isChosen"
+                                aria-label="@item.Label"
+                                title="@item.Label"
+                                @onclick="() => Choose(item.Id)">
+                            <RobotAvatarView Avatar="swatch" Class="rae__lens-robot" Idle="false" />
+                            @* The name rode under the robot in a strip of its own
+                               until that strip was eating a fifth of the card and
+                               pushing the sprite away from the bottom edge it is
+                               supposed to stand on. It is a corner chip now:
+                               always up for what you are wearing, on hover and
+                               keyboard focus for everything else. *@
+                            <span class="rae__tag" aria-hidden="true">
+                                <span class="rae__tag-index">@ItemIndex(item)</span>
+                                <span class="rae__tag-name">@item.Label</span>
+                            </span>
+                        </button>
+                    }
+                </div>
+
+                <footer class="rae__actions">
+                    <button type="button" class="rae__cancel" @onclick="CloseAsync">Cancel</button>
+                    <button type="button" class="rae__save" @onclick="SaveAsync" disabled="@(_isSaving || !HasChanges)">
+                        @(_isSaving ? "Saving…" : "Save robot")
+                    </button>
+                </footer>
+            </section>
+        </div>
+
+    </div>
+</dialog>
+
+@code {
+    [Parameter, EditorRequired]
+    public RobotAvatarDto Avatar { get; set; } = default!;
+
+    /// <summary>Drives the "wallet default" button, which has to show the same
+    /// robot the profile would fall back to if the saved look were cleared.</summary>
+    [Parameter]
+    public string? WalletAddress { get; set; }
+
+    [Parameter]
+    public EventCallback<UpdateAvatarRequest> OnSave { get; set; }
+
+    /// <summary>Raised when the user wants the saved look cleared entirely, so
+    /// the profile goes back to tracking its wallet seed.</summary>
+    [Parameter]
+    public EventCallback OnResetToSeed { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private ElementReference _dialog;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<RobotAvatarEditor>? _self;
+
+    private RobotAvatar _working = new();
+    private RobotAvatarDto _preview = default!;
+    private string _activeSlotKey = AvatarCatalog.ChassisSlot;
+    private bool _isSaving;
+
+    private AvatarSlot ActiveSlot => AvatarCatalog.GetSlot(_activeSlotKey);
+
+    /// <summary>The region of the robot this tab's cards frame.</summary>
+    private AvatarLens Lens => AvatarLenses.For(_activeSlotKey);
+
+    private bool HasChanges => !_preview.Equals(Avatar);
+
+    private bool _isSeed => AvatarSeed.FromWallet(WalletAddress).HasSameLook(_working);
+
+    protected override void OnInitialized()
+    {
+        foreach (var slot in AvatarCatalog.Slots)
+        {
+            _working[slot.Key] = Avatar[slot.Key];
+        }
+
+        Refresh();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _self = DotNetObjectReference.Create(this);
+        _module = await JS.InvokeAsync<IJSObjectReference>(
+            "import", "./Components/Shared/RobotAvatarEditor.razor.js");
+        await _module.InvokeVoidAsync("open", _dialog, _self);
+    }
+
+    /// <summary>Esc and backdrop dismissal both come back through here so the
+    /// parent's open flag never drifts out of step with the real dialog.</summary>
+    [JSInvokable]
+    public Task DismissedAsync() => OnClose.InvokeAsync();
+
+    private void Refresh() => _preview = RobotAvatarDto.Resolve(_working, WalletAddress);
+
+    private void Choose(string itemId)
+    {
+        _working[_activeSlotKey] = itemId;
+        Refresh();
+    }
+
+    private string ItemIndex(AvatarItem item) =>
+        (ActiveSlot.Items.TakeWhile(candidate => candidate.Id != item.Id).Count() + 1).ToString("00");
+
+    /// <summary>The working look with one slot swapped — what a swatch shows.</summary>
+    private RobotAvatarDto Preview(string slotKey, string itemId)
+    {
+        var candidate = _working.Clone();
+        candidate[slotKey] = itemId;
+        return RobotAvatarDto.Resolve(candidate, WalletAddress);
+    }
+
+    private void Randomize()
+    {
+        foreach (var slot in AvatarCatalog.Slots)
+        {
+            _working[slot.Key] = slot.Items[Random.Shared.Next(slot.Items.Count)].Id;
+        }
+
+        Refresh();
+    }
+
+    private void RevertToSeed()
+    {
+        _working = AvatarSeed.FromWallet(WalletAddress);
+        Refresh();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_isSaving)
+        {
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            // Landing back on the seed means "I do not want a saved look",
+            // which is the reset operation — saving the seed's current values
+            // would freeze them and stop the avatar tracking the wallet.
+            if (_isSeed)
+            {
+                await OnResetToSeed.InvokeAsync();
+            }
+            else
+            {
+                await OnSave.InvokeAsync(new UpdateAvatarRequest(
+                    _preview.Backdrop,
+                    _preview.Chassis,
+                    _preview.Wear,
+                    _preview.Visor,
+                    _preview.Hat,
+                    _preview.Hold));
+            }
+
+            await CloseAsync();
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("close", _dialog);
+            }
+            catch (JSDisconnectedException)
+            {
+                // The circuit went away first; the dialog went with it.
+            }
+        }
+
+        await OnClose.InvokeAsync();
+    }
+
+    private string DescribeLook()
+    {
+        var worn = AvatarCatalog.Slots
+            .Where(slot => slot.Kind == AvatarSlotKind.Sprite)
+            .Select(slot => slot.Resolve(_working[slot.Key]))
+            .Where(item => !item.IsEmpty)
+            .Select(item => item.Label);
+
+        return string.Join(" · ", worn);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        _self?.Dispose();
+    }
+}

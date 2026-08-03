@@ -3,6 +3,33 @@
 This document outlines the remediation and hardening work performed on the Agentic Commerce features
 in ArtisanalBrew to make reconciliation correct and independently verifiable.
 
+## Current Repository State (2026-07-28)
+
+- **Enabled public chains:** Ethereum Sepolia, BSC Testnet, and Solana Devnet are loaded from
+  committed manifests. Sepolia and BSC enable wallet login, liquid staking, faucet, reward
+  minting, and agentic commerce. Their manifests keep session-key payments, marketplace payments,
+  and legacy exit disabled. Solana Devnet enables wallet login, liquid staking, reward funding,
+  and reconciliation.
+- **Implemented but gated features:** The MetaMask Delegation Framework session-account flow,
+  ERC-4337 bundler transport, canonical EntryPoint confirmation, and the server-side Solana faucet
+  are implemented. Public session payments remain disabled because the EVM manifests do not contain
+  the complete modular-account deployment or enable the capability. The Solana faucet remains
+  disabled because the Devnet manifest does not enable `capabilities.faucet`; operation also
+  requires the server-side administrator secret.
+- **Sponsored submission proof:** A sponsored UserOperation was mined successfully on Sepolia
+  through self-hosted Rundler on 2026-07-24. `UserOperationSubmitter` now confirms from the canonical
+  EntryPoint event and mined transaction receipt, including a bounded-log fallback when Rundler's
+  receipt endpoint fails.
+- **Manifest caveat:** That public proof used EntryPoint
+  `0xdd9a61064ef9e2d9612da1f1307e168b85fe43a6`, while the currently committed
+  `deployments/ethereum-sepolia.json` still records EntryPoint
+  `0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217` and its companion deployment. Treat the public
+  transaction as historical proof of the submission path, not proof that the current committed
+  Sepolia manifest is synchronized. Reconcile and verify the manifest before any new public
+  enablement or broadcast.
+- **Repository hygiene:** Implementation prompts now live under `docs/prompts/`. Acceptance logs,
+  runtime logs, and the local isolation marker are ignored and are not retained in source control.
+
 ## 1. Concurrent Gateway Idempotency
 The Agent Gateway (`ThisCafeteria.AgentGateway`) handles x402 payments and tool integration. It was
 vulnerable to double-settlement of concurrent identical requests.
@@ -26,9 +53,19 @@ The `AgenticJobProjection` previously did not have a robust optimistic concurren
 - **Solution:** Configured `AgenticJobProjection` to use `(ChainKey, ContractAddress, OnChainJobId)` as its unique key. Added and modified the `AgenticJobProjectionMigrationTests.cs` to test EF Core's database model generation.
 - **SQLite vs Postgres Migrations:** Refactored previous `DO $$` raw SQL blocks inside the `Migrations/` directory by explicitly wrapping them in `migrationBuilder.ActiveProvider == "Npgsql.EntityFrameworkCore.PostgreSQL"` checks. This allowed full migration testing using SQLite in-memory without syntax errors.
 
-## 6. Smart Account Scaffolding
-- **Solution:** Maintained the smart account fail-closed implementation in `SmartAccountService`. Ensured `SmartAccountServiceTests.cs` correctly verified that the scaffolding throws `NotSupportedException` for all methods, successfully preventing spoofed transactions until true ERC-4337 dependencies exist.
-  *Updated in Phase 4:* configuration discovery and counterfactual account derivation are now implemented against the pinned canonical v0.7.0 factory. Sponsorship and session operations remain fail-closed. See `docs/agentic-commerce-stack-plan.md` § Phase 4.
+## 6. Smart Account and Bundler Implementation
+- **Current implementation:** `SmartAccountService` supports configuration discovery,
+  counterfactual account derivation and deployment, modular-account registration, permission epoch
+  installation, redemption, and revocation. `RundlerBundlerClient` and `UserOperationSubmitter`
+  submit sponsored operations through a bundler and independently confirm the canonical
+  EntryPoint event before recording usage.
+- **Fail-closed boundary:** Unconfigured or partially configured chains still throw
+  `NotSupportedException`. This is now a deployment/capability guard, not a placeholder for every
+  smart-account method. The local EVM manifest enables the full session flow; the committed Sepolia
+  and BSC public manifests do not.
+- **Receipt resilience:** `EntryPointConfirmationReader` can verify a mined operation from a bounded
+  EntryPoint log query when the bundler receipt endpoint is unavailable. See
+  `docs/agentic-commerce-stack-plan.md` for the public Sepolia proof and receipt-endpoint diagnosis.
 
 ## 7. Reorg Limitations Documentation
 - **Solution:** Explicitly documented the missing full reorg-rollback functionality in `docs/agentic-commerce-stack-plan.md`, clarifying that while confirmation depth prevents ephemeral indexing, manual intervention is needed if a deep reorg occurs until block-header validation and inverse applicators are implemented.
@@ -74,7 +111,8 @@ correct but undocumented and untested.
 - `RESET_DB=1` now requires an isolation marker (`ACCEPTANCE_ISOLATED=1` or `contracts/evm/.acceptance-isolated`); fails closed without it.
 - Explicit `NODE_PID`/`WORKER_PID` variables with a cleanup trap, now trapping `EXIT INT TERM`.
 - Machine-readable final marker: `ACCEPTANCE_RESULT=PASS` or `ACCEPTANCE_RESULT=FAIL exit=N`.
-- Evidence captured to timestamped `acceptance-evidence-<timestamp>.log`.
+- Evidence captured locally to timestamped `acceptance-evidence-<timestamp>.log`; these generated
+  logs are ignored and are not committed.
 
 **Two defects found on re-verification (2026-07-21) and fixed:**
 
@@ -144,15 +182,15 @@ and does not require MetaMask or any browser extension.
 
 | Suite | Count | Status |
 |-------|-------|--------|
-| .NET unit tests | 210 | ✅ Passed |
-| Gateway (TypeScript) | 11 | ✅ Passed |
+| .NET unit tests | 268 | ✅ Passed — 2026-07-28 |
+| Gateway (TypeScript) | 14 | ✅ Passed — 2026-07-28 |
 | Gateway (`tsc` build) | — | ✅ Succeeded |
-| EVM contracts (Hardhat) | 29 | ✅ Passed |
+| EVM contracts (Hardhat) | 29 | ✅ Passed — 2026-07-28 |
 | Phase 3 acceptance harness | exit=0 | ✅ Passed — 2026-07-21 |
 
-Evidence captured to `acceptance-evidence-20260721-051418.log`, with an immediate back-to-back
-repeat run in `acceptance-evidence-20260721-051513.log` (untracked; logs are not committed).
-Both exited 0 with identical per-run counts, demonstrating the harness is now repeatable.
+Two immediate back-to-back local runs on 2026-07-21 exited 0 with identical per-run counts,
+demonstrating that the harness is repeatable. Their generated evidence logs were intentionally
+removed from source control; future logs match `.gitignore` and remain local.
 
 Harness final marker: `ACCEPTANCE_RESULT=PASS  exit=0`.
 
@@ -189,19 +227,19 @@ own job-id sequence; rows under earlier escrow addresses are retained history, n
 | .NET unit tests | Applicator ordering, idempotency, deferral, concurrency, bytes32/NUL safety, sponsorship policy/signer/simulator fail-closed gating, cross-chain solver policy fail-closed gating — in-memory, SQLite, and stubbed chains; not a live chain. |
 | Hardhat contract tests | Solidity escrow/resolver/ERC-4337 logic in isolation. |
 | Acceptance harness | Real EVM transactions → worker → PostgreSQL projections, driven by **Hardhat-controlled local wallets**. |
-| Cross-stack ERC-4337 scripts | `crossstack-sponsor-check.ts` and `simulation-recipe-check.ts`: real C# `UserOperationSimulator`/`UserOperationSponsor` classes driven against a live Hardhat node, producing a signature the on-chain canonical paymaster actually accepts. Submission still goes through `EntryPoint.handleOps` directly, not through a bundler. Not part of the automated test suite — run manually against a live node. |
+| Cross-stack ERC-4337 scripts | `crossstack-sponsor-check.ts` and `simulation-recipe-check.ts` prove the real C# simulator/sponsor against live Hardhat. `crossstack-bundler-submit-check.ts` additionally drives the real C# `UserOperationSubmitter` through Rundler and independently verifies the canonical EntryPoint event. These live scripts are manual gates, not part of the automated test suite. |
 | Bundler (Rundler) e2e script | `rundler-e2e-check.ts`: a real bundler (Rundler, `--unsafe` mode) accepts a UserOperation via `eth_sendUserOperation`, bundles it, and gets it mined — confirmed via `eth_getUserOperationReceipt`, on-chain account bytecode, and recipient balance change. Proves the bundler path itself works against this repo's pinned canonical EntryPoint; does not involve `ThisCafeteria.*` .NET code and does not exercise storage-access-rule validation (Hardhat can't run the tracer that enforces it — see `docs/agentic-commerce-stack-plan.md`'s "Rundler investigation"). Not part of the automated test suite — run manually against a live node plus a separately-started Rundler process. |
+| Public Sepolia sponsored proof | A real sponsored UserOperation was accepted by self-hosted Rundler in safe mode and mined successfully on 2026-07-24. The app-side confirmation fallback was subsequently added after Rundler's unbounded receipt log scan timed out. This proves the submission/confirmation design, but the committed Sepolia manifest currently points at a different deployment and must be reconciled before reuse. |
 | Two-node cross-chain smoke test | `two-node-crosschain-smoke.ts`: proves the Phase 5 gate — asset moves from a genuinely separate source node to a real (deployed, not counterfactual) smart account on a separate destination node; job funding happens only after that move is verified; an unfilled intent leaves the job Open and the source asset refundable. Re-run twice against fresh nodes for reproducibility. Not part of the automated test suite; the "solver" here is inline script logic. |
 | Standing cross-chain solver | `two-node-standing-solver-check.ts` + a real `ThisCafeteria.Worker` process running `CrossChainSolverWorker`: the script deploys and submits intents but never fills — a separately-started, genuinely long-running .NET background service watches the source chain, decodes intents from real transaction calldata, evaluates a fail-closed policy, and fills approved ones. Confirmed at every layer: worker logs, `CrossChainSolverFills` DB rows with real fill tx hashes, and on-chain `isResolved`/balance checks. Also proved the denial path: a disallowed token pair was left correctly unfilled. Not part of the automated test suite. |
 | Quote-preview vs. real fill | `GET /api/intents/quote` was queried against a live `ThisCafeteria.Web` process holding **no private key**, then the identical route was submitted as a real intent and autonomously filled by the separately-running solver worker. The previewed `amountOut` and the actually-paid amount were byte-for-byte identical (`9700000000000000000` both times, a 9700 bps / 3% spread). Not part of the automated test suite; the endpoint itself has no UI consumer yet. |
 | Procurement Lab UI | Visualization of projections only; not exercised by any automated test. |
 
-**Not covered by any test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows, .NET code
-submitting through the bundler (the cross-stack scripts still call `EntryPoint.handleOps` directly
-from a funded EOA — the bundler proof is a standalone script, not wired to `ThisCafeteria.*`),
-bundler-enforced storage-access-rule validation (only provable against a node with JS-tracer
-support, which local Hardhat lacks), deep-reorg rollback, and automatic re-application of deferred
-events. No browser extension is involved at any point.
+**Not covered by any automated test:** browser-wallet (MetaMask/WalletConnect) end-to-end flows,
+public-manifest-enabled session payments, bundler-enforced storage-access-rule validation on local
+Hardhat, deep-reorg rollback, and automatic re-application of deferred events. The real .NET
+bundler submission path is covered by a manual cross-stack proof, and the public Sepolia submission
+is historical live evidence; neither is an unattended test.
 
 ### Known Limitations
 
@@ -223,20 +261,23 @@ events. No browser extension is involved at any point.
 - **Provider assignment coverage:** the main lifecycle proves `setProvider`. The rejection and
   expiry variants still create jobs with the provider supplied inline, which exercises the
   create-with-provider form rather than the two-step assignment.
-- **A working local bundler exists (Rundler), but nothing in `ThisCafeteria.*` submits through it
-  yet.** Sponsorship signing and gas simulation are real and proven on-chain, but the cross-stack
-  scripts still go through `EntryPoint.handleOps` called directly by a funded EOA — there is no .NET
-  code path yet that lets a user with an empty wallet get an operation included via a real mempool,
-  which is the entire point of sponsorship. `@pimlico/alto` was tried first and hit a real,
-  diagnosed blocker (its gas-estimation RPC calls a proprietary, undocumented simulation contract,
-  confirmed via selector mismatch against the canonical `EntryPointSimulations`, that doesn't
-  tolerate a locally-redeployed EntryPoint — kept as a known-failing script,
-  `contracts/evm/scripts/bundler-e2e-check.ts`). Rundler (Alchemy's bundler) succeeded instead, in
-  `--unsafe` mode — Hardhat can't run the JS tracer bundler safe-mode needs, confirmed by strings
-  found in the compiled EDR binary itself. See `docs/agentic-commerce-stack-plan.md`'s "Rundler
-  investigation" section and `contracts/evm/scripts/rundler-e2e-check.ts` (passing,
-  `RUNDLER_E2E_RESULT=PASS`) for the full account.
+- **Bundler submission is implemented, but public enablement is incomplete.**
+  `UserOperationSubmitter` sends through `IBundlerClient`, verifies the canonical EntryPoint event,
+  and records sponsorship usage only after confirmation. The flow has passed locally through
+  Rundler and once on public Sepolia. However, the committed public manifests still disable
+  `agenticSessionPayments`, do not contain the full modular-account deployment, and the Sepolia
+  manifest does not match the deployment used by the public proof. Browser-driven public session
+  payments must remain gated until those deployment records are reconciled and verified.
 - **`NativeCurrencyUsdRate` is a static configured number, not a live price oracle.** The USD
   budget is therefore only as accurate as that configured value; on a real chain with a moving gas
   price and asset price, the effective USD cost of sponsorship will drift from what the grant
   assumes.
+
+## 9. Documentation and Generated-Artifacts Policy (2026-07-28)
+
+- Reusable implementation prompts are organized under `docs/prompts/`.
+- Acceptance evidence and runtime logs are generated locally and ignored by Git.
+- The local acceptance-isolation marker is not source-controlled; use
+  `ACCEPTANCE_ISOLATED=1` or create the ignored marker deliberately for a local run.
+- Office/PDF exports are not canonical project documentation. The repository walkthrough and
+  operational records are maintained as Markdown.

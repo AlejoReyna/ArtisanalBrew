@@ -1,0 +1,257 @@
+@* Filter sidebar: category list, sort control, and collapsible checkbox filters. *@
+<aside class="filter-panel" aria-labelledby="filter-panel-title">
+    <div class="filter-panel__header">
+        <h1 id="filter-panel-title" class="filter-panel__title">Our Coffee (@AvailableItemCount)</h1>
+    </div>
+
+    <nav class="filter-panel__categories" aria-label="Product categories">
+        <ul>
+            <li>
+                <button type="button"
+                        class="filter-panel__category-link @(string.IsNullOrEmpty(SelectedCategory) ? "is-active" : null)"
+                        @onclick="() => SelectedCategoryChanged.InvokeAsync(string.Empty)">
+                    All items
+                </button>
+            </li>
+            @foreach (var category in Categories)
+            {
+                var isSelected = category.Key == SelectedCategory;
+                <li>
+                    <button type="button"
+                            class="filter-panel__category-link @(isSelected ? "is-active" : null)"
+                            @onclick="() => SelectedCategoryChanged.InvokeAsync(isSelected ? string.Empty : category.Key)">
+                        @category.Label
+                    </button>
+                </li>
+            }
+        </ul>
+    </nav>
+
+    <div class="filter-panel__sort">
+        <label for="filter-sort">Sort by</label>
+        <select id="filter-sort"
+                value="@Sort"
+                @onchange="args => SortChanged.InvokeAsync(args.Value?.ToString() ?? SortDefault)">
+            <option value="@SortDefault">Featured</option>
+            <option value="price-asc">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="rating">Top rated</option>
+        </select>
+    </div>
+
+    <div class="filter-panel__sections">
+        @if (OriginOptions.Count > 0)
+        {
+            <div class="filter-panel__section">
+                <button type="button"
+                        class="filter-panel__section-header"
+                        aria-expanded='@IsOpen("origin")'
+                        aria-controls="filter-origin-content"
+                        @onclick='() => ToggleSection("origin")'>
+                    <span>Origin@(SelectedOrigins.Count > 0 ? $" ({SelectedOrigins.Count})" : null)</span>
+                    <LucideIcon Name="chevron-down" Size="14" CssClass='@ChevronCss("origin")' />
+                </button>
+                @if (IsOpen("origin"))
+                {
+                    <div id="filter-origin-content" class="filter-panel__section-content">
+                        @foreach (var option in OriginOptions)
+                        {
+                            var isChecked = SelectedOrigins.Contains(option.Key);
+                            <label class="filter-panel__checkbox">
+                                <input type="checkbox"
+                                       checked="@isChecked"
+                                       @onchange="() => OriginToggled.InvokeAsync(option.Key)" />
+                                <span class="filter-panel__checkbox-label">@option.Label</span>
+                                <span class="filter-panel__checkbox-count">@option.Count</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (RoastOptions.Count > 0)
+        {
+            <div class="filter-panel__section">
+                <button type="button"
+                        class="filter-panel__section-header"
+                        aria-expanded='@IsOpen("roast")'
+                        aria-controls="filter-roast-content"
+                        @onclick='() => ToggleSection("roast")'>
+                    <span>Roast Level@(SelectedRoasts.Count > 0 ? $" ({SelectedRoasts.Count})" : null)</span>
+                    <LucideIcon Name="chevron-down" Size="14" CssClass='@ChevronCss("roast")' />
+                </button>
+                @if (IsOpen("roast"))
+                {
+                    <div id="filter-roast-content" class="filter-panel__section-content">
+                        @foreach (var option in RoastOptions)
+                        {
+                            var isChecked = SelectedRoasts.Contains(option.Key);
+                            <label class="filter-panel__checkbox">
+                                <input type="checkbox"
+                                       checked="@isChecked"
+                                       @onchange="() => RoastToggled.InvokeAsync(option.Key)" />
+                                <span class="filter-panel__checkbox-label">@option.Label</span>
+                                <span class="filter-panel__checkbox-count">@option.Count</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        @if (ProcessOptions.Count > 0)
+        {
+            <div class="filter-panel__section">
+                <button type="button"
+                        class="filter-panel__section-header"
+                        aria-expanded='@IsOpen("process")'
+                        aria-controls="filter-process-content"
+                        @onclick='() => ToggleSection("process")'>
+                    <span>Process@(SelectedProcesses.Count > 0 ? $" ({SelectedProcesses.Count})" : null)</span>
+                    <LucideIcon Name="chevron-down" Size="14" CssClass='@ChevronCss("process")' />
+                </button>
+                @if (IsOpen("process"))
+                {
+                    <div id="filter-process-content" class="filter-panel__section-content">
+                        @foreach (var option in ProcessOptions)
+                        {
+                            var isChecked = SelectedProcesses.Contains(option.Key);
+                            <label class="filter-panel__checkbox">
+                                <input type="checkbox"
+                                       checked="@isChecked"
+                                       @onchange="() => ProcessToggled.InvokeAsync(option.Key)" />
+                                <span class="filter-panel__checkbox-label">@option.Label</span>
+                                <span class="filter-panel__checkbox-count">@option.Count</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="filter-panel__section">
+            <button type="button"
+                    class="filter-panel__section-header"
+                    aria-expanded='@IsOpen("price")'
+                    aria-controls="filter-price-content"
+                    @onclick='() => ToggleSection("price")'>
+                <span>Price</span>
+                <LucideIcon Name="chevron-down" Size="14" CssClass='@ChevronCss("price")' />
+            </button>
+            @if (IsOpen("price"))
+            {
+                <div id="filter-price-content" class="filter-panel__section-content">
+                    <div class="filter-panel__price-inputs">
+                        <label>
+                            <span>Min $</span>
+                            <input type="number"
+                                   min="@PriceFloor"
+                                   max="@MaxPrice"
+                                   value="@MinPrice"
+                                   aria-label="Minimum price"
+                                   @onchange="args => SetMin(args.Value)" />
+                        </label>
+                        <span aria-hidden="true">—</span>
+                        <label>
+                            <span>Max $</span>
+                            <input type="number"
+                                   min="@MinPrice"
+                                   max="@PriceCeiling"
+                                   value="@MaxPrice"
+                                   aria-label="Maximum price"
+                                   @onchange="args => SetMax(args.Value)" />
+                        </label>
+                    </div>
+
+                    <div class="filter-panel__range">
+                        <div class="filter-panel__range-track"></div>
+                        <div class="filter-panel__range-fill"
+                             style="left: @Percent(MinPrice)%; right: @(100 - Percent(MaxPrice))%;"></div>
+                        <input type="range"
+                               class="catalog-range filter-panel__range-input"
+                               min="@PriceFloor"
+                               max="@PriceCeiling"
+                               step="1"
+                               value="@MinPrice"
+                               aria-label="Minimum price"
+                               @oninput="args => SetMin(args.Value)" />
+                        <input type="range"
+                               class="catalog-range filter-panel__range-input"
+                               min="@PriceFloor"
+                               max="@PriceCeiling"
+                               step="1"
+                               value="@MaxPrice"
+                               aria-label="Maximum price"
+                               @oninput="args => SetMax(args.Value)" />
+                    </div>
+
+                    <div class="filter-panel__range-labels" aria-hidden="true">
+                        <span>$@PriceFloor.ToString("0")</span>
+                        <span>$@PriceCeiling.ToString("0")</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</aside>
+
+@code {
+    public const string SortDefault = "default";
+
+    private readonly HashSet<string> _openSections = new(StringComparer.Ordinal);
+
+    [Parameter] public string Sort { get; set; } = SortDefault;
+    [Parameter] public EventCallback<string> SortChanged { get; set; }
+    [Parameter] public IReadOnlyList<CatalogCategoryOption> Categories { get; set; } = [];
+    [Parameter] public string SelectedCategory { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SelectedCategoryChanged { get; set; }
+    [Parameter] public decimal MinPrice { get; set; }
+    [Parameter] public decimal MaxPrice { get; set; }
+    [Parameter] public decimal PriceFloor { get; set; }
+    [Parameter] public decimal PriceCeiling { get; set; }
+    [Parameter] public EventCallback<decimal> MinPriceChanged { get; set; }
+    [Parameter] public EventCallback<decimal> MaxPriceChanged { get; set; }
+
+    [Parameter] public IReadOnlyList<CatalogCategoryOption> OriginOptions { get; set; } = [];
+    [Parameter] public IReadOnlySet<string> SelectedOrigins { get; set; } = new HashSet<string>();
+    [Parameter] public EventCallback<string> OriginToggled { get; set; }
+
+    [Parameter] public IReadOnlyList<CatalogCategoryOption> RoastOptions { get; set; } = [];
+    [Parameter] public IReadOnlySet<string> SelectedRoasts { get; set; } = new HashSet<string>();
+    [Parameter] public EventCallback<string> RoastToggled { get; set; }
+
+    [Parameter] public IReadOnlyList<CatalogCategoryOption> ProcessOptions { get; set; } = [];
+    [Parameter] public IReadOnlySet<string> SelectedProcesses { get; set; } = new HashSet<string>();
+    [Parameter] public EventCallback<string> ProcessToggled { get; set; }
+
+    private int AvailableItemCount => Categories.Sum(category => category.Count);
+
+    private bool IsOpen(string key) => _openSections.Contains(key);
+
+    private void ToggleSection(string key)
+    {
+        if (!_openSections.Add(key))
+        {
+            _openSections.Remove(key);
+        }
+    }
+
+    private string ChevronCss(string key) =>
+        IsOpen(key) ? "filter-panel__chevron is-open" : "filter-panel__chevron";
+
+    private Task SetMin(object? raw) =>
+        decimal.TryParse(raw?.ToString(), out var value)
+            ? MinPriceChanged.InvokeAsync(Math.Min(value, MaxPrice))
+            : Task.CompletedTask;
+
+    private Task SetMax(object? raw) =>
+        decimal.TryParse(raw?.ToString(), out var value)
+            ? MaxPriceChanged.InvokeAsync(Math.Max(value, MinPrice))
+            : Task.CompletedTask;
+
+    private double Percent(decimal value) =>
+        PriceCeiling <= PriceFloor
+            ? 0
+            : (double)((value - PriceFloor) / (PriceCeiling - PriceFloor) * 100m);
+}

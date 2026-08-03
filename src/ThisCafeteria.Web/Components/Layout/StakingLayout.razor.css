@@ -1,23 +1,55 @@
 .page {
+    background: var(--stake-bg-deep);
     position: relative;
     min-height: 100vh;
 }
 
+/* Transparent so the GlobalScene background scenario shows through; .page
+   above keeps the flat --stake-bg-deep ground behind the scene. z-index: 2
+   stacks the content over both the scene's under-content container (0) and
+   the roaming crew (1, see GlobalScene.razor.css) — text, buttons and
+   labels always paint over the robots, never the other way around. */
 main {
+    background: transparent;
     min-height: 100vh;
+    position: relative;
+    z-index: 2;
 }
 
 .public-main {
-    padding-top: 4.75rem;
+    padding-top: 3.325rem;
 }
 
 .yield-page-main {
-    padding-top: 4.75rem;
+    padding-top: 3.325rem;
+}
+
+@media (max-width: 760px) {
+    .yield-page-main {
+        padding-top: 2.42rem;
+    }
+}
+
+/* Procurement Lab, the Yield/staking intro, and the PixelHome hero reserve
+   header clearance themselves (see .procurement-lab's, .staking-intro's, and
+   .ph-hero's padding-top in their own stylesheets), the same
+   full-bleed-under-the-fixed-header treatment app.css gives
+   .editorial-hero/.journal-hero. Without this override, the outer padding-top
+   above leaves a gap that would keep the GlobalScene background scenario
+   from running beneath the transparent header. The gradient ground itself
+   now belongs to GlobalScene, shared by all three pages. */
+.public-page:has(.procurement-lab) .yield-page-main,
+.public-page:has(.staking-intro) .yield-page-main,
+.public-page:has(.ph-page) .yield-page-main {
+    padding-top: 0;
 }
 
 #blazor-error-ui {
-    color-scheme: light only;
+    /* See the matching comment in MainLayout.razor.css — same banner, same
+       reasoning: deliberately theme-invariant, color-scheme:light-only
+       removed since it blocked dark mode outright. */
     background: lightyellow;
+    color: #1f1a18;
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;

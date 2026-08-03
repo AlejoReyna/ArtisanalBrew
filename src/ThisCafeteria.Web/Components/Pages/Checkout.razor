@@ -5,13 +5,14 @@
 @inject ICartMutationClient CartMutationClient
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
-@inject IOptions<BlockchainNetworkOptions> ChainOptions
+@inject IChainRegistry ChainRegistry
+@inject ISelectedChainAccessor SelectedChainAccessor
 @inject IProfileService ProfileService
 @inject IOrderService OrderService
 @inject ICouponService CouponService
 @inject IOrderPricingService PricingService
 @inject IReceiptService ReceiptService
-@inject ICoffeeWeb3Service Web3Service
+@inject IMarketplacePaymentGateway PaymentGateway
 @inject NavigationManager Navigation
 @inject ILogger<Checkout> Logger
 @using System.ComponentModel.DataAnnotations
@@ -23,6 +24,7 @@
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Application.Configuration
 @using ThisCafeteria.Infrastructure.Identity
+@using ThisCafeteria.Web.Services.Blockchain
 @using ThisCafeteria.Web.Services.Cart
 @implements IAsyncDisposable
 
@@ -58,7 +60,7 @@
                 <p class="eyebrow">Payment confirmed</p>
                 <h1 class="checkout-success__title">Thank you.</h1>
                 <p class="checkout-success__lede">
-                    Your Ethereum Sepolia ETH payment was accepted. We are preparing your order for roast and dispatch.
+                    Your @SelectedChain.DisplayName @SelectedChain.NativeCurrencySymbol payment was accepted. We are preparing your order for roast and dispatch.
                 </p>
 
                 <dl class="checkout-success__receipt">
@@ -304,7 +306,7 @@
 
                     <section class="checkout-review__section">
                         <div class="checkout-review__box checkout-review__box--wallet">
-                            <img src="/images/eth_logo.png" alt="MetaMask" class="checkout-review__box-icon-img" width="24" height="24" />
+                            <img src="@Assets["images/eth_logo.webp"]" alt="MetaMask" class="checkout-review__box-icon-img" width="24" height="24" />
                             <div class="checkout-review__box-body">
                                 <p class="checkout-review__box-name">@ShortAddress(_walletAddress)</p>
                                 <p class="checkout-review__box-status">Connected</p>
@@ -336,7 +338,7 @@
                     </section>
 
                     <p class="checkout-review__disclaimer">
-                        This transaction is verified by smart contract on Ethereum Sepolia.<br />
+                        This transaction is verified by smart contract on @SelectedChain.DisplayName.<br />
                         By completing this purchase, you agree to our <a href="/terms">Terms of Service</a>.
                     </p>
 
@@ -378,10 +380,10 @@
 
                     <article class="checkout-payment-method is-visible" data-animate="fade-up">
                         <div class="checkout-payment-method__mark">
-                            <img src="/images/eth_logo.png" alt="" aria-hidden="true" width="72" height="72" />
+                            <img src="@Assets["images/eth_logo.webp"]" alt="" aria-hidden="true" width="72" height="72" />
                         </div>
                         <div class="checkout-payment-method__copy">
-                            <h2>Pay with ETH on Ethereum Sepolia</h2>
+                            <h2>Pay with @SelectedChain.NativeCurrencySymbol on @SelectedChain.DisplayName</h2>
                             <p>Secure decentralized transaction</p>
                         </div>
                     </article>
@@ -471,12 +473,12 @@
                                 class="button button--dark checkout-breakdown__cta"
                                 disabled="@_isPaying"
                                 @onclick="PayAsync">
-                            @(_isPaying ? "Processing…" : "Pay with ETH")
+                            @(_isPaying ? "Processing…" : $"Pay with {SelectedChain.NativeCurrencySymbol}")
                         </button>
 
                         @if (_txFlow is not null)
                         {
-                            <TxStepper Flow="_txFlow" ExplorerUrl="@_chain.ExplorerUrl" />
+                            <TxStepper Flow="_txFlow" ExplorerUrl="@SelectedChain.ExplorerTransactionTemplate.Replace("{0}", string.Empty)" />
                         }
                     </section>
 
@@ -544,7 +546,7 @@
     private string? _errorMessage;
     private string? _walletConnectError;
     private string? _walletAddress;
-    private BlockchainNetworkOptions _chain = new();
+    private ChainDefinition SelectedChain => SelectedChainAccessor.SelectedChain;
     private IJSObjectReference? _checkoutModule;
     private IJSObjectReference? _walletAuthModule;
     private string _orderReference = string.Empty;
@@ -569,7 +571,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _chain = ChainOptions.Value;
         await LoadCartAsync();
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -800,13 +801,13 @@
         new
         {
             expectedWalletAddress,
-            chainIdHex = _chain.ChainIdHex,
-            networkName = _chain.NetworkName,
-            rpcUrl = _chain.RpcUrl,
-            currencyName = _chain.CurrencyName,
-            currencySymbol = _chain.CurrencySymbol,
-            currencyDecimals = _chain.CurrencyDecimals,
-            explorerUrl = _chain.ExplorerUrl
+            chainIdHex = SelectedChain.EvmChainIdHex,
+            networkName = SelectedChain.DisplayName,
+            rpcUrl = SelectedChain.PublicRpcUrl,
+            currencyName = SelectedChain.NativeCurrencyName,
+            currencySymbol = SelectedChain.NativeCurrencySymbol,
+            currencyDecimals = SelectedChain.NativeCurrencyDecimals,
+            explorerUrl = SelectedChain.ExplorerTransactionTemplate.Replace("{0}", string.Empty)
         };
 
     private async Task PayAsync()
@@ -836,9 +837,22 @@
                 throw new InvalidOperationException("Your account is not linked to a wallet.");
             }
 
-            if (!IsConfiguredAddress(_chain.MarketplaceWallet))
+            if (SelectedChain.Family != ChainFamily.Evm || !SelectedChain.Capabilities.MarketplacePayment)
+            {
+                throw new InvalidOperationException("Checkout is not available on the selected network.");
+            }
+
+            if (!IsConfiguredAddress(SelectedChain.Deployment.LegacyPool))
             {
                 throw new InvalidOperationException("Marketplace wallet is not configured.");
+            }
+
+            // The order total is priced in USD-per-ETH today (EthUsdRate); until a per-chain native
+            // price feed exists, only ETH-native chains can safely convert that total to a payment
+            // amount. A BNB chain would otherwise be charged an ETH-priced amount of BNB.
+            if (!string.Equals(SelectedChain.NativeCurrencySymbol, "ETH", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Checkout pricing is not yet available in the selected network's native currency.");
             }
 
             var userProfileId = await ProfileService.EnsureProfileLinkedAsync(applicationUserId);
@@ -853,15 +867,15 @@
                 new
                 {
                     amountEth = _ethAmount.ToString("0.##################", CultureInfo.InvariantCulture),
-                    marketplaceWallet = _chain.MarketplaceWallet,
+                    marketplaceWallet = SelectedChain.Deployment.LegacyPool,
                     expectedWalletAddress = user.WalletAddress,
-                    chainIdHex = _chain.ChainIdHex,
-                    networkName = _chain.NetworkName,
-                    rpcUrl = _chain.RpcUrl,
-                    currencyName = _chain.CurrencyName,
-                    currencySymbol = _chain.CurrencySymbol,
-                    currencyDecimals = _chain.CurrencyDecimals,
-                    explorerUrl = _chain.ExplorerUrl
+                    chainIdHex = SelectedChain.EvmChainIdHex,
+                    networkName = SelectedChain.DisplayName,
+                    rpcUrl = SelectedChain.PublicRpcUrl,
+                    currencyName = SelectedChain.NativeCurrencyName,
+                    currencySymbol = SelectedChain.NativeCurrencySymbol,
+                    currencyDecimals = SelectedChain.NativeCurrencyDecimals,
+                    explorerUrl = SelectedChain.ExplorerTransactionTemplate.Replace("{0}", string.Empty)
                 });
 
             _txFlow = TxStepper.Model.Create("checkout");
@@ -879,8 +893,8 @@
                     await CartService.ToOrderItemsAsync(),
                     payment.FromAddress,
                     payment.TransactionHash,
-                    _chain.ChainId,
-                    _chain.NetworkName,
+                    SelectedChain.EvmChainId ?? 0,
+                    SelectedChain.DisplayName,
                     _ethAmount,
                     BuildExplorerTransactionUrl(payment.TransactionHash),
                     DateTime.UtcNow,
@@ -924,7 +938,7 @@
 
         for (var attempt = 1; attempt <= MaxConfirmationAttempts; attempt++)
         {
-            var result = await Web3Service.VerifyNativeEthPaymentAsync(transactionHash, fromAddress, _ethAmount);
+            var result = await PaymentGateway.VerifyNativePaymentAsync(SelectedChain.Key, transactionHash, fromAddress, _ethAmount);
 
             if (result.Status == TransactionVerificationStatus.Verified)
             {
@@ -1030,11 +1044,8 @@
         !string.IsNullOrWhiteSpace(address) &&
         !address.Equals("0x0000000000000000000000000000000000000000", StringComparison.OrdinalIgnoreCase);
 
-    private string BuildExplorerTransactionUrl(string transactionHash)
-    {
-        var explorerBase = _chain.ExplorerUrl.TrimEnd('/');
-        return $"{explorerBase}/tx/{transactionHash}";
-    }
+    private string BuildExplorerTransactionUrl(string transactionHash) =>
+        string.Format(SelectedChain.ExplorerTransactionTemplate, transactionHash);
 
     private static string ShortAddress(string? address)
     {

@@ -239,3 +239,97 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Dark-mode override. FaucetPanel only ever renders inside the on-chain wing
+   (YieldPanel/Profile), which is light by default and dark under the theme
+   toggle. Its light styling above is a deliberate "paper card" look distinct
+   from the rest of the page — kept as-is in light mode. This override only
+   swaps it to the roast palette so it doesn't look unstyled on a dark page;
+   it does not try to preserve the paper-card texture in dark mode. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .faucet-panel {
+        background: var(--stake-surface);
+        border-color: var(--stake-line);
+    }
+
+    :root:not([data-theme]) .faucet-panel__eyebrow,
+    :root:not([data-theme]) .faucet-panel__address-hint,
+    :root:not([data-theme]) .faucet-panel__card-note {
+        color: var(--stake-muted);
+    }
+
+    :root:not([data-theme]) .faucet-panel__title,
+    :root:not([data-theme]) .faucet-panel__refresh,
+    :root:not([data-theme]) .faucet-panel__card-head strong {
+        color: var(--stake-ink);
+    }
+
+    :root:not([data-theme]) .faucet-panel__lede {
+        color: var(--stake-muted);
+    }
+
+    :root:not([data-theme]) .faucet-panel__refresh {
+        border-color: var(--stake-line-strong);
+    }
+
+    :root:not([data-theme]) .faucet-panel__refresh:hover {
+        background: color-mix(in srgb, var(--stake-ink) 8%, transparent);
+        border-color: var(--stake-ink);
+    }
+
+    :root:not([data-theme]) .faucet-panel__card,
+    :root:not([data-theme]) .faucet-panel__logo {
+        background: var(--stake-surface-2);
+        border-color: var(--stake-line);
+        box-shadow: none;
+    }
+
+    :root:not([data-theme]) .faucet-panel__card:hover {
+        background: var(--stake-surface-2);
+        border-color: var(--stake-green-dim);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+}
+
+:root[data-theme="dark"] .faucet-panel {
+    background: var(--stake-surface);
+    border-color: var(--stake-line);
+}
+
+:root[data-theme="dark"] .faucet-panel__eyebrow,
+:root[data-theme="dark"] .faucet-panel__address-hint,
+:root[data-theme="dark"] .faucet-panel__card-note {
+    color: var(--stake-muted);
+}
+
+:root[data-theme="dark"] .faucet-panel__title,
+:root[data-theme="dark"] .faucet-panel__refresh,
+:root[data-theme="dark"] .faucet-panel__card-head strong {
+    color: var(--stake-ink);
+}
+
+:root[data-theme="dark"] .faucet-panel__lede {
+    color: var(--stake-muted);
+}
+
+:root[data-theme="dark"] .faucet-panel__refresh {
+    border-color: var(--stake-line-strong);
+}
+
+:root[data-theme="dark"] .faucet-panel__refresh:hover {
+    background: color-mix(in srgb, var(--stake-ink) 8%, transparent);
+    border-color: var(--stake-ink);
+}
+
+:root[data-theme="dark"] .faucet-panel__card,
+:root[data-theme="dark"] .faucet-panel__logo {
+    background: var(--stake-surface-2);
+    border-color: var(--stake-line);
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] .faucet-panel__card:hover {
+    background: var(--stake-surface-2);
+    border-color: var(--stake-green-dim);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}

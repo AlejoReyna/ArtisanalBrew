@@ -7,195 +7,401 @@
     transform: none;
 }
 
-.staking-connect {
-    background:
-        linear-gradient(90deg, rgba(143, 185, 155, 0.05) 0 1px, transparent 1px 100%),
-        linear-gradient(180deg, rgba(143, 185, 155, 0.04) 0 1px, transparent 1px 100%),
-        radial-gradient(circle at 75% 50%, rgba(143, 185, 155, 0.08) 0%, transparent 50%),
-        #110d0a;
-    background-size: 4rem 4rem, 4rem 4rem, 100% 100%, auto;
-    display: grid;
-    grid-template-columns: minmax(0, 50%) minmax(26rem, 50%);
-    gap: clamp(1rem, 3vw, 4rem);
-    min-height: calc(100vh - 4.75rem);
-    padding: 0 clamp(1.25rem, 3vw, 3rem);
-    align-items: stretch;
+/* Transparent ground: the GlobalScene background scenario (stars, planets,
+   badges) plus its drifting-coin staking layer now supply this intro's sky,
+   and an opaque background here would cover them. */
+.staking-intro {
+    display: flex;
+    isolation: isolate;
+    justify-content: center;
+    min-height: 100dvh;
     overflow: hidden;
+    /* Header clearance now lives here instead of on the outer .yield-page-main
+       padding-top (removed in StakingLayout.razor.css for this route), so the
+       fixed transparent header floats over the shared background scenario
+       instead of a gap that exposed .page/main's flat swatch. */
+    padding: calc(4.75rem + clamp(1.75rem, 5vh, 3.5rem)) clamp(1.25rem, 4vw, 3rem) 0;
+    position: relative;
 }
 
-.staking-connect__left {
-    position: relative;
+.staking-intro__inner {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(2rem, 4vh, 4rem) clamp(2rem, 3vw, 3rem);
-    z-index: 10;
+    max-width: 44rem;
+    position: relative;
+    width: 100%;
+    z-index: 1;
 }
 
-.staking-connect__bg-coin {
-    position: absolute;
-    top: 50%;
-    left: 45%;
-    width: 140%;
-    height: 140%;
-    transform: translate(-50%, -50%);
-    object-fit: contain;
-    z-index: -2;
-    animation: floatToken 8s ease-in-out infinite;
-    opacity: 0.8;
-    pointer-events: none;
-    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
-}
-
-@keyframes floatToken {
-    0% { transform: translate(-50%, -50%) translateY(0px); }
-    50% { transform: translate(-50%, -50%) translateY(-25px); }
-    100% { transform: translate(-50%, -50%) translateY(0px); }
-}
-
-.staking-connect__right {
+.staking-intro__hero {
+    align-items: center;
     display: flex;
+    flex: 0 0 auto;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(1rem, 2vh, 1.5rem) 0;
-    position: relative;
-    z-index: 10;
+    width: 100%;
 }
 
-.staking-connect__content {
-    align-items: flex-start;
+.staking-intro__title {
+    color: var(--stake-ink);
+    font-family: "Playfair Display", Georgia, serif;
+    /* Sized to run edge-to-edge of the 44rem intro column on one line — the
+       upper bound is what "Stake CAFE, earn COFFEE." measures at just inside
+       that width, so raising it further would break the line. */
+    font-size: clamp(1.95rem, 5.2vw, 3.5rem);
+    letter-spacing: -0.015em;
+    line-height: 1.06;
+    margin: 0;
+    text-align: center;
+}
+
+.staking-intro__row {
     display: flex;
     flex-direction: column;
-    min-height: 0;
+}
+
+.staking-intro__row--title {
+    align-items: center;
+    gap: 0;
+    width: 100%;
+}
+
+.staking-intro__subtitle {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0.7rem 0 0;
+    max-width: 34rem;
+    text-align: center;
+}
+
+.staking-intro__coins {
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(14rem, 31vh, 18rem);
+    padding-block: clamp(0.5rem, 1.5vh, 1rem);
     position: relative;
-    text-align: left;
 }
 
-.staking-connect__chain-wrapper {
-    margin-bottom: 2rem;
-    display: inline-block;
-    background: rgba(23, 19, 16, 0.6);
-    border: 1px solid rgba(244, 239, 230, 0.12);
-    border-radius: 999px;
-    backdrop-filter: blur(8px);
-}
-
-.staking-connect__content::before {
-    background: linear-gradient(180deg, rgba(143, 185, 155, 0), rgba(143, 185, 155, 0.5), rgba(143, 185, 155, 0));
-    content: "";
-    height: min(26rem, 68%);
-    left: 0;
-    opacity: 0.38;
+/* Cross-shaped pixel stars blinking at irregular stepped intervals. Only the
+   hero coin's own constellation remains here — the wide-field stars and the
+   drifting coins moved to GlobalScene.razor.css's staking layer. */
+.coffee-orbit__star {
+    animation: staking-space-star-blink var(--star-duration, 2.4s) steps(2, end) var(--star-delay, 0s) infinite;
+    background: var(--star-color, var(--stake-ink));
+    height: 3px;
     position: absolute;
-    top: 16%;
-    width: 1px;
+    width: var(--star-width, 11px);
 }
 
-.staking-connect__module {
-    display: grid;
-    gap: clamp(1rem, 2.2vh, 1.55rem);
-    max-width: 48rem;
-    padding-left: clamp(1.2rem, 2.4vw, 2.2rem);
+.coffee-orbit__star::after {
+    background: inherit;
+    content: "";
+    height: var(--star-width, 11px);
+    left: 4px;
+    position: absolute;
+    top: -4px;
+    width: 3px;
+}
+
+.coffee-orbit {
+    align-items: center;
+    animation: coffee-orbit-float 5.2s cubic-bezier(0.77, 0, 0.175, 1) 1s infinite alternate;
+    display: flex;
+    height: clamp(13rem, 28vh, 16rem);
+    justify-content: center;
     position: relative;
-    width: min(100%, 48rem);
+    width: min(100%, 22rem);
 }
 
-.staking-connect__module::before {
-    background: #8FB99B;
-    border-radius: 999px;
-    box-shadow: 0 0 0 5px rgba(143, 185, 155, 0.16), 0 0 14px rgba(143, 185, 155, 0.45);
-    content: "";
-    height: 0.5rem;
-    left: -0.25rem;
+.coffee-orbit__coin-scene {
+    animation: coffee-orbit-arrive 1.35s cubic-bezier(0.23, 1, 0.32, 1) 120ms both;
+    filter: drop-shadow(10px 13px 0 rgba(0, 0, 0, 0.34));
+    height: clamp(8.5rem, 20vw, 11rem);
+    perspective: 40rem;
+    width: clamp(8.5rem, 20vw, 11rem);
+}
+
+.coffee-orbit__coin3d {
+    animation: coffee-coin-flip 3.6s linear 1.55s infinite;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    width: 100%;
+}
+
+.coffee-orbit__coin-face,
+.coffee-orbit__coin-layer {
+    height: 100%;
+    image-rendering: pixelated;
+    inset: 0;
     position: absolute;
-    top: 0.45rem;
-    width: 0.5rem;
+    width: 100%;
 }
 
-.staking-connect__meta {
+.coffee-orbit__coin-face {
+    backface-visibility: hidden;
+    transform: translateZ(6px);
+}
+
+.coffee-orbit__coin-face--back {
+    transform: translateZ(-6px) rotateY(180deg);
+}
+
+/* darkened sprite slices stacked between the faces read as the coin's milled edge */
+.coffee-orbit__coin-layer {
+    background: url("images/coffee-coin-pixel.png") center / contain no-repeat;
+    filter: brightness(0.45);
+    transform: translateZ(calc(-6px + var(--layer) * 1.5px));
+}
+
+@keyframes coffee-coin-flip {
+    from {
+        transform: rotateX(14deg) rotateY(0deg);
+    }
+
+    to {
+        transform: rotateX(14deg) rotateY(360deg);
+    }
+}
+
+.coffee-orbit__star {
+    z-index: 1;
+}
+
+.coffee-orbit__star--one {
+    --star-color: var(--stake-amber);
+    --star-delay: -0.6s;
+    left: 18%;
+    top: 24%;
+}
+
+.coffee-orbit__star--two {
+    --star-color: var(--stake-green);
+    --star-delay: -1.4s;
+    right: 17%;
+    top: 38%;
+}
+
+.coffee-orbit__star--three {
+    --star-delay: -2s;
+    bottom: 20%;
+    left: 24%;
+}
+
+@keyframes coffee-orbit-arrive {
+    from {
+        opacity: 0;
+        transform: translateY(65dvh) scale(0.9);
+    }
+
+    82% {
+        opacity: 1;
+        transform: translateY(-0.75rem) scale(1.02);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes coffee-orbit-float {
+    from {
+        transform: translate3d(0, -4px, 0);
+    }
+
+    to {
+        transform: translate3d(0, 8px, 0);
+    }
+}
+
+@keyframes staking-space-star-blink {
+    0%,
+    45% {
+        opacity: 0.28;
+        transform: scale(0.72);
+    }
+
+    50%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .coffee-orbit,
+    .coffee-orbit__coin-scene,
+    .coffee-orbit__coin3d,
+    .coffee-orbit__star {
+        animation: none;
+    }
+}
+
+.staking-intro__error {
+    color: var(--stake-clay);
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+.staking-intro__actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 1.1rem;
+    justify-content: center;
+    width: 100%;
 }
 
-.staking-connect__meta span {
-    background: #1F1915;
-    border: 1px solid rgba(244, 239, 230, 0.14);
-    border-radius: 999px;
-    color: rgba(244, 239, 230, 0.62);
+.staking-intro__row--connect {
+    align-items: stretch;
+    gap: 0.65rem;
+}
+
+.staking-intro__description {
+    align-self: center;
+    gap: 1rem;
+    margin-top: clamp(1.5rem, 4vh, 2.5rem);
+    max-width: 100%;
+    padding-bottom: clamp(0.75rem, 2vh, 1.25rem);
+    width: min(100%, 32rem);
+}
+
+.staking-intro__faucet-title {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+    text-align: center;
+}
+
+.staking-intro__faucets {
+    display: flex;
+    gap: 0.7rem;
+    overflow: hidden;
+    width: 100%;
+}
+
+.staking-intro__faucet-link {
+    align-items: center;
+    color: var(--stake-ink);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    text-decoration: none;
+    transition: transform 160ms ease-out, opacity 160ms ease-out;
+}
+
+.staking-intro__description .staking-intro__faucet-link {
+    flex: 1 1 0;
+    gap: 0.45rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.staking-intro__faucet-link:hover {
+    opacity: 0.8;
+    transform: translateY(-1px);
+}
+
+.staking-intro__faucet-link:active {
+    transform: scale(0.98);
+}
+
+.staking-intro__faucet-logo {
+    align-items: center;
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
+    border-radius: 0.5rem;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 2rem;
+    justify-content: center;
+    overflow: hidden;
+    width: 2rem;
+}
+
+.staking-intro__faucet-logo img {
+    height: 1.35rem;
+    object-fit: contain;
+    width: 1.35rem;
+}
+
+.staking-intro__description .staking-intro__faucet-logo {
+    height: 1.75rem;
+    width: 1.75rem;
+}
+
+.staking-intro__description .staking-intro__faucet-logo img {
+    height: 1.15rem;
+    width: 1.15rem;
+}
+
+.staking-intro__faucet-logo--solana {
+    background: linear-gradient(135deg, #9945ff, #14f195);
+    border: 0;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 900;
+}
+
+.staking-intro__faucet-name {
+    display: -webkit-box;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.staking-intro__description .staking-intro__faucet-name {
+    font-size: 0.7rem;
+    line-height: 1.15;
+}
+
+.staking-intro__faucet-amount {
+    color: color-mix(in srgb, var(--stake-ink) 75%, transparent);
     font-family: var(--crypto-mono);
     font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
     line-height: 1;
-    padding: 0.42rem 0.62rem;
+}
+
+.staking-intro__cta {
+    background: var(--stake-ink);
+    border: 0;
+    border-radius: 0;
+    clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, 100% 3px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) 100%, 6px 100%, 6px calc(100% - 3px), 0 calc(100% - 3px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
+    color: var(--stake-bg-deep);
+    filter: drop-shadow(5px 5px 0 var(--stake-copper));
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    min-height: 3.15rem;
+    padding-inline: 2.25rem;
     text-transform: uppercase;
+    transition: background-color 160ms ease, color 160ms ease, filter 160ms ease, transform 160ms ease-out;
 }
 
-.staking-connect h1,
-.staking-connect h2 {
-    color: #F4EFE6;
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: clamp(2.45rem, 4.85vw, 4.55rem);
-    line-height: 1.05;
-    margin: 0;
-    max-width: 47rem;
-    background: linear-gradient(135deg, #FFF 0%, #D8C3A5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0px 4px 20px rgba(0, 0, 0, 0.4);
+@media (hover: hover) and (pointer: fine) {
+    .staking-intro__cta:hover:not(:disabled) {
+        background: var(--stake-amber);
+        color: var(--stake-bg-deep);
+        filter: drop-shadow(7px 7px 0 var(--stake-copper));
+        transform: translate(-2px, -2px);
+    }
 }
 
-.staking-connect .lede {
-    color: rgba(244, 239, 230, 0.72);
-    font-size: clamp(1rem, 1.75vw, 1.22rem);
-    line-height: 1.68;
-    margin: 0;
-    max-width: 43rem;
-}
-
-.staking-connect__content .button {
-    align-items: center;
-    border-radius: 999px;
-    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
-    display: inline-flex;
-    justify-content: center;
-    margin-left: clamp(1.2rem, 2.4vw, 2.2rem);
-    margin-top: clamp(1.25rem, 3vh, 2.25rem);
-    max-width: 34rem;
-    min-height: 3.9rem;
-    position: relative;
-    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    width: calc(100% - clamp(1.2rem, 2.4vw, 2.2rem));
-}
-
-.staking-connect__content .button--glow {
-    background: linear-gradient(135deg, #F4EFE6 0%, #E0D5B5 100%);
-    color: #110d0a;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    border: none;
-    box-shadow: 0 8px 32px rgba(244, 239, 230, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
-.staking-connect__content .button:hover:not(:disabled) {
-    box-shadow: 0 12px 40px rgba(244, 239, 230, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    transform: translateY(-2px) scale(1.02);
-}
-
-.staking-connect__content .button::after {
-    content: "→";
-    font-size: 1rem;
-    position: absolute;
-    right: 1.45rem;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: transform 250ms ease;
-}
-
-.staking-connect__content .button:hover:not(:disabled)::after {
-    transform: translate(4px, -50%);
+.staking-intro__cta:active:not(:disabled) {
+    filter: drop-shadow(2px 2px 0 var(--stake-copper));
+    transform: scale(0.97);
 }
 
 .yield-back {
@@ -227,10 +433,6 @@
     transform: translateX(-2px);
 }
 
-.yield-back--center {
-    margin: 1.5rem auto 0;
-}
-
 .yield-allocate-link:disabled {
     cursor: not-allowed;
     opacity: 0.48;
@@ -251,7 +453,7 @@
 
 .yield-hero {
     align-items: start;
-    border-bottom: 1px solid rgba(244, 239, 230, 0.14);
+    border-bottom: 1px solid color-mix(in srgb, var(--stake-ink) 14%, transparent);
     display: grid;
     gap: 1.5rem;
     grid-template-columns: 1fr;
@@ -274,7 +476,7 @@
 }
 
 .yield-hero h1 {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(2.6rem, 5.8vw, 7.8rem);
     font-weight: 500;
@@ -286,7 +488,7 @@
 }
 
 .yield-title-note {
-    color: rgba(244, 239, 230, 0.5);
+    color: color-mix(in srgb, var(--stake-ink) 50%, transparent);
     font-size: 0.68rem;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -303,10 +505,10 @@
 }
 
 .yield-apr-badge {
-    background: rgba(143, 185, 155, 0.14);
-    border: 1px solid rgba(143, 185, 155, 0.3);
+    background: var(--stake-green-dim);
+    border: 1px solid color-mix(in srgb, var(--stake-green) 30%, transparent);
     border-radius: 999px;
-    color: #8FB99B;
+    color: var(--stake-green);
     flex-shrink: 0;
     font-size: 0.74rem;
     font-weight: 800;
@@ -315,11 +517,6 @@
     white-space: nowrap;
 }
 
-.staking-connect__badge {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.1rem;
-}
 
 .yield-stat-row {
     display: grid;
@@ -328,7 +525,7 @@
 }
 
 .yield-card-balance {
-    color: rgba(244, 239, 230, 0.55);
+    color: color-mix(in srgb, var(--stake-ink) 55%, transparent);
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.05em;
@@ -337,7 +534,7 @@
 }
 
 .yield-card-balance strong {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-weight: 700;
     letter-spacing: 0;
     margin-left: 0.3rem;
@@ -345,8 +542,8 @@
 }
 
 .yield-config-card {
-    background: rgba(229, 192, 120, 0.1);
-    border: 1px solid rgba(229, 192, 120, 0.3);
+    background: color-mix(in srgb, var(--stake-amber) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stake-amber) 30%, transparent);
     border-radius: 12px;
     display: grid;
     gap: 0.35rem;
@@ -355,7 +552,7 @@
 }
 
 .yield-config-card__eyebrow {
-    color: #E5C078;
+    color: var(--stake-amber);
     font-size: 0.63rem;
     font-weight: 800;
     letter-spacing: 0.16em;
@@ -364,7 +561,7 @@
 }
 
 .yield-config-card__body {
-    color: #E5C078;
+    color: var(--stake-amber);
     font-size: 0.88rem;
     line-height: 1.6;
     margin: 0;
@@ -372,8 +569,8 @@
 
 .yield-faucet-cafe {
     align-items: center;
-    background: rgba(229, 192, 120, 0.1);
-    border: 1px solid rgba(229, 192, 120, 0.3);
+    background: color-mix(in srgb, var(--stake-amber) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stake-amber) 30%, transparent);
     border-radius: 12px;
     display: flex;
     flex-wrap: wrap;
@@ -389,7 +586,7 @@
 }
 
 .yield-faucet-cafe__eyebrow {
-    color: #E5C078;
+    color: var(--stake-amber);
     font-size: 0.63rem;
     font-weight: 800;
     letter-spacing: 0.16em;
@@ -398,19 +595,19 @@
 }
 
 .yield-faucet-cafe__title {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-size: 1.05rem;
     margin: 0;
 }
 
 .yield-faucet-cafe__desc {
-    color: rgba(244, 239, 230, 0.72);
+    color: color-mix(in srgb, var(--stake-ink) 72%, transparent);
     font-size: 0.85rem;
     margin: 0;
 }
 
 .yield-hero-lede {
-    color: rgba(244, 239, 230, 0.72);
+    color: color-mix(in srgb, var(--stake-ink) 72%, transparent);
     font-size: clamp(0.98rem, 1.5vw, 1.15rem);
     line-height: 1.72;
     margin: 0;
@@ -420,10 +617,10 @@
 /* ── State notes ── */
 
 .yield-config-note {
-    background: rgba(229, 192, 120, 0.1);
-    border: 1px solid rgba(229, 192, 120, 0.3);
+    background: color-mix(in srgb, var(--stake-amber) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stake-amber) 30%, transparent);
     border-radius: 6px;
-    color: #E5C078;
+    color: var(--stake-amber);
     font-size: 0.88rem;
     margin: 0;
     padding: 0.8rem 1rem;
@@ -439,22 +636,22 @@
 }
 
 .yield-sync-note {
-    background: rgba(143, 185, 155, 0.14);
-    border: 1px solid rgba(143, 185, 155, 0.28);
-    color: #8FB99B;
+    background: var(--stake-green-dim);
+    border: 1px solid color-mix(in srgb, var(--stake-green) 28%, transparent);
+    color: var(--stake-green);
 }
 
 .yield-empty-note {
-    background: rgba(244, 239, 230, 0.04);
-    border: 1px solid rgba(244, 239, 230, 0.1);
-    color: rgba(244, 239, 230, 0.6);
+    background: color-mix(in srgb, var(--stake-ink) 4%, transparent);
+    border: 1px solid var(--stake-line);
+    color: color-mix(in srgb, var(--stake-ink) 60%, transparent);
 }
 
 .yield-error-note {
     align-items: center;
-    background: rgba(229, 152, 128, 0.1);
-    border: 1px solid rgba(229, 152, 128, 0.32);
-    color: #E59880;
+    background: color-mix(in srgb, var(--stake-clay) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stake-clay) 32%, transparent);
+    color: var(--stake-clay);
     display: flex;
     gap: 1rem;
     justify-content: space-between;
@@ -480,117 +677,33 @@
     text-transform: uppercase;
 }
 
-/* ── Faucet ── */
 
-.staking-connect__faucet {
-    align-items: center;
-    align-self: stretch;
-    display: flex;
-    margin: 0;
-    max-width: none;
-    min-height: 0;
-}
 
-.staking-connect__faucet ::deep .faucet-panel {
-    align-content: center;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-    color: #171310;
-    gap: clamp(0.7rem, 1.25vh, 0.95rem);
-    height: 100%;
-    min-height: 0;
-    padding: clamp(1.1rem, 2.6vh, 2rem) clamp(1.25rem, 2vw, 2rem) clamp(0.45rem, 1vh, 0.85rem);
-    width: 100%;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__title,
-.staking-connect__faucet ::deep .faucet-panel__lede,
-.staking-connect__faucet ::deep .faucet-panel__eyebrow {
-    color: #171310;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__lede {
-    opacity: 0.75;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    color: #171310;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card:hover {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.1);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card-note {
-    color: rgba(23, 19, 16, 0.6);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card-amount {
-    color: #0d47a1;
-    font-weight: 700;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__list {
-    gap: clamp(0.65rem, 1.4vh, 0.9rem);
-    grid-template-columns: 1fr;
-    margin-top: clamp(0.25rem, 0.8vh, 0.55rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__eyebrow {
-    display: none;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__title {
-    font-size: clamp(1.45rem, 3.2vh, 1.95rem);
-    margin-bottom: clamp(0.35rem, 0.8vh, 0.5rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__lede {
-    font-size: clamp(0.78rem, 1.55vh, 0.95rem);
-    line-height: 1.42;
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card {
-    gap: clamp(0.25rem, 0.5vh, 0.4rem);
-    padding: clamp(0.58rem, 1.05vh, 0.82rem) clamp(0.85rem, 1.5vw, 1rem) clamp(0.62rem, 1.15vh, 0.86rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__logo {
-    height: clamp(1.6rem, 3.4vh, 2rem);
-    width: clamp(1.6rem, 3.4vh, 2rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__logo img {
-    height: clamp(1rem, 2.3vh, 1.3rem);
-    width: clamp(1rem, 2.3vh, 1.3rem);
-}
 
-.staking-connect__faucet ::deep .faucet-panel__card-note {
-    font-size: clamp(0.68rem, 1.35vh, 0.76rem);
-    line-height: 1.28;
-}
-
-.staking-connect__faucet ::deep .faucet-panel__card-cta {
-    padding-top: clamp(0.1rem, 0.5vh, 0.25rem);
-}
 
 .yield-faucet {
-    border: 1px solid rgba(244, 239, 230, 0.11);
+    border: 1px solid color-mix(in srgb, var(--stake-ink) 11%, transparent);
     border-radius: 12px;
     overflow: hidden;
 }
 
 .yield-faucet__summary {
     align-items: center;
-    background: #1F1915;
-    color: #F4EFE6;
+    background: var(--stake-surface);
+    color: var(--stake-ink);
     cursor: pointer;
     display: flex;
     font-size: 0.72rem;
@@ -609,14 +722,14 @@
 }
 
 .yield-faucet__summary:hover {
-    background: #2A211B;
+    background: var(--stake-surface-2);
 }
 
 .yield-faucet__summary-flag {
-    background: rgba(229, 192, 120, 0.12);
-    border: 1px solid rgba(229, 192, 120, 0.3);
+    background: var(--stake-amber-dim);
+    border: 1px solid color-mix(in srgb, var(--stake-amber) 30%, transparent);
     border-radius: 999px;
-    color: #E5C078;
+    color: var(--stake-amber);
     font-size: 0.58rem;
     padding: 0.18rem 0.55rem;
 }
@@ -633,7 +746,7 @@
 .yield-faucet ::deep .faucet-panel {
     border: 0;
     border-radius: 0;
-    border-top: 1px solid rgba(244, 239, 230, 0.09);
+    border-top: 1px solid color-mix(in srgb, var(--stake-ink) 9%, transparent);
 }
 
 /* ── Allocation cards ── */
@@ -645,8 +758,8 @@
 }
 
 .yield-asset-card {
-    background: #1F1915;
-    border: 1px solid rgba(244, 239, 230, 0.11);
+    background: var(--stake-surface);
+    border: 1px solid color-mix(in srgb, var(--stake-ink) 11%, transparent);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -685,9 +798,9 @@
 
 .yield-card-tag {
     background: rgba(23, 19, 16, 0.72);
-    border: 1px solid rgba(244, 239, 230, 0.18);
+    border: 1px solid var(--stake-line-strong);
     border-radius: 999px;
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-size: 0.63rem;
     font-weight: 800;
     letter-spacing: 0.13em;
@@ -708,7 +821,7 @@
 }
 
 .yield-card-eyebrow {
-    color: #C89B6A;
+    color: var(--stake-copper);
     font-size: 0.63rem;
     font-weight: 800;
     letter-spacing: 0.16em;
@@ -717,7 +830,7 @@
 }
 
 .yield-card-body h2 {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(1.55rem, 2.4vw, 2.1rem);
     font-weight: 500;
@@ -727,7 +840,7 @@
 }
 
 .yield-card-desc {
-    color: rgba(244, 239, 230, 0.68);
+    color: color-mix(in srgb, var(--stake-ink) 68%, transparent);
     font-size: 0.88rem;
     line-height: 1.65;
     margin: 0 0 0.3rem;
@@ -744,8 +857,8 @@
 
 .yield-input-group {
     align-items: center;
-    background: #100D0B;
-    border: 1px solid rgba(244, 239, 230, 0.18);
+    background: var(--stake-bg-deep);
+    border: 1px solid var(--stake-line-strong);
     border-radius: 999px;
     display: flex;
     flex: 1;
@@ -757,7 +870,7 @@
 .yield-token-input {
     background: transparent;
     border: 0;
-    color: #F4EFE6;
+    color: var(--stake-ink);
     flex: 1;
     font: 700 0.85rem/1 "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
     min-width: 0;
@@ -766,7 +879,7 @@
 }
 
 .yield-token-input::placeholder {
-    color: rgba(244, 239, 230, 0.36);
+    color: color-mix(in srgb, var(--stake-ink) 36%, transparent);
 }
 
 .yield-token-input:disabled {
@@ -775,10 +888,10 @@
 }
 
 .yield-max-btn {
-    background: rgba(244, 239, 230, 0.08);
+    background: color-mix(in srgb, var(--stake-ink) 8%, transparent);
     border: 0;
     border-radius: 999px;
-    color: #F4EFE6;
+    color: var(--stake-ink);
     cursor: pointer;
     flex-shrink: 0;
     font-size: 0.61rem;
@@ -789,7 +902,7 @@
 }
 
 .yield-max-btn:hover:not(:disabled) {
-    background: rgba(244, 239, 230, 0.15);
+    background: color-mix(in srgb, var(--stake-ink) 15%, transparent);
 }
 
 .yield-max-btn:disabled {
@@ -811,26 +924,26 @@
 }
 
 .yield-cta-btn--dark {
-    background: #F4EFE6;
-    border: 1px solid #F4EFE6;
-    color: #171310;
+    background: var(--stake-ink);
+    border: 1px solid var(--stake-ink);
+    color: var(--stake-bg);
 }
 
 .yield-cta-btn--dark:hover:not(:disabled) {
-    background: #8FB99B;
-    border-color: #8FB99B;
+    background: var(--stake-green);
+    border-color: var(--stake-green);
     transform: translateY(-1px);
 }
 
 .yield-cta-btn--outline {
     background: transparent;
-    border: 1.5px solid rgba(244, 239, 230, 0.35);
-    color: #F4EFE6;
+    border: 1.5px solid color-mix(in srgb, var(--stake-ink) 35%, transparent);
+    color: var(--stake-ink);
 }
 
 .yield-cta-btn--outline:hover:not(:disabled) {
-    background: rgba(244, 239, 230, 0.06);
-    border-color: #F4EFE6;
+    background: color-mix(in srgb, var(--stake-ink) 6%, transparent);
+    border-color: var(--stake-ink);
     transform: translateY(-1px);
 }
 
@@ -840,10 +953,10 @@
 }
 
 .yield-input-error {
-    background: rgba(229, 152, 128, 0.1);
-    border: 1px solid rgba(229, 152, 128, 0.32);
+    background: color-mix(in srgb, var(--stake-clay) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stake-clay) 32%, transparent);
     border-radius: 6px;
-    color: #E59880;
+    color: var(--stake-clay);
     font-size: 0.78rem;
     line-height: 1.5;
     margin: 0.6rem 0 0;
@@ -853,12 +966,12 @@
 /* ── Recent Activity ── */
 
 .yield-activity {
-    border-top: 1px solid rgba(244, 239, 230, 0.14);
+    border-top: 1px solid color-mix(in srgb, var(--stake-ink) 14%, transparent);
     padding-top: 1.25rem;
 }
 
 .yield-activity-heading {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-family: "Playfair Display", Georgia, serif;
     font-size: clamp(1.5rem, 2.5vw, 2rem);
     font-weight: 500;
@@ -873,7 +986,7 @@
 
 .yield-activity-row {
     align-items: center;
-    border-bottom: 1px solid rgba(244, 239, 230, 0.08);
+    border-bottom: 1px solid color-mix(in srgb, var(--stake-ink) 8%, transparent);
     display: grid;
     gap: 0.75rem;
     grid-template-columns: 2rem minmax(0, 1fr) minmax(1rem, 1fr) max-content max-content max-content;
@@ -892,13 +1005,13 @@
 }
 
 .yield-activity-icon--in {
-    background: rgba(143, 185, 155, 0.14);
-    color: #8FB99B;
+    background: var(--stake-green-dim);
+    color: var(--stake-green);
 }
 
 .yield-activity-icon--out {
-    background: rgba(200, 155, 106, 0.14);
-    color: #C89B6A;
+    background: var(--stake-copper-dim);
+    color: var(--stake-copper);
 }
 
 .yield-activity-icon svg {
@@ -919,19 +1032,19 @@
 }
 
 .yield-activity-label {
-    color: #F4EFE6;
+    color: var(--stake-ink);
     font-size: 0.87rem;
     font-weight: 700;
 }
 
 .yield-activity-time {
-    color: rgba(244, 239, 230, 0.5);
+    color: color-mix(in srgb, var(--stake-ink) 50%, transparent);
     font-size: 0.71rem;
     font-weight: 500;
 }
 
 .yield-activity-line {
-    border-bottom: 1px dotted rgba(244, 239, 230, 0.24);
+    border-bottom: 1px dotted color-mix(in srgb, var(--stake-ink) 24%, transparent);
     transform: translateY(0.08rem);
 }
 
@@ -943,19 +1056,19 @@
 }
 
 .yield-activity-amount--pos {
-    color: #8FB99B;
+    color: var(--stake-green);
 }
 
 .yield-activity-amount--neg {
-    color: rgba(244, 239, 230, 0.7);
+    color: color-mix(in srgb, var(--stake-ink) 70%, transparent);
 }
 
 .yield-confirmed-tag {
     align-items: center;
-    background: rgba(143, 185, 155, 0.14);
-    border: 1px solid rgba(143, 185, 155, 0.32);
+    background: var(--stake-green-dim);
+    border: 1px solid color-mix(in srgb, var(--stake-green) 32%, transparent);
     border-radius: 999px;
-    color: #8FB99B;
+    color: var(--stake-green);
     display: inline-flex;
     font-size: 0.59rem;
     font-weight: 800;
@@ -966,7 +1079,7 @@
 }
 
 .yield-confirmed-tag::before {
-    background: #8FB99B;
+    background: var(--stake-green);
     border-radius: 50%;
     content: "";
     display: inline-block;
@@ -975,7 +1088,7 @@
 }
 
 .yield-activity-tx {
-    color: #C89B6A;
+    color: var(--stake-copper);
     font-family: var(--crypto-mono);
     font-size: 0.7rem;
     font-weight: 600;
@@ -1008,23 +1121,6 @@
     .yield-allocation-grid {
         grid-template-columns: 1fr;
     }
-
-    .staking-connect {
-        grid-template-columns: 1fr;
-        min-height: auto;
-        padding: clamp(1.5rem, 3vw, 2rem);
-        overflow: visible;
-    }
-
-    .staking-connect__faucet {
-        margin-top: 2rem;
-    }
-
-    .staking-connect__faucet ::deep .faucet-panel {
-        border: 1px solid rgba(244, 239, 230, 0.11);
-        border-radius: 12px;
-        height: auto;
-    }
 }
 
 @media (max-width: 640px) {
@@ -1054,19 +1150,722 @@
 }
  .yield-liquid-summary {
     align-items: start;
-    background: #1f1915;
-    border: 1px solid rgba(143,185,155,.32);
+    background: var(--stake-surface);
+    border: 1px solid color-mix(in srgb, var(--stake-green) 32%, transparent);
     border-radius: 12px;
     display: grid;
     gap: 1.25rem;
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 1.3fr);
     padding: 1.25rem 1.4rem;
 }
-.yield-liquid-summary h2 { color: #f4efe6; font-family: "Playfair Display", Georgia, serif; font-weight: 500; margin: .2rem 0 .45rem; }
+.yield-liquid-summary h2 { color: var(--stake-ink); font-family: "Playfair Display", Georgia, serif; font-weight: 500; margin: .2rem 0 .45rem; }
 .yield-liquid-summary__stats { display: grid; gap: .65rem; grid-template-columns: repeat(2,minmax(0,1fr)); margin: 0; }
-.yield-liquid-summary__stats div { background: rgba(143,185,155,.08); border-radius: 8px; padding: .7rem .8rem; }
-.yield-liquid-summary__stats dt { color: rgba(244,239,230,.55); font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.yield-liquid-summary__stats dd { color: #f4efe6; font-family: var(--crypto-mono); margin: .3rem 0 0; }
+.yield-liquid-summary__stats div { background: color-mix(in srgb, var(--stake-green) 8%, transparent); border-radius: 8px; padding: .7rem .8rem; }
+.yield-liquid-summary__stats dt { color: color-mix(in srgb, var(--stake-ink) 55%, transparent); font-size: .62rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.yield-liquid-summary__stats dd { color: var(--stake-ink); font-family: var(--crypto-mono); margin: .3rem 0 0; }
 .yield-liquid-summary__actions { align-items: center; display: flex; flex-wrap: wrap; gap: .55rem; grid-column: 1 / -1; }
-.yield-liquid-summary__actions .yield-token-input { border: 1px solid rgba(244,239,230,.18); border-radius: 999px; min-width: 9rem; padding: .7rem .85rem; }
+.yield-liquid-summary__actions .yield-token-input { border: 1px solid var(--stake-line-strong); border-radius: 999px; min-width: 9rem; padding: .7rem .85rem; }
 @media (max-width: 800px) { .yield-liquid-summary { grid-template-columns: 1fr; } }
+
+/* ── Connected liquid-staking dashboard ───────────────────────────────────
+   Profile / ProcurementLab pixel furniture: square corners, offset shadows,
+   Press Start 2P headings, frosted backdrop. The 3-column yield-studio grid
+   was replaced by a stacked layout: hero → rail → panels → activity. */
+.yield-dashboard--liquid {
+    background: transparent;
+    display: block;
+    position: relative;
+}
+
+/* Frosted backdrop — same technique as Profile.razor.css. */
+.yield-dashboard--liquid::before {
+    backdrop-filter: blur(22px) saturate(118%);
+    -webkit-backdrop-filter: blur(22px) saturate(118%);
+    background:
+        radial-gradient(ellipse 85% 60% at 50% 0%, rgba(16, 13, 11, 0.5), transparent 78%),
+        rgba(16, 13, 11, 0.62);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: fixed;
+    z-index: -1;
+}
+
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+    .yield-dashboard--liquid::before {
+        background: rgba(16, 13, 11, 0.93);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .yield-dashboard--liquid::before {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: var(--stake-bg-deep);
+    }
+}
+
+.yield-main--liquid {
+    align-content: start;
+    display: grid;
+    gap: 0.9rem;
+    margin: 0 auto;
+    max-width: 72rem;
+    padding: clamp(1rem, 2.2vw, 1.75rem) clamp(1rem, 4vw, 3.5rem) 4rem;
+    position: relative;
+    width: 100%;
+}
+
+/* ── Command bar ─────────────────────────────────────────────────────── */
+.yield-commandbar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line);
+    column-gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    min-height: 2.6rem;
+    padding-bottom: 0.75rem;
+    row-gap: 0.5rem;
+}
+
+.yield-commandbar__network,
+.yield-commandbar__nav,
+.yield-commandbar__nav a,
+.yield-commandbar__nav button,
+.yield-live-status {
+    align-items: center;
+    display: flex;
+}
+
+.yield-commandbar__network {
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.yield-commandbar__network ::deep .chain-selector {
+    min-width: min(17rem, 56vw);
+}
+
+.yield-live-status {
+    color: var(--stake-green);
+    font: 700 0.6rem/1 var(--crypto-mono);
+    gap: 0.4rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.yield-live-status > span {
+    background: var(--stake-green);
+    box-shadow: 0 0 0 3px var(--stake-green-dim);
+    height: 0.35rem;
+    width: 0.35rem;
+}
+
+.yield-commandbar__nav {
+    gap: 1.2rem;
+}
+
+.yield-commandbar__nav a,
+.yield-commandbar__nav button {
+    background: none;
+    border: 0;
+    color: var(--stake-muted);
+    cursor: pointer;
+    font: 700 0.62rem/1 var(--crypto-mono);
+    gap: 0.35rem;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .yield-commandbar__nav a:hover,
+    .yield-commandbar__nav button:hover {
+        color: var(--stake-ink);
+    }
+}
+
+/* ── Identity hero ───────────────────────────────────────────────────── */
+.yd-hero {
+    align-items: center;
+    column-gap: clamp(1rem, 2.5vw, 1.6rem);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-bottom: 0.25rem;
+}
+
+/* ── 3D Golden Coin avatar ───────────────────────────────────────────── */
+.yd-hero__coin {
+    flex: none;
+    filter: drop-shadow(6px 8px 0 rgba(0, 0, 0, 0.36))
+            drop-shadow(0 0 18px rgba(229, 192, 120, 0.35));
+    height: clamp(4.5rem, 9vw, 6.5rem);
+    perspective: 32rem;
+    width: clamp(4.5rem, 9vw, 6.5rem);
+}
+
+.yd-coin-scene {
+    height: 100%;
+    width: 100%;
+}
+
+.yd-coin3d {
+    animation: yd-coin-turn 4.6s linear infinite;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    width: 100%;
+}
+
+.yd-coin-face,
+.yd-coin-layer {
+    height: 100%;
+    image-rendering: pixelated;
+    inset: 0;
+    position: absolute;
+    width: 100%;
+}
+
+.yd-coin-face {
+    backface-visibility: hidden;
+    transform: translateZ(5px);
+}
+
+.yd-coin-face--back {
+    transform: translateZ(-5px) rotateY(180deg);
+}
+
+.yd-coin-layer {
+    background: url("images/coffee-coin-pixel.png") center / contain no-repeat;
+    filter: brightness(0.42);
+    image-rendering: pixelated;
+    transform: translateZ(calc(-5px + var(--layer) * 1.25px));
+}
+
+@keyframes yd-coin-turn {
+    from { transform: rotateX(12deg) rotateY(0deg); }
+    to { transform: rotateX(12deg) rotateY(-360deg); }
+}
+
+.yd-hero__body {
+    min-width: 0;
+}
+
+.yd-hero__eyebrow {
+    color: var(--stake-green);
+    font: 700 0.62rem/1.2 var(--crypto-mono);
+    letter-spacing: 0.16em;
+    margin: 0 0 0.5rem;
+    text-transform: uppercase;
+}
+
+.yd-hero__title-row {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+}
+
+.yd-hero__title-row h1 {
+    color: var(--stake-ink);
+    font: 400 clamp(1rem, 2.6vw, 1.65rem)/1.35 'Press Start 2P', var(--crypto-mono);
+    letter-spacing: 0.04em;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.yd-apr-badge {
+    background: var(--stake-green-dim);
+    border: 1px solid color-mix(in srgb, var(--stake-green) 30%, transparent);
+    color: var(--stake-green);
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.55rem;
+    white-space: nowrap;
+}
+
+.yd-hero__position {
+    align-items: baseline;
+    display: flex;
+    gap: 0.55rem;
+    margin-top: 0.75rem;
+}
+
+.yd-hero__balance {
+    color: var(--stake-amber);
+    font: 500 clamp(2rem, 4vw, 3.2rem)/0.9 var(--font-display);
+    letter-spacing: -0.04em;
+}
+
+.yd-hero__unit {
+    color: var(--stake-muted);
+    font: 700 0.66rem/1 var(--crypto-mono);
+    letter-spacing: 0.12em;
+}
+
+/* ── KPI Rail ────────────────────────────────────────────────────────── */
+.yd-rail {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.yd-rail__cell {
+    align-items: center;
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.6rem;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+}
+
+.yd-rail__k {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    min-width: 0;
+}
+
+.yd-rail__v {
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.76rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.yd-rail__v--num {
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+/* ── Panels ──────────────────────────────────────────────────────────── */
+.yd-panel {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+    padding: 1rem 1.1rem 1.15rem;
+}
+
+.yd-panel__bar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.9rem;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
+}
+
+.yd-panel h2 {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
+    margin: 0;
+}
+
+.yd-panel__count {
+    color: var(--stake-green);
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+.yd-panel__desc {
+    color: var(--stake-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: -0.25rem 0 1rem;
+}
+
+/* ── Metrics ─────────────────────────────────────────────────────────── */
+.yd-metrics {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    margin: 0;
+}
+
+.yd-metrics__cell {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
+    padding: 0.7rem 0.85rem;
+}
+
+.yd-metrics__cell dt {
+    color: var(--stake-faint);
+    font: 700 0.59rem/1.2 var(--crypto-mono);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.yd-metrics__cell dd {
+    color: var(--stake-ink);
+    font: 600 1rem/1.2 var(--font-sans);
+    margin: 0.4rem 0 0;
+}
+
+.yd-metrics__cell dd small {
+    color: var(--stake-faint);
+    font-size: 0.6rem;
+}
+
+.yd-metrics__cell--reward dd {
+    color: var(--stake-green);
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: 0.74rem;
+    font-weight: 400;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────── */
+.yd-actions-grid {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.yd-action {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
+    display: grid;
+    gap: 0.75rem;
+    padding: clamp(0.85rem, 1.5vw, 1.1rem);
+}
+
+.yd-action__label {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+}
+
+.yd-action__label > span {
+    color: var(--stake-ink);
+    font: 600 0.88rem/1 var(--font-sans);
+}
+
+.yd-action__label small {
+    color: var(--stake-faint);
+    font: 500 0.58rem/1.2 var(--crypto-mono);
+}
+
+.yd-action__input {
+    align-items: center;
+    background: var(--stake-bg-deep);
+    border: 1px solid var(--stake-line-strong);
+    display: flex;
+    min-height: 3rem;
+    padding: 0 0.85rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.yd-action__input:focus-within {
+    border-color: var(--stake-green);
+    box-shadow: 0 0 0 3px var(--stake-green-dim);
+}
+
+.yd-action__input .yield-token-input {
+    font-family: var(--crypto-mono);
+    font-size: 0.95rem;
+    padding: 0;
+}
+
+.yd-action__input > span {
+    color: var(--stake-faint);
+    font: 700 0.61rem/1 var(--crypto-mono);
+    letter-spacing: 0.08em;
+}
+
+/* Buttons — pixel furniture: no border-radius, offset shadow on hover. */
+.yd-btn {
+    border-radius: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    min-height: 2.8rem;
+    padding: 0.62rem 1.35rem;
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+    white-space: nowrap;
+    width: 100%;
+}
+
+.yd-btn--dark {
+    background: var(--stake-ink);
+    border: 1px solid var(--stake-ink);
+    color: var(--stake-bg);
+}
+
+.yd-btn--dark:hover:not(:disabled) {
+    background: var(--stake-amber);
+    border-color: var(--stake-amber);
+    box-shadow: 4px 4px 0 var(--stake-copper-dim);
+    color: var(--stake-bg-deep);
+    transform: translate(-2px, -2px);
+}
+
+.yd-btn--outline {
+    background: transparent;
+    border: 1.5px solid color-mix(in srgb, var(--stake-ink) 35%, transparent);
+    color: var(--stake-ink);
+}
+
+.yd-btn--outline:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--stake-ink) 6%, transparent);
+    border-color: var(--stake-ink);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+    transform: translate(-2px, -2px);
+}
+
+.yd-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+}
+
+.yd-btn:active:not(:disabled),
+.yd-claim:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+/* Claim rewards strip at the bottom of the actions panel. */
+.yd-claim {
+    align-items: center;
+    background: var(--stake-green-dim);
+    border: 0;
+    border-top: 1px solid color-mix(in srgb, var(--stake-green) 25%, transparent);
+    color: var(--stake-green);
+    cursor: pointer;
+    display: grid;
+    font-family: var(--crypto-mono);
+    gap: 0.65rem;
+    grid-template-columns: auto 1fr auto;
+    margin-top: 0.55rem;
+    padding: 1rem clamp(0.85rem, 1.5vw, 1.1rem);
+    text-align: left;
+    transition: background-color 160ms ease, opacity 160ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.yd-claim > span:first-child {
+    font-size: 0.61rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.yd-claim strong {
+    font-family: 'Press Start 2P', var(--crypto-mono);
+    font-size: 0.6rem;
+    font-weight: 400;
+    justify-self: end;
+}
+
+.yd-claim:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .yd-claim:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--stake-green) 22%, transparent);
+    }
+}
+
+/* ── Activity ────────────────────────────────────────────────────────── */
+/* The activity section is now a yd-panel — its heading/count sit inside
+   .yd-panel__bar. The existing yield-activity-* row classes still style
+   the inner transaction rows. */
+.yd-panel.yield-activity {
+    border-top: 0;
+    padding-top: 1rem;
+}
+
+.yield-activity-heading {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
+    margin: 0 0 1rem;
+}
+
+/* Keep existing yield-faucet, yield-config-card, yield-allocation-grid
+   (legacy) and yield-activity-row styles functional — they still render
+   inside the new dashboard layout. Minor squared-off overrides follow. */
+.yield-main--liquid .yield-config-card {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-faucet {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-faucet__summary {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-faucet-cafe {
+    background: color-mix(in srgb, var(--stake-amber) 7%, transparent);
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-config-card__body {
+    align-self: center;
+    margin: 1.5rem;
+}
+
+.yield-main--liquid .yield-asset-card {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-cta-btn {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-input-group {
+    border-radius: 0;
+}
+
+.yield-main--liquid .yield-max-btn {
+    border-radius: 0;
+}
+
+@keyframes yield-staked-token-turn {
+    from { transform: rotateX(14deg) rotateY(0deg); }
+    to { transform: rotateX(14deg) rotateY(-360deg); }
+}
+
+@keyframes yield-token-float {
+    from { transform: translate3d(0, -4px, 0); }
+    to { transform: translate3d(0, 7px, 0); }
+}
+
+@keyframes yield-staked-bean-chain {
+    0%, 26% {
+        background: #627eea;
+        filter: drop-shadow(0 0 5px rgba(98, 126, 234, 0.8));
+    }
+    34%, 59% {
+        background: #17dacb;
+        filter: drop-shadow(0 0 5px rgba(23, 218, 203, 0.8));
+    }
+    67%, 92% {
+        background: #f0b90b;
+        filter: drop-shadow(0 0 5px rgba(240, 185, 11, 0.8));
+    }
+    100% {
+        background: #627eea;
+        filter: drop-shadow(0 0 5px rgba(98, 126, 234, 0.8));
+    }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+    .yield-main--liquid {
+        padding: 1rem 0.75rem 3rem;
+    }
+
+    .yield-commandbar__nav a:first-child,
+    .yield-live-status {
+        display: none;
+    }
+
+    .yd-hero {
+        column-gap: 0.8rem;
+    }
+
+    .yd-hero__coin {
+        height: clamp(3.5rem, 14vw, 4.5rem);
+        width: clamp(3.5rem, 14vw, 4.5rem);
+    }
+
+    .yd-hero__title-row h1 {
+        font-size: clamp(0.8rem, 3.5vw, 1rem);
+    }
+
+    .yd-hero__balance {
+        font-size: clamp(1.6rem, 8vw, 2.2rem);
+    }
+
+    .yd-rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .yd-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .yd-action__label {
+        align-items: start;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .yd-claim {
+        grid-template-columns: 1fr auto;
+    }
+
+    .yd-claim strong {
+        display: none;
+    }
+
+    .yield-allocation-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .yield-activity-row {
+        gap: 0.45rem 0.7rem;
+        grid-template-columns: 2rem 1fr max-content max-content;
+        padding: 0.75rem 0;
+    }
+
+    .yield-activity-line {
+        display: none;
+    }
+
+    .yield-activity-tx {
+        grid-column: 3 / 5;
+        justify-self: end;
+    }
+}
+
+@media (max-width: 440px) {
+    .yield-commandbar__network ::deep .chain-selector {
+        min-width: 0;
+    }
+
+    .yield-commandbar__nav {
+        gap: 0.9rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .yd-coin3d {
+        animation: none;
+        transform: rotateX(12deg) rotateY(-18deg);
+    }
+
+    .yield-commandbar__nav a,
+    .yield-commandbar__nav button,
+    .yd-btn,
+    .yd-claim {
+        transition: none;
+    }
+
+    .yield-staked-orbit,
+    .yield-staked-token,
+    .yield-staked-token__bean {
+        animation: none;
+    }
+
+    .yield-staked-token {
+        transform: rotateX(14deg) rotateY(-18deg);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .yd-action {
+        background: var(--stake-surface);
+    }
+}

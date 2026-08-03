@@ -69,6 +69,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Capabilities.WalletLogin.Should().BeTrue();
             deployed.Capabilities.LiquidStaking.Should().BeTrue();
             deployed.SolanaCluster.Should().Be("devnet");
+            deployed.IconAsset.Should().Be("/images/solana_logo.svg");
         }
         finally
         {
@@ -91,6 +92,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Enabled.Should().BeTrue();
             deployed.EvmChainId.Should().Be(97);
             deployed.EvmChainIdHex.Should().Be("0x61");
+            deployed.IconAsset.Should().Be("/images/bnb_logo.svg");
             deployed.PublicRpcUrl.Should().Be("https://97.rpc.thirdweb.com");
             deployed.Deployment.LiquidVault.Should().Be(Address('A'));
             deployed.Deployment.AgenticEscrow.Should().Be(Address('E'));
@@ -102,6 +104,7 @@ public sealed class BlockchainManifestLoaderTests
             deployed.Capabilities.AgenticCommerce.Should().BeTrue();
             deployed.Capabilities.AgenticSessionPayments.Should().BeTrue();
             deployed.Deployment.ModularAccountFactory.Should().Be(Address('M'));
+            deployed.Deployment.ModularEntryPoint.Should().Be(Address('Q'));
             deployed.Deployment.DelegationManager.Should().Be(Address('D'));
             deployed.Deployment.HybridDeleGatorImplementation.Should().Be(Address('H'));
             deployed.Deployment.AllowedTargetsEnforcer.Should().Be(Address('1'));
@@ -120,6 +123,173 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
+    public void ReadsMarketplacePaymentFromTheManifestInsteadOfHardcodingIt()
+    {
+        // Manifest is the single source of truth: with the flag off (the WriteEvmManifest default)
+        // the capability is off even though the escrow address is present...
+        var offPath = WriteEvmManifest();
+        // ...and with the flag on plus the required escrow address, the capability lights up.
+        var onPath = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(onPath, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true));
+        try
+        {
+            var off = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), offPath, null)).GetRequired("bsc-testnet");
+            off.Capabilities.MarketplacePayment.Should().BeFalse();
+
+            var on = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), onPath, null)).GetRequired("bsc-testnet");
+            on.Capabilities.MarketplacePayment.Should().BeTrue();
+            on.Deployment.AgenticEscrow.Should().Be(Address('E'));
+        }
+        finally
+        {
+            File.Delete(offPath);
+            File.Delete(onPath);
+        }
+    }
+
+    [Fact]
+    public void RejectsAMarketplacePaymentManifestThatOmitsTheEscrowDeployment()
+    {
+        // Inconsistent manifest: marketplacePayment on, but no erc8183Escrow address to settle against.
+        // Validation must fail closed rather than advertise a capability with no contract behind it.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true, includeEscrow: false));
+        try
+        {
+            var action = () => new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null));
+            action.Should().Throw<InvalidOperationException>().WithMessage("*marketplace payment*");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ReadsLegacyPoolFromTheEvmManifest()
+    {
+        var path = WriteEvmManifest();
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", legacyPool: Address('L')));
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+            deployed.Deployment.LegacyPool.Should().Be(Address('L'));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void AllowsMarketplacePaymentBackedByALegacyPoolAloneWithNoEscrow()
+    {
+        // The OR branch of the settlement-venue rule: a legacy-pool-only manifest (no escrow)
+        // must still validate, matching the native-transfer checkout rail.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", marketplacePayment: true, includeEscrow: false, legacyPool: Address('L')));
+        try
+        {
+            var deployed = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null)).GetRequired("bsc-testnet");
+
+            deployed.Capabilities.MarketplacePayment.Should().BeTrue();
+            deployed.Deployment.LegacyPool.Should().Be(Address('L'));
+            deployed.Deployment.AgenticEscrow.Should().BeEmpty();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void RejectsAnAgenticSessionPaymentsManifestThatOmitsTheModularStack()
+    {
+        // Inconsistent manifest: agenticSessionPayments on (the WriteEvmManifest default), but no
+        // DelegationManager/HybridDeleGator deployment for a signed delegation to redeem against.
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", includeModularStack: false));
+        try
+        {
+            var action = () => new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null));
+            action.Should().Throw<InvalidOperationException>().WithMessage("*agentic session payments*");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void LeavesBundlerRpcUrlUnsetWhenTheManifestOmitsIt()
+    {
+        var path = WriteEvmManifest();
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+            deployed.BundlerRpcUrl.Should().BeNullOrEmpty();
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void ReadsBundlerRpcUrlFromTheManifestRootWhenPresent()
+    {
+        const string bundlerUrl = "https://bundler.test/rpc";
+        var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com", bundlerUrl));
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+            deployed.BundlerRpcUrl.Should().Be(bundlerUrl);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void BundlerRpcUrlOverride_WinsOverTheManifestAndIsKeyedPerChain()
+    {
+        var path = WriteEvmManifest();
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), path, null);
+            // Only bsc-testnet's override variable is set - other chains must be untouched.
+            var overridden = BlockchainManifestLoader.ApplyBundlerRpcUrlOverrides(options, name =>
+                name == "ARTISANALBREW_BUNDLER_RPC_URL__BSC_TESTNET" ? "https://api.pimlico.io/v2/bsc-testnet/rpc?apikey=secret" : null);
+            var registry = new ChainRegistry(overridden);
+
+            registry.GetRequired("bsc-testnet").BundlerRpcUrl.Should().Be("https://api.pimlico.io/v2/bsc-testnet/rpc?apikey=secret");
+            registry.All.Where(c => c.Key != "bsc-testnet").Should().OnlyContain(c => string.IsNullOrEmpty(c.BundlerRpcUrl));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void BundlerRpcUrlOverride_LeavesChainsUnsetWhenNoEnvironmentVariableMatches()
+    {
+        var options = BlockchainOptions.CreateDefaults();
+
+        var overridden = BlockchainManifestLoader.ApplyBundlerRpcUrlOverrides(options, _ => null);
+
+        overridden.Chains.Should().OnlyContain(c => string.IsNullOrEmpty(c.BundlerRpcUrl));
+    }
+
+    [Fact]
     public void LoadsMultipleEvmDeploymentManifestsForOneApplication()
     {
         var bscPath = WriteEvmManifest();
@@ -131,8 +301,10 @@ public sealed class BlockchainManifestLoaderTests
             var registry = new ChainRegistry(options);
 
             registry.GetRequired("bsc-testnet").EvmChainId.Should().Be(97);
+            registry.GetRequired("bsc-testnet").IconAsset.Should().Be("/images/bnb_logo.svg");
             registry.GetRequired("ethereum-sepolia").EvmChainId.Should().Be(11155111);
             registry.GetRequired("ethereum-sepolia").PublicRpcUrl.Should().Be("https://ethereum-sepolia-rpc.publicnode.com");
+            registry.GetRequired("ethereum-sepolia").IconAsset.Should().Be("/images/eth_logo.png");
         }
         finally
         {
@@ -141,7 +313,7 @@ public sealed class BlockchainManifestLoaderTests
         }
     }
 
-    private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899")
+    private static string WriteManifest(int cafeDecimals, int stCafeDecimals, int coffeeDecimals, string cluster = "localnet", string chainKey = "solana-localnet", string rpcUrl = "http://127.0.0.1:8899", bool faucet = false)
     {
         var path = Path.Combine(Path.GetTempPath(), $"artisanalbrew-solana-manifest-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, $$"""
@@ -164,10 +336,33 @@ public sealed class BlockchainManifestLoaderTests
           "token2022Program": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
           "cafeDecimals": {{cafeDecimals}},
           "stCafeDecimals": {{stCafeDecimals}},
-          "coffeeDecimals": {{coffeeDecimals}}
+          "coffeeDecimals": {{coffeeDecimals}},
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": {{(faucet ? "true" : "false")}} }
         }
         """);
         return path;
+    }
+
+    [Fact]
+    public void ReadsTheFaucetCapabilityFromTheSolanaManifestInsteadOfHardcodingItOff()
+    {
+        // Off by default (no flag / flag false), on when the manifest declares it. The CAFE mint and
+        // administrator authority a devnet mint needs are always present in a valid Solana manifest.
+        var offPath = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com");
+        var onPath = WriteManifest(9, 9, 9, "devnet", "solana-devnet", "https://api.devnet.solana.com", faucet: true);
+        try
+        {
+            var off = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, offPath)).GetRequired("solana-devnet");
+            off.Capabilities.Faucet.Should().BeFalse();
+
+            var on = new ChainRegistry(BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), null, onPath)).GetRequired("solana-devnet");
+            on.Capabilities.Faucet.Should().BeTrue();
+        }
+        finally
+        {
+            File.Delete(offPath);
+            File.Delete(onPath);
+        }
     }
 
     [Fact]
@@ -213,13 +408,14 @@ public sealed class BlockchainManifestLoaderTests
         return path;
     }
 
-    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl) =>
+    private static string EvmManifestJson(string chainKey, int chainId, string rpcUrl, string? bundlerRpcUrl = null, bool marketplacePayment = false, bool includeEscrow = true, string? legacyPool = null, bool includeModularStack = true) =>
         $$"""
         {
           "schemaVersion": 1,
           "chainKey": "{{chainKey}}",
           "chainId": {{chainId}},
           "rpcUrl": "{{rpcUrl}}",
+          {{(bundlerRpcUrl is null ? "" : $"\"bundlerRpcUrl\": \"{bundlerRpcUrl}\",")}}
           "displayName": "Test Network",
           "nativeCurrency": { "name": "BNB", "symbol": "tBNB", "decimals": 18 },
           "addresses": {
@@ -227,13 +423,15 @@ public sealed class BlockchainManifestLoaderTests
             "coffee": "{{Address('B')}}",
             "liquidVault": "{{Address('A')}}",
             "faucet": "{{Address('F')}}",
-            "erc8183Escrow": "{{Address('E')}}",
+            {{(includeEscrow ? $"\"erc8183Escrow\": \"{Address('E')}\"," : "")}}
+            {{(legacyPool is null ? "" : $"\"legacyPool\": \"{legacyPool}\",")}}
             "entryPoint": "{{Address('P')}}",
             "erc8004Registry": "{{Address('R')}}",
             "erc7683Resolver": "{{Address('S')}}",
             "modularSimpleFactory": "{{Address('M')}}",
-            "delegationManager": "{{Address('D')}}",
-            "hybridDeleGatorImplementation": "{{Address('H')}}",
+            {{(includeModularStack ? $"\"modularEntryPoint\": \"{Address('Q')}\"," : "")}}
+            {{(includeModularStack ? $"\"delegationManager\": \"{Address('D')}\"," : "")}}
+            {{(includeModularStack ? $"\"hybridDeleGatorImplementation\": \"{Address('H')}\"," : "")}}
             "allowedTargetsEnforcer": "{{Address('1')}}",
             "allowedMethodsEnforcer": "{{Address('2')}}",
             "exactCalldataEnforcer": "{{Address('3')}}",
@@ -246,7 +444,7 @@ public sealed class BlockchainManifestLoaderTests
             "modularAccountType": "metamask-hybrid-delegator-v1.3.0",
             "modularFrameworkRevision": "bfbdf9795a976833ed2fa000baf42fbb83958b03"
           },
-          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true }
+          "capabilities": { "walletLogin": true, "liquidStaking": true, "faucet": true, "rewardMinting": true, "agenticCommerce": true, "agenticSessionPayments": true, "marketplacePayment": {{(marketplacePayment ? "true" : "false")}} }
         }
         """;
 

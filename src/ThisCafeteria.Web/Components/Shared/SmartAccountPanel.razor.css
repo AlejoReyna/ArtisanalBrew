@@ -174,9 +174,203 @@
     opacity: 0.6;
 }
 
+.smart-account-panel__activation {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.smart-account-panel__field {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.smart-account-panel__field span {
+    color: rgba(44, 27, 18, 0.55);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.smart-account-panel__field input,
+.smart-account-panel__field select {
+    background: #ffffff;
+    border: 1px solid rgba(44, 27, 18, 0.18);
+    border-radius: 8px;
+    color: #2c1b12;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.65rem;
+}
+
+.smart-account-panel__review {
+    background: #ffffff;
+    border: 1px dashed rgba(71, 97, 78, 0.4);
+    border-radius: 10px;
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.9rem 1rem;
+}
+
+.smart-account-panel__review-kicker {
+    color: #2f4534;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.smart-account-panel__review-actions {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.smart-account-panel__raw-details summary {
+    color: rgba(44, 27, 18, 0.55);
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.smart-account-panel__raw {
+    background: rgba(44, 27, 18, 0.05);
+    border-radius: 8px;
+    font-size: 0.68rem;
+    margin: 0.5rem 0 0;
+    max-height: 12rem;
+    overflow: auto;
+    padding: 0.65rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.smart-account-panel__danger-button,
+.smart-account-panel__ghost-button {
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    justify-self: start;
+    padding: 0.6rem 1.1rem;
+    transition: background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+}
+
+.smart-account-panel__danger-button {
+    background: #8a3b2a;
+    border: none;
+    color: #ffffff;
+}
+
+.smart-account-panel__danger-button:hover:not(:disabled) {
+    background: #712f21;
+}
+
+.smart-account-panel__ghost-button {
+    background: transparent;
+    border: 1px solid rgba(44, 27, 18, 0.18);
+    color: #2c1b12;
+}
+
+.smart-account-panel__ghost-button:hover:not(:disabled) {
+    border-color: rgba(44, 27, 18, 0.35);
+}
+
+.smart-account-panel__danger-button:disabled,
+.smart-account-panel__ghost-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 @media (max-width: 640px) {
     .smart-account-panel__head {
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+/* Dark-mode override — see the matching comment in FaucetPanel.razor.css.
+   SmartAccountPanel only ever renders inside the on-chain wing; the light
+   "paper card" styling above stays as the light-mode default, this only
+   swaps structural surfaces/text so it doesn't look unstyled in dark mode. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .smart-account-panel,
+    :root:not([data-theme]) .smart-account-panel__option,
+    :root:not([data-theme]) .smart-account-panel__permission,
+    :root:not([data-theme]) .smart-account-panel__review {
+        background: var(--stake-surface-2);
+        border-color: var(--stake-line);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__kicker,
+    :root:not([data-theme]) .smart-account-panel__empty,
+    :root:not([data-theme]) .smart-account-panel__status,
+    :root:not([data-theme]) .smart-account-panel__field span,
+    :root:not([data-theme]) .smart-account-panel__raw-details summary {
+        color: var(--stake-muted);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__permission-facts dt {
+        color: var(--stake-faint);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__permission-facts dd {
+        color: var(--stake-ink);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__option:hover {
+        border-color: color-mix(in srgb, var(--stake-green) 40%, transparent);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__field input,
+    :root:not([data-theme]) .smart-account-panel__field select,
+    :root:not([data-theme]) .smart-account-panel__raw {
+        background: var(--stake-surface);
+        border-color: var(--stake-line);
+        color: var(--stake-ink);
+    }
+
+    :root:not([data-theme]) .smart-account-panel__ghost-button {
+        border-color: var(--stake-line);
+        color: var(--stake-ink);
+    }
+}
+
+:root[data-theme="dark"] .smart-account-panel,
+:root[data-theme="dark"] .smart-account-panel__option,
+:root[data-theme="dark"] .smart-account-panel__permission,
+:root[data-theme="dark"] .smart-account-panel__review {
+    background: var(--stake-surface-2);
+    border-color: var(--stake-line);
+}
+
+:root[data-theme="dark"] .smart-account-panel__kicker,
+:root[data-theme="dark"] .smart-account-panel__empty,
+:root[data-theme="dark"] .smart-account-panel__status,
+:root[data-theme="dark"] .smart-account-panel__field span,
+:root[data-theme="dark"] .smart-account-panel__raw-details summary {
+    color: var(--stake-muted);
+}
+
+:root[data-theme="dark"] .smart-account-panel__permission-facts dt {
+    color: var(--stake-faint);
+}
+
+:root[data-theme="dark"] .smart-account-panel__permission-facts dd {
+    color: var(--stake-ink);
+}
+
+:root[data-theme="dark"] .smart-account-panel__option:hover {
+    border-color: color-mix(in srgb, var(--stake-green) 40%, transparent);
+}
+
+:root[data-theme="dark"] .smart-account-panel__field input,
+:root[data-theme="dark"] .smart-account-panel__field select,
+:root[data-theme="dark"] .smart-account-panel__raw {
+    background: var(--stake-surface);
+    border-color: var(--stake-line);
+    color: var(--stake-ink);
+}
+
+:root[data-theme="dark"] .smart-account-panel__ghost-button {
+    border-color: var(--stake-line);
+    color: var(--stake-ink);
 }

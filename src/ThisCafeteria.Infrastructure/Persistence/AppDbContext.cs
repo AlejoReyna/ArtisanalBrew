@@ -18,6 +18,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<TransparencyRecord> TransparencyRecords => Set<TransparencyRecord>();
     public DbSet<RewardClaim> RewardClaims => Set<RewardClaim>();
+    public DbSet<SolanaFaucetClaim> SolanaFaucetClaims => Set<SolanaFaucetClaim>();
     public DbSet<StakingLedgerEntry> StakingLedgerEntries => Set<StakingLedgerEntry>();
     public DbSet<StakingReconciliationCheckpoint> StakingReconciliationCheckpoints => Set<StakingReconciliationCheckpoint>();
     public DbSet<WalletStatusEvent> WalletStatusEvents => Set<WalletStatusEvent>();
@@ -46,6 +47,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : Ident
             entity.HasIndex(user => user.WalletAddress)
                 .IsUnique()
                 .HasFilter("\"WalletAddress\" IS NOT NULL");
+        });
+        builder.Entity<SolanaFaucetClaim>(entity =>
+        {
+            entity.Property(claim => claim.ChainKey).HasMaxLength(64);
+            entity.Property(claim => claim.WalletAddress).HasMaxLength(128);
+            entity.Property(claim => claim.Signature).HasMaxLength(128);
+            // Cooldown lookup: most recent claim per wallet on a chain.
+            entity.HasIndex(claim => new { claim.ChainKey, claim.WalletAddress, claim.ClaimedAtUtc });
         });
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         SeedData.Configure(builder);

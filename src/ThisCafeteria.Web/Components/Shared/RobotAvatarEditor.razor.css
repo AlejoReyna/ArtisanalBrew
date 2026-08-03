@@ -1,0 +1,571 @@
+/* Fullscreen robot workshop.
+
+   The editor is deliberately a workspace rather than a floating card: the
+   robot stays visible while the right side becomes the control surface. The
+   hard pixel borders and copper accent keep it at home in the staking wing,
+   while the generous stage gives the avatar enough room to be the focus. */
+
+dialog.rae {
+    background: transparent;
+    border: 0;
+    box-sizing: border-box;
+    color: var(--stake-ink, #fffdf9);
+    display: block;
+    height: 100dvh;
+    inset: 0;
+    left: 0;
+    margin: 0;
+    max-height: none;
+    max-width: none;
+    min-height: 100dvh;
+    overflow: hidden;
+    padding: 0;
+    position: fixed;
+    top: 0;
+    width: 100vw;
+}
+
+.rae::backdrop {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    background: rgba(9, 7, 6, 0.58);
+}
+
+/* block-size, not just min-block-size. A column flex container with an auto
+   height has no deficit to distribute, so nothing below it can shrink and the
+   grid never becomes the scroll container it is set up to be — the whole frame
+   grows past the viewport instead and takes the header off the top of the
+   screen. Pinning the height is what makes `flex: 1 1 auto` mean anything. */
+.rae__frame {
+    background: transparent;
+    block-size: 100dvh;
+    border: 1px solid var(--stake-line-strong, rgba(255, 253, 249, 0.18));
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.rae__eyebrow {
+    color: var(--stake-muted, rgba(255, 253, 249, 0.58));
+    display: block;
+    font: 700 0.58rem/1.3 var(--crypto-mono, monospace);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.rae__bar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line, rgba(255, 253, 249, 0.1));
+    display: flex;
+    flex: none;
+    justify-content: space-between;
+    min-block-size: 4.8rem;
+    padding: 1rem clamp(1.1rem, 3vw, 3rem);
+    background: var(--stake-bg, #17110d);
+}
+
+.rae__bar-copy {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.rae__bar h2 {
+    color: var(--stake-ink, #fffdf9);
+    font: 400 clamp(0.74rem, 1.2vw, 1rem)/1.3 'Press Start 2P', var(--crypto-mono, monospace);
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+
+.rae__close {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--stake-line-strong, rgba(255, 253, 249, 0.2));
+    color: var(--stake-muted, rgba(255, 253, 249, 0.62));
+    cursor: pointer;
+    display: inline-flex;
+    block-size: 2.25rem;
+    inline-size: 2.25rem;
+    justify-content: center;
+    padding: 0;
+    transition: border-color 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
+}
+
+.rae__close:hover {
+    border-color: var(--stake-copper, #c58d5d);
+    color: var(--stake-ink, #fffdf9);
+    transform: translate(-1px, -1px);
+}
+
+/* ── Two-pane workspace ─────────────────────────────────────────────────── */
+
+.rae__panes {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(20rem, 0.82fr) minmax(0, 1.65fr);
+    min-block-size: 0;
+    overflow: hidden;
+}
+
+.rae__stage {
+    align-items: center;
+    background: transparent;
+    border-right: 1px solid var(--stake-line, rgba(255, 253, 249, 0.1));
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.9rem, 2vh, 1.5rem);
+    justify-content: flex-end;
+    min-block-size: 0;
+    overflow: hidden;
+    padding: clamp(1.5rem, 4vw, 4rem) clamp(1.5rem, 4vw, 4rem) clamp(3rem, 8vh, 6rem);
+    position: relative;
+}
+
+.rae__stage::after {
+    color: var(--stake-muted, rgba(255, 253, 249, 0.3));
+    font: 700 0.55rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.1em;
+    pointer-events: none;
+    position: absolute;
+}
+
+.rae__stage::after {
+    bottom: clamp(1.1rem, 3vw, 3rem);
+    content: "SELECT A PART TO EDIT";
+    right: clamp(1.1rem, 3vw, 3rem);
+}
+
+/* The editor preview is a character sheet, not an avatar chip. Remove only
+   its decorative disc/ring so the robot can read as a larger standalone asset;
+   RobotAvatarView keeps its normal circular treatment everywhere else. */
+.rae__stage ::deep .rae__robot::before {
+    display: none;
+}
+
+.rae__stage ::deep .rae__robot .rbt__disc {
+    background: transparent !important;
+    clip-path: none !important;
+    inset: 0;
+    overflow: visible;
+}
+
+.rae__stage ::deep .rae__robot .rbt__body {
+    inset: 0 !important;
+}
+
+.rae__caption {
+    color: var(--stake-muted, rgba(255, 253, 249, 0.62));
+    font: 400 clamp(0.58rem, 0.8vw, 0.68rem)/1.6 var(--crypto-mono, monospace);
+    letter-spacing: 0.02em;
+    margin: 0;
+    max-inline-size: 24rem;
+    min-block-size: 2.2em;
+    text-align: center;
+}
+
+.rae__stage-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    justify-content: center;
+}
+
+.rae__ghost {
+    align-items: center;
+    background: rgba(9, 7, 6, 0.18);
+    border: 1px solid var(--stake-line-strong, rgba(255, 253, 249, 0.2));
+    color: var(--stake-muted, rgba(255, 253, 249, 0.66));
+    cursor: pointer;
+    display: inline-flex;
+    font: 700 0.58rem/1 var(--crypto-mono, monospace);
+    gap: 0.4rem;
+    letter-spacing: 0.08em;
+    padding: 0.65rem 0.8rem;
+    text-transform: uppercase;
+    transition: background-color 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
+}
+
+.rae__ghost:hover:not(:disabled) {
+    background: var(--stake-copper-dim, rgba(169, 117, 74, 0.16));
+    border-color: var(--stake-copper, #c58d5d);
+    color: var(--stake-ink, #fffdf9);
+    transform: translate(-1px, -1px);
+}
+
+.rae__ghost:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+/* ── Modifier surface ──────────────────────────────────────────────────── */
+
+.rae__picker {
+    background: var(--stake-bg, #17110d);
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    overflow: hidden;
+}
+
+.rae__picker-head {
+    align-items: end;
+    border-bottom: 1px solid var(--stake-line, rgba(255, 253, 249, 0.1));
+    display: flex;
+    flex: none;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: clamp(1.25rem, 3vw, 2.6rem) clamp(1rem, 3vw, 3rem) 1.1rem;
+}
+
+.rae__picker-head h3 {
+    color: var(--stake-ink, #fffdf9);
+    font: 400 clamp(1rem, 2vw, 1.65rem)/1.25 'Press Start 2P', var(--crypto-mono, monospace);
+    letter-spacing: 0.02em;
+    margin: 0.6rem 0 0;
+    text-transform: uppercase;
+}
+
+.rae__picker-count {
+    color: var(--stake-muted, rgba(255, 253, 249, 0.55));
+    font: 400 0.62rem/1.3 var(--crypto-mono, monospace);
+    white-space: nowrap;
+}
+
+.rae__tabs {
+    border-bottom: 1px solid var(--stake-line, rgba(255, 253, 249, 0.1));
+    display: flex;
+    flex: none;
+    gap: 0.15rem;
+    overflow-x: auto;
+    padding: 0 clamp(0.75rem, 2.5vw, 2.4rem);
+    scrollbar-width: thin;
+}
+
+.rae__tab {
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--stake-muted, rgba(255, 253, 249, 0.58));
+    cursor: pointer;
+    flex: none;
+    font: 700 0.58rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.08em;
+    padding: 0.85rem 0.7rem 0.75rem;
+    text-transform: uppercase;
+    transition: color 160ms ease-out, border-color 160ms ease-out;
+    white-space: nowrap;
+}
+
+.rae__tab:hover {
+    color: var(--stake-ink, #fffdf9);
+}
+
+.rae__tab.is-active {
+    border-bottom-color: var(--stake-copper, #c58d5d);
+    color: var(--stake-ink, #fffdf9);
+}
+
+/* Column width tracks the lens, not the viewport alone. A window twice as wide
+   as it is tall (headgear) makes a card half as tall, and four of those across
+   leave two thirds of the panel empty — so wide windows ask for wider, and
+   therefore fewer, columns via --lens-span. The base shrinks at each breakpoint
+   while the per-slot multiplier rides along on top of it. */
+.rae__grid {
+    --lens-col: calc(12rem * var(--lens-span, 1));
+
+    align-content: start;
+    background:
+        radial-gradient(circle at 80% 8%, rgba(209, 142, 83, 0.12), transparent 28%),
+        linear-gradient(135deg, rgba(255, 253, 249, 0.018), transparent 42%);
+    display: grid;
+    flex: 1 1 auto;
+    gap: clamp(0.7rem, 1.25vw, 1.1rem);
+    /* min-content, not auto. An `auto` row sizes itself from the card's content
+       contribution, which for an aspect-ratio box is measured before the 1fr
+       column has settled — the track comes out short, the card renders at its
+       true aspect anyway, and the rows silently overlap by the difference.
+       min-content asks for the height the aspect actually produces. */
+    grid-auto-rows: min-content;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--lens-col)), 1fr));
+    isolation: isolate;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: clamp(1rem, 2.5vw, 2.5rem);
+    position: relative;
+}
+
+/* The card is the viewfinder: it takes the window's shape, and the robot inside
+   it is oversized and pushed off its edges until only that window shows. */
+.rae__swatch {
+    aspect-ratio: var(--lens-w, 1) / var(--lens-h, 1);
+    background: rgba(29, 22, 17, 0.72);
+    border: 1px solid rgba(255, 223, 190, 0.08);
+    color: var(--stake-muted, rgba(255, 253, 249, 0.62));
+    cursor: pointer;
+    display: block;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    text-align: left;
+    transition: border-color 180ms ease-out, color 180ms ease-out, transform 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+.rae__swatch:hover {
+    border-color: rgba(225, 158, 96, 0.48);
+    color: var(--stake-ink, #fffdf9);
+    box-shadow: 0 0.75rem 1.6rem rgba(9, 7, 6, 0.18);
+    transform: translateY(-3px);
+}
+
+.rae__swatch.is-chosen {
+    border-color: #d99a5c;
+    color: var(--stake-ink, #fffdf9);
+    box-shadow: inset 0 0 0 1px rgba(217, 154, 92, 0.3), 0 0.8rem 1.8rem rgba(9, 7, 6, 0.22);
+}
+
+/* ── The lens ───────────────────────────────────────────────────────────── */
+
+/* --lens-scale/left/bottom come from AvatarLens.Style(), which does all the
+   arithmetic so nothing here divides. The insets are the fiddly half: a
+   percentage `left` resolves against the card's width and a percentage `bottom`
+   against its height, so the two numbers are scaled by different divisors on
+   the C# side and are not interchangeable. */
+.rae__swatch ::deep .rae__lens-robot {
+    aspect-ratio: 1;
+    block-size: auto;
+    bottom: calc(100% * var(--lens-bottom, 0));
+    inline-size: calc(100% * var(--lens-scale, 1));
+    left: calc(100% * var(--lens-left, 0));
+    position: absolute;
+}
+
+/* The circle is the avatar's frame, not the camera's. Dropping the ring and the
+   clip is what lets the window land anywhere on the robot; the disc keeps its
+   colour, so the chosen backdrop is the ground every card is shot against and
+   the Backdrop tab needs no special case at all. */
+.rae__swatch ::deep .rae__lens-robot::before {
+    display: none;
+}
+
+.rae__swatch ::deep .rae__lens-robot .rbt__disc {
+    clip-path: none;
+    inset: 0;
+    overflow: visible;
+}
+
+.rae__swatch ::deep .rae__lens-robot .rbt__body {
+    inset: 0;
+}
+
+/* ── Corner chip ────────────────────────────────────────────────────────── */
+
+.rae__tag {
+    align-items: center;
+    background: linear-gradient(180deg, rgba(9, 7, 6, 0.72), rgba(9, 7, 6, 0));
+    display: flex;
+    gap: 0.45rem;
+    inset: 0 0 auto 0;
+    padding: 0.7rem 0.75rem 1.4rem;
+    pointer-events: none;
+    position: absolute;
+}
+
+.rae__tag-index {
+    color: rgba(255, 225, 190, 0.42);
+    flex: none;
+    font: 700 0.55rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.08em;
+}
+
+.rae__tag-name {
+    color: var(--stake-ink, #fffdf9);
+    font: 700 0.58rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.02em;
+    opacity: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    transform: translateX(-0.3rem);
+    transition: opacity 160ms ease-out, transform 160ms ease-out;
+    white-space: nowrap;
+}
+
+.rae__swatch:hover .rae__tag-name,
+.rae__swatch:focus-visible .rae__tag-name,
+.rae__swatch.is-chosen .rae__tag-name {
+    opacity: 1;
+    transform: none;
+}
+
+.rae__swatch.is-chosen .rae__tag-index {
+    color: #e7ad70;
+}
+
+/* ── Footer actions ─────────────────────────────────────────────────────── */
+
+.rae__actions {
+    align-items: center;
+    border-top: 1px solid var(--stake-line, rgba(255, 253, 249, 0.1));
+    display: flex;
+    flex: none;
+    gap: 0.65rem;
+    justify-content: flex-end;
+    padding: 1rem clamp(1.1rem, 3vw, 3rem);
+    background: var(--stake-bg, #17110d);
+}
+
+.rae__cancel,
+.rae__save {
+    border: 1px solid var(--stake-line-strong, rgba(255, 253, 249, 0.2));
+    cursor: pointer;
+    font: 700 0.6rem/1 var(--crypto-mono, monospace);
+    letter-spacing: 0.08em;
+    padding: 0.75rem 1.25rem;
+    text-transform: uppercase;
+    transition: box-shadow 160ms ease-out, transform 160ms ease-out, opacity 160ms ease-out;
+}
+
+.rae__cancel {
+    background: transparent;
+    color: var(--stake-muted, rgba(255, 253, 249, 0.62));
+}
+
+.rae__save {
+    background: var(--stake-copper, #c58d5d);
+    border-color: var(--stake-copper, #c58d5d);
+    color: #17110c;
+}
+
+.rae__cancel:hover,
+.rae__save:hover:not(:disabled) {
+    box-shadow: 3px 3px 0 rgba(9, 7, 6, 0.55);
+    transform: translate(-1px, -1px);
+}
+
+.rae__save:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.rae__close:focus-visible,
+.rae__ghost:focus-visible,
+.rae__tab:focus-visible,
+.rae__swatch:focus-visible,
+.rae__cancel:focus-visible,
+.rae__save:focus-visible {
+    outline: 2px solid var(--stake-copper, #c58d5d);
+    outline-offset: 3px;
+}
+
+.rae__close:active,
+.rae__ghost:active:not(:disabled),
+.rae__cancel:active,
+.rae__save:active:not(:disabled),
+.rae__swatch:active {
+    transform: scale(0.98);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 52rem) {
+    .rae__panes {
+        grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+    }
+
+    .rae__stage {
+        padding-inline: 1.25rem;
+    }
+
+    .rae__grid {
+        --lens-col: calc(9rem * var(--lens-span, 1));
+    }
+}
+
+@media (max-width: 42rem) {
+    .rae__panes {
+        grid-template-columns: minmax(0, 1fr);
+        overflow-y: auto;
+    }
+
+    .rae__stage {
+        border-bottom: 1px solid var(--stake-line, rgba(255, 253, 249, 0.1));
+        border-right: 0;
+        min-block-size: min(46dvh, 27rem);
+        padding: 1.5rem 1rem;
+    }
+
+    .rae__stage::after {
+        display: none;
+    }
+
+    .rae__picker {
+        min-block-size: 24rem;
+        overflow: visible;
+    }
+
+    .rae__grid {
+        overflow: visible;
+    }
+}
+
+@media (max-width: 30rem) {
+    /* No --lens-col override here on purpose: the panes have already stacked
+       by this width, so the grid is full-bleed and the narrower column from
+       the previous breakpoint is what lands two cards to a row. */
+    .rae__grid {
+        flex: 0 0 auto;
+    }
+
+    .rae__picker-head {
+        align-items: start;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .rae__actions {
+        justify-content: stretch;
+    }
+
+    .rae__cancel,
+    .rae__save {
+        flex: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rae__close,
+    .rae__ghost,
+    .rae__tab,
+    .rae__swatch,
+    .rae__tag-name,
+    .rae__cancel,
+    .rae__save {
+        transition: none;
+    }
+
+    .rae__close:hover,
+    .rae__ghost:hover:not(:disabled),
+    .rae__cancel:hover,
+    .rae__save:hover:not(:disabled),
+    .rae__swatch:hover,
+    .rae__close:active,
+    .rae__ghost:active:not(:disabled),
+    .rae__cancel:active,
+    .rae__save:active:not(:disabled),
+    .rae__swatch:active,
+    .rae__tag-name {
+        transform: none;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .rae__frame,
+    .rae__ghost,
+    .rae__swatch,
+    .rae__cancel,
+    .rae__save {
+        border-color: currentColor;
+    }
+}

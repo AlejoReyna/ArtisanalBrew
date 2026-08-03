@@ -11,3 +11,21 @@ publish-ec2/
 *.nupkg
 appsettings.Local.json
 .env
+
+# Local acceptance harness state and generated evidence
+/acceptance-evidence-*.log
+/contracts/evm/.acceptance-isolated
+/contracts/evm/node.log
+/worker.log
+
+# Root-level document exports are local artifacts
+/*.docx
+/*.pdf
+
+# Client build tooling (Tailwind CSS)
+node_modules/
+src/ThisCafeteria.Web/package-lock.json
+
+# Byte-code from the sprite generators; generate_avatar_parts.py imports the
+# procurement sheet's palette, which makes Python cache it.
+tools/__pycache__/

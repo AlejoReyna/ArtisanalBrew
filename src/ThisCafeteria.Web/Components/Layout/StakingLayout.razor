@@ -1,7 +1,12 @@
 @inherits LayoutComponentBase
 
 <div class="page public-page yield-page">
-    <NavMenu />
+    <NavMenu TransparentHeader="true" />
+
+    @* Persistent pixel-space background scenario (stars, Andromeda, the two
+       planets and the chain badges) plus the per-route layers that cross-fade
+       on /, /staking and /procurement-lab. — see the component's own header. *@
+    <GlobalScene />
 
     <main class="public-main yield-page-main">
         @Body

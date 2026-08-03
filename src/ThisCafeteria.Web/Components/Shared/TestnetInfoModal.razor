@@ -1,0 +1,24 @@
+<script type="module" src="@Assets["Components/Shared/TestnetInfoModal.razor.js"]"></script>
+
+<dialog id="testnet-info-modal" data-nosnippet>
+    <button type="button" id="testnet-info-close" class="testnet-info-close" aria-label="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6 18 18M18 6 6 18" />
+        </svg>
+    </button>
+    <div class="testnet-info-content">
+        <h2 class="testnet-info-title">No real crypto needed</h2>
+        <p class="testnet-info-copy">
+            Every checkout here runs on free Sepolia test ETH — nothing you do in this shop spends real money. Grab some test ETH from the
+            <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener noreferrer">Google Cloud</a>,
+            <a href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" rel="noopener noreferrer">Alchemy</a> or
+            <a href="https://faucet.chainstack.com/sepolia-testnet-faucet" target="_blank" rel="noopener noreferrer">Chainstack</a> faucet if you'd like to check out.
+        </p>
+        <div class="testnet-info-eth-wrapper">
+            <img src="/images/card_eth_asset.png" alt="Ethereum" class="testnet-info-eth-icon" />
+        </div>
+        <div class="testnet-info-actions">
+            <button type="button" id="testnet-info-dismiss" class="testnet-info-button">Got it</button>
+        </div>
+    </div>
+</dialog>

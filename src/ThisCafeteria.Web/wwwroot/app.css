@@ -1,11 +1,11 @@
 html, body {
-    background: #fbf9f4;
-    color: #2d2421;
-    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-sans);
 }
 
 a, .btn-link {
-    color: #2d2421;
+    color: var(--ink);
 }
 
 .btn-primary {
@@ -74,6 +74,43 @@ h1:focus {
     text-align: start;
 }
 
+/* Canonical site-wide light token set. Other stylesheets should reference these
+   (var(--ink), var(--surface), etc.) rather than re-declaring their own literals.
+   The canonical DARK palette (--stake-* / --yield-*, the "roast" theme built for
+   /staking and /profile) is declared below on ".yield-page, .procurement-lab"
+   rather than here on :root — several shared components (ChainBadge, AddressChip,
+   StatTile, etc.) deliberately use `var(--stake-x, <light-fallback>)` and rely on
+   --stake-* being UNDEFINED outside the dark wing to fall back to their light
+   styling on pages like NavMenu/Checkout. Making it global would silently force
+   those components dark everywhere. ProcurementLab.razor.css and Profile.razor.css
+   reference the scoped tokens directly rather than keeping their own duplicate
+   --pl-* / --dash-* copies. */
+/* Product-detail desktop geometry. Declared globally, in raw px, because two
+   places have to agree on it exactly: ProductDetails.razor.css lays the page
+   out from these, and productTransition.js reads them off :root to compute
+   where the grid card's image should fly to — the flight starts on /products,
+   before any of the detail page's own styles exist. Keep them unitless-px so
+   getComputedStyle values can be parsed with parseFloat. */
+:root {
+    --pdp-pad-y: 32px;
+    --pdp-pad-x: 40px;
+    --pdp-rail: 84px;
+    --pdp-rail-gap: 16px;
+    --pdp-col-gap: 56px;
+    --pdp-info: 384px;
+    --pdp-stage-radius: 12px;
+}
+
+/* Narrow desktops: the stage is width-limited there, so the fixed tracks beside
+   it give ground first rather than letting the photo shrink to a stamp. */
+@media (max-width: 1200px) {
+    :root {
+        --pdp-pad-x: 24px;
+        --pdp-col-gap: 40px;
+        --pdp-info: 320px;
+    }
+}
+
 :root {
     --surface: #fbf9f4;
     --surface-deep: #f2eee5;
@@ -88,6 +125,44 @@ h1:focus {
     --font-sidebar-display: 'EB Garamond', 'Times New Roman', Times, serif;
     --crypto-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
     --crypto-positive: #47614e;
+}
+
+/* Dark-mode switch — three-tier precedence, lowest to highest:
+   1. :root above — light defaults.
+   2. prefers-color-scheme below, only when no explicit choice is stored
+      (wwwroot/js/theme.js never set [data-theme] on <html> — the user hasn't
+      picked yet, or picked "System").
+   3. [data-theme="dark"] — explicit toggle override, wins regardless of the
+      OS setting. Choosing "Light" needs no rule of its own: the :root
+      defaults above already are light, so removing/never-setting the
+      attribute is enough; it only matters for overriding an OS dark
+      preference, which [data-theme] not being "dark" already does.
+   The mechanism is wired ahead of the values it will carry: both tiers below
+   currently mirror the :root defaults exactly, so toggling to "dark" doesn't
+   yet change the storefront look. Real dark values land in a later phase —
+   see docs/dark-mode-color-audit.md and the dark-mode plan. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --surface: #fbf9f4;
+        --surface-deep: #f2eee5;
+        --ink: #2d2421;
+        --muted: #746a63;
+        --line: #d8d0c4;
+        --accent: #8d6f55;
+        --charcoal: #1f1a18;
+        --white: #fffdf9;
+    }
+}
+
+:root[data-theme="dark"] {
+    --surface: #fbf9f4;
+    --surface-deep: #f2eee5;
+    --ink: #2d2421;
+    --muted: #746a63;
+    --line: #d8d0c4;
+    --accent: #8d6f55;
+    --charcoal: #1f1a18;
+    --white: #fffdf9;
 }
 
 .tabular {
@@ -148,14 +223,17 @@ h1:focus {
 }
 
 ::selection {
-    background: #2d2421;
-    color: #fbf9f4;
+    background: var(--ink);
+    color: var(--surface);
 }
 
+/* .navbar-brand used to ride along here; it now takes its color, face and
+   tracking from NavMenu.razor.css, which is the only place that knows the bar
+   is dark. Leaving it grouped with the headings meant an --ink (near-black)
+   color declaration that never applied. */
 h1,
 h2,
-h3,
-.navbar-brand {
+h3 {
     color: var(--ink);
     font-family: var(--font-display);
     letter-spacing: -0.035em;
@@ -191,8 +269,10 @@ p {
 }
 
 .content:has(.yield-dashboard),
+.content:has(.procurement-lab),
 .content:has(.journal-newsletter),
-.content:has(.cart-page) {
+.content:has(.cart-page),
+.content:has(.products-catalog) {
     margin-left: 0;
     margin-right: 0;
     max-width: none;
@@ -206,10 +286,25 @@ p {
     }
 }
 
-.yield-page {
-    /* Dark roast wing — the staking/allocation dashboard inverts the café's
-       cream ground to a roasted near-black, so crossing into /staking or
-       /profile reads as entering the on-chain side of the product. */
+/* Dark roast wing — the staking/allocation dashboard and the agentic-commerce
+   procurement lab both invert the café's cream ground to a roasted near-black,
+   so crossing into /staking, /profile, or /procurement-lab reads as entering
+   the on-chain side of the product.
+   Shared between both selectors (rather than declared on :root) so components
+   using `var(--stake-x, <light-fallback>)` elsewhere in the app (e.g.
+   ChainBadge/AddressChip/StatTile, also used in NavMenu/Checkout) still
+   correctly fall back to their own light styling outside these two wings.
+   ProcurementLab.razor.css's --pl-* and Profile.razor.css's --dash-* alias
+   these tokens directly instead of keeping their own copies.
+
+   Both wings are pinned unconditionally dark — no [data-theme]/
+   prefers-color-scheme qualifier, so this wins regardless of any stored theme
+   choice while the toggle is deactivated (see the ThemeToggleEnabled flag in
+   NavMenu.razor). Literals, not var(--ink) etc: nested custom-property
+   indirection (--stake-x: var(--y)) was observed to fail to resolve for
+   descendants in testing, while direct literals resolve reliably. */
+.yield-page,
+.procurement-lab {
     --yield-cream: #100D0B;
     --yield-espresso: #F4EFE6;
     --yield-sand: #100D0B;
@@ -238,6 +333,137 @@ p {
     /* Lift the shared brand-green token so text/spinner states relying on
        --crypto-positive stay legible against the roast ground. */
     --crypto-positive: #8FB99B;
+}
+
+/* ── GlobalScene route switching ───────────────────────────────────────────
+   The pixel-space background scenario (Components/Layout/GlobalScene.razor)
+   renders both containers with data-permanent, so enhanced navigation keeps
+   the exact DOM nodes; only this <html> attribute changes (App.razor renders
+   it per route). The layers' hidden defaults and both halves of the fade
+   transitions live in GlobalScene.razor.css — these rules pick the visible
+   layer and the home-only geometry because CSS isolation cannot select the
+   <html> element. Cross-fade: the outgoing design fades out over the preserved
+   sky, then the incoming design fades in one beat later. */
+html[data-scene-route="home"] .gs-layer--home,
+html[data-scene-route="staking"] .gs-layer--staking {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.55s ease 0.15s, visibility 0s;
+}
+
+/* Extended homepage stage: the background is exactly the first two viewport
+   chapters and moves with normal document scroll. The simulated crew and its
+   pickups keep a separate one-screen coordinate space, clipped at the hero
+   boundary, so no robot can leak into ProductDiscovery. */
+html[data-scene-route="home"] .gs-scene {
+    bottom: auto;
+    height: 200dvh;
+    position: absolute;
+}
+
+html[data-scene-route="home"] .gs-crew,
+html[data-scene-route="home"] .gs-scene > .ph-scene {
+    bottom: auto;
+    height: 100dvh;
+}
+
+html[data-scene-route="home"] .gs-crew {
+    position: absolute;
+}
+
+/* Home-specific chain composition. The base positions are tuned for the
+   one-screen staking scene; on the two-screen homepage they bunched up behind
+   ProductDiscovery. Three marks now frame the hero and three occupy the clear
+   upper field of chapter two, where the lowered panel cannot cover them. */
+html[data-scene-route="home"] .gs-scene > .ph-chain--eth-a {
+    left: 5%;
+    opacity: 0.84;
+    right: auto;
+    top: 42%;
+    width: 3.15rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--sol-a {
+    left: 46%;
+    opacity: 0.84;
+    right: auto;
+    top: 8%;
+    width: 3.9rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-a {
+    left: auto;
+    opacity: 0.82;
+    right: 5%;
+    top: 28%;
+    width: 3.45rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--eth-b {
+    left: 5%;
+    opacity: 0.76;
+    right: auto;
+    top: 62%;
+    width: 2.8rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--sol-b {
+    left: auto;
+    opacity: 0.78;
+    right: 6%;
+    top: 54%;
+    width: 3.2rem;
+}
+
+html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-b {
+    left: 45%;
+    opacity: 0.76;
+    right: auto;
+    top: 51%;
+    width: 2.95rem;
+}
+
+@media (max-width: 700px) {
+    /* Keep the second set on the homepage: it is the only blockchain dressing
+       available after the first-screen crew and pickup field have scrolled out. */
+    html[data-scene-route="home"] .gs-scene > .ph-chain--eth-b,
+    html[data-scene-route="home"] .gs-scene > .ph-chain--sol-b,
+    html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-b {
+        display: block;
+    }
+
+    html[data-scene-route="home"] .gs-scene > .ph-chain--eth-b {
+        left: 6%;
+        top: 61%;
+        width: 2.35rem;
+    }
+
+    html[data-scene-route="home"] .gs-scene > .ph-chain--sol-b {
+        right: 7%;
+        top: 54%;
+        width: 2.65rem;
+    }
+
+    html[data-scene-route="home"] .gs-scene > .ph-chain--bnb-b {
+        left: 45%;
+        top: 51.5%;
+        width: 2.45rem;
+    }
+}
+
+/* Pages outside the scenario (it is only rendered by StakingLayout at all)
+   hide it smoothly while its containers are still preserved mid-transition. */
+html[data-scene-route="none"] .gs-scene,
+html[data-scene-route="none"] .gs-crew {
+    opacity: 0;
+    visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html[data-scene-route="home"] .gs-layer--home,
+    html[data-scene-route="staking"] .gs-layer--staking {
+        transition: none;
+    }
 }
 
 .yield-dashboard {
@@ -492,19 +718,18 @@ p {
     }
 }
 
+/* One navbar treatment for every route: a solid dark bar. The per-page recolors
+   this file used to carry (procurement lab, editorial/journal hero, the yield
+   wing, and the homepage's floating glass pill) are gone — NavMenu.razor.css
+   owns the bar's appearance now, and these two rules only keep it pinned. */
 .public-header {
-    background-color: rgba(251, 249, 244, 0.86);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid #d8d0c4;
+    background-color: #100e0d;
+    border-bottom: 1px solid rgba(251, 249, 244, 0.08);
     left: 0;
     position: fixed;
     right: 0;
     top: 0;
-    transition:
-        background-color 220ms ease,
-        backdrop-filter 220ms ease,
-        border-color 220ms ease,
-        transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 50;
 }
 
@@ -519,6 +744,52 @@ body:has(.product-detail-card) .content {
 
 body:has(.products-shop) .content {
     background: #ffffff;
+}
+
+/* NavMenu.razor.css's .public-header sets --nav-fg/--nav-fg-dim/--nav-line
+   for cream text over its default near-black --nav-bg. This route swaps the
+   bar to a light cream, so those text tokens have to flip dark too or the
+   wordmark/nav-links render as cream-on-cream. */
+body:has(.products-catalog) .public-header {
+    background: #f5f2ec;
+    border-bottom-color: rgba(45, 36, 33, 0.1);
+    --nav-fg: #2d2421;
+    --nav-fg-dim: rgba(45, 36, 33, 0.55);
+    --nav-line: rgba(45, 36, 33, 0.14);
+}
+
+/* The logged-out Login pill stays solid black on every route (see
+   NavMenu.razor.css's .nav-login), so on this route's light cream bar it
+   needs its own literal white text/border instead of the flipped-dark
+   --nav-fg above, or the label would be dark-on-black and disappear. */
+body:has(.products-catalog) .public-header .nav-login:not(.nav-login--authorized) {
+    border-color: rgba(251, 249, 244, 0.3);
+    color: #fbf9f4;
+}
+
+/* Story keeps the default solid #100e0d bar rather than going transparent. The
+   bar and .story-hero are the same near-black, so it still reads as seamless
+   over the hero — but it stays opaque over the light sections below it, where a
+   transparent bar would have put cream nav text on a cream page. Only the text
+   tokens are restated here; the background deliberately falls through to
+   .public-header's own. */
+body:has(.story-hero) .public-header {
+    --nav-fg: #fbf9f4;
+    --nav-fg-dim: rgba(251, 249, 244, 0.62);
+    --nav-line: rgba(251, 249, 244, 0.14);
+}
+
+/* var(--surface), not a hardcoded hex like the two rules above: this is the
+   exact value Journal.razor's .journal-hero-screen already paints its own
+   background with, so the header can only ever match it, dark-mode included
+   (both currently resolve to the same light value — see the :root comment
+   a few hundred lines up). */
+body:has(.journal-hero) .public-header {
+    background: var(--surface);
+    border-bottom-color: rgba(45, 36, 33, 0.1);
+    --nav-fg: #2d2421;
+    --nav-fg-dim: rgba(45, 36, 33, 0.55);
+    --nav-line: rgba(45, 36, 33, 0.14);
 }
 
 body:has(.product-detail-card) .public-main {
@@ -543,201 +814,18 @@ body.product-detail-view .product-detail-card__title h1 {
     line-height: 1.1 !important;
 }
 
-.public-header.public-header--solid {
-    background-color: #fbf9f4;
-    backdrop-filter: none;
-    border-bottom-color: #d8d0c4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid),
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) {
-    background-color: transparent;
-    backdrop-filter: none;
-    border-bottom: none;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-brand,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-brand {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-link,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-link {
-    color: rgba(251, 249, 244, 0.78);
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-link:hover,
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-link.active,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-link:hover,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-link.active {
-    border-bottom-color: #fbf9f4;
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-cart,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-cart {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-wallet,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-wallet {
-    border-color: rgba(251, 249, 244, 0.45);
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-wallet.active,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-wallet.active {
-    background: #fbf9f4;
-    color: #2d2421;
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .nav-login,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .nav-login {
-    border-color: rgba(251, 249, 244, 0.45);
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-toggler,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-toggler {
-    background: rgba(0, 0, 0, 0.28);
-    border-color: rgba(255, 255, 255, 0.35);
-}
-
-.public-page:has(.editorial-hero) .public-header:not(.public-header--solid) .navbar-toggler span,
-.public-page:has(.journal-hero) .public-header:not(.public-header--solid) .navbar-toggler span {
-    background: #fff;
-}
-
-/* Staking/profile wing — nav goes dark-roast to match the rest of the page,
-   in both the transparent (scrolled-to-top) and solid header states. */
-.yield-page .public-header,
-.yield-page .public-header.public-header--solid {
-    background-color: rgba(23, 19, 16, 0.86);
-    backdrop-filter: blur(18px);
-    border-bottom-color: rgba(244, 239, 230, 0.12);
-}
-
-.yield-page .public-header .navbar-brand {
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-link {
-    color: rgba(244, 239, 230, 0.72);
-}
-
-.yield-page .public-header .nav-link:hover,
-.yield-page .public-header .nav-link.active {
-    border-bottom-color: #F4EFE6;
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-cart {
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-wallet {
-    border-color: rgba(244, 239, 230, 0.35);
-    color: #F4EFE6;
-}
-
-.yield-page .public-header .nav-wallet.active {
-    background: #F4EFE6;
-    color: #171310;
-}
-
-.yield-page .public-header .nav-login {
-    border-color: rgba(244, 239, 230, 0.35);
-}
-
-.yield-page .public-header .navbar-toggler {
-    background: rgba(0, 0, 0, 0.3);
-    border-color: rgba(244, 239, 230, 0.3);
-}
-
-.yield-page .public-header .navbar-toggler span {
-    background: #F4EFE6;
-}
-
 /* Connect-wallet CTA: flip from the site-wide dark-on-cream button to a
    cream-on-dark fill so it stays the brightest object on the page. */
-.yield-page .staking-connect__content .button--dark {
+.yield-page .staking-intro__cta.button--dark {
     background: var(--stake-ink);
     border-color: var(--stake-ink);
     color: var(--stake-bg);
 }
 
-.yield-page .staking-connect__content .button--dark:hover {
+.yield-page .staking-intro__cta.button--dark:hover {
     background: var(--stake-green);
     border-color: var(--stake-green);
     color: var(--stake-bg);
-}
-
-/* Homepage nav never goes solid — keep the transparent/dark hero look for
-   the whole page, not just while the hero is in view. */
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid {
-    background-color: transparent;
-    backdrop-filter: none;
-    border-bottom: none;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-brand {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link {
-    color: rgba(251, 249, 244, 0.78);
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link:hover,
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-link.active {
-    border-bottom-color: #fbf9f4;
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-cart {
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-wallet {
-    border-color: rgba(251, 249, 244, 0.45);
-    color: #fbf9f4;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .nav-wallet.active {
-    background: #fbf9f4;
-    color: #2d2421;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-toggler {
-    background: rgba(0, 0, 0, 0.28);
-    border-color: rgba(255, 255, 255, 0.35);
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header.public-header--solid .navbar-toggler span {
-    background: #fff;
-}
-
-/* Floating glass-pill nav — homepage hero only, matches the "Orbit" reference composition */
-/* 20% taller than the base pill (3.4rem -> 4.08rem), scaled uniformly */
-.public-page:has(.editorial-hero--coffee) .public-header .site-nav {
-    min-height: 4.08rem;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header .nav-links {
-    background: rgba(20, 16, 13, 0.55);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(251, 249, 244, 0.14);
-    border-radius: 999px;
-    padding: 0.36rem 0.36rem 0.36rem 1.62rem;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header .nav-login {
-    padding: 0.36rem 0.84rem 0.36rem 0.48rem;
-}
-
-.public-page:has(.editorial-hero--coffee) .public-header .eth-mark {
-    height: 1.68rem;
-    width: 1.68rem;
 }
 
 .eyebrow {
@@ -2124,10 +2212,6 @@ body.product-detail-view .product-detail-card__title h1 {
     }
 }
 
-.product-transition-active {
-    cursor: progress;
-}
-
 .product-transition-active .public-header,
 .product-transition-active .journal-footer {
     opacity: 0;
@@ -2149,17 +2233,6 @@ body.product-detail-view .product-detail-card__title h1 {
     transition:
         opacity 220ms ease,
         transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.product-transition-source .eyebrow,
-.product-transition-source h3,
-.product-transition-source .price,
-.product-transition-source .marketplace-card__actions {
-    opacity: 0;
-    transform: translateX(-1rem);
-    transition:
-        opacity 220ms ease,
-        transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .product-transition-source-image {
@@ -3280,8 +3353,11 @@ body.product-detail-view .product-detail-card__title h1 {
         transition: none !important;
     }
 }
-/* Shared multichain selector */
+/* Shared multichain selector. Global (unscoped) rule, not just used inside the
+   dark wing — also renders NavMenu's nav-drawer instance, where --stake-* is
+   undefined, so every var() here keeps its original literal as a fallback to
+   preserve that instance's existing look untouched. */
 .chain-selector { display: inline-flex; min-width: 0; }
-.chain-selector__control { appearance: auto; background: #1f1915; border: 1px solid rgba(244,239,230,.22); border-radius: 999px; color: #f4efe6; font: 700 .72rem/1.2 Inter,sans-serif; min-height: 2.4rem; padding: .55rem 2rem .55rem .8rem; }
+.chain-selector__control { appearance: none; -webkit-appearance: none; background: var(--stake-surface, #1f1915); border: 1px solid var(--stake-line-strong, rgba(244,239,230,.22)); border-radius: 999px; color: var(--stake-ink, #f4efe6); font: 700 .72rem/1.2 Inter,sans-serif; min-height: 2.4rem; padding: .55rem 2rem .55rem .8rem; }
 .chain-selector--compact .chain-selector__control { max-width: 10rem; min-height: 2.1rem; }
-.chain-selector__control:focus-visible { outline: 2px solid #8fb99b; outline-offset: 2px; }
+.chain-selector__control:focus-visible { outline: 2px solid var(--stake-green, #8fb99b); outline-offset: 2px; }

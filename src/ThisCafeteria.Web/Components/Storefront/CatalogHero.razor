@@ -1,0 +1,23 @@
+@* Category hero: headline + lede on the left, rounded lifestyle image on the right. *@
+<section class="products-catalog__glow grid items-center gap-8 rounded-2xl lg:grid-cols-2" data-animate="fade-up">
+    <div class="py-4">
+        <h1 class="max-w-md text-4xl font-semibold leading-[1.15] tracking-tight text-ink">
+            @Title
+        </h1>
+        <p class="mt-4 max-w-md text-sm leading-relaxed text-mute">
+            @Lede
+        </p>
+    </div>
+    <div class="overflow-hidden rounded-2xl">
+        <img src="@ImageUrl"
+             alt="Artisanal Brew coffee ritual"
+             class="aspect-[7/5] h-full w-full object-cover"
+             loading="eager" />
+    </div>
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Explore Our Collection of Small-Batch Coffee & Goods";
+    [Parameter] public string Lede { get; set; } = "Explore our store for small-batch roasts, brew tools, and ceramics. Ideal for slow mornings or chic workspaces.";
+    [Parameter] public string ImageUrl { get; set; } = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80";
+}

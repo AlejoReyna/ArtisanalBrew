@@ -152,7 +152,7 @@
     }
 
     .admin-coupons__heading span {
-        color: #746a63;
+        color: var(--muted);
         font-weight: 700;
         white-space: nowrap;
     }
@@ -167,8 +167,8 @@
     }
 
     .admin-panel {
-        background: #fffdf9;
-        border: 1px solid #d8d0c4;
+        background: var(--white);
+        border: 1px solid var(--line);
         max-height: calc(100vh - 10rem);
         overflow-y: auto;
         padding: clamp(1.25rem, 2vw, 2rem);
@@ -197,9 +197,9 @@
     }
 
     .admin-coupon-form input {
-        background: #fbf9f4;
-        border: 1px solid #d8d0c4;
-        color: #2d2421;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--ink);
         min-height: 3rem;
         padding: 0.75rem 1rem;
         width: 100%;
@@ -231,7 +231,7 @@
     .admin-coupon-form__cancel {
         background: transparent;
         border: 0;
-        color: #746a63;
+        color: var(--muted);
         cursor: pointer;
         font-weight: 700;
         padding: 0;
@@ -250,7 +250,7 @@
 
     .admin-coupon-table th,
     .admin-coupon-table td {
-        border-bottom: 1px solid #d8d0c4;
+        border-bottom: 1px solid var(--line);
         padding: 0.85rem;
         text-align: left;
         vertical-align: top;
@@ -263,9 +263,9 @@
     }
 
     .admin-coupon-table__button {
-        background: #2d2421;
+        background: var(--ink);
         border: 0;
-        color: #fffdf9;
+        color: var(--white);
         cursor: pointer;
         font: inherit;
         padding: 0.45rem 0.75rem;

@@ -1,0 +1,143 @@
+<section class="story-tech"
+         data-story-tech
+         data-theme-color="#ffffff"
+         aria-labelledby="story-tech-title">
+    <div class="story-tech__sticky">
+        <div class="story-tech__titles">
+            <div class="story-tech__title story-tech__title--infra" data-story-tech-title="infra">
+                <p class="story-tech__kicker">Nine live resources</p>
+                <h2 id="story-tech-title">Built in <em>Azure.</em></h2>
+                <p>Compute, data, messaging, storage, secrets, and delivery — moving as one estate.</p>
+            </div>
+
+            <div class="story-tech__title story-tech__title--bridge" data-story-tech-title="bridge" aria-hidden="true">
+                <p class="story-tech__kicker">One system</p>
+                <h2>Cloud meets <em>chain.</em></h2>
+            </div>
+
+            <div class="story-tech__title story-tech__title--contracts" data-story-tech-title="contracts">
+                <p class="story-tech__kicker">Nine on-chain building blocks</p>
+                <h2>Written <em>on-chain.</em></h2>
+                <p>Staking, rewards, smart accounts, intents, and agentic settlement across public test networks.</p>
+            </div>
+        </div>
+
+        <div class="story-tech__layer story-tech__layer--infra" data-story-tech-layer="infra" aria-label="Azure infrastructure">
+            @foreach (var service in AzureServices)
+            {
+                <article class="story-tech__card story-tech__card--azure"
+                         data-story-tech-card
+                         data-x="@service.X"
+                         data-y="@service.Y"
+                         data-rotate="@service.Rotate">
+                    <div class="story-tech__card-top">
+                        <span class="story-tech__icon-shell">
+                            <img src="@service.IconPath" alt="" loading="lazy" />
+                        </span>
+                        <span class="story-tech__status @(service.IsHealthy ? "is-up" : "is-idle")">
+                            <span aria-hidden="true"></span>
+                            @service.Status
+                        </span>
+                    </div>
+                    <p class="story-tech__meta">@service.Category</p>
+                    <h3>@service.Name</h3>
+                    <p class="story-tech__detail">@service.Detail</p>
+                </article>
+            }
+        </div>
+
+        <div class="story-tech__layer story-tech__layer--contracts" data-story-tech-layer="contracts" aria-label="Smart contracts and programs">
+            @foreach (var contract in SmartContracts)
+            {
+                <a class="story-tech__card story-tech__card--contract"
+                   data-story-tech-card
+                   data-x="@contract.X"
+                   data-y="@contract.Y"
+                   data-rotate="@contract.Rotate"
+                   href="@contract.ExplorerUrl"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   tabindex="-1"
+                   aria-label="@contract.Name on @contract.Network — open in explorer">
+                    <div class="story-tech__card-top">
+                        <span class="story-tech__chain-mark" aria-hidden="true">@contract.Mark</span>
+                        <span class="story-tech__network">@contract.Network</span>
+                        <span class="story-tech__external" aria-hidden="true">↗</span>
+                    </div>
+                    <p class="story-tech__meta">@contract.Standard</p>
+                    <h3>@contract.Name</h3>
+                    <p class="story-tech__detail">@contract.Purpose</p>
+                </a>
+            }
+        </div>
+
+        <nav class="story-tech__nav" aria-label="Technology showcase">
+            <button type="button" class="is-active" data-story-tech-jump="0">
+                <span>01</span>
+                Azure estate
+            </button>
+            <span class="story-tech__nav-track" aria-hidden="true">
+                <span data-story-tech-progress></span>
+            </span>
+            <button type="button" data-story-tech-jump="1">
+                <span>02</span>
+                Smart contracts
+            </button>
+        </nav>
+
+        <p class="story-tech__scroll-cue" aria-hidden="true">
+            <span></span>
+            Scroll to trace the stack
+        </p>
+    </div>
+</section>
+
+@code {
+    private sealed record AzureService(
+        string Category,
+        string Name,
+        string Status,
+        string Detail,
+        bool IsHealthy,
+        string IconPath,
+        string X,
+        string Y,
+        string Rotate);
+
+    private sealed record SmartContract(
+        string Name,
+        string Standard,
+        string Network,
+        string Mark,
+        string Purpose,
+        string ExplorerUrl,
+        string X,
+        string Y,
+        string Rotate);
+
+    private static readonly AzureService[] AzureServices =
+    [
+        new("Compute", "prod-web", "Running", "Blazor · scale 1–2", true, "images/azure-icons/container-apps-environments.svg", "-0.40", "-0.34", "-4"),
+        new("Compute", "prod-worker", "Running", "Queue consumer · scale 1", true, "images/azure-icons/worker-container-app.svg", "-0.10", "-0.39", "3"),
+        new("Database", "prod-pg", "Ready", "PostgreSQL 16", true, "images/azure-icons/postgresql.svg", "0.22", "-0.36", "-2"),
+        new("Messaging", "prod-sb", "Active", "Two Service Bus queues", true, "images/azure-icons/service-bus.svg", "0.41", "-0.13", "4"),
+        new("Storage", "tcst…mubaa", "Available", "Blob · Standard LRS", true, "images/azure-icons/storage-accounts.svg", "0.37", "0.21", "-3"),
+        new("Secrets", "tc-kv…mubaa", "Available", "Key Vault · Standard", true, "images/azure-icons/key-vaults.svg", "0.13", "0.37", "2"),
+        new("Registry", "prod-acr", "Available", "Container Registry", true, "images/azure-icons/container-registries.svg", "-0.18", "0.37", "-4"),
+        new("Comms", "prod-acs", "Provisioned", "Managed email relay", true, "images/azure-icons/communication-services.svg", "-0.40", "0.19", "3"),
+        new("Compute", "sepolia-aa", "Idle", "ERC-4337 bundler VM", false, "images/azure-icons/virtual-machine.svg", "-0.42", "-0.08", "-2")
+    ];
+
+    private static readonly SmartContract[] SmartContracts =
+    [
+        new("CafeLiquidStakingVault", "ERC-4626", "Sepolia", "Ξ", "Liquid staking + COFFEE rewards", "https://sepolia.etherscan.io/address/0x492132c5ec8b70a4d44fa365604d4c365b1d1a9f", "-0.40", "-0.34", "3"),
+        new("CafeFaucet", "Solidity", "Sepolia", "Ξ", "Rate-limited test-token claims", "https://sepolia.etherscan.io/address/0xBD1517529BB0BA20c43b4E39323C70058FADe86D", "-0.10", "-0.39", "-3"),
+        new("CAFE + COFFEE", "ERC-20", "Sepolia", "Ξ", "Capped stake and reward tokens", "https://sepolia.etherscan.io/address/0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A", "0.22", "-0.36", "2"),
+        new("Smart account stack", "ERC-4337 v0.7", "Sepolia", "Ξ", "Factory, EntryPoint, paymaster", "https://sepolia.etherscan.io/address/0x03e558b6af3e871f1884b670bd10d785b414e3fb", "0.41", "-0.13", "-4"),
+        new("AgenticCommerceEscrow", "Escrow", "Sepolia", "Ξ", "Fund, submit, evaluate, settle", "https://sepolia.etherscan.io/address/0x78dd528ceb6f3de28365727270be865ff6840dea", "0.37", "0.21", "3"),
+        new("ERC8004RegistryFixture", "ERC-8004", "Sepolia", "Ξ", "Agent identity and reputation", "https://sepolia.etherscan.io/address/0x44315b44555ca20d98eccd95720827a5b4bbdab6", "0.13", "0.37", "-2"),
+        new("ERC7683ResolverFixture", "ERC-7683", "Sepolia", "Ξ", "Cross-chain intent lifecycle", "https://sepolia.etherscan.io/address/0xfdc86171e50f848fe539e74efafc9f34d471ff9f", "-0.18", "0.37", "4"),
+        new("cafe-liquid-staking", "Anchor program", "Solana devnet", "◎", "Stake, mint stCAFE, claim rewards", "https://explorer.solana.com/address/EbkKufsajUNzD3bLhRpb2d8XT5fHvz9e8hND111hQJxh?cluster=devnet", "-0.40", "0.19", "-3"),
+        new("BSC mirror", "EVM suite", "BSC testnet", "B", "Multichain parity deployment", "https://testnet.bscscan.com/address/0xe03ee3790c804406f3db08a0ed553ac9f3a305ed", "-0.42", "-0.08", "2")
+    ];
+}

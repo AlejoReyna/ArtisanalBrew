@@ -8,11 +8,54 @@ main {
 }
 
 .public-main {
-    padding-top: 4.75rem;
+    padding-top: 3.325rem;
 }
 
-.public-page:has(.editorial-hero) .public-main {
+@media (max-width: 760px) {
+    .public-main {
+        /* .site-nav shrinks to a 2.42rem bar below 760px (NavMenu.razor.css);
+           this offset has to track it or the fixed header's real height falls
+           short of the reserved space, leaving a blank strip above the content. */
+        padding-top: 2.42rem;
+    }
+}
+
+.public-page:has(.editorial-hero) .public-main,
+.public-page:has(.story-hero) .public-main {
     padding-top: 0;
+}
+
+/* The homepage hero already reserves its own header clearance and goes
+   full-bleed (see .editorial-hero's calc(4.75rem + ...) padding and negative
+   margins in app.css) — it was built for the fixed header to disappear over
+   it, matching the treatment StakingLayout.razor.css gives the Lab/Yield
+   heroes. NavMenu's TransparentHeader parameter defaults to false and
+   MainLayout never opts in, so this drops the plate purely in CSS instead,
+   scoped to pages that actually have the hero. ::deep is required because
+   .public-header is rendered by the child <NavMenu /> component, outside
+   MainLayout's own scoped markup.
+
+   .journal-hero does NOT get the same treatment: unlike .editorial-hero,
+   its slide images live in a .journal-hero-screen__frame that sits in normal
+   flex flow below the reserved top padding (see Journal.razor's own <style>
+   block) rather than bleeding under it — the reserved strip is genuinely
+   empty, painted only by .journal-hero-screen's own `background: var(--surface)`.
+   Making this header transparent would just expose that empty strip instead
+   of blending into anything. See app.css's body:has(.journal-hero) rule for
+   the treatment that actually fits: matching the header's solid color to
+   that same --surface token. */
+.public-page:has(.editorial-hero) ::deep .public-header {
+    background: transparent;
+    border-bottom: 0;
+}
+
+/* Story opts into NavMenu's transparent variant so its artwork continues
+   behind the fixed bar. Once the hero has left, publicHeader.js adds the solid
+   state and this restores the component's own dark surface for contrast over
+   the white technical sections. */
+.public-page:has(.story-hero) ::deep .public-header.public-header--solid {
+    background: var(--nav-bg);
+    border-bottom: 1px solid rgba(251, 249, 244, 0.08);
 }
 
 .public-page:has(.journal-hero) .public-main {
@@ -24,8 +67,16 @@ body.product-detail-view .public-main {
 }
 
 #blazor-error-ui {
-    color-scheme: light only;
+    /* Framework connectivity banner — deliberately loud/high-contrast in both
+       themes rather than tokenized into the status-color set (that lands with
+       the rest of the app's error/success/warning colors in a later phase).
+       color-scheme:light-only used to force this element's native UA styling
+       (scrollbars, form controls) light regardless of the page theme, which
+       blocked dark mode outright; removed. The explicit color keeps text
+       readable against the always-light yellow background even after --ink
+       gets a dark-mode value elsewhere. */
     background: lightyellow;
+    color: #1f1a18;
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;

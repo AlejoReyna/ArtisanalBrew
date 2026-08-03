@@ -42,6 +42,18 @@ public class SponsorshipGrant
     /// <summary>Set when the grant is explicitly revoked. A revoked grant is never reinstated.</summary>
     public DateTime? RevokedAtUtc { get; set; }
 
+    /// <summary>
+    /// Sponsored operations that were mined but whose inner call reverted.
+    ///
+    /// These cost the paymaster real gas while debiting nothing from <see cref="SpentUsd"/> — the
+    /// EntryPoint charges the paymaster for a mined operation regardless of whether the inner call
+    /// succeeded, but there is no successful operation to price against the budget. Left unmetered,
+    /// a holder of a *valid* grant could drain the paymaster's deposit indefinitely without ever
+    /// exhausting its own budget, so the count is a spend control in its own right rather than a
+    /// diagnostic: see <c>SponsorshipPolicyOptions.MaxRevertedOperations</c>.
+    /// </summary>
+    public int RevertedOperationCount { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 

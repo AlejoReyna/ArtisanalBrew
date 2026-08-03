@@ -74,6 +74,9 @@ public class UserOperationSponsorTests
             return Task.FromResult(decision);
         }
 
+        public Task<bool> RecordRevertedOperationAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
         public Task RecordUsageAsync(SponsorshipRequest request, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task RevokeAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }

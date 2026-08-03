@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/ThisCafeteria.Web", "--", "--ConnectionStrings:DefaultConnection=Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password"],
+      "port": 5286
+    },
+    {
+      "name": "web-alt",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/ThisCafeteria.Web", "--urls", "http://localhost:5287", "--", "--ConnectionStrings:DefaultConnection=Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password"],
+      "port": 5287
+    },
+    {
+      "name": "web-lab",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/ThisCafeteria.Web", "--urls", "http://localhost:5291", "--", "--ConnectionStrings:DefaultConnection=Host=localhost;Port=5433;Database=this_cafeteria;Username=postgres;Password=postgres"],
+      "port": 5291
+    },
+    {
+      "name": "web-profile",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/ThisCafeteria.Web", "--urls", "http://localhost:5292", "--", "--ConnectionStrings:DefaultConnection=Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password"],
+      "port": 5292
+    },
+    {
+      "name": "web-verify",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/ThisCafeteria.Web", "--urls", "http://localhost:5288", "--", "--ConnectionStrings:DefaultConnection=Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password"],
+      "port": 5288
+    }
+  ]
+}

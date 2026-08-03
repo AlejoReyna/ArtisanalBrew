@@ -980,9 +980,21 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         .HasMaxLength(160)
                         .HasColumnType("character varying(160)");
 
+                    b.Property<string>("Origin")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Process")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("RoastLevel")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -1012,7 +1024,10 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                             ImageUrl = "/images/products/house-espresso.jpg",
                             IsActive = true,
                             Name = "House Espresso",
+                            Origin = "Brazil",
                             Price = 3.50m,
+                            Process = "Natural",
+                            RoastLevel = "Dark",
                             Slug = "house-espresso",
                             StockQuantity = 100
                         },
@@ -1025,7 +1040,10 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                             ImageUrl = "/images/products/vanilla-cloud-latte.jpg",
                             IsActive = true,
                             Name = "Vanilla Cloud Latte",
+                            Origin = "Colombia",
                             Price = 5.75m,
+                            Process = "Washed",
+                            RoastLevel = "Medium",
                             Slug = "vanilla-cloud-latte",
                             StockQuantity = 80
                         },
@@ -1038,7 +1056,10 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                             ImageUrl = "/images/products/midnight-cold-brew.jpg",
                             IsActive = true,
                             Name = "Midnight Cold Brew",
+                            Origin = "Ethiopia",
                             Price = 4.95m,
+                            Process = "Honey",
+                            RoastLevel = "Light",
                             Slug = "midnight-cold-brew",
                             StockQuantity = 60
                         });
@@ -1208,6 +1229,43 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                     b.ToTable("SmartAccountRecords");
                 });
 
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.SolanaFaucetClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("ChainKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("ClaimedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("RawAmount")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Signature")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("WalletAddress")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChainKey", "WalletAddress", "ClaimedAtUtc");
+
+                    b.ToTable("SolanaFaucetClaims");
+                });
+
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.SponsorshipGrant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1238,6 +1296,9 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
+
+                    b.Property<int>("RevertedOperationCount")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -2004,6 +2065,51 @@ namespace ThisCafeteria.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("ThisCafeteria.Domain.Entities.UserProfile", b =>
+                {
+                    b.OwnsOne("ThisCafeteria.Domain.Avatars.RobotAvatar", "Avatar", b1 =>
+                        {
+                            b1.Property<Guid>("UserProfileId");
+
+                            b1.Property<string>("Backdrop")
+                                .IsRequired()
+                                .HasMaxLength(32);
+
+                            b1.Property<string>("Chassis")
+                                .IsRequired()
+                                .HasMaxLength(32);
+
+                            b1.Property<string>("Hat")
+                                .IsRequired()
+                                .HasMaxLength(32);
+
+                            b1.Property<string>("Hold")
+                                .IsRequired()
+                                .HasMaxLength(32);
+
+                            b1.Property<string>("Visor")
+                                .IsRequired()
+                                .HasMaxLength(32);
+
+                            b1.Property<string>("Wear")
+                                .IsRequired()
+                                .HasMaxLength(32);
+
+                            b1.HasKey("UserProfileId");
+
+                            b1.ToTable("UserProfiles");
+
+                            b1
+                                .ToJson("Avatar")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserProfileId");
+                        });
+
+                    b.Navigation("Avatar");
                 });
 
             modelBuilder.Entity("ThisCafeteria.Domain.Entities.WalletIdentity", b =>

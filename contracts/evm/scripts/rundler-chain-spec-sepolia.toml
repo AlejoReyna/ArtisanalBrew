@@ -1,0 +1,8 @@
+# Rundler chain spec for ArtisanalBrew's existing Sepolia deployment. Do not substitute the
+# canonical EntryPoint address: this declares the deployed address the hosted provider rejected.
+base = "ethereum"
+
+name = "ArtisanalBrew Sepolia"
+id = 11155111
+
+entry_point_address_v0_7 = "0xdd9a61064ef9e2d9612da1f1307e168b85fe43a6"

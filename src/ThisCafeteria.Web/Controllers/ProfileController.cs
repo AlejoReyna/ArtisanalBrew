@@ -45,12 +45,44 @@ public sealed class ProfileController(
         }
         catch (ValidationException exception)
         {
-            return BadRequest(new ValidationProblemDetails(exception.Errors
-                .GroupBy(error => error.PropertyName)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.Select(error => error.ErrorMessage).ToArray())));
+            return BadRequest(ToProblem(exception));
         }
+    }
+
+    // PUT, not PATCH: the editor always submits the whole robot, and a partial
+    // avatar payload could not express "take the hat off" — see UpdateAvatarRequest.
+    [HttpPut("me/avatar")]
+    public async Task<ActionResult<UserProfileDto>> UpdateMyAvatar(
+        UpdateAvatarRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userProfileId = await ResolveUserProfileIdAsync(cancellationToken);
+        if (userProfileId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(await profileService.UpdateAvatarAsync(userProfileId.Value, request, cancellationToken));
+        }
+        catch (ValidationException exception)
+        {
+            return BadRequest(ToProblem(exception));
+        }
+    }
+
+    /// <summary>Returns the account to the robot derived from its wallet.</summary>
+    [HttpDelete("me/avatar")]
+    public async Task<ActionResult<UserProfileDto>> ResetMyAvatar(CancellationToken cancellationToken)
+    {
+        var userProfileId = await ResolveUserProfileIdAsync(cancellationToken);
+        if (userProfileId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await profileService.ResetAvatarAsync(userProfileId.Value, cancellationToken));
     }
 
     [HttpGet("me/orders")]
@@ -64,6 +96,13 @@ public sealed class ProfileController(
 
         return Ok(await orderService.GetOrdersForUserAsync(userProfileId.Value, cancellationToken));
     }
+
+    private static ValidationProblemDetails ToProblem(ValidationException exception) =>
+        new(exception.Errors
+            .GroupBy(error => error.PropertyName)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(error => error.ErrorMessage).ToArray()));
 
     private async Task<Guid?> ResolveUserProfileIdAsync(CancellationToken cancellationToken)
     {

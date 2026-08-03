@@ -22,6 +22,9 @@ public static class DependencyInjection
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
+            // Keep the public transparency surface resolvable so /story and /api/transparency
+            // answer honestly rather than throwing when no database is wired up.
+            services.AddScoped<IDatabaseSchemaService, UnavailableDatabaseSchemaService>();
             return services;
         }
 
@@ -41,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<IWalletStatusEventRepository, WalletStatusEventRepository>();
         services.Configure<CatalogOptions>(configuration.GetSection(CatalogOptions.SectionName));
         services.AddScoped<DatabaseSeeder>();
+
+        services.AddMemoryCache();
+        services.AddScoped<IDatabaseSchemaService, DatabaseSchemaService>();
 
         return services;
     }

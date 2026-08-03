@@ -1,0 +1,246 @@
+/*
+ * Storefront catalog styles (Tailwind CSS v4, utilities-only — preflight is skipped on
+ * purpose so the rest of the site's global styles stay untouched).
+ *
+ * Deliberately UNLAYERED: app.css is unlayered too, and unlayered rules beat any
+ * @layer in the cascade — importing Tailwind with layers would let the site's global
+ * h1/h2/h3 rules override every utility here.
+ *
+ * Resets below use :where(.products-catalog) so they sit at (0,0,1): they beat the UA
+ * stylesheet and app.css element rules by source order, but always lose to Tailwind
+ * utility classes (0,1,0).
+ *
+ * Rebuild after changing any Components/Storefront markup:
+ *   cd src/ThisCafeteria.Web && npm run build:catalog-css
+ */
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+
+@theme {
+    /* Palette captured from the storefront reference (see docs: ecluso PLP).
+       Deliberately its OWN palette, not an alias of app.css's site-wide tokens —
+       the catalog grid (Products/ProductDetails) intentionally reads slightly
+       warmer/lighter than the rest of the site. Keep these as literals; forcing
+       them to var(--ink)/var(--surface)/etc. would visibly shift the catalog's
+       colors toward the site palette, which is a real design change, not a
+       token-naming cleanup. ProductDetails.razor.css's local --card-* set
+       mirrors these same values (see comment there) since this stylesheet only
+       loads on Products.razor. */
+    --color-cream: #F5F2EC;
+    --color-sand: #ECE7DD;
+    --color-ink: #1C1B1A;
+    --color-mute: #8B8880;
+    --color-faint: #A9A49B;
+    --color-accent: #E8781E;
+    --color-line: #E5E0D8;
+    /* Same font role as app.css's --font-sans (Inter) — kept as a literal rather
+       than var(--font-sans) because both declarations target the identical
+       custom property name on :root; a var() reference here would be
+       self-referential (invalid) rather than reaching app.css's value. Keep
+       this stack in sync with app.css's --font-sans by hand. */
+    --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Full-bleed cream canvas: the layout wrapper stays as-is, the page paints its own bg. */
+body:has(.products-catalog) {
+    background-color: #F5F2EC;
+}
+
+.products-catalog {
+    background-color: #F5F2EC;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    min-height: calc(100vh - 3.325rem);
+    /* Tailwind's translate utilities read both axes; without a registered initial
+     * value the unset axis invalidates the whole `translate` property. */
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+}
+
+
+
+/* Room for a title that wraps to two lines, so cards agree on a resting height whether
+   their product name wraps or not. The reserve is two lines of the 15px/1.375 title plus
+   the 8px Bootstrap puts under an <h3>: it used to live on the heading itself, and moving
+   it out here — where the description can grow into the slack a one-line name leaves —
+   must not change what the card measures at rest. */
+.product-card__title-block {
+    min-height: calc(2.75em + 0.5rem);
+}
+
+/* --- Product card hover blurb (see wwwroot/js/productCardBlurb.js) ---
+   Everything below is gated on .has-card-blurb, which the script sets on the root element
+   while it parses. No script, no hidden state: the description is ordinary card copy. */
+
+/* The 0fr → 1fr grid row is what animates: it interpolates against the panel's own
+   content height, so the card grows to exactly the description it holds without anyone
+   having to measure it in JS and pin a pixel value that goes stale on resize. */
+.has-card-blurb .product-card__blurb {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.has-card-blurb [data-product-card].is-blurb-open .product-card__blurb {
+    grid-template-rows: 1fr;
+}
+
+/* min-height:0 is what lets a grid item shrink below its content — without it the row
+   never actually collapses. */
+.has-card-blurb .product-card__blurb-clip {
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* The gap above the description belongs inside the clipped box, so the closed card gives
+   back the spacing along with the text. Kept tight — the description reads as a second
+   line of the title block, not as a separate paragraph parked below it. */
+.product-card__blurb-text {
+    margin: 0;
+    padding-top: 0.25rem;
+}
+
+/* Words are nowrap boxes so splitting the copy into per-character spans can't introduce
+   a break the browser wouldn't have taken anyway. */
+.product-card__word {
+    display: inline-block;
+}
+
+/* Spaces are ordinary collapsible spaces even though each one is its own span — the
+   splitter normalises runs of whitespace to one, so there is nothing to protect, and
+   `white-space: pre` here would preserve the space a line breaks on and indent every
+   wrapped line of the description by a few pixels. */
+.product-card__char--space {
+    white-space: normal;
+}
+
+/* Characters are laid out from the first frame and only their opacity changes, so the
+   panel animates to one known height instead of jumping a line at a time as the text
+   wraps. The short fade softens the leading edge at an 11ms cadence. */
+.has-card-blurb .product-card__char {
+    opacity: 0;
+    position: relative;
+    transition: opacity 90ms linear;
+}
+
+.has-card-blurb .product-card__char.is-typed {
+    opacity: 1;
+}
+
+/* The caret rides the character being typed, so it follows the text across line wraps
+   for free and costs no layout. */
+.has-card-blurb .product-card__char::after {
+    background: var(--color-accent);
+    bottom: 0.1em;
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    right: -0.08em;
+    top: 0.15em;
+    width: 1px;
+}
+
+.has-card-blurb .product-card__char.is-cursor::after {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .has-card-blurb .product-card__blurb {
+        transition: none;
+    }
+
+    .has-card-blurb .product-card__char {
+        transition: none;
+    }
+
+    .has-card-blurb .product-card__char::after {
+        display: none;
+    }
+}
+
+/* Number inputs: hide the native spinners, they eat the little width these have. */
+.products-catalog input[type="number"]::-webkit-outer-spin-button,
+.products-catalog input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.products-catalog input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* The reference uses a geometric sans everywhere — undo the site's serif display font. */
+:where(.products-catalog) h1,
+:where(.products-catalog) h2,
+:where(.products-catalog) h3,
+:where(.products-catalog) h4 {
+    font-family: var(--font-sans);
+    font-style: normal;
+}
+
+:where(.products-catalog) a {
+    color: inherit;
+    text-decoration: none;
+}
+
+:where(.products-catalog) button {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+:where(.products-catalog) ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Soft pastel glow behind the hero, as in the reference. */
+.products-catalog__glow {
+    background:
+        radial-gradient(55% 70% at 18% 12%, rgba(244, 186, 168, 0.35), transparent 70%),
+        radial-gradient(45% 60% at 78% 8%, rgba(238, 214, 190, 0.4), transparent 70%);
+}
+
+/* Dual price-range slider: the track/fill are plain divs, the two range inputs only
+ * contribute their (orange-ringed) thumbs. */
+.catalog-range {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 1.25rem;
+    margin: 0;
+    background: transparent;
+}
+
+.catalog-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: auto;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid #E8781E;
+    box-shadow: 0 1px 2px rgba(28, 27, 26, 0.2);
+    cursor: pointer;
+}
+
+.catalog-range::-moz-range-thumb {
+    pointer-events: auto;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid #E8781E;
+    box-shadow: 0 1px 2px rgba(28, 27, 26, 0.2);
+    cursor: pointer;
+}

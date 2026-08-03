@@ -345,4 +345,83 @@ public class SponsorshipPolicyServiceTests : IDisposable
         decision.Approved.Should().BeFalse();
         decision.Reason.Should().Be(SponsorshipDenialReason.InvalidRequest);
     }
+
+    // --- Reverted sponsored operations ---
+    //
+    // A mined-but-reverted operation costs the paymaster gas but has no successful operation to
+    // price against the budget. Metering it is what stops a valid grant from draining the
+    // paymaster's deposit for free; see SponsorshipGrant.RevertedOperationCount.
+
+    [Fact]
+    public async Task RecordRevertedOperation_CountsWithoutSpendingBudget()
+    {
+        var grant = await SeedGrantAsync(budget: 10m, spent: 2m);
+        var options = EnabledOptions with { MaxRevertedOperations = 5 };
+
+        var revoked = await CreateService(options).RecordRevertedOperationAsync(ChainKey, Owner);
+
+        revoked.Should().BeFalse();
+        var reloaded = await _context.SponsorshipGrants.FindAsync(grant.Id);
+        reloaded!.RevertedOperationCount.Should().Be(1);
+        reloaded.SpentUsd.Should().Be(2m, "a revert has no successful operation to price against the budget");
+        reloaded.RevokedAtUtc.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RecordRevertedOperation_RevokesGrantAtThreshold()
+    {
+        var grant = await SeedGrantAsync();
+        var service = CreateService(EnabledOptions with { MaxRevertedOperations = 3 });
+
+        (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeFalse();
+        (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeFalse();
+        (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeTrue("the third revert reaches the limit");
+
+        var reloaded = await _context.SponsorshipGrants.FindAsync(grant.Id);
+        reloaded!.RevertedOperationCount.Should().Be(3);
+        reloaded.RevokedAtUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task RecordRevertedOperation_RevocationActuallyStopsSponsorship()
+    {
+        await SeedGrantAsync();
+        var service = CreateService(EnabledOptions with { MaxRevertedOperations = 1 });
+
+        (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeTrue();
+
+        // The point of the counter is that it changes what gets sponsored next, not that a number
+        // went up somewhere.
+        var decision = await service.EvaluateAsync(Request());
+        decision.Approved.Should().BeFalse();
+        decision.Reason.Should().Be(SponsorshipDenialReason.Revoked);
+    }
+
+    [Fact]
+    public async Task RecordRevertedOperation_ZeroLimitDisablesRevocation()
+    {
+        var grant = await SeedGrantAsync();
+        var service = CreateService(EnabledOptions with { MaxRevertedOperations = 0 });
+
+        for (var i = 0; i < 10; i++)
+        {
+            (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeFalse();
+        }
+
+        var reloaded = await _context.SponsorshipGrants.FindAsync(grant.Id);
+        reloaded!.RevertedOperationCount.Should().Be(10, "the count is still useful as a signal even when revocation is off");
+        reloaded.RevokedAtUtc.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RecordRevertedOperation_MissingOrRevokedGrant_DoesNotThrow()
+    {
+        var service = CreateService(EnabledOptions with { MaxRevertedOperations = 1 });
+
+        // Called on a failure path: it must not turn a reverted operation into a second exception.
+        (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeFalse("no grant exists");
+
+        await SeedGrantAsync(revokedAt: _time.GetUtcNow().UtcDateTime.AddMinutes(-5));
+        (await service.RecordRevertedOperationAsync(ChainKey, Owner)).Should().BeFalse("an already-revoked grant cannot be revoked again");
+    }
 }

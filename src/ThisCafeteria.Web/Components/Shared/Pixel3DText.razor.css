@@ -1,0 +1,128 @@
+.pixel-title {
+    --arcade-face: #ffffff;
+    --arcade-side-near: #aaa7a3;
+    --arcade-side-middle: #56525b;
+    --arcade-ink: #0b0919;
+    --voxel: clamp(0.27rem, 0.76vw, 0.59rem);
+    display: block;
+    filter: drop-shadow(0 1rem 1.45rem rgba(0, 0, 0, 0.48));
+    perspective: 40rem;
+}
+
+.pixel-title__object {
+    animation: pixel-title-turn 5.8s steps(12, end) 1.45s infinite alternate;
+    display: grid;
+    gap: calc(var(--voxel) * 0.8);
+    justify-items: center;
+    transform: rotateX(5deg) rotateY(-4deg);
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.pixel-title__line {
+    align-items: center;
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    transform-style: preserve-3d;
+    white-space: nowrap;
+}
+
+.pixel-title__glyph {
+    animation: pixel-glyph-build 560ms steps(6, end) var(--glyph-delay) both;
+    display: block;
+    flex: none;
+    height: calc(var(--voxel) * 9.4);
+    opacity: 0;
+    transform: translate3d(0, 0.2em, -1.1em) rotateX(22deg) scale(0.94);
+    transform-origin: center bottom;
+    transform-style: preserve-3d;
+    width: calc(var(--voxel) * 6.4);
+    will-change: opacity, transform;
+}
+
+.pixel-title__glyph-art {
+    display: block;
+    height: 100%;
+    overflow: visible;
+    width: 100%;
+}
+
+.pixel-title__space {
+    flex: 0 0 calc(var(--voxel) * 2.35);
+}
+
+.pixel-title__depth,
+.pixel-title__face {
+    shape-rendering: crispEdges;
+}
+
+.pixel-title__depth--far {
+    fill: var(--arcade-ink);
+}
+
+.pixel-title__depth--middle {
+    fill: var(--arcade-side-middle);
+}
+
+.pixel-title__depth--near {
+    fill: var(--arcade-side-near);
+}
+
+.pixel-title__face {
+    fill: var(--arcade-face);
+}
+
+@keyframes pixel-glyph-build {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 0.2em, -1.1em) rotateX(22deg) scale(0.94);
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 1;
+        transform: translate3d(0, -0.04em, 0.08em) rotateX(-3deg) scale(1.02);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) rotateX(0) scale(1);
+    }
+}
+
+@keyframes pixel-title-turn {
+    from {
+        transform: rotateX(5deg) rotateY(-4deg);
+    }
+
+    to {
+        transform: rotateX(5deg) rotateY(4deg);
+    }
+}
+
+@media (max-width: 520px) {
+    .pixel-title {
+        --voxel: clamp(0.225rem, 0.92vw, 0.265rem);
+    }
+
+    .pixel-title__object {
+        gap: calc(var(--voxel) * 1.1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pixel-title__object {
+        animation: none;
+        transform: rotateX(5deg) rotateY(-4deg);
+    }
+
+    .pixel-title__glyph {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+}

@@ -25,141 +25,137 @@
 @inject NavigationManager Navigation
 @inject IEthUsdPriceService EthUsdPriceService
 @inject WalletDashboardState DashboardState
+@inject ISolanaFaucetService SolanaFaucet
 
 @if (!_isConnected)
 {
-    <section class="staking-connect" data-animate="fade-up">
-        <div class="staking-connect__left">
-            <img src="/images/coffee-coin.png" class="staking-connect__bg-coin" alt="Coffee Coin" aria-hidden="true" />
-            <div class="staking-connect__content">
-                <div class="staking-connect__chain-wrapper">
-                    <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+    <section class="staking-intro" data-animate="fade-up" data-page-theme-color="#100D0B">
+        @* The drifting-coin space backdrop (and the stars) belongs to the shared
+           GlobalScene scenario now — on /staking its staking layer fades in over
+           the preserved sky; the intro only carries its own content. *@
+        <div class="staking-intro__inner">
+            <div class="staking-intro__hero">
+                @* Keep the headline and asset together, then make the wallet action the next step. *@
+                <div class="staking-intro__row staking-intro__row--title">
+                    <h1 class="staking-intro__title">Stake CAFE, earn COFFEE.</h1>
+                    <p class="staking-intro__subtitle">
+                        Deposit testnet CAFE and collect COFFEE rewards while your stake stays active.
+                    </p>
                 </div>
-                <h2>Connect your wallet to deposit CAFE, receive stCAFE, and earn COFFEE.</h2>
-                <p class="lede">Sign in with your wallet from the nav bar to use your account automatically, or connect here for an allocation-only session.</p>
-                @if (!string.IsNullOrWhiteSpace(_connectError))
-                {
-                    <p class="text-danger">@_connectError</p>
-                }
-                <button type="button" class="button button--dark button--glow" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                    @(_isConnecting ? "Connecting..." : SelectedChain.Family == ChainFamily.Solana ? "Connect Solana wallet" : "Connect MetaMask")
-                </button>
-                @if (OnBackToProfile.HasDelegate)
-                {
-                    <button type="button" class="yield-back yield-back--center" @onclick="OnBackToProfile">
-                        <span aria-hidden="true">&larr;</span> Back to Profile
-                    </button>
-                }
+
+                @* The hero token stays unframed so it reads as a small planet in the full-screen
+                   coffee constellation rather than an icon inside a UI badge. *@
+                <div class="staking-intro__row staking-intro__coins">
+                    <div class="coffee-orbit" aria-hidden="true">
+                        @* Stacked sprite layers fake the token's edge, so the 360° flip reads as a
+                           solid coin instead of a flat image. *@
+                        <div class="coffee-orbit__coin-scene">
+                            <div class="coffee-orbit__coin3d">
+                                <img class="coffee-orbit__coin-face" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                                <span class="coffee-orbit__coin-layer" style="--layer: 1"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 2"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 3"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 4"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 5"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 6"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 7"></span>
+                                <span class="coffee-orbit__coin-layer" style="--layer: 8"></span>
+                                <img class="coffee-orbit__coin-face coffee-orbit__coin-face--back" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                            </div>
+                        </div>
+                        <span class="coffee-orbit__star coffee-orbit__star--one"></span>
+                        <span class="coffee-orbit__star coffee-orbit__star--two"></span>
+                        <span class="coffee-orbit__star coffee-orbit__star--three"></span>
+                    </div>
+                </div>
+
+                <div class="staking-intro__row staking-intro__row--connect">
+                    @if (!string.IsNullOrWhiteSpace(_connectError))
+                    {
+                        <p class="staking-intro__error" role="alert">@_connectError</p>
+                    }
+
+                    <div class="staking-intro__actions">
+                        <button type="button" class="button button--dark staking-intro__cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                            @(_isConnecting ? "Connecting..." : "Connect Wallet")
+                        </button>
+                        @if (OnBackToProfile.HasDelegate)
+                        {
+                            <button type="button" class="yield-back" @onclick="OnBackToProfile">
+                                <span aria-hidden="true">&larr;</span> Back to Profile
+                            </button>
+                        }
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="staking-connect__right">
-            <div class="staking-connect__faucet">
-                <FaucetPanel NetworkName="@_chain.NetworkName" ExplorerUrl="@_chain.ExplorerUrl" />
+
+            <div class="staking-intro__row staking-intro__description">
+                <h2 class="staking-intro__faucet-title">Need Testnet tokens? Check out these trusted providers to get some!</h2>
+
+                @if (SelectedChain.Family == ChainFamily.Evm)
+                {
+                    <div class="staking-intro__faucets" aria-label="Testnet ETH faucets">
+                        <a class="staking-intro__faucet-link" href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Google Cloud</strong>
+                            <span class="staking-intro__faucet-logo">
+                                <img src="https://www.google.com/s2/favicons?domain=cloud.google.com&sz=64" alt="" loading="lazy" />
+                            </span>
+                            <small class="staking-intro__faucet-amount">0.05 ETH / day</small>
+                        </a>
+                        <a class="staking-intro__faucet-link" href="https://www.alchemy.com/faucets/ethereum-sepolia" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Alchemy</strong>
+                            <span class="staking-intro__faucet-logo">
+                                <img src="https://www.google.com/s2/favicons?domain=alchemy.com&sz=64" alt="" loading="lazy" />
+                            </span>
+                            <small class="staking-intro__faucet-amount">0.1 ETH / day</small>
+                        </a>
+                        <a class="staking-intro__faucet-link" href="https://faucet.chainstack.com/sepolia-testnet-faucet" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Chainstack</strong>
+                            <span class="staking-intro__faucet-logo">
+                                <img src="https://www.google.com/s2/favicons?domain=chainstack.com&sz=64" alt="" loading="lazy" />
+                            </span>
+                            <small class="staking-intro__faucet-amount">0.5 ETH / day</small>
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="staking-intro__faucets" aria-label="Testnet SOL faucet">
+                        <a class="staking-intro__faucet-link" href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer">
+                            <strong class="staking-intro__faucet-name">Solana Faucet</strong>
+                            <span class="staking-intro__faucet-logo staking-intro__faucet-logo--solana" aria-hidden="true">S</span>
+                            <small class="staking-intro__faucet-amount">Get devnet SOL</small>
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     </section>
 }
 else
 {
-    <div class="yield-dashboard" data-animate="fade-up">
-        <aside class="yield-sidebar" aria-label="Allocation account overview">
-            @if (OnBackToProfile.HasDelegate)
-            {
-                <button type="button" class="yield-back" @onclick="OnBackToProfile">
-                    <span aria-hidden="true">&larr;</span> Back to Profile
-                </button>
-            }
-
-            <section class="yield-sidebar__identity">
-                <ChainSelector OnChainChanged="HandleChainChangedAsync" />
-                <p class="yield-sidebar__kicker">Account Overview</p>
-                <dl class="yield-sidebar__stats">
-                    <div>
-                        <dt>Wallet Value</dt>
-                        <dd class="tabular">@FormatNativeWalletBalance()</dd>
-                    </div>
-                    <div>
-                        <dt>COFFEE Balance</dt>
-                        <dd class="tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</dd>
-                    </div>
-                </dl>
-                @if (_liquidDashboard.IsConfigured)
-                {
-                    <p class="yield-sidebar__status">Liquid staking enabled</p>
-                }
-            </section>
-
-            <nav class="yield-sidebar__nav" aria-label="Allocation sections">
-                <ul class="yield-sidebar__list">
-                    <li>
-                        <a class="yield-sidebar__link yield-sidebar__link--active" href="staking" aria-current="page">
-                            <span class="yield-sidebar__label">Allocation Dashboard</span>
-                            <span class="yield-sidebar__goto">
-                                <span>View section</span>
-                                <span aria-hidden="true">→</span>
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="yield-sidebar__link" href="profile">
-                            <span class="yield-sidebar__label">Transaction Logs</span>
-                            <span class="yield-sidebar__goto">
-                                <span>View section</span>
-                                <span aria-hidden="true">→</span>
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="yield-sidebar__link" href="profile">
-                            <span class="yield-sidebar__label">Preferences</span>
-                            <span class="yield-sidebar__goto">
-                                <span>View section</span>
-                                <span aria-hidden="true">→</span>
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="yield-sidebar__foot">
-                <a class="yield-sidebar__new-stake" href="#liquid-staking-title">Deposit CAFE</a>
-                
-            </div>
-        </aside>
-
-        <div class="yield-main">
-
-            <section class="yield-hero">
-                <div class="yield-hero-text">
-                    <div class="yield-title-row">
-                        <h1>Liquid staking</h1>
-                        <span class="yield-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
-                    </div>
+    <div class="yield-dashboard yield-dashboard--liquid" data-animate="fade-up" data-page-theme-color="#100D0B">
+        <div class="yield-main yield-main--liquid">
+            <header class="yield-commandbar">
+                <div class="yield-commandbar__network">
+                    <ChainSelector OnChainChanged="HandleChainChangedAsync" />
+                    @if (_liquidDashboard.IsConfigured)
+                    {
+                        <span class="yield-live-status"><span aria-hidden="true"></span>Live</span>
+                    }
                 </div>
-
-                <div class="yield-stat-row" aria-label="Wallet and staking balances">
-                    <StatTile Label="stCAFE"
-                              Value="@FormatAmount(_liquidDashboard.StCafeBalance)"
-                              Suffix="stCAFE"
-                              Loading="_isLoading" />
-                    <StatTile Label="Pending Rewards"
-                              Value="@FormatPendingRewards()"
-                              Suffix="@(_dashboard.PendingStakingRewards is null ? null : "COFFEE")"
-                              Accent="StatTile.StatTileAccent.Positive"
-                              Hint="@(_dashboard.PendingStakingRewards is null ? "Rewards unavailable - RPC read failed." : null)"
-                              OnRetry="PendingRewardsRetryCallback"
-                              Loading="_isLoading" />
-                    <StatTile Label="CAFE Balance"
-                              Value="@FormatAmount(_dashboard.PaymentTokenBalance)"
-                              Suffix="CAFE"
-                              Loading="_isLoading" />
-                    <StatTile Label="@($"{_chain.CurrencySymbol} Balance")"
-                              Value="@FormatAmount(_dashboard.NativeBalance)"
-                              Suffix="@_chain.CurrencySymbol"
-                              Hint="@NativeBalanceUsdHint()"
-                              Loading="_isLoading" />
-                </div>
-            </section>
+                <nav class="yield-commandbar__nav" aria-label="Account">
+                    <a href="profile">Activity</a>
+                    @if (OnBackToProfile.HasDelegate)
+                    {
+                        <button type="button" @onclick="OnBackToProfile">Profile <span aria-hidden="true">↗</span></button>
+                    }
+                    else
+                    {
+                        <a href="profile">Profile <span aria-hidden="true">↗</span></a>
+                    }
+                </nav>
+            </header>
 
             @if (!string.IsNullOrWhiteSpace(_dashboardError))
             {
@@ -169,34 +165,125 @@ else
                 </div>
             }
 
-            <section class="yield-liquid-summary" aria-labelledby="liquid-staking-title">
-                <div>
-                    <p class="yield-card-eyebrow">Liquid staking · @SelectedChain.DisplayName</p>
-                    <h2 id="liquid-staking-title">CAFE → stCAFE</h2>
-                    @if (!string.IsNullOrWhiteSpace(_liquidDashboard.UnavailableReason))
-                    {
-                        <p class="yield-config-card__body">@_liquidDashboard.UnavailableReason</p>
-                    }
-                    else
-                    {
-                        <p class="yield-hero-lede">Transferable stCAFE tracks your CAFE position. Rewards are separately funded in COFFEE.</p>
-                    }
-                </div>
-                <dl class="yield-liquid-summary__stats">
-                    <div><dt>CAFE</dt><dd>@FormatAmount(_liquidDashboard.CafeBalance)</dd></div>
-                    <div><dt>stCAFE</dt><dd>@FormatAmount(_liquidDashboard.StCafeBalance)</dd></div>
-                    <div><dt>Redeemable</dt><dd>@FormatAmount(_liquidDashboard.RedeemableCafe)</dd></div>
-                    <div><dt>Pending COFFEE</dt><dd>@FormatAmount(_liquidDashboard.PendingCoffee)</dd></div>
-                </dl>
-                @if (_liquidDashboard.IsConfigured)
-                {
-                    <div class="yield-liquid-summary__actions">
-                        <input id="liquid-deposit-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="CAFE to deposit" />
-                        <button type="button" class="yield-cta-btn yield-cta-btn--dark btn-liquid-deposit">Deposit CAFE</button>
-                        <input id="liquid-redeem-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="stCAFE to redeem" />
-                        <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-redeem">Redeem</button>
-                        <button type="button" class="yield-cta-btn yield-cta-btn--outline btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">Claim COFFEE</button>
+            @* ── Identity hero ─────────────────────────────────────────────
+               The golden pixel coin from the intro stands next to the headline
+               as a compact avatar. Position, metrics and APR badge all read in
+               a single glance, matching Profile's pf-id / pf-rail pattern. *@
+            <section class="yd-hero" aria-labelledby="liquid-staking-title">
+                <div class="yd-hero__coin" aria-hidden="true">
+                    <div class="yd-coin-scene">
+                        <div class="yd-coin3d">
+                            <img class="yd-coin-face" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                            <span class="yd-coin-layer" style="--layer: 1"></span>
+                            <span class="yd-coin-layer" style="--layer: 2"></span>
+                            <span class="yd-coin-layer" style="--layer: 3"></span>
+                            <span class="yd-coin-layer" style="--layer: 4"></span>
+                            <span class="yd-coin-layer" style="--layer: 5"></span>
+                            <span class="yd-coin-layer" style="--layer: 6"></span>
+                            <span class="yd-coin-layer" style="--layer: 7"></span>
+                            <span class="yd-coin-layer" style="--layer: 8"></span>
+                            <img class="yd-coin-face yd-coin-face--back" src="images/coffee-coin-pixel.png" alt="" width="160" height="160" />
+                        </div>
                     </div>
+                </div>
+
+                <div class="yd-hero__body">
+
+                    <div class="yd-hero__title-row">
+                        <h1 id="liquid-staking-title">Liquid staking.</h1>
+                        <span class="yd-apr-badge" title="@AprLabel()">@FormatApr() APR</span>
+                    </div>
+                    <div class="yd-hero__position">
+                        <strong class="yd-hero__balance tabular">@FormatAmount(_liquidDashboard.StCafeBalance)</strong>
+                        <small class="yd-hero__unit">stCAFE</small>
+                    </div>
+                </div>
+            </section>
+
+            @* ── KPI Rail ──────────────────────────────────────────────────
+               Square cells, mono type, the same shape as Profile's pf-rail. *@
+            <ol class="yd-rail" aria-label="Wallet balances">
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">Wallet value</span>
+                    <span class="yd-rail__v yd-rail__v--num tabular">@FormatNativeWalletBalance()</span>
+                </li>
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">@_chain.CurrencySymbol</span>
+                    <span class="yd-rail__v tabular">@FormatAmount(_dashboard.NativeBalance)</span>
+                </li>
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">CAFE</span>
+                    <span class="yd-rail__v tabular">@FormatAmount(_dashboard.PaymentTokenBalance)</span>
+                </li>
+                <li class="yd-rail__cell">
+                    <span class="yd-rail__k">COFFEE</span>
+                    <span class="yd-rail__v tabular">@FormatDashboardAmount(_dashboard.CoffeeCoinBalance)</span>
+                </li>
+            </ol>
+
+            @* ── Metrics panel ─────────────────────────────────────────────
+               Redeemable + Rewards, squared box with offset shadow. *@
+            <section class="yd-panel" aria-label="Staking metrics">
+                <div class="yd-panel__bar">
+                    <h2>Position</h2>
+                    <span class="yd-panel__count tabular">@FormatAmount(_liquidDashboard.StCafeBalance) stCAFE</span>
+                </div>
+                <dl class="yd-metrics">
+                    <div class="yd-metrics__cell">
+                        <dt>Redeemable</dt>
+                        <dd class="tabular">@FormatAmount(_liquidDashboard.RedeemableCafe) <small>CAFE</small></dd>
+                    </div>
+                    <div class="yd-metrics__cell yd-metrics__cell--reward">
+                        <dt>Rewards</dt>
+                        <dd class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) <small>COFFEE</small></dd>
+                    </div>
+                </dl>
+            </section>
+
+            @* ── Actions panel ─────────────────────────────────────────────
+               Deposit / Redeem / Claim in a unified squared panel. *@
+            <section class="yd-panel yd-panel--actions" aria-label="Staking actions">
+                <div class="yd-panel__bar">
+                    <h2>Actions</h2>
+                </div>
+                
+                <p class="yd-panel__desc">Stake CAFE to brew COFFEE rewards over time. Use COFFEE in the Procurement Lab to run testnet missions.</p>
+
+                @if (!string.IsNullOrWhiteSpace(_liquidDashboard.UnavailableReason))
+                {
+                    <p class="yield-config-card__body">@_liquidDashboard.UnavailableReason</p>
+                }
+                else if (_liquidDashboard.IsConfigured)
+                {
+                    <div class="yd-actions-grid">
+                        <div class="yd-action">
+                            <div class="yd-action__label">
+                                <span>Deposit</span>
+                                <small>@FormatAmount(_liquidDashboard.CafeBalance) CAFE available</small>
+                            </div>
+                            <label class="yd-action__input" for="liquid-deposit-amount">
+                                <input id="liquid-deposit-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="0.00" />
+                                <span>CAFE</span>
+                            </label>
+                            <button type="button" class="yd-btn yd-btn--dark btn-liquid-deposit">Stake</button>
+                        </div>
+                        <div class="yd-action">
+                            <div class="yd-action__label">
+                                <span>Redeem</span>
+                                <small>@FormatAmount(_liquidDashboard.RedeemableCafe) CAFE available</small>
+                            </div>
+                            <label class="yd-action__input" for="liquid-redeem-amount">
+                                <input id="liquid-redeem-amount" class="yield-token-input tabular" inputmode="decimal" placeholder="0.00" />
+                                <span>stCAFE</span>
+                            </label>
+                            <button type="button" class="yd-btn yd-btn--outline btn-liquid-redeem">Redeem</button>
+                        </div>
+                    </div>
+                    <button type="button" class="yd-claim btn-liquid-claim" disabled="@(_liquidDashboard.PendingCoffee <= 0m)">
+                        <span>Claim rewards</span>
+                        <strong class="tabular">@FormatAmount(_liquidDashboard.PendingCoffee) COFFEE</strong>
+                        <span aria-hidden="true">→</span>
+                    </button>
                 }
             </section>
 
@@ -214,7 +301,7 @@ else
                 </div>
             }
 
-            @if (_cafeFaucetConfigured)
+            @if (_cafeFaucetConfigured || _isSolanaFaucet)
             {
                 <section class="yield-faucet-cafe" aria-label="Test CAFE faucet">
                     <div class="yield-faucet-cafe__body">
@@ -222,14 +309,42 @@ else
                         <h2 class="yield-faucet-cafe__title">Claim @FormatAmount(_faucetStatus.ClaimAmount) CAFE</h2>
                         <p class="yield-faucet-cafe__desc">@FaucetStatusLabel()</p>
                     </div>
-                    <button type="button"
-                            class="yield-cta-btn yield-cta-btn--dark btn-claim-cafe-faucet"
-                            disabled="@(!_faucetStatus.CanClaim)">
-                        Claim CAFE
-                    </button>
-                    @if (_activeTx?.Flow == "cafe-faucet")
+                    @if (_isSolanaFaucet)
                     {
-                        <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                        @* Solana faucet mints server-side under the administrator authority; the wallet
+                           never signs, so this is a server @onclick rather than a client contract call. *@
+                        <button type="button"
+                                class="yield-cta-btn yield-cta-btn--dark"
+                                disabled="@(_solanaFaucetClaiming || !_faucetStatus.CanClaim)"
+                                @onclick="ClaimSolanaFaucetAsync">
+                            @(_solanaFaucetClaiming ? "Minting…" : "Claim CAFE")
+                        </button>
+                        @if (_solanaFaucetError is not null)
+                        {
+                            <p class="yield-faucet-cafe__desc" role="alert">@_solanaFaucetError</p>
+                        }
+                        else if (_solanaFaucetMessage is not null)
+                        {
+                            <p class="yield-faucet-cafe__desc">
+                                @_solanaFaucetMessage
+                                @if (_solanaFaucetExplorerUrl is not null)
+                                {
+                                    <a href="@_solanaFaucetExplorerUrl" target="_blank" rel="noopener noreferrer">View transaction</a>
+                                }
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="yield-cta-btn yield-cta-btn--dark btn-claim-cafe-faucet"
+                                disabled="@(!_faucetStatus.CanClaim)">
+                            Claim CAFE
+                        </button>
+                        @if (_activeTx?.Flow == "cafe-faucet")
+                        {
+                            <TxStepper Flow="_activeTx" ExplorerUrl="@_chain.ExplorerUrl" OnDismiss="DismissTx" />
+                        }
                     }
                 </section>
             }
@@ -367,8 +482,11 @@ else
             </section>
             }
 
-            <section class="yield-activity" aria-labelledby="yield-activity-title">
-                <h2 id="yield-activity-title" class="yield-activity-heading">Recent Activity</h2>
+            <section class="yd-panel yield-activity" aria-labelledby="yield-activity-title">
+                <div class="yd-panel__bar">
+                    <h2 id="yield-activity-title">Activity</h2>
+                    <span class="yd-panel__count">@_stakingLedger.Count</span>
+                </div>
                 @if (_stakingLedger.Count == 0)
                 {
                     <p class="yield-empty-note">No verified staking transactions are linked to this wallet yet.</p>
@@ -435,6 +553,11 @@ else
     private bool _stakingConfigured;
     private bool _legacyExitConfigured;
     private bool _cafeFaucetConfigured;
+    private bool _isSolanaFaucet;
+    private bool _solanaFaucetClaiming;
+    private string? _solanaFaucetMessage;
+    private string? _solanaFaucetError;
+    private string? _solanaFaucetExplorerUrl;
     private CafeFaucetStatus _faucetStatus = new();
     private string? _connectError;
     private string? _dashboardError;
@@ -453,6 +576,29 @@ else
     {
         _chain = ChainOptions.Value;
         ApplySelectedChainConfiguration();
+
+        if (Navigation.Uri.Contains("preview=connected", StringComparison.Ordinal))
+        {
+            _isConnected = true;
+            _isLoading = false;
+            _liquidDashboard = new LiquidStakingDashboard
+            {
+                IsConfigured = true,
+                CafeBalance = 500100m,
+                StCafeBalance = 18420.72m,
+                RedeemableCafe = 18420.72m,
+                PendingCoffee = 124.84m,
+                NativeGasBalance = 0.0631m
+            };
+            _dashboard = new CoffeeDashboardModel
+            {
+                WalletAddress = "0x9d53d4900000000000000000000000000000eceb",
+                NativeBalance = 0.0631m,
+                PaymentTokenBalance = 500100m,
+                CoffeeCoinBalance = 17m
+            };
+            return;
+        }
 
         AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChangedAsync;
         await ApplyResolvedWalletAsync();
@@ -499,8 +645,12 @@ else
         }
     }
 
+
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
+
         if (_isConnected && _isLoading && !_dashboardLoadStarted)
         {
             await LoadDashboardAsync();
@@ -661,7 +811,9 @@ else
             var ethUsdPriceTask = EthUsdPriceService.GetEthUsdPriceAsync(timeout.Token);
             var faucetStatusTask = _cafeFaucetConfigured
                 ? Web3Service.GetCafeFaucetStatusAsync(_dashboard.WalletAddress, timeout.Token)
-                : Task.FromResult(new CafeFaucetStatus());
+                : _isSolanaFaucet
+                    ? SolanaFaucet.GetStatusAsync(SelectedChain.Key, _dashboard.WalletAddress, timeout.Token)
+                    : Task.FromResult(new CafeFaucetStatus());
 
             if (SelectedChain.Key == "ethereum-sepolia")
             {
@@ -721,11 +873,20 @@ else
         _legacyExitConfigured = SelectedChain.Key == "ethereum-sepolia" && SelectedChain.Capabilities.LegacyExit &&
             WalletAddressRules.IsConfiguredAddress(_chain.StakingPoolContract);
 
-        // The existing faucet adapter is Sepolia-specific until a chain-specific
-        // faucet adapter is configured; do not advertise it on other chains.
+        // The existing EVM faucet adapter (client-side contract call via coffeeStaking.js) is
+        // Sepolia-specific until a chain-specific faucet adapter is configured; do not advertise it on
+        // other EVM chains.
         _cafeFaucetConfigured = SelectedChain.Key == "ethereum-sepolia" &&
             SelectedChain.Capabilities.Faucet &&
             WalletAddressRules.IsConfiguredAddress(_chain.CafeFaucetContract);
+
+        // The Solana faucet is a server-side authorized mint (no client contract call); the server, not
+        // the browser, decides eligibility from the registry capability. Actual claimability still
+        // depends on the mint-authority secret being configured, resolved in the status load.
+        _isSolanaFaucet = SelectedChain.Family == ChainFamily.Solana && SelectedChain.Capabilities.Faucet;
+        _solanaFaucetMessage = null;
+        _solanaFaucetError = null;
+        _solanaFaucetExplorerUrl = null;
     }
 
     private async Task<string?> ResolveWalletAddressAsync()
@@ -930,6 +1091,44 @@ else
         _isLoading || _dashboard.AprIsContractDerived
             ? "Contract Annual Yield"
             : "Indicative Annual Yield (configured, not contract-enforced)";
+
+    private async Task ClaimSolanaFaucetAsync()
+    {
+        if (!_isSolanaFaucet || _solanaFaucetClaiming || string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
+        {
+            return;
+        }
+
+        _solanaFaucetClaiming = true;
+        _solanaFaucetError = null;
+        _solanaFaucetMessage = null;
+        _solanaFaucetExplorerUrl = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var result = await SolanaFaucet.ClaimAsync(SelectedChain.Key, _dashboard.WalletAddress);
+            if (result.Success)
+            {
+                _solanaFaucetMessage = $"Minted {FormatAmount(result.Amount)} CAFE to your wallet.";
+                _solanaFaucetExplorerUrl = result.ExplorerUrl;
+            }
+            else
+            {
+                _solanaFaucetError = result.Error ?? "The CAFE faucet claim could not be completed.";
+            }
+
+            _faucetStatus = await SolanaFaucet.GetStatusAsync(SelectedChain.Key, _dashboard.WalletAddress);
+        }
+        catch (Exception ex)
+        {
+            _solanaFaucetError = ex.Message;
+        }
+        finally
+        {
+            _solanaFaucetClaiming = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
     private string FaucetStatusLabel()
     {

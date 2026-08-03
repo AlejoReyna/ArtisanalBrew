@@ -25,6 +25,9 @@ internal static class SeedData
                 StockQuantity = 100,
                 ImageUrl = "/images/products/house-espresso.jpg",
                 Category = ProductCategory.Beans,
+                Origin = "Brazil",
+                RoastLevel = RoastLevel.Dark,
+                Process = CoffeeProcess.Natural,
                 IsActive = true,
                 CreatedAt = createdAt
             },
@@ -38,6 +41,9 @@ internal static class SeedData
                 StockQuantity = 80,
                 ImageUrl = "/images/products/vanilla-cloud-latte.jpg",
                 Category = ProductCategory.Beans,
+                Origin = "Colombia",
+                RoastLevel = RoastLevel.Medium,
+                Process = CoffeeProcess.Washed,
                 IsActive = true,
                 CreatedAt = createdAt
             },
@@ -51,6 +57,9 @@ internal static class SeedData
                 StockQuantity = 60,
                 ImageUrl = "/images/products/midnight-cold-brew.jpg",
                 Category = ProductCategory.Beans,
+                Origin = "Ethiopia",
+                RoastLevel = RoastLevel.Light,
+                Process = CoffeeProcess.Honey,
                 IsActive = true,
                 CreatedAt = createdAt
             });

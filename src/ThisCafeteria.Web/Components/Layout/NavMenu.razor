@@ -12,6 +12,8 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IProfileService ProfileService
+@inject ThisCafeteria.Web.Services.ProfileAvatarState AvatarState
+@using ThisCafeteria.Application.DTOs
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using ThisCafeteria.Application.Configuration
@@ -21,28 +23,18 @@
 @using ThisCafeteria.Web.Services.Cart
 @using System.Security.Claims
 
-<header class="public-header">
+<header class="@HeaderCssClass">
 <nav class="site-nav" aria-label="Primary navigation">
     <a class="navbar-brand" href="">Artisanal Brew</a>
-
-    <button class="navbar-toggler"
-            type="button"
-            aria-label="Toggle navigation menu"
-            aria-expanded="@_isNavOpen"
-            @onclick="ToggleNav">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
 
     <div class="@NavMenuCssClass">
         <NavLink class="nav-link" href="products" Match="NavLinkMatch.All" @onclick="CloseNav">
             Shop
         </NavLink>
 
-        <NavLink class="nav-link" href="journal" @onclick="CloseNav">
+        @* <NavLink class="nav-link" href="journal" @onclick="CloseNav">
             Journal
-        </NavLink>
+        </NavLink> *@
 
         <NavLink class="nav-link" href="staking" @onclick="CloseNav">
             Yield
@@ -52,45 +44,89 @@
             Lab
         </NavLink>
 
-        <NavLink class="nav-link nav-link--about" href="story" @onclick="CloseNav">
+        @* About now lands on the isometric café floor (/about), which is the
+           short version; /story is the long build log and is reachable from
+           the bottom of that page rather than from here. *@
+        <NavLink class="nav-link nav-link--about" href="about" @onclick="CloseNav">
             About
         </NavLink>
+    </div>
 
-        <div class="nav-utilities">
-            <ChainSelector Compact="true" OnChainChanged="HandleChainChangedAsync" />
-            <AuthorizeView>
-                <Authorized>
-                    <button class="@UserToggleCssClass"
-                            type="button"
-                            aria-haspopup="dialog"
-                            aria-expanded="@_isUserMenuOpen"
-                            aria-label="Open account menu"
-                            @onclick="ToggleUserMenu">
-                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
-                        <span class="nav-login__text-stack">
-                            <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
-                            <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
-                        </span>
-                    </button>
-                    <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
-                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        @if (_cartItemCount > 0)
-                        {
-                            <span class="nav-cart__badge">@_cartItemCount</span>
-                        }
-                    </a>
-                </Authorized>
-                <NotAuthorized>
-                    <button class="nav-login"
-                            type="button"
-                            aria-haspopup="dialog"
-                            @onclick="OpenWalletModal">
-                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
-                        <span class="nav-login__label">Login</span>
-                    </button>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
+    <div class="nav-utilities">
+        @if (ThemeToggleEnabled)
+        {
+            <button class="theme-toggle"
+                    type="button"
+                    aria-label="@ThemeToggleLabel"
+                    title="@ThemeToggleLabel"
+                    @onclick="CycleThemeAsync">
+                <span class="theme-toggle__icon" aria-hidden="true">
+                    @if (_theme == "dark")
+                    {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    }
+                    else if (_theme == "light")
+                    {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    }
+                    else
+                    {
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>
+                    }
+                </span>
+            </button>
+        }
+        <AuthorizeView>
+            <Authorized>
+                <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    @if (_cartItemCount > 0)
+                    {
+                        <span class="nav-cart__badge">@_cartItemCount</span>
+                    }
+                </a>
+                @* The account's own robot stands where the chain glyph used to.
+                   The chain is already named in the text stack an inch to the
+                   right, so the glyph was saying it twice; who you are was not
+                   being said at all. *@
+                <button class="nav-login nav-login--authorized"
+                        type="button"
+                        aria-label="Open profile"
+                        @onclick="@(() => Navigation.NavigateTo("profile"))">
+                    @if (_avatar is not null)
+                    {
+                        <RobotAvatarView Avatar="_avatar" Size="1.85rem" Class="nav-login__robot" />
+                    }
+                    else
+                    {
+                        <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="28" height="28" />
+                    }
+                    <span class="nav-login__text-stack">
+                        <span class="nav-login__address">@ShortAddress(GetWalletAddress(context.User))</span>
+                        <span class="nav-login__chain" aria-hidden="true">@SelectedChain.ShortName</span>
+                    </span>
+                </button>
+            </Authorized>
+            <NotAuthorized>
+                <button class="nav-login"
+                        type="button"
+                        aria-haspopup="dialog"
+                        @onclick="OpenWalletModal"
+                        style="--chain-hover: @GetChainHoverBackground();">
+                    <img class="eth-mark" src="@SelectedChain.IconAsset" alt="" aria-hidden="true" width="27" height="27" />
+                    <span class="nav-login__label">Login</span>
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
+        <button class="navbar-toggler"
+                type="button"
+                aria-label="Toggle navigation menu"
+                aria-expanded="@_isNavOpen"
+                @onclick="ToggleNav">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
     </div>
 </nav>
 </header>
@@ -142,12 +178,12 @@
                     <span class="nav-drawer__tile-badge">@_cartItemCount</span>
                 }
             </NavLink>
-            <NavLink class="nav-drawer__tile" href="journal" @onclick="CloseNav">
+            @* <NavLink class="nav-drawer__tile" href="journal" @onclick="CloseNav">
                 <span class="nav-drawer__tile-icon" aria-hidden="true">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                 </span>
                 <span class="nav-drawer__tile-label">Journal</span>
-            </NavLink>
+            </NavLink> *@
             <NavLink class="nav-drawer__tile" href="staking" @onclick="CloseNav">
                 <span class="nav-drawer__tile-icon" aria-hidden="true">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
@@ -160,7 +196,7 @@
                 </span>
                 <span class="nav-drawer__tile-label">Lab</span>
             </NavLink>
-            <NavLink class="nav-drawer__tile" href="story" @onclick="CloseNav">
+            <NavLink class="nav-drawer__tile" href="about" @onclick="CloseNav">
                 <span class="nav-drawer__tile-icon" aria-hidden="true">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                 </span>
@@ -188,6 +224,12 @@
                 <a href="cart" class="nav-drawer__cta nav-drawer__cta--outline" @onclick="CloseNav">Cart</a>
             </NotAuthorized>
         </AuthorizeView>
+        @if (ThemeToggleEnabled)
+        {
+            <button class="nav-drawer__theme-toggle" type="button" @onclick="CycleThemeAsync">
+                @ThemeToggleLabel
+            </button>
+        }
     </footer>
 </aside>
 
@@ -330,15 +372,39 @@
                  aria-labelledby="wallet-modal-title"
                  @onclick:stopPropagation="true">
             <div class="wallet-modal__header">
+                <div class="network-selector-wrapper" style="position: absolute; top: 0; left: 0; margin-top: 0;">
+                    <button type="button" class="network-selector-btn" @onclick="ToggleNetworkDropdown">
+                        <img src="@SelectedChain.IconAsset" width="14" height="14" alt="" style="border-radius: 50%;" />
+                        <span class="network-name">@SelectedChain.DisplayName</span>
+                        <span class="network-dropdown-icon">▼</span>
+                    </button>
+                    
+                    @if (_isNetworkDropdownOpen)
+                    {
+                        <div class="network-dropdown-backdrop" @onclick="ToggleNetworkDropdown" style="position: fixed; inset: 0; z-index: 99; cursor: default;"></div>
+                        <ul class="network-dropdown-menu">
+                            @foreach (var chain in ChainRegistry.All.Where(c => c.Enabled))
+                            {
+                                <li>
+                                    <button type="button" @onclick="() => SelectNetworkAsync(chain.Key)" style="display: flex; align-items: center; gap: 0.4rem;">
+                                        <img src="@chain.IconAsset" width="16" height="16" alt="" style="border-radius: 50%;" />
+                                        @chain.DisplayName
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+                
                 <div class="wallet-modal__title-group">
-                    <h2 id="wallet-modal-title">Connect a wallet</h2>
-                    <ChainBadge NetworkName="@SelectedChain.DisplayName" ChainId="@SelectedChain.EvmChainId" Connected="false" Compact="true" />
+                    <h2 id="wallet-modal-title">Connect your wallet</h2>
+                    <hr class="wallet-modal__divider" />
+                    <p class="wallet-modal__description">Even this is an open-source project, I encourage to test the site with a temporal hot wallet</p>
                 </div>
                 <button class="wallet-modal__close"
                         type="button"
                         aria-label="Close wallet selection"
                         @onclick="CloseWalletModal">
-                    ×
                 </button>
             </div>
 
@@ -352,12 +418,8 @@
                                 disabled="@_isConnecting"
                                 @onclick='() => ConnectWalletAsync("Phantom")'>
                             <span class="wallet-option__icon wallet-option__icon--phantom" aria-hidden="true">
-                                <img src="images/phantom-wallet.svg" alt="" loading="lazy" />
+                                <img src="images/phantom.webp" alt="" loading="lazy" />
                             </span>
-                            <span class="wallet-option__copy">
-                                <span class="wallet-option__name">Phantom · Solana Wallet Standard</span>
-                            </span>
-                            <span class="wallet-option__arrow">›</span>
                         </button>
                     }
                     else
@@ -374,10 +436,6 @@
                     <span class="wallet-option__icon wallet-option__icon--metamask" aria-hidden="true">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">MetaMask</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
                 <button class="wallet-option"
@@ -385,12 +443,8 @@
                         disabled="@_isConnecting"
                         @onclick='() => ConnectWalletAsync("Phantom")'>
                     <span class="wallet-option__icon wallet-option__icon--phantom" aria-hidden="true">
-                        <img src="images/phantom-wallet.svg" alt="" loading="lazy" />
+                        <img src="images/phantom.webp" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Phantom</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
                 <button class="wallet-option"
@@ -400,10 +454,6 @@
                     <span class="wallet-option__icon wallet-option__icon--coinbase" aria-hidden="true">
                         <img src="https://avatars.githubusercontent.com/u/18060234?s=200&amp;v=4" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Coinbase Wallet</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
                 <button class="wallet-option"
@@ -411,28 +461,15 @@
                         disabled="@_isConnecting"
                         @onclick='() => ConnectWalletAsync("Brave Wallet")'>
                     <span class="wallet-option__icon wallet-option__icon--brave" aria-hidden="true">
-                        <img src="https://logodownload.org/wp-content/uploads/2022/04/brave-logo-5.png" alt="" loading="lazy" />
+                        <img src="@Assets["images/brave_logo.webp"]" alt="" loading="lazy" />
                     </span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Brave Wallet</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
                 </button>
 
-                <button class="wallet-option"
-                        type="button"
-                        disabled="@_isConnecting"
-                        @onclick='() => ConnectWalletAsync("Other wallet")'>
-                    <span class="wallet-option__icon wallet-option__icon--other" aria-hidden="true"></span>
-                    <span class="wallet-option__copy">
-                        <span class="wallet-option__name">Other wallet</span>
-                    </span>
-                    <span class="wallet-option__arrow">›</span>
-                </button>
+
                 }
             </div>
 
-            <p class="wallet-modal__note">A signature may be requested to verify ownership.</p>
+
 
             @if (!string.IsNullOrWhiteSpace(_statusMessage))
             {
@@ -448,9 +485,13 @@
 }
 
 @code {
+    [Parameter]
+    public bool TransparentHeader { get; set; }
+
     private bool _isNavOpen;
     private int _cartItemCount;
     private CoffeeDashboardModel? _walletSnapshot;
+    private RobotAvatarDto? _avatar;
     private ChainDefinition SelectedChain => SelectedChainAccessor.SelectedChain;
     private bool _isLoadingWalletStats;
     private IJSObjectReference? _walletModule;
@@ -466,7 +507,90 @@
     private string? _deleteAccountError;
     private const int UserMenuTransitionMilliseconds = 360;
 
+    private bool _isNetworkDropdownOpen = false;
+
+    // Deactivated for now: the toggle UI is hidden below (desktop + drawer)
+    // while /staking is pinned to a permanent dark default (see app.css). Flip
+    // back to true to restore the light/dark/system switch.
+    private const bool ThemeToggleEnabled = false;
+
+    // Light/dark/system theme toggle. 'system' means no explicit choice is
+    // stored — the CSS prefers-color-scheme tier decides. The actual applied
+    // value lives in the `data-theme` attribute on <html>, set synchronously by
+    // the blocking script in App.razor's <head> before first paint; this field
+    // only mirrors it so the toggle button can show the right icon/label.
+    private string _theme = "system";
+
+    private string ThemeToggleLabel => _theme switch
+    {
+        "dark" => "Theme: Dark (click for Light)",
+        "light" => "Theme: Light (click for System)",
+        _ => "Theme: System (click for Dark)"
+    };
+
+    private async Task CycleThemeAsync()
+    {
+        _theme = await JsRuntime.InvokeAsync<string>("artisanalTheme.cycle");
+    }
+
+    private void ToggleNetworkDropdown()
+    {
+        _isNetworkDropdownOpen = !_isNetworkDropdownOpen;
+    }
+
+    private async Task SelectNetworkAsync(string key)
+    {
+        _isNetworkDropdownOpen = false;
+        StateHasChanged();
+        
+        if (string.IsNullOrWhiteSpace(key) || !await SelectedChainAccessor.SelectAsync(key)) return;
+        
+        await JsRuntime.InvokeVoidAsync("artisanalChainSelector.persist", key);
+        await HandleChainChangedAsync(SelectedChainAccessor.SelectedChain);
+    }
+
     private string NavMenuCssClass => _isNavOpen ? "nav-links nav-links--open" : "nav-links";
+
+    // StakingLayout opts into the transparent header explicitly. Story uses
+    // MainLayout, so its route opts in here and lets the hero artwork continue
+    // beneath the same component-owned transparent treatment.
+    private string CurrentRoutePath =>
+        Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/');
+
+    private bool IsStoryRoute =>
+        CurrentRoutePath.Equals("story", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsHomeRoute => string.IsNullOrEmpty(CurrentRoutePath);
+
+    // The bar opens fully transparent on these four and only fades its plate in
+    // after ~1% of a viewport of scroll (publicHeader.js owns the --scrolled
+    // toggle; NavMenu.razor.css owns what it looks like). Kept as an explicit
+    // list rather than keyed off TransparentHeader because /profile shares
+    // StakingLayout but is not part of this treatment. "staking" is the route
+    // behind the nav's "Yield" label — there is no /yield page.
+    private static readonly string[] ScrollVeilRoutes =
+    {
+        "", "staking", "procurement-lab", "about"
+    };
+
+    private bool IsScrollVeilRoute =>
+        ScrollVeilRoutes.Contains(CurrentRoutePath, StringComparer.OrdinalIgnoreCase);
+
+    private string HeaderCssClass
+    {
+        get
+        {
+            var baseClass = IsStoryRoute
+                ? "public-header public-header--transparent public-header--story"
+                : IsHomeRoute
+                    ? "public-header public-header--transparent public-header--home"
+                    : TransparentHeader
+                        ? "public-header public-header--transparent"
+                        : "public-header";
+
+            return IsScrollVeilRoute ? $"{baseClass} public-header--scroll-veil" : baseClass;
+        }
+    }
 
     private string UserToggleCssClass => _isUserMenuOpen ? "nav-login active" : "nav-login";
 
@@ -498,16 +622,50 @@
             ? $"{pendingRewards:0.####} COFFEE"
             : "—";
 
+    private string GetChainHoverBackground()
+    {
+        if (SelectedChain.Family == ChainFamily.Solana)
+        {
+            return "linear-gradient(260deg, #14F195 0%, #9945FF 100%)";
+        }
+        if (SelectedChain.Key.Contains("bsc", StringComparison.OrdinalIgnoreCase))
+        {
+            return "#F3BA2F";
+        }
+        return "#627ee9";
+    }
+
     protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("NavMenu OnInitializedAsync START");
         CartService.Changed += OnCartChanged;
         DashboardState.Changed += OnWalletDashboardChanged;
+        AvatarState.Changed += OnAvatarChanged;
         Navigation.LocationChanged += OnLocationChanged;
         _walletSnapshot = DashboardState.Snapshot;
         await CartService.RefreshFromStorageAsync();
         await RefreshCartCountAsync();
+        await LoadAvatarAsync();
         Logger.LogInformation("NavMenu OnInitializedAsync END. CartItemCount={Count}", _cartItemCount);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _theme = await JsRuntime.InvokeAsync<string>("artisanalTheme.current");
+            StateHasChanged();
+
+            // The DOMContentLoaded listener in App.razor calls initPublicHeader too
+            // (via queuePublicHeader's double-rAF defer), but on a cold load that can
+            // race ahead of the circuit attaching this component, or the rAF pair can
+            // simply fail to fire promptly right after navigation — either way it can
+            // leave the safe-area strip on the light fallback color instead of the
+            // current section's data-theme-color. Call the function directly (not
+            // through the rAF-queued wrapper) since OnAfterRenderAsync already runs
+            // after this DOM is committed, so there's nothing left to wait for.
+            await JsRuntime.InvokeVoidAsync("initPublicHeader");
+        }
     }
 
     private void OnCartChanged() => _ = InvokeAsync(RefreshCartCountAsync);
@@ -517,7 +675,11 @@
         // Blazor Server's interactive routing swaps @Body without a page reload or an
         // "enhancedload" event, so the header's hero/scroll JS (bound once on first load)
         // never reruns and can leave stale inline styles (e.g. navbar-brand color) behind.
-        _ = InvokeAsync(async () => await JsRuntime.InvokeVoidAsync("queuePublicHeader"));
+        _ = InvokeAsync(async () =>
+        {
+            await JsRuntime.InvokeVoidAsync("queuePublicHeader");
+            StateHasChanged(); // recompute HeaderCssClass for the new route
+        });
     }
 
     private async Task RefreshCartCountAsync()
@@ -544,6 +706,37 @@
     {
         _walletSnapshot = DashboardState.Snapshot;
         _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnAvatarChanged()
+    {
+        _avatar = AvatarState.Current;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Reads the account's robot once per circuit.
+    /// </summary>
+    /// <remarks>
+    /// Best-effort: the header is not worth failing over. If this throws the
+    /// button falls back to the chain glyph it always showed.
+    /// </remarks>
+    private async Task LoadAvatarAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            _avatar = await AvatarState.GetOrLoadAsync(UserManager.GetUserId(authState.User));
+        }
+        catch (Exception exception)
+        {
+            Logger.LogWarning(exception, "NavMenu could not load the account avatar.");
+        }
     }
 
     private async Task HandleChainChangedAsync(ChainDefinition chain)
@@ -800,6 +993,7 @@
     {
         CartService.Changed -= OnCartChanged;
         DashboardState.Changed -= OnWalletDashboardChanged;
+        AvatarState.Changed -= OnAvatarChanged;
         Navigation.LocationChanged -= OnLocationChanged;
     }
 

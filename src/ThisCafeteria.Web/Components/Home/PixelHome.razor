@@ -1,0 +1,225 @@
+@* Pixel-galaxy homepage: editorial copy floating over the shared pixel-space
+   background scenario, whose robot crew runs loose through it to gather flat
+   2D coffee coins. The space itself — stars, planets, the Andromeda galaxy,
+   the chain badges, mugs, coins and the crew — now belongs to
+   Components/Layout/GlobalScene.razor, rendered once by StakingLayout and
+   kept alive across routes via data-permanent; this page only carries its
+   copy, the panels and the crew-runtime wiring. Everything in the scene is a
+   flat sprite — see docs/kimi_ui.md for the design system this follows.
+
+   The crew is not choreographed. A 194-parameter policy trained offline by
+   tools/train_pixel_crew.mjs steers each robot toward coins, and
+   wwwroot/js/pixelCrewRuntime.js runs it per frame against the same physics
+   the trainer used (wwwroot/js/pixelCrewSim.js), mounting on GlobalScene's
+   stable #ph-scene-root container. The CSS keyframes underneath remain as the
+   fallback for no-JS and reduced-motion. *@
+
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div class="ph-page">
+    @* The extended hero is two viewport chapters tall. GlobalScene mirrors
+       this footprint on the home route: its sky scrolls through both chapters,
+       while the crew's separate playfield is clipped to chapter one. *@
+    <div class="ph-extended-hero">
+        @* data-theme-color matches the hero's --stake-bg-deep base so
+           publicHeader.js keeps the page theme color (and its 1px top surface)
+           dark instead of falling back to the cream storefront default. *@
+        <section class="ph-hero ph-hero--intro-pending @(_isIntroHidden ? "ph-hero--intro-hidden" : string.Empty)" data-theme-color="#100D0B">
+        @* Commented out for now.
+        <button class="ph-copy-toggle"
+                type="button"
+                aria-controls="pixel-home-intro"
+                aria-expanded="@(!_isIntroHidden)"
+                @onclick="ToggleIntro">
+            @(_isIntroHidden ? "SHOW INTRO" : "HIDE INTRO")
+        </button>
+        *@
+
+        @* Checkpoint switcher: swaps which set of trained weights is steering
+           the crew, leaving the robots and coins exactly where they are so the
+           only thing that changes is the behaviour. Generation 0 has never
+           been trained and drifts into walls; 300 sweeps the field. Rendered
+           only when the runtime reports it took over — with no JS (or reduced
+           motion) the CSS choreography is running and there is no policy to
+           switch. *@
+        @* Commented out for now. *@
+        @if (false && _simRunning)
+        {
+            <div class="ph-brain" role="group" aria-label="Robot policy training checkpoint">
+                <span class="ph-brain__label">CREW BRAIN</span>
+                <div class="ph-brain__options">
+                    @foreach (var option in Checkpoints)
+                    {
+                        @* aria-pressed must be the literal string "true"/"false":
+                           a bool renders as an empty attribute when true and is
+                           dropped entirely when false, which reads as neither. *@
+                        <button class="ph-brain__option @(_checkpoint == option.Key ? "is-active" : string.Empty)"
+                                type="button"
+                                aria-pressed="@((_checkpoint == option.Key) ? "true" : "false")"
+                                title="@option.Description"
+                                @onclick="() => SetCheckpoint(option.Key)">
+                            @option.Label
+                        </button>
+                    }
+                </div>
+                <span class="ph-brain__stat">@CurrentCheckpoint.Description</span>
+            </div>
+        }
+
+        <div id="pixel-home-intro" class="ph-hero__copy">
+            @* 8-bit 3D title: white faces over a hard-stepped text-shadow
+               extrusion, letters bobbing in a staggered ripple like a retro
+               game logo. The aria-label carries the sentence; the decorative
+               letters stay out of the a11y tree. *@
+            <h1 class="ph-title3d" aria-label="Your next coffee, on-chain">
+                <span aria-hidden="true">
+                    @{ var letterIndex = 0; }
+                    @foreach (var line in PixelTitleLines)
+                    {
+                        <span class="ph-title3d__line">
+                            @foreach (var word in line.Split(' '))
+                            {
+                                <span class="ph-title3d__word">
+                                    @foreach (var letter in word)
+                                    {
+                                        <span class="ph-title3d__letter" style="--i: @letterIndex;">@letter</span>
+                                        letterIndex++;
+                                    }
+                                </span>
+                            }
+                        </span>
+                    }
+                </span>
+            </h1>
+            <p class="ph-lede">
+                Stake CAFE while it roasts, and watch a friendly pixel crew run
+                wallet-signed test missions on
+            </p>
+            <div class="ph-cta-row">
+                <a class="ph-cta" href="/staking">STAKE COFFEE</a>
+                <a class="ph-cta ph-cta--ghost" href="https://www.alexisreyna.dev/blog" target="_blank" rel="noopener noreferrer">READ MY BLOG</a>
+            </div>
+        </div>
+
+        @* The pixel-space scene itself (stars, planets, Andromeda, badges,
+           mugs, coins, crew) is rendered by Components/Layout/GlobalScene.razor,
+           which keeps the exact DOM alive across routes; this hero only keeps
+           the copy. *@
+        </section>
+
+        @* The product-discovery panel is intentionally its own component. It is
+           the extended hero's second screen; the original staking/procurement
+           panels remain intact below it as chapter three. *@
+        <ProductDiscovery />
+    </div>
+
+    <section class="ph-panels">
+        <div class="ph-panel">
+            <div class="ph-panel__glyph">
+                <img class="ph-panel__coin" src="images/coffee-coin-pixel.png" alt="" />
+            </div>
+            <p class="ph-panel__label">STAKE COFFEE</p>
+            <h2 class="ph-panel__title">Earn while it roasts</h2>
+            <p class="ph-panel__copy">
+                Stake your CAFE tokens in the pool and track yield on-chain.
+                What you see in the dashboard is what the contract holds — no
+                projected APYs, just recorded epochs.
+            </p>
+            <a class="ph-panel__link" href="/staking">OPEN THE STAKING POOL →</a>
+        </div>
+
+        <div class="ph-panel">
+            <div class="ph-panel__glyph">
+                <span class="ph-panel__robot"></span>
+            </div>
+            <p class="ph-panel__label">PROCUREMENT LAB</p>
+            <h2 class="ph-panel__title">Wallet-signed test missions</h2>
+            <p class="ph-panel__copy">
+                Create escrowed procurement missions for the robot crew. Every
+                mission is a test mission and every action is signed by your
+                wallet — nothing runs autonomously.
+            </p>
+            <a class="ph-panel__link" href="/procurement-lab">ENTER THE LAB →</a>
+        </div>
+    </section>
+
+    <footer class="ph-footer">
+        <p>© 2026 ARTISANAL BREW · BREWED ON SEPOLIA</p>
+    </footer>
+</div>
+
+@code {
+    private bool _isIntroHidden;
+
+    // 3D hero title, stacked as three lines.
+    private static readonly string[] PixelTitleLines = { "YOUR NEXT", "COFFEE,", "ON-CHAIN" };
+
+    private void ToggleIntro() => _isIntroHidden = !_isIntroHidden;
+
+    // The crew runtime replaces the CSS roam keyframes with the trained
+    // policy. Held as a module reference so the rAF loop can be torn down on
+    // dispose — enhanced navigation keeps the module cached, and a second
+    // init without a teardown would leave two loops driving the same DOM.
+    private IJSObjectReference? _crew;
+
+    // True once the runtime confirms it is driving the scene. It declines
+    // under prefers-reduced-motion, and the checkpoint switcher would be
+    // meaningless then — there is no policy running to switch.
+    private bool _simRunning;
+
+    private string _checkpoint = "trained";
+
+    private sealed record Checkpoint(string Key, string Label, string Description);
+
+    // Held-out coins per episode are measured at training time and printed by
+    // tools/train_pixel_crew.mjs; see docs/pixel-crew-training.md.
+    private static readonly Checkpoint[] Checkpoints =
+    {
+        new("untrained", "GEN 0", "Never trained — 1.8 coins, 0.6 mugs per run"),
+        new("early", "GEN 20", "Barely trained — 25.2 coins per run"),
+        new("trained", "GEN 300", "Fully trained — 27.0 coins, 6.8 mugs per run"),
+    };
+
+    private Checkpoint CurrentCheckpoint =>
+        Checkpoints.FirstOrDefault(c => c.Key == _checkpoint) ?? Checkpoints[^1];
+
+    private async Task SetCheckpoint(string key)
+    {
+        if (_crew is null || _checkpoint == key) return;
+        _checkpoint = key;
+        await _crew.InvokeVoidAsync("setCheckpoint", "ph-scene-root", key);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _crew = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/pixelCrewRuntime.js");
+            _simRunning = await _crew.InvokeAsync<bool>("init", "ph-scene-root", _checkpoint);
+            if (_simRunning)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_crew is not null)
+        {
+            try
+            {
+                await _crew.InvokeVoidAsync("destroy", "ph-scene-root");
+                await _crew.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit already gone; nothing left to tear down.
+            }
+        }
+    }
+}

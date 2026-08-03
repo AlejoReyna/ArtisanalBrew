@@ -8,4 +8,7 @@ public sealed record CreateProductRequest(
     decimal Price,
     int StockQuantity,
     string? ImageUrl,
-    ProductCategory Category);
+    ProductCategory Category,
+    string? Origin,
+    RoastLevel? RoastLevel,
+    CoffeeProcess? Process);

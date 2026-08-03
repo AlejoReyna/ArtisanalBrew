@@ -1,0 +1,56 @@
+@using ThisCafeteria.Application.DTOs
+@using ThisCafeteria.Domain.Avatars
+@using ThisCafeteria.Web.Services
+
+@* The account's robot, composed from the dress-up sheets.
+
+   Every sprite slot is one absolutely-positioned span over the same box, so
+   the layers register because they were drawn to register — there is no
+   per-item nudging here and there must never be. An item that sits wrong is
+   a bug in tools/generate_avatar_parts.py, not something to patch in CSS. *@
+
+<span class="rbt @(Idle ? "rbt--idle" : null) @Class"
+      style="--rbt-size: @Size;"
+      data-backdrop="@_look.Backdrop"
+      aria-hidden="true">
+    <span class="rbt__disc">
+        <span class="rbt__body">
+            @foreach (var slot in AvatarCatalog.Slots)
+            {
+                if (slot.Kind != AvatarSlotKind.Sprite)
+                {
+                    continue;
+                }
+
+                var item = slot.Resolve(_look[slot.Key]);
+                if (item.IsEmpty)
+                {
+                    continue;
+                }
+
+                <span class="rbt__layer" style="@AvatarSheetStyle.Layer(slot, item)"></span>
+            }
+        </span>
+    </span>
+</span>
+
+@code {
+    /// <summary>The look to draw. Already resolved — see RobotAvatarDto.Resolve.</summary>
+    [Parameter, EditorRequired]
+    public RobotAvatarDto Avatar { get; set; } = default!;
+
+    /// <summary>Any CSS length. The whole robot scales from this one value.</summary>
+    [Parameter]
+    public string Size { get; set; } = "4rem";
+
+    /// <summary>Whether the robot breathes. Off for dense grids of thumbnails.</summary>
+    [Parameter]
+    public bool Idle { get; set; } = true;
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    private RobotAvatarDto _look = default!;
+
+    protected override void OnParametersSet() => _look = Avatar;
+}

@@ -1,7 +1,7 @@
 (function () {
     const storageKey = 'thiscafeteria.productTransition';
     const easing = 'cubic-bezier(0.16, 1, 0.3, 1)';
-    const duration = 620;
+    const duration = 500;
 
     const prefersReducedMotion = () =>
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,14 +29,16 @@
                 { transform: 'translateY(100%)' }
             ],
             {
-                duration: 300,
+                // Mirror of the sheet entry (and of the filter receipt sheet):
+                // same drawer curve, same 440ms, reversed path.
+                duration: 440,
                 easing: 'cubic-bezier(0.32, 0.72, 0, 1)',
                 fill: 'forwards'
             });
 
         const remove = () => clone.remove();
         animation.finished.then(remove, remove);
-        window.setTimeout(remove, 600);
+        window.setTimeout(remove, 700);
     };
 
     const playDetailDismiss = () => {
@@ -66,29 +68,35 @@
         return value.replace(/["\\]/g, '\\$&');
     };
 
-    const wait = milliseconds => new Promise(resolve => window.setTimeout(resolve, milliseconds));
+    const readRootPx = name => parseFloat(
+        window.getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
 
+    // Desktop only (mobile returns early from playFromCard). The detail page
+    // centres a square image stage between a fixed-width thumbnail rail and a
+    // fixed-width buy column, so this recomputes ProductDetails.razor.css's
+    // --pdp-stage from the same :root tokens (declared in app.css, which is
+    // loaded here on /products where the detail page's own styles are not).
+    // The destination is exact — no guessed offsets.
     const getTargetRect = () => {
+        const padY = readRootPx('--pdp-pad-y');
+        const padX = readRootPx('--pdp-pad-x');
+        const rail = readRootPx('--pdp-rail');
+        const railGap = readRootPx('--pdp-rail-gap');
+        const colGap = readRootPx('--pdp-col-gap');
+        const info = readRootPx('--pdp-info');
+
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
-        const top = Math.max(96, viewportHeight * 0.16);
+        const stage = Math.min(
+            viewportHeight - 2 * padY,
+            viewportWidth - (2 * padX + rail + railGap + colGap + info));
+        const tracks = rail + railGap + stage + colGap + info;
 
-        if (viewportWidth <= 960) {
-            const width = Math.max(240, viewportWidth - 40);
-            return {
-                left: (viewportWidth - width) / 2,
-                top,
-                width,
-                height: width * 1.18
-            };
-        }
-
-        const width = Math.min(560, Math.max(360, viewportWidth * 0.34));
         return {
-            left: Math.min(viewportWidth - width - 48, viewportWidth * 0.58),
-            top: Math.max(112, viewportHeight * 0.18),
-            width,
-            height: width * 1.18
+            left: (viewportWidth - tracks) / 2 + rail + railGap,
+            top: (viewportHeight - stage) / 2,
+            width: stage,
+            height: stage
         };
     };
 
@@ -125,7 +133,6 @@
 
     const cleanupListTransition = () => {
         document.documentElement.classList.remove('product-transition-active');
-        document.querySelectorAll('.product-transition-clone').forEach(element => element.remove());
         document
             .querySelectorAll('.product-transition-away, .product-transition-source, .product-transition-source-image')
             .forEach(element => {
@@ -134,6 +141,40 @@
                     'product-transition-source',
                     'product-transition-source-image');
             });
+    };
+
+    // Hand-off: the clone landed exactly on the real media panel, so it simply
+    // cross-fades into the real image once that image can paint — no replayed
+    // scale/fade on the detail side, and no frame where neither is visible.
+    const dismissClone = hero => {
+        const clone = document.querySelector('.product-transition-clone');
+
+        if (!clone) {
+            return;
+        }
+
+        let dismissed = false;
+        const remove = () => clone.remove();
+        const fade = () => {
+            if (dismissed) {
+                return;
+            }
+
+            dismissed = true;
+            const animation = clone.animate(
+                [{ opacity: 1 }, { opacity: 0 }],
+                { duration: 150, easing: 'ease', fill: 'forwards' });
+            animation.finished.then(remove, remove);
+            window.setTimeout(remove, 400);
+        };
+
+        const image = hero?.querySelector('[data-product-detail-image]');
+        if (image && typeof image.decode === 'function') {
+            image.decode().then(fade, fade);
+            window.setTimeout(fade, 800);
+        } else {
+            fade();
+        }
     };
 
     const playFromCard = async slug => {
@@ -158,6 +199,7 @@
 
         const imageRect = image.getBoundingClientRect();
         const targetRect = getTargetRect();
+        const sourceRadius = window.getComputedStyle(image).borderRadius || '0px';
         const clone = image.cloneNode(true);
 
         clone.classList.add('product-transition-clone');
@@ -180,14 +222,14 @@
         const cloneAnimation = clone.animate(
             [
                 {
-                    borderRadius: '0px',
+                    borderRadius: sourceRadius,
                     left: `${imageRect.left}px`,
                     top: `${imageRect.top}px`,
                     width: `${imageRect.width}px`,
                     height: `${imageRect.height}px`
                 },
                 {
-                    borderRadius: '0px',
+                    borderRadius: `${readRootPx('--pdp-stage-radius')}px`,
                     left: `${targetRect.left}px`,
                     top: `${targetRect.top}px`,
                     width: `${targetRect.width}px`,
@@ -200,10 +242,7 @@
                 fill: 'forwards'
             });
 
-        await Promise.allSettled([
-            cloneAnimation.finished,
-            wait(duration)
-        ]);
+        await cloneAnimation.finished.catch(() => {});
     };
 
     const playDetailEntry = slug => {
@@ -215,6 +254,7 @@
 
         const hadTransition = takeTransition(slug);
         cleanupListTransition();
+        dismissClone(hero);
 
         if (prefersReducedMotion()) {
             return;

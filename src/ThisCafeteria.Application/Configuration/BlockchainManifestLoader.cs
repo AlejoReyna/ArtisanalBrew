@@ -18,6 +18,38 @@ public static class BlockchainManifestLoader
         return new BlockchainOptions { DefaultChainKey = options.DefaultChainKey, Chains = chains };
     }
 
+    /// <summary>
+    /// Applies server-side-only bundler RPC URL overrides per chain, sourced from environment
+    /// variables named <c>ARTISANALBREW_BUNDLER_RPC_URL__{CHAIN_KEY}</c> and, separately,
+    /// <c>ARTISANALBREW_MODULAR_BUNDLER_RPC_URL__{CHAIN_KEY}</c> (chain key upper-cased, hyphens
+    /// replaced with underscores - e.g. <c>ARTISANALBREW_BUNDLER_RPC_URL__ETHEREUM_SEPOLIA</c>). The
+    /// modular variable is separate because a single ERC-4337 bundler instance is commonly
+    /// configured for exactly one v0.7 EntryPoint address - a chain whose bundler cannot serve both
+    /// the legacy and canonical modular EntryPoints needs two distinct bundler endpoints, not two
+    /// EntryPoints on one endpoint (see <see cref="ChainDefinition.EffectiveModularBundlerRpcUrl"/>,
+    /// which falls back to the legacy override when the modular one is unset). This mirrors how
+    /// <c>Sponsorship__VerifyingSignerPrivateKey</c> is already sourced: a hosted bundler's URL
+    /// typically embeds a live API key, and a committed deployment manifest is not where that
+    /// belongs - it would leak into git history. Call this after <see cref="LoadDeploymentManifests"/>
+    /// so the overrides win over whatever the manifest set (including an absent/empty field),
+    /// letting a chain pick up bundler endpoints the committed manifest deliberately doesn't carry.
+    /// </summary>
+    public static BlockchainOptions ApplyBundlerRpcUrlOverrides(BlockchainOptions options, Func<string, string?> lookupEnvironmentVariable)
+    {
+        var chains = options.Chains.Select(chain =>
+        {
+            var suffix = chain.Key.ToUpperInvariant().Replace('-', '_');
+            var overrideUrl = lookupEnvironmentVariable($"ARTISANALBREW_BUNDLER_RPC_URL__{suffix}");
+            var modularOverrideUrl = lookupEnvironmentVariable($"ARTISANALBREW_MODULAR_BUNDLER_RPC_URL__{suffix}");
+            return chain with
+            {
+                BundlerRpcUrl = string.IsNullOrWhiteSpace(overrideUrl) ? chain.BundlerRpcUrl : overrideUrl,
+                ModularBundlerRpcUrl = string.IsNullOrWhiteSpace(modularOverrideUrl) ? chain.ModularBundlerRpcUrl : modularOverrideUrl
+            };
+        }).ToList();
+        return new BlockchainOptions { DefaultChainKey = options.DefaultChainKey, Chains = chains };
+    }
+
     private static IEnumerable<string> SplitManifestPaths(string? value) =>
         (value ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
@@ -63,12 +95,17 @@ public static class BlockchainManifestLoader
                 ShortName = displayName,
                 Family = ChainFamily.Evm,
                 Enabled = true,
+                IconAsset = chainId == 97 ? "/images/bnb_logo.svg" : "/images/eth_logo.png",
                 EvmChainId = chainId,
                 EvmChainIdHex = $"0x{chainId:x}",
                 NativeCurrencyName = nativeName,
                 NativeCurrencySymbol = nativeSymbol,
                 NativeCurrencyDecimals = nativeDecimals,
                 PublicRpcUrl = rpcUrl,
+                // Server-side-only ERC-4337 bundler endpoint. Kept out of `addresses` since it is
+                // an RPC URL, not a contract address, and out of the public chain-metadata surface
+                // (see ChainDefinition.BundlerRpcUrl) - never returned by /api/chains.
+                BundlerRpcUrl = Optional(root, "bundlerRpcUrl"),
                 ExplorerAddressTemplate = explorerAddress,
                 ExplorerTransactionTemplate = explorerTransaction,
                 SortOrder = chainId == 97 ? 6 : chainId == 11155111 ? 1 : 100,
@@ -80,12 +117,14 @@ public static class BlockchainManifestLoader
                     Faucet = addresses.GetProperty("faucet").GetString() ?? string.Empty,
                     StCafe = addresses.GetProperty("liquidVault").GetString() ?? string.Empty,
                     AgenticEscrow = Optional(addresses, "erc8183Escrow") ?? string.Empty,
+                    LegacyPool = Optional(addresses, "legacyPool") ?? string.Empty,
                     PaymentToken = Optional(addresses, "paymentToken") ?? (addresses.TryGetProperty("cafe", out var cafeElement) ? cafeElement.GetString() : string.Empty) ?? string.Empty,
                     EntryPoint = Optional(addresses, "entryPoint") ?? string.Empty,
                     AccountFactory = Optional(addresses, "accountFactory") ?? string.Empty,
                     VerifyingPaymaster = Optional(addresses, "verifyingPaymaster") ?? string.Empty,
                     ERC8004Registry = Optional(addresses, "erc8004Registry") ?? string.Empty,
                     ERC7683Resolver = Optional(addresses, "erc7683Resolver") ?? string.Empty,
+                    ModularEntryPoint = Optional(addresses, "modularEntryPoint") ?? string.Empty,
                     ModularAccountFactory = Optional(addresses, "modularSimpleFactory") ?? string.Empty,
                     DelegationManager = Optional(addresses, "delegationManager") ?? string.Empty,
                     HybridDeleGatorImplementation = Optional(addresses, "hybridDeleGatorImplementation") ?? string.Empty,
@@ -105,8 +144,13 @@ public static class BlockchainManifestLoader
                     LiquidStaking = true,
                     Faucet = true,
                     RewardMinting = true,
-                    AgenticCommerce = root.TryGetProperty("capabilities", out var caps) && caps.TryGetProperty("agenticCommerce", out var agenticCommerce) && agenticCommerce.GetBoolean(),
-                    AgenticSessionPayments = root.TryGetProperty("capabilities", out var caps2) && caps2.TryGetProperty("agenticSessionPayments", out var agenticSessionPayments) && agenticSessionPayments.GetBoolean()
+                    AgenticCommerce = ReadCapabilityFlag(root, "agenticCommerce"),
+                    AgenticSessionPayments = ReadCapabilityFlag(root, "agenticSessionPayments"),
+                    // Read from the manifest instead of hardcoding: the manifest is the single source of
+                    // truth. ChainRegistry.Validate fails closed if a flag is on without the deployment
+                    // address it requires (marketplacePayment -> AgenticEscrow, legacyExit -> LegacyPool).
+                    MarketplacePayment = ReadCapabilityFlag(root, "marketplacePayment"),
+                    LegacyExit = ReadCapabilityFlag(root, "legacyExit")
                 }
             };
             return true;
@@ -140,6 +184,7 @@ public static class BlockchainManifestLoader
                 ShortName = cluster switch { "localnet" => "Solana Localnet", "devnet" => "Solana Devnet", _ => "Solana Testnet" },
                 Family = ChainFamily.Solana,
                 Enabled = true,
+                IconAsset = "/images/solana_logo.svg",
                 SolanaCluster = cluster,
                 NativeCurrencyName = "Solana",
                 NativeCurrencySymbol = "SOL",
@@ -167,7 +212,10 @@ public static class BlockchainManifestLoader
                     CoffeeDecimals = coffeeDecimals,
                     StartBlockOrSlot = root.GetProperty("deploymentSlot").GetInt64()
                 },
-                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true }
+                // Faucet is read from the manifest (single source of truth) rather than hardcoded off.
+                // ChainRegistry.Validate fails closed if it is on without the CAFE mint + administrator
+                // authority that minting under a mint authority requires.
+                Capabilities = new ChainCapabilities { WalletLogin = true, LiquidStaking = true, RewardMinting = true, Faucet = ReadCapabilityFlag(root, "faucet") }
             };
             return true;
         }
@@ -178,6 +226,17 @@ public static class BlockchainManifestLoader
         var value = root.GetProperty(name).GetString();
         return !string.IsNullOrWhiteSpace(value) ? value : throw new InvalidDataException($"Manifest property '{name}' is required.");
     }
+
+    /// <summary>
+    /// Reads a boolean flag from the manifest's <c>capabilities</c> object, defaulting to false when the
+    /// object or the named flag is absent. Non-boolean values throw, so a malformed manifest fails loudly
+    /// rather than silently disabling a capability.
+    /// </summary>
+    private static bool ReadCapabilityFlag(JsonElement root, string name) =>
+        root.TryGetProperty("capabilities", out var capabilities)
+        && capabilities.ValueKind == JsonValueKind.Object
+        && capabilities.TryGetProperty(name, out var flag)
+        && flag.GetBoolean();
 
     private static string? Optional(JsonElement root, string name) =>
         root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String

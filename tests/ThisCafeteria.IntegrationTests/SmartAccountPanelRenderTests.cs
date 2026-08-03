@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Infrastructure.Identity;
 using Xunit;
 
@@ -16,10 +18,12 @@ namespace ThisCafeteria.IntegrationTests;
 /// <summary>
 /// Renders the authenticated /profile page end-to-end against the real Postgres fixture to prove
 /// the SmartAccountPanel component (smart-account discovery/selection UI) mounts and renders
-/// without a server error. Deliberately uses the default "ethereum-sepolia" chain, which has no
-/// ERC-4337 factory configured - this exercises the RPC-free fail-closed empty-state path so the
-/// test stays deterministic and offline, matching this repo's existing unit-test posture around
-/// SmartAccountService (see SmartAccountServiceTests) rather than depending on a live chain.
+/// without a server error. Stubs ISmartAccountService to always report "not configured" for the
+/// selected chain, so this exercises the RPC-free fail-closed empty-state path deterministically
+/// and offline regardless of which chains have ERC-4337 infrastructure wired up in the real
+/// deployment manifests (ethereum-sepolia now does - see ethereum-sepolia.json's accountFactory),
+/// matching this repo's existing unit-test posture around SmartAccountService (see
+/// SmartAccountServiceTests) rather than depending on a live chain.
 /// </summary>
 public sealed class SmartAccountPanelRenderTests : IClassFixture<ThisCafeteriaWebApplicationFactory>, IAsyncLifetime
 {
@@ -47,6 +51,8 @@ public sealed class SmartAccountPanelRenderTests : IClassFixture<ThisCafeteriaWe
                     options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
                     options.DefaultSignInScheme = TestAuthHandler.SchemeName;
                 });
+                services.RemoveAll<ISmartAccountService>();
+                services.AddScoped<ISmartAccountService, NotConfiguredSmartAccountService>();
             });
         });
 
@@ -85,6 +91,50 @@ public sealed class SmartAccountPanelRenderTests : IClassFixture<ThisCafeteriaWe
             "No ERC-4337 smart account is configured",
             "the default chain has no ERC-4337 factory configured, so the fail-closed empty state must render instead of an error");
         body.Should().NotContain("smart-account-panel__error", "no chain-read error should occur on the RPC-free default chain");
+    }
+
+    /// <summary>Fails closed for every chain, exercising the same path a real unconfigured chain takes.</summary>
+    private sealed class NotConfiguredSmartAccountService : ISmartAccountService
+    {
+        public Task<bool> IsConfiguredAsync(string chainKey) => Task.FromResult(false);
+
+        public Task<string> GetOrDeployAccountAsync(string chainKey, string ownerAddress) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
+        public Task<bool> HasSufficientSponsorshipQuotaAsync(string chainKey, string ownerAddress, decimal estimatedCostUsd) =>
+            Task.FromResult(false);
+
+        public Task RecordSponsorshipUsageAsync(string chainKey, string ownerAddress, decimal costUsd) =>
+            Task.CompletedTask;
+
+        public Task RevokeSessionPermissionsAsync(string chainKey, string ownerAddress) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<SmartAccountInfo>> DiscoverAccountsAsync(string chainKey, string ownerAddress) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
+        public Task<SmartAccountInfo> RegisterModularAccountAsync(string chainKey, string ownerAddress, string accountAddress, string salt) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
+        public Task<string> SubmitOwnerUserOperationAsync(string chainKey, string ownerAddress, BundlerUserOperation operation, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
+        public Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
+
+        public Task<AgentPermissionEpochInfo?> GetActivePermissionEpochAsync(string chainKey, string delegatorAddress) =>
+            Task.FromResult<AgentPermissionEpochInfo?>(null);
+
+        public Task<AgentPermissionEpochInfo> RecordPermissionEpochInstalledAsync(
+            string chainKey,
+            string delegatorAddress,
+            string agentAddress,
+            string epoch,
+            DateTime validAfterUtc,
+            DateTime validBeforeUtc,
+            string installedTxHash,
+            IReadOnlyList<AgentPermissionGrantInput> grants) =>
+            throw new NotSupportedException("Smart accounts are not configured for this chain.");
     }
 
     private sealed class TestAuthHandler(

@@ -37,6 +37,20 @@ param webImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 @description('Worker container image reference. Same placeholder convention as webImage.')
 param workerImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
+@description('Set true only when a tracer-capable Sepolia RPC URL and a dedicated funded bundler signer are supplied.')
+param enableSepoliaBundler bool = false
+
+@description('Rundler image reference, built separately from the Web and Worker images.')
+param sepoliaBundlerImage string = 'mcr.microsoft.com/oss/ubuntu/ubuntu:22.04'
+
+@secure()
+@description('Sepolia node RPC URL with debug_traceCall JavaScript-tracer support. Never commit this provider credential.')
+param sepoliaBundlerNodeRpcUrl string = ''
+
+@secure()
+@description('Dedicated Sepolia beneficiary/signer private key for Rundler. Never reuse the deployed-contract owner key.')
+param sepoliaBundlerSignerPrivateKey string = ''
+
 @description('Extra non-secret environment variables for the Web app, e.g. Blockchain__Network__* settings that must not be templated into version-controlled Bicep. Pass at deploy time.')
 param additionalWebEnvVars array = []
 
@@ -67,6 +81,7 @@ module cicdIdentity 'modules/cicdIdentity.bicep' = {
     name: '${namePrefix}-cicd-identity'
     githubRepo: githubRepo
     githubBranch: githubBranch
+    githubEnvironment: 'production'
   }
 }
 
@@ -146,6 +161,11 @@ var adminSecrets = empty(authenticationAdminPassword) ? {} : {
   'authentication-admin-password': authenticationAdminPassword
 }
 
+var sepoliaBundlerSecrets = enableSepoliaBundler ? {
+  'sepolia-bundler-node-rpc-url': sepoliaBundlerNodeRpcUrl
+  'sepolia-bundler-signer-private-key': sepoliaBundlerSignerPrivateKey
+} : {}
+
 module keyVault 'modules/keyVault.bicep' = {
   name: 'keyVault'
   params: {
@@ -154,7 +174,7 @@ module keyVault 'modules/keyVault.bicep' = {
     name: toLower('tc-kv-${resourceToken}')
     keyVaultReaderPrincipalId: identity.outputs.principalId
     cicdReaderPrincipalId: cicdIdentity.outputs.principalId
-    secrets: union(baseSecrets, adminSecrets)
+    secrets: union(baseSecrets, adminSecrets, sepoliaBundlerSecrets)
   }
 }
 
@@ -223,6 +243,33 @@ module workerApp 'modules/containerApp.bicep' = {
   }
 }
 
+// Private by design: do not expose an unauthenticated bundler RPC to the internet.
+module sepoliaBundler 'modules/containerApp.bicep' = if (enableSepoliaBundler) {
+  name: 'sepoliaBundler'
+  params: {
+    location: location
+    name: '${namePrefix}-sepolia-bundler'
+    containerAppsEnvironmentId: containerAppsEnvironment.outputs.id
+    userAssignedIdentityId: identity.outputs.id
+    acrLoginServer: acr.outputs.loginServer
+    image: sepoliaBundlerImage
+    enableIngress: true
+    externalIngress: false
+    targetPort: 4338
+    cpu: '0.5'
+    memory: '1Gi'
+    minReplicas: 1
+    maxReplicas: 1
+    keyVaultUri: keyVault.outputs.uri
+    plainEnvVars: []
+    secretEnvVars: [
+      { envVarName: 'RUNDLER_NODE_HTTP', keyVaultSecretName: 'sepolia-bundler-node-rpc-url' }
+      { envVarName: 'RUNDLER_SIGNER_PRIVATE_KEY', keyVaultSecretName: 'sepolia-bundler-signer-private-key' }
+    ]
+    deployerPrincipalId: cicdIdentity.outputs.principalId
+  }
+}
+
 output resourceGroupName string = resourceGroup().name
 output containerRegistryLoginServer string = acr.outputs.loginServer
 output webAppFqdn string = webApp.outputs.fqdn
@@ -230,3 +277,4 @@ output managedIdentityClientId string = identity.outputs.clientId
 output cicdIdentityClientId string = cicdIdentity.outputs.clientId
 output postgresServerName string = postgres.outputs.name
 output keyVaultName string = toLower('tc-kv-${resourceToken}')
+output sepoliaBundlerInternalFqdn string = enableSepoliaBundler ? sepoliaBundler.outputs.fqdn : ''

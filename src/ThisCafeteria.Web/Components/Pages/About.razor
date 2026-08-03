@@ -1,0 +1,819 @@
+@page "/about"
+@layout StakingLayout
+@rendermode InteractiveServer
+
+@* The about page as a room you look into rather than a column you scroll.
+   One isometric pixel café — floor, two back walls, six props — drawn by
+   tools/generate_cafe_floor.py from the same --stake-* roast palette as the
+   rest of the dark roast wing. Each prop is a station standing for one real
+   part of the system, and each station has a full chapter below the room.
+
+   The room is a map, not the content: it summarises a station in the card
+   beside it and links down to that station's chapter. Every chapter is in the
+   DOM unconditionally, so the page is complete with no JS and every anchor
+   resolves — selecting a station is an enhancement, never a gate.
+
+   The stations are plain buttons carrying aria-pressed (same pattern as
+   PixelHome's crew-brain switcher) rather than a tablist, because their order
+   on screen is spatial, not linear, and arrow-key tab semantics would promise
+   a sequence the layout does not have.
+
+   Placement: each prop's percentage offsets come straight from the ISO_TILES
+   table the generator prints. Move a station there and the numbers below have
+   to move with it — the room art and these coordinates are one drawing split
+   across two files. *@
+
+<PageTitle>Step inside the café | Artisanal Brew</PageTitle>
+
+@* data-page-theme-color, not data-theme-color: this page has no hero, so
+   publicHeader.js takes its solid-header branch and reads the page attribute
+   — the section-scanning one would never be consulted and the browser chrome
+   would fall back to the cream storefront default over a near-black page. *@
+<div class="af-page" data-page-theme-color="#100D0B">
+    <header class="af-intro">
+        <p class="af-eyebrow">The café that doesn't exist</p>
+
+        @* Same 8-bit treatment as the home and story heroes: Press Start 2P
+           faces over a hard stepped extrusion, letters bobbing in a staggered
+           ripple. The aria-label carries the sentence; the decorative letters
+           stay out of the a11y tree. *@
+        <h1 class="af-title3d" aria-label="Step inside the shop">
+            <span aria-hidden="true">
+                @{ var letterIndex = 0; }
+                @foreach (var line in TitleLines)
+                {
+                    <span class="af-title3d__line">
+                        @foreach (var word in line.Split(' '))
+                        {
+                            <span class="af-title3d__word">
+                                @foreach (var letter in word)
+                                {
+                                    <span class="af-title3d__letter" style="--i: @letterIndex;">@letter</span>
+                                    letterIndex++;
+                                }
+                            </span>
+                        }
+                    </span>
+                }
+            </span>
+        </h1>
+
+        <p class="af-lede">
+            It sells coffee it cannot ship, on chains that cost nothing to use.
+            Every counter in here is a real piece of the stack wearing an apron
+            — including the one in the corner that has never been switched on.
+        </p>
+    </header>
+
+    <div class="af-floorplan">
+        <div class="af-room">
+            <img class="af-room__ground"
+                 src="images/pl-cafe-room.png"
+                 alt="An isometric pixel café: checkered floor, a chalk menu board on one wall, a shelf of bean bags and a window onto open space on the other."
+                 width="272"
+                 height="200"
+                 decoding="async"
+                 fetchpriority="high" />
+
+            @foreach (var station in Stations)
+            {
+                <button class="af-station @(station.Dormant ? "af-station--dormant" : string.Empty) @(_selected == station.Key ? "is-active" : string.Empty)"
+                        type="button"
+                        style="--x: @station.Left.ToString(Culture)%; --y: @station.Top.ToString(Culture)%; --w: @station.Width.ToString(Culture)%; --z: @station.Depth;"
+                        aria-pressed="@((_selected == station.Key) ? "true" : "false")"
+                        @onclick="() => Select(station.Key)">
+                    <span class="af-station__spot" aria-hidden="true"></span>
+                    <img class="af-station__prop" src="images/@(station.Sprite)" alt="" />
+                    @if (station.Steams)
+                    {
+                        <span class="af-station__steam" aria-hidden="true"></span>
+                    }
+                    <span class="af-station__name">@station.Label</span>
+                </button>
+            }
+        </div>
+
+        @* aria-live so a selection made by keyboard announces the new card
+           instead of silently repainting somewhere off to the side. *@
+        <div class="af-card" aria-live="polite">
+            <p class="af-card__label">
+                @Current.Label
+                @if (Current.Dormant)
+                {
+                    <span class="af-tag af-tag--off">NOT RUNNING</span>
+                }
+            </p>
+            <h2 class="af-card__title">@Current.Title</h2>
+            <p class="af-card__copy">@Current.Copy</p>
+
+            <dl class="af-specs">
+                @foreach (var spec in Current.Specs)
+                {
+                    <div class="af-specs__row">
+                        <dt>@spec.Term</dt>
+                        <dd>@spec.Value</dd>
+                    </div>
+                }
+            </dl>
+
+            <div class="af-card__actions">
+                <a class="af-cta" href="#@Current.Anchor">READ SECTION @Current.Index ↓</a>
+                @if (Current.External)
+                {
+                    <a class="af-cta af-cta--ghost" href="@Current.LinkHref" target="_blank" rel="noopener noreferrer">@Current.LinkLabel</a>
+                }
+                else
+                {
+                    <a class="af-cta af-cta--ghost" href="@Current.LinkHref">@Current.LinkLabel</a>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ══ 01 · THE BAR — how the storefront is composed ══════════════════ *@
+    <section class="af-chapter" id="the-bar">
+        <div class="af-chapter__head">
+            <p class="af-chapter__index">01</p>
+            <p class="af-chapter__eyebrow">The Bar</p>
+            <h2 class="af-chapter__title">One page, twelve moving parts</h2>
+            <p class="af-chapter__intro">
+                <code>/products</code> is the honest half of this project: a
+                catalog with no wallet anywhere in it. It is worth pulling apart
+                because everything else in the room hangs off the same spine —
+                a routable Blazor page, a service interface, a repository, EF
+                Core, Postgres.
+            </p>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">Component tree · Components/Pages/Products.razor</p>
+            <ul class="af-tree">
+                <li>
+                    <span class="af-chip af-chip--root">Products.razor</span>
+                    <span class="af-chip__meta">@@page "/products" · InteractiveServer · PersistentComponentState</span>
+                    <ul>
+                        <li>
+                            <span class="af-chip">HeadContent</span>
+                            <span class="af-chip__meta">links css/catalog.css, the Tailwind build of Styles/catalog.input.css</span>
+                        </li>
+                        <li>
+                            <span class="af-chip">CatalogHero</span>
+                        </li>
+                        <li>
+                            <span class="af-chip">FilterSidebar</span>
+                            <span class="af-chip__meta">category · origin · roast · process · price range · sort</span>
+                        </li>
+                        <li>
+                            <span class="af-chip">ProductCard</span>
+                            <span class="af-chip__meta">one per visible product, @@key'd by slug · 6 per page</span>
+                            <ul>
+                                <li><span class="af-chip af-chip--leaf">RatingStars</span></li>
+                                <li><span class="af-chip af-chip--leaf">LucideIcon</span></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">Where a card's data actually comes from</p>
+            <ol class="af-flow">
+                <li class="af-flow__step">
+                    <span class="af-flow__name">ProductCard</span>
+                    <span class="af-flow__note">Components/Storefront</span>
+                </li>
+                <li class="af-flow__step">
+                    <span class="af-flow__name">CatalogProductCardMapper</span>
+                    <span class="af-flow__note">DTO → view model</span>
+                </li>
+                <li class="af-flow__step">
+                    <span class="af-flow__name">IProductService</span>
+                    <span class="af-flow__note">Application layer</span>
+                </li>
+                <li class="af-flow__step">
+                    <span class="af-flow__name">IProductRepository</span>
+                    <span class="af-flow__note">Infrastructure</span>
+                </li>
+                <li class="af-flow__step af-flow__step--terminal">
+                    <span class="af-flow__name">Postgres</span>
+                    <span class="af-flow__note">EF Core · products</span>
+                </li>
+            </ol>
+            <p class="af-diagram__note">
+                The page never touches a <code>DbContext</code>. It injects
+                <code>IProductService</code>, which is the only thing the Web
+                project is allowed to know about — the Domain entity behind it
+                carries name, slug, description, price, stock, image, category,
+                origin, roast level, process and an active flag, and the
+                sidebar's facets are all derived from those columns at runtime
+                rather than hardcoded.
+            </p>
+        </div>
+
+        <dl class="af-notes">
+            <div class="af-notes__row">
+                <dt>Prerender</dt>
+                <dd>
+                    The product list is stashed with <code>PersistentComponentState</code>
+                    during the server render and read back when the circuit
+                    connects, so the catalog is not fetched twice and the grid
+                    does not flash empty on hydration.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>Filtering</dt>
+                <dd>
+                    Category, origin, roast and process are held as
+                    <code>HashSet&lt;string&gt;</code> on the component; price is a
+                    floor/ceiling pair derived from the loaded set. Filtering and
+                    paging both happen in memory, over a catalog small enough
+                    that a round trip per keystroke would be the slower design.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>Styling</dt>
+                <dd>
+                    Two systems, deliberately: Tailwind utilities for the catalog
+                    grid, component-scoped <code>.razor.css</code> for everything
+                    with a name. The pixel wing you are looking at right now is
+                    the second kind.
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    @* ══ 02 · THE ROASTER — the Azure footprint ═════════════════════════ *@
+    <section class="af-chapter" id="the-roaster">
+        <div class="af-chapter__head">
+            <p class="af-chapter__index">02</p>
+            <p class="af-chapter__eyebrow">The Roaster</p>
+            <h2 class="af-chapter__title">What keeps the heat on</h2>
+            <p class="af-chapter__intro">
+                Everything below is Bicep in <code>infra/</code>, deployed to one
+                resource group on Azure Container Apps. No portal clicking: a
+                GitHub Actions workflow federates into Azure over OIDC, so there
+                is no cloud credential stored in the repository at all.
+            </p>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">Resource group · thiscafeteria-prod-rg · westus</p>
+
+            <div class="af-rack">
+                <p class="af-rack__title">Container Apps Environment — Consumption</p>
+                <div class="af-rack__body">
+                    <div class="af-node af-node--live">
+                        <p class="af-node__name">web</p>
+                        <p class="af-node__spec">0.5 vCPU · 1 GiB</p>
+                        <p class="af-node__spec">min 1 · max 2</p>
+                        <p class="af-node__spec">ingress :8080</p>
+                    </div>
+                    <div class="af-node af-node--live">
+                        <p class="af-node__name">worker</p>
+                        <p class="af-node__spec">0.25 vCPU · 0.5 GiB</p>
+                        <p class="af-node__spec">min 1 · max 1</p>
+                        <p class="af-node__spec">no ingress</p>
+                    </div>
+                    <div class="af-node af-node--off">
+                        <p class="af-node__name">sepolia-bundler</p>
+                        <p class="af-node__spec">0.5 vCPU · 1 GiB</p>
+                        <p class="af-node__spec">internal only :4338</p>
+                        <p class="af-node__spec af-node__spec--off">not deployed →&nbsp;06</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="af-grid">
+                <div class="af-node">
+                    <p class="af-node__name">Postgres Flexible</p>
+                    <p class="af-node__spec">Burstable B1ms · 32 GB</p>
+                </div>
+                <div class="af-node">
+                    <p class="af-node__name">Storage · Blob</p>
+                    <p class="af-node__spec">receipts container</p>
+                </div>
+                <div class="af-node">
+                    <p class="af-node__name">Service Bus</p>
+                    <p class="af-node__spec">wallet-status</p>
+                    <p class="af-node__spec">order-processing</p>
+                </div>
+                <div class="af-node">
+                    <p class="af-node__name">Key Vault</p>
+                    <p class="af-node__spec">every secret env var</p>
+                </div>
+                <div class="af-node">
+                    <p class="af-node__name">Communication Services</p>
+                    <p class="af-node__spec">transactional email</p>
+                </div>
+                <div class="af-node">
+                    <p class="af-node__name">Container Registry</p>
+                    <p class="af-node__spec">web · worker · rundler</p>
+                </div>
+            </div>
+        </div>
+
+        <dl class="af-notes">
+            <div class="af-notes__row">
+                <dt>Two identities</dt>
+                <dd>
+                    The apps run as a user-assigned managed identity holding
+                    AcrPull, Key Vault Secrets User, Storage Blob Data Contributor
+                    and Service Bus Sender/Receiver. CI/CD is a
+                    <em>separate</em> identity, federated to GitHub over OIDC,
+                    holding AcrPush and Container Apps Contributor. Neither can
+                    do the other's job.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>The queue</dt>
+                <dd>
+                    Checkout writes an order-processing message; the Worker — its
+                    own container, no ingress, one replica — drains it and updates
+                    Postgres. That split is why an order survives a web replica
+                    restart mid-checkout.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>Why westus</dt>
+                <dd>
+                    Not a preference. This is an Azure for Students subscription:
+                    eastus2 is blocked for both Postgres Flexible Server and
+                    Container Apps environments by resource-specific capacity
+                    restrictions, and mexicocentral does not offer Container Apps
+                    at all. westus was the region that actually worked end to end.
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    @* ══ 03 · THE TILL — the chain registry and its gate ════════════════ *@
+    <section class="af-chapter" id="the-till">
+        <div class="af-chapter__head">
+            <p class="af-chapter__index">03</p>
+            <p class="af-chapter__eyebrow">The Till</p>
+            <h2 class="af-chapter__title">Nine networks, three of them real</h2>
+            <p class="af-chapter__intro">
+                The registry ships nine chain definitions and every one of them
+                is disabled. A chain becomes visible only when a committed
+                deployment manifest under <code>deployments/</code> proves its
+                contracts exist — the manifest is the source of truth, and
+                <code>ChainRegistry.Validate</code> rejects one that claims a
+                capability whose contract address is missing.
+            </p>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">Chain definitions · live ones carry a manifest</p>
+            <div class="af-grid af-grid--tight">
+                <div class="af-node af-node--live">
+                    <p class="af-node__name">Ethereum Sepolia</p>
+                    <p class="af-node__spec">11155111</p>
+                    <p class="af-node__spec af-node__spec--on">manifest present</p>
+                </div>
+                <div class="af-node af-node--live">
+                    <p class="af-node__name">BNB Testnet</p>
+                    <p class="af-node__spec">97</p>
+                    <p class="af-node__spec af-node__spec--on">manifest present</p>
+                </div>
+                <div class="af-node af-node--live">
+                    <p class="af-node__name">Solana Devnet</p>
+                    <p class="af-node__spec">Anchor program</p>
+                    <p class="af-node__spec af-node__spec--on">manifest present</p>
+                </div>
+                <div class="af-node af-node--off"><p class="af-node__name">Hedera Testnet</p><p class="af-node__spec af-node__spec--off">no manifest</p></div>
+                <div class="af-node af-node--off"><p class="af-node__name">Avalanche Fuji</p><p class="af-node__spec af-node__spec--off">no manifest</p></div>
+                <div class="af-node af-node--off"><p class="af-node__name">Linea Sepolia</p><p class="af-node__spec af-node__spec--off">no manifest</p></div>
+                <div class="af-node af-node--off"><p class="af-node__name">Base Sepolia</p><p class="af-node__spec af-node__spec--off">no manifest</p></div>
+                <div class="af-node af-node--off"><p class="af-node__name">Monad Testnet</p><p class="af-node__spec af-node__spec--off">no manifest</p></div>
+                <div class="af-node af-node--off"><p class="af-node__name">Arbitrum Sepolia</p><p class="af-node__spec af-node__spec--off">no manifest</p></div>
+            </div>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">What Sepolia's manifest actually addresses</p>
+            <dl class="af-addresses">
+                <div class="af-addresses__row"><dt>CAFE</dt><dd>0x15DbED39271D2788a9Be63ffB34C8E2DdED8754A</dd></div>
+                <div class="af-addresses__row"><dt>COFFEE</dt><dd>0x4056E7F5FD1584C3db6223c9483761Dcb30Bf21C</dd></div>
+                <div class="af-addresses__row"><dt>Liquid vault</dt><dd>0x0a7b7d7eb39ca835ef5854875bb97885d23d1df3</dd></div>
+                <div class="af-addresses__row"><dt>EntryPoint 0.7</dt><dd>0x7d75859d1e2be07b0c18c0ef3dd062b69bcc4217</dd></div>
+                <div class="af-addresses__row"><dt>ERC-8004 registry</dt><dd>0x45d9e43a0ce744eaa29982a31a5b5ad48d1d6106</dd></div>
+                <div class="af-addresses__row"><dt>ERC-7683 resolver</dt><dd>0xb5bf1af688316d724f1fec07b6867c770cab82e6</dd></div>
+                <div class="af-addresses__row"><dt>ERC-8183 escrow</dt><dd>0x44f97d09090e27962d2665f0b95a753273a89350</dd></div>
+            </dl>
+            <p class="af-diagram__note">
+                Compiled with solc 0.8.24, 200 optimizer runs, viaIR — recorded in
+                the manifest alongside the deploy block, so a redeploy that
+                changes the compiler is visible in the diff rather than silent.
+            </p>
+        </div>
+
+        <dl class="af-notes">
+            <div class="af-notes__row">
+                <dt>The gate</dt>
+                <dd>
+                    <code>BlockchainManifestLoader</code> reads the manifest,
+                    <code>ChainRegistry.Validate</code> rejects an inconsistent
+                    one, and <code>ChainsController</code> filters
+                    <code>/api/chains</code> on <code>Enabled</code>. Both chain
+                    selectors read that endpoint, so an unfinished connection
+                    cannot be advertised by accident.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>Still off</dt>
+                <dd>
+                    <code>marketplacePayment</code> needs an escrow or the legacy
+                    pool deployed and addressed; <code>legacyExit</code> needs the
+                    legacy pool. Neither committed manifest declares them, so
+                    both stay dark on every chain.
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    @* ══ 04 · THE CELLAR — liquid staking ══════════════════════════════ *@
+    <section class="af-chapter" id="the-cellar">
+        <div class="af-chapter__head">
+            <p class="af-chapter__index">04</p>
+            <p class="af-chapter__eyebrow">The Cellar</p>
+            <h2 class="af-chapter__title">A receipt you can carry</h2>
+            <p class="af-chapter__intro">
+                <code>CafeLiquidStakingVault.sol</code> is an ERC-4626 vault —
+                plus <code>Ownable2Step</code>, <code>Pausable</code> and
+                <code>ReentrancyGuard</code>. You deposit CAFE, you get stCAFE
+                shares, and COFFEE rewards stream to whoever holds those shares.
+                Being ERC-4626 is the whole point: the receipt is an ordinary
+                ERC-20 that can move without unwinding the position.
+            </p>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">Deposit → hold → redeem</p>
+            <ol class="af-flow">
+                <li class="af-flow__step">
+                    <span class="af-flow__name">CAFE</span>
+                    <span class="af-flow__note">the asset</span>
+                </li>
+                <li class="af-flow__step">
+                    <span class="af-flow__name">deposit()</span>
+                    <span class="af-flow__note">or mint()</span>
+                </li>
+                <li class="af-flow__step af-flow__step--accent">
+                    <span class="af-flow__name">stCAFE</span>
+                    <span class="af-flow__note">ERC-4626 shares</span>
+                </li>
+                <li class="af-flow__step">
+                    <span class="af-flow__name">redeem()</span>
+                    <span class="af-flow__note">or withdraw()</span>
+                </li>
+                <li class="af-flow__step af-flow__step--terminal">
+                    <span class="af-flow__name">CAFE back</span>
+                    <span class="af-flow__note">shares burned</span>
+                </li>
+            </ol>
+            <p class="af-diagram__note">
+                Rewards run on a separate rail. The owner calls
+                <code>notifyRewardAmount(amount, duration)</code> to open a
+                streaming period; <code>rewardPerShare()</code> accrues against
+                it, <code>earned(account)</code> reads a holder's balance, and
+                <code>claimRewards()</code> pays out in COFFEE without touching
+                the staked CAFE.
+            </p>
+        </div>
+
+        <dl class="af-notes">
+            <div class="af-notes__row">
+                <dt>Transfers are honest</dt>
+                <dd>
+                    The vault overrides <code>_update</code> so a stCAFE transfer
+                    settles rewards for <em>both</em> sides before the balance
+                    moves. Sending your receipt away hands over the future
+                    stream, not the rewards you already earned.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>Two chains, one shape</dt>
+                <dd>
+                    The same deposit/redeem/claim vocabulary runs on EVM and on a
+                    Solana Anchor program, and both Web and Worker reconcile every
+                    recorded operation independently, using chain-qualified
+                    identities and cursors so a Sepolia event can never be
+                    mistaken for a devnet one.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>What it is not</dt>
+                <dd>
+                    This is liquid staking of the application's own CAFE token.
+                    It is not validator staking of ETH, SOL, BNB or anybody
+                    else's native currency, and nothing here earns real yield.
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    @* ══ 05 · THE BACK ROOM — the procurement lab ══════════════════════ *@
+    <section class="af-chapter" id="the-back-room">
+        <div class="af-chapter__head">
+            <p class="af-chapter__index">05</p>
+            <p class="af-chapter__eyebrow">The Back Room</p>
+            <h2 class="af-chapter__title">Agents that have to ask</h2>
+            <p class="af-chapter__intro">
+                The procurement lab hands escrowed test missions to agents
+                running on ERC-4337 smart accounts. The interesting constraint
+                is the one it refuses to relax: every action is signed by your
+                wallet. There is no unattended mode to turn on.
+            </p>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">A mission, end to end</p>
+            <ol class="af-flow af-flow--wrap">
+                <li class="af-flow__step"><span class="af-flow__name">Agent registered</span><span class="af-flow__note">ERC-8004</span></li>
+                <li class="af-flow__step"><span class="af-flow__name">Permission granted</span><span class="af-flow__note">scoped epoch</span></li>
+                <li class="af-flow__step"><span class="af-flow__name">Funds escrowed</span><span class="af-flow__note">ERC-8183</span></li>
+                <li class="af-flow__step"><span class="af-flow__name">Intent resolved</span><span class="af-flow__note">ERC-7683</span></li>
+                <li class="af-flow__step af-flow__step--accent"><span class="af-flow__name">UserOperation</span><span class="af-flow__note">wallet-signed</span></li>
+                <li class="af-flow__step af-flow__step--terminal"><span class="af-flow__name">Settled</span><span class="af-flow__note">reconciled twice</span></li>
+            </ol>
+        </div>
+
+        <dl class="af-notes">
+            <div class="af-notes__row">
+                <dt>Smart accounts</dt>
+                <dd>
+                    EntryPoint 0.7, a simple account factory, and a verifying
+                    paymaster that can sponsor gas. Sponsorship is metered and
+                    revocable — a reverted sponsored operation still costs the
+                    paymaster, so it is counted against a budget rather than
+                    billed as gas.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>The crew upstairs</dt>
+                <dd>
+                    The robots wandering the homepage are the same idea at play
+                    without the money: a 194-parameter policy trained offline,
+                    then run per frame in the browser against the exact physics
+                    the trainer used. Nobody choreographed them.
+                </dd>
+            </div>
+            <div class="af-notes__row">
+                <dt>Missing piece</dt>
+                <dd>
+                    Everything above assumes something will accept a
+                    UserOperation. Today that is a public bundler. The thing
+                    meant to replace it is sitting in the corner of the room,
+                    switched off — section 06.
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    @* ══ 06 · THE DARK NODE — the bundler that isn't running ═══════════ *@
+    <section class="af-chapter af-chapter--dormant" id="the-dark-node">
+        <div class="af-chapter__head">
+            <p class="af-chapter__index">06</p>
+            <p class="af-chapter__eyebrow">The Dark Node <span class="af-tag af-tag--off">NOT RUNNING</span></p>
+            <h2 class="af-chapter__title">Provisioned, wired, never switched on</h2>
+            <p class="af-chapter__intro">
+                There is a fourth Container App in <code>infra/main.bicep</code>
+                that has never existed in Azure. It is a private Rundler
+                instance — a self-hosted ERC-4337 bundler for the lab — and it is
+                behind a Bicep conditional that is still <code>false</code>. It
+                is in this room because a thing you have designed and not yet
+                turned on is part of the truth about a system.
+            </p>
+        </div>
+
+        <div class="af-diagram af-diagram--dormant">
+            <p class="af-diagram__caption">thiscafeteria-prod-sepolia-bundler</p>
+            <dl class="af-notes af-notes--compact">
+                <div class="af-notes__row"><dt>Image</dt><dd>Rundler v0.11.0, built from <code>contracts/evm/rundler/Dockerfile</code></dd></div>
+                <div class="af-notes__row"><dt>Ingress</dt><dd>Internal only, port 4338 — an unauthenticated bundler RPC never goes public</dd></div>
+                <div class="af-notes__row"><dt>Shape</dt><dd>0.5 vCPU · 1 GiB · one always-on replica, no scale-to-zero</dd></div>
+                <div class="af-notes__row"><dt>Serves</dt><dd>EntryPoint 0.7 at <code>0x7d75…4217</code>, the one the lab already uses</dd></div>
+                <div class="af-notes__row"><dt>Secrets</dt><dd>Node RPC URL and signer key, both read from Key Vault at start</dd></div>
+                <div class="af-notes__row"><dt>Switch</dt><dd><code>enableSepoliaBundler = false</code> in <code>infra/main.bicepparam</code></dd></div>
+            </dl>
+        </div>
+
+        <div class="af-diagram">
+            <p class="af-diagram__caption">Two things stand between it and a green light</p>
+            <ol class="af-blockers">
+                <li class="af-blockers__item">
+                    <p class="af-blockers__name">A tracer-capable Sepolia RPC</p>
+                    <p class="af-blockers__copy">
+                        Rundler's safe mode validates a UserOperation with
+                        <code>debug_traceCall</code> using a custom JavaScript
+                        tracer. Ordinary public Sepolia endpoints do not offer
+                        that, so this needs a provider endpoint that does — and
+                        that credential is not going in the repository.
+                    </p>
+                </li>
+                <li class="af-blockers__item">
+                    <p class="af-blockers__name">A dedicated funded signer</p>
+                    <p class="af-blockers__copy">
+                        The bundler needs its own Sepolia-funded beneficiary key,
+                        explicitly <em>not</em> the contract deployer key. One
+                        compromised bundler should not be able to touch anything
+                        that was deployed.
+                    </p>
+                </li>
+            </ol>
+            <p class="af-diagram__note">
+                Both land in Key Vault, then Bicep is redeployed with
+                <code>enableSepoliaBundler=true</code>, and the final proof runs
+                from a one-off workload inside the same Container Apps
+                environment against the internal FQDN — not by making the RPC
+                public for the length of a test.
+            </p>
+        </div>
+    </section>
+
+    <footer class="af-outro">
+        <p class="af-outro__copy">
+            Nothing on this page is a roadmap slide. Every address, replica
+            count and disabled flag above is read out of the repository as it
+            stands today, including the parts that do not work yet.
+        </p>
+        <div class="af-outro__links">
+            <a class="af-cta" href="https://github.com/AlejoReyna/ArtisanalBrew" target="_blank" rel="noopener noreferrer">SEE THE SOURCE</a>
+            <a class="af-cta af-cta--ghost" href="/products">BROWSE THE SHELF</a>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Culture =
+        System.Globalization.CultureInfo.InvariantCulture;
+
+    private static readonly string[] TitleLines = { "STEP INSIDE", "THE SHOP" };
+
+    private string _selected = "bar";
+
+    private sealed record Spec(string Term, string Value);
+
+    // Left/Top are the station's floor point as a percentage of the room
+    // sprite (272x200); Width is the prop's own width over that same 272, so
+    // the props scale with the room at every viewport. Depth is the paint
+    // order — a prop nearer the front of the room covers one behind it.
+    // Dormant marks the one station that is provisioned but not running.
+    private sealed record Station(
+        string Key,
+        string Sprite,
+        string Label,
+        string Title,
+        string Copy,
+        Spec[] Specs,
+        string LinkLabel,
+        string LinkHref,
+        bool External,
+        string Index,
+        string Anchor,
+        double Left,
+        double Top,
+        double Width,
+        int Depth,
+        bool Steams,
+        bool Dormant = false);
+
+    private static readonly Station[] Stations =
+    {
+        new(
+            "bar",
+            "pl-cafe-bar.png",
+            "THE BAR",
+            "An ordinary coffee shop, built properly",
+            "Catalog, cart, checkout, accounts, orders — the part with no " +
+            "blockchain in it at all. A Blazor Web App on .NET 10 with " +
+            "interactive server rendering, split into the five projects Clean " +
+            "Architecture asks for, and it would still work with every wallet " +
+            "in the building unplugged.",
+            new Spec[]
+            {
+                new("RUNTIME", ".NET 10 · Blazor Server"),
+                new("DATA", "EF Core · PostgreSQL · Identity"),
+                new("SHAPE", "Domain → Application → Infrastructure → Web"),
+            },
+            "BROWSE THE SHELF",
+            "/products",
+            false,
+            "01", "the-bar",
+            50.00, 46.00, 19.12, 1, true),
+
+        new(
+            "roaster",
+            "pl-cafe-roaster.png",
+            "THE ROASTER",
+            "What keeps the heat on",
+            "Azure Container Apps in front, Blob Storage, Key Vault and Serilog " +
+            "around it, and a Service Bus queue behind it that a separate " +
+            "Worker drains to process orders. All of it is Bicep, deployed by " +
+            "GitHub Actions over OIDC with no stored cloud credential.",
+            new Spec[]
+            {
+                new("HOST", "Azure Container Apps · westus"),
+                new("QUEUE", "Service Bus → Worker"),
+                new("LIVE", "cafe.alexisreyna.dev"),
+            },
+            "VISIT THE LIVE SHOP",
+            "https://cafe.alexisreyna.dev",
+            true,
+            "02", "the-roaster",
+            29.41, 52.00, 13.24, 2, true),
+
+        new(
+            "node",
+            "pl-cafe-node.png",
+            "THE DARK NODE",
+            "Provisioned, wired, never switched on",
+            "A private Rundler bundler for the procurement lab, defined in " +
+            "Bicep and gated behind a conditional that is still false. It has " +
+            "never existed in Azure. Two missing pieces stand between it and a " +
+            "green light, and both of them are secrets that cannot live in the " +
+            "repository.",
+            new Spec[]
+            {
+                new("APP", "thiscafeteria-prod-sepolia-bundler"),
+                new("INGRESS", "Internal only · :4338"),
+                new("STATE", "enableSepoliaBundler = false"),
+            },
+            "READ THE RUNBOOK",
+            "https://github.com/AlejoReyna/ArtisanalBrew/blob/main/docs/sepolia-rundler-deployment.md",
+            true,
+            "06", "the-dark-node",
+            70.59, 52.00, 12.50, 2, false,
+            Dormant: true),
+
+        new(
+            "lab",
+            "pl-cafe-lab.png",
+            "THE BACK ROOM",
+            "Where the robot crew works",
+            "The procurement lab hands escrowed test missions to agents running " +
+            "on ERC-4337 smart accounts. Every mission is a test mission and " +
+            "every action is signed by your wallet — there is no unattended " +
+            "mode to switch on.",
+            new Spec[]
+            {
+                new("ACCOUNTS", "ERC-4337 · EntryPoint 0.7"),
+                new("MISSIONS", "Escrowed · wallet-signed"),
+                new("CREW", "194-parameter policy, trained offline"),
+            },
+            "ENTER THE LAB",
+            "/procurement-lab",
+            false,
+            "05", "the-back-room",
+            26.47, 74.00, 16.91, 3, false),
+
+        new(
+            "vault",
+            "pl-cafe-vault.png",
+            "THE CELLAR",
+            "A receipt you can carry",
+            "Deposit CAFE and you get stCAFE back — ERC-4626 shares you can " +
+            "redeem for the CAFE underneath, while COFFEE rewards stream to " +
+            "whoever holds them. To be clear about what this is: liquid " +
+            "staking of the app's own token, not validator staking of " +
+            "anybody's native currency.",
+            new Spec[]
+            {
+                new("VAULT", "ERC-4626 · Pausable · Ownable2Step"),
+                new("DEPOSIT", "CAFE → stCAFE"),
+                new("REWARD", "COFFEE, claimed separately"),
+            },
+            "OPEN THE STAKING POOL",
+            "/staking",
+            false,
+            "04", "the-cellar",
+            64.71, 76.00, 11.76, 4, false),
+
+        new(
+            "till",
+            "pl-cafe-till.png",
+            "THE TILL",
+            "Nine networks, three of them real",
+            "Nine chain definitions ship disabled. A chain only becomes visible " +
+            "once a committed deployment manifest proves its contracts exist, " +
+            "and validation rejects a manifest that claims a capability whose " +
+            "address is missing. Three are live today.",
+            new Spec[]
+            {
+                new("CHAINS", "9 defined · 3 live"),
+                new("GATE", "A committed manifest, or it stays hidden"),
+                new("STANDARDS", "ERC-8004 · ERC-7683 · ERC-8183"),
+            },
+            "READ THE CHAIN REGISTRY",
+            "/api/chains",
+            false,
+            "03", "the-till",
+            50.00, 78.00, 11.03, 4, false),
+    };
+
+    private Station Current =>
+        Stations.FirstOrDefault(s => s.Key == _selected) ?? Stations[0];
+
+    private void Select(string key) => _selected = key;
+}

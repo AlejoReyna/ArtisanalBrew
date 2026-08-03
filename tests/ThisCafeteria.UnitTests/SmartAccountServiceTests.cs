@@ -75,9 +75,11 @@ public class SmartAccountServiceTests : IDisposable
         EvmChainId = 31337,
         EvmChainIdHex = "0x7a69",
         PublicRpcUrl = "http://127.0.0.1:8545",
+        BundlerRpcUrl = "http://127.0.0.1:4338",
+        ModularBundlerRpcUrl = "http://127.0.0.1:4339",
         Deployment = new ChainDeployment
         {
-            EntryPoint = "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
+            ModularEntryPoint = "0x8a791620dd6260079bf849dc5567adc3f2fdc318",
             ModularAccountFactory = "0x0b306bf915c4d645ff596e518faf3f9669b97016",
             DelegationManager = "0x5eb3bc0a489c5a8288765d2336659ebca68fcd00",
             HybridDeleGatorImplementation = "0x4c5859f0f772848b2d91f1d83e2fe57935348029",
@@ -121,9 +123,52 @@ public class SmartAccountServiceTests : IDisposable
             RevokeCalled = true;
             return Task.CompletedTask;
         }
+
+        public Task<bool> RecordRevertedOperationAsync(string chainKey, string ownerAddress, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
     }
 
-    private SmartAccountService CreateService(ISponsorshipPolicyService? sponsorship = null, params ChainDefinition[] extraChains) => new(
+    /// <summary>
+    /// Minimal bundler stub - SmartAccountService only forwards through this, never signs. Defaults
+    /// to an immediately-mined, successful receipt so tests that don't care about the poll loop
+    /// don't have to configure one; pass <paramref name="receipt"/> to exercise reverted/timeout paths
+    /// (mirroring UserOperationSubmitterTests' StubBundler - advance the fake clock inside the
+    /// callback to simulate the poll deadline elapsing without a real wait).
+    /// </summary>
+    private sealed class StubBundler(Func<BundlerUserOperation, string>? send = null, Func<BundlerReceipt?>? receipt = null) : IBundlerClient
+    {
+        public string? LastEntryPointOverride { get; private set; }
+        public string? LastBundlerUrlOverride { get; private set; }
+
+        public Task<string> SendUserOperationAsync(string chainKey, BundlerUserOperation operation, string? entryPointOverride = null, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default)
+        {
+            LastEntryPointOverride = entryPointOverride;
+            LastBundlerUrlOverride = bundlerUrlOverride;
+            return Task.FromResult(send is null ? "0xhash" : send(operation));
+        }
+
+        public Task<BundlerGasEstimate> EstimateUserOperationGasAsync(string chainKey, BundlerUserOperation operation, string? entryPointOverride = null, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default)
+        {
+            LastEntryPointOverride = entryPointOverride;
+            LastBundlerUrlOverride = bundlerUrlOverride;
+            return Task.FromResult(new BundlerGasEstimate
+            {
+                PreVerificationGas = 50_000,
+                VerificationGasLimit = 150_000,
+                CallGasLimit = 100_000
+            });
+        }
+
+        public Task<BundlerReceipt?> GetUserOperationReceiptAsync(string chainKey, string userOperationHash, string? bundlerUrlOverride = null, CancellationToken cancellationToken = default)
+        {
+            LastBundlerUrlOverride = bundlerUrlOverride;
+            return Task.FromResult(receipt is null
+                ? new BundlerReceipt { UserOperationHash = userOperationHash, TransactionHash = "0xminedtxhash", Success = true }
+                : receipt());
+        }
+    }
+
+    private SmartAccountService CreateService(ISponsorshipPolicyService? sponsorship = null, IBundlerClient? bundler = null, params ChainDefinition[] extraChains) => new(
         new StubChainRegistry(
             [
                 EvmChain(ConfiguredChain, "0x8a791620dd6260079bf849dc5567adc3f2fdc318", "0x1111111111111111111111111111111111111111"),
@@ -132,6 +177,7 @@ public class SmartAccountServiceTests : IDisposable
                 .. extraChains
             ]),
         sponsorship ?? new StubSponsorshipPolicy(),
+        bundler ?? new StubBundler(),
         _context,
         _time,
         NullLogger<SmartAccountService>.Instance);
@@ -235,7 +281,7 @@ public class SmartAccountServiceTests : IDisposable
         // A fully configured modular chain, but this owner has never registered a modular account.
         // Must return without attempting any on-chain read (which would fail - no RPC running here).
         var policy = new StubSponsorshipPolicy();
-        var service = CreateService(policy, FullyConfiguredModularChain);
+        var service = CreateService(policy, extraChains: FullyConfiguredModularChain);
 
         await service.RevokeSessionPermissionsAsync(ModularChain, Owner);
 
@@ -246,7 +292,7 @@ public class SmartAccountServiceTests : IDisposable
     public async Task RevokeSessionPermissionsAsync_AccountRegisteredButNoActiveEpoch_IsNoOp()
     {
         var policy = new StubSponsorshipPolicy();
-        var service = CreateService(policy, FullyConfiguredModularChain);
+        var service = CreateService(policy, extraChains: FullyConfiguredModularChain);
 
         _context.SmartAccountRecords.Add(new SmartAccountRecord
         {
@@ -312,6 +358,147 @@ public class SmartAccountServiceTests : IDisposable
         await FluentActions.Invoking(() => service.RegisterModularAccountAsync(ModularChain, Owner, "0x2222222222222222222222222222222222222222", "0"))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*already has a different registered modular account*");
+    }
+
+    private static BundlerUserOperation StubOperation(string sender) => new()
+    {
+        Sender = sender,
+        CallData = "0x",
+        AccountGasLimits = "0x00000000000000000000000000000000000000000000000000000000000000",
+        GasFees = "0x00000000000000000000000000000000000000000000000000000000000000",
+        Signature = "0x00"
+    };
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_UnconfiguredChain_ThrowsNotSupported()
+    {
+        await FluentActions.Invoking(() => CreateService().SubmitOwnerUserOperationAsync(ConfiguredChain, Owner, StubOperation("0x2222222222222222222222222222222222222222")))
+            .Should().ThrowAsync<NotSupportedException>();
+    }
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_NoRegisteredAccount_ThrowsInvalidOperation()
+    {
+        var service = CreateService(extraChains: FullyConfiguredModularChain);
+
+        await FluentActions.Invoking(() => service.SubmitOwnerUserOperationAsync(ModularChain, Owner, StubOperation("0x2222222222222222222222222222222222222222")))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*No registered modular account*");
+    }
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_SenderDoesNotMatchRegisteredAccount_ThrowsInvalidOperation()
+    {
+        var service = CreateService(extraChains: FullyConfiguredModularChain);
+        _context.SmartAccountRecords.Add(new SmartAccountRecord
+        {
+            ChainKey = ModularChain,
+            OwnerAddress = Owner,
+            AccountType = SmartAccountType.ModularHybridDeleGator,
+            AccountAddress = "0x2222222222222222222222222222222222222222"
+        });
+        await _context.SaveChangesAsync();
+
+        await FluentActions.Invoking(() => service.SubmitOwnerUserOperationAsync(ModularChain, Owner, StubOperation("0x3333333333333333333333333333333333333333")))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*sender does not match*");
+    }
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_MinedAndSuccessful_ReturnsTheRealTransactionHashOnceConfirmed()
+    {
+        // Regression coverage: earlier, this returned the bundler-assigned userOpHash immediately
+        // after submission, before the operation could possibly be mined - the caller's very next
+        // step (RecordPermissionEpochInstalledAsync/RevokeSessionPermissionsAsync) reads live
+        // NonceEnforcer state and would fail every time because nothing had happened on-chain yet.
+        var bundler = new StubBundler(_ => "0xuserophash");
+        var service = CreateService(bundler: bundler, extraChains: FullyConfiguredModularChain);
+        const string account = "0x2222222222222222222222222222222222222222";
+        _context.SmartAccountRecords.Add(new SmartAccountRecord
+        {
+            ChainKey = ModularChain,
+            OwnerAddress = Owner,
+            AccountType = SmartAccountType.ModularHybridDeleGator,
+            AccountAddress = account
+        });
+        await _context.SaveChangesAsync();
+
+        var hash = await service.SubmitOwnerUserOperationAsync(ModularChain, Owner, StubOperation(account));
+
+        hash.Should().Be("0xminedtxhash", "the caller needs the real on-chain transaction hash, not the bundler-assigned UserOperation hash");
+        bundler.LastEntryPointOverride.Should().Be(FullyConfiguredModularChain.Deployment.ModularEntryPoint,
+            "the relay must target the canonical modular EntryPoint, never the chain's legacy EntryPoint");
+        bundler.LastBundlerUrlOverride.Should().Be(FullyConfiguredModularChain.ModularBundlerRpcUrl,
+            "when a chain declares a separate modular bundler endpoint, it must be used instead of the legacy BundlerRpcUrl");
+    }
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_NoModularBundlerUrlConfigured_FallsBackToTheLegacyBundlerUrl()
+    {
+        var bundler = new StubBundler(_ => "0xuserophash");
+        var chain = FullyConfiguredModularChain with { ModularBundlerRpcUrl = null };
+        var service = CreateService(bundler: bundler, extraChains: chain);
+        const string account = "0x2222222222222222222222222222222222222222";
+        _context.SmartAccountRecords.Add(new SmartAccountRecord
+        {
+            ChainKey = ModularChain,
+            OwnerAddress = Owner,
+            AccountType = SmartAccountType.ModularHybridDeleGator,
+            AccountAddress = account
+        });
+        await _context.SaveChangesAsync();
+
+        await service.SubmitOwnerUserOperationAsync(ModularChain, Owner, StubOperation(account));
+
+        bundler.LastBundlerUrlOverride.Should().Be(chain.BundlerRpcUrl,
+            "a chain with only one bundler instance (serving both EntryPoints) has no separate ModularBundlerRpcUrl - the client falls back to the legacy BundlerRpcUrl");
+    }
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_MinedButReverted_ThrowsInvalidOperation()
+    {
+        var bundler = new StubBundler(receipt: () => new BundlerReceipt { UserOperationHash = "0xuserophash", TransactionHash = "0xminedtxhash", Success = false });
+        var service = CreateService(bundler: bundler, extraChains: FullyConfiguredModularChain);
+        const string account = "0x2222222222222222222222222222222222222222";
+        _context.SmartAccountRecords.Add(new SmartAccountRecord
+        {
+            ChainKey = ModularChain,
+            OwnerAddress = Owner,
+            AccountType = SmartAccountType.ModularHybridDeleGator,
+            AccountAddress = account
+        });
+        await _context.SaveChangesAsync();
+
+        await FluentActions.Invoking(() => service.SubmitOwnerUserOperationAsync(ModularChain, Owner, StubOperation(account)))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*mined but its inner call reverted*");
+    }
+
+    [Fact]
+    public async Task SubmitOwnerUserOperationAsync_NotConfirmedWithinThePollWindow_ThrowsInvalidOperation()
+    {
+        // The stub advances the fake clock past the poll deadline on its first receipt poll, so the
+        // deadline check fires without a real 60s wait - same technique as
+        // UserOperationSubmitterTests' identical timeout test.
+        var bundler = new StubBundler(receipt: () =>
+        {
+            _time.Advance(TimeSpan.FromMinutes(2));
+            return null;
+        });
+        var service = CreateService(bundler: bundler, extraChains: FullyConfiguredModularChain);
+        const string account = "0x2222222222222222222222222222222222222222";
+        _context.SmartAccountRecords.Add(new SmartAccountRecord
+        {
+            ChainKey = ModularChain,
+            OwnerAddress = Owner,
+            AccountType = SmartAccountType.ModularHybridDeleGator,
+            AccountAddress = account
+        });
+        await _context.SaveChangesAsync();
+
+        await FluentActions.Invoking(() => service.SubmitOwnerUserOperationAsync(ModularChain, Owner, StubOperation(account)))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*not confirmed on-chain within the poll window*");
     }
 
     [Fact]

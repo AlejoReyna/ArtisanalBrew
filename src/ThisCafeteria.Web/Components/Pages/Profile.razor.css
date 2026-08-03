@@ -1,369 +1,773 @@
-/* ── Loading / error shell ── */
+/* Account panel — the /procurement-lab console, applied to a profile.
 
-.staking-connect {
-    background: #1F1915;
-    border: 1px solid rgba(244, 239, 230, 0.13);
-    border-radius: 8px;
-    margin: clamp(1.25rem, 3vw, 3rem);
-    padding: clamp(2rem, 6vw, 5rem);
-    text-align: center;
-}
+   Same ground rules as ProcurementLab.razor.css: this file references
+   var(--stake-x) directly rather than aliasing through its own --pf-* layer,
+   because nested custom-property indirection (--pf-x: var(--stake-x), then
+   var(--pf-x) elsewhere) was found not to resolve reliably. The --stake-*
+   palette itself is declared by app.css on ".yield-page, .procurement-lab",
+   and this page renders inside StakingLayout's .yield-page wrapper, so the
+   tokens are already in scope.
 
-.staking-connect h2 {
-    color: #F4EFE6;
-    font-family: var(--font-sidebar-display);
-    font-size: clamp(2.4rem, 6vw, 4.5rem);
-    font-weight: 400;
-    line-height: 1;
-    margin: 0 auto 1rem;
-    max-width: 48rem;
-}
+   The furniture is pixel furniture: square corners, hard offset shadows
+   instead of soft ones, 'Press Start 2P' headings small enough to act as
+   labels rather than chapters, and mono for everything a wallet produces. */
+.profile-lab {
+    /* Lift the shared brand-green token so states relying on
+       --crypto-positive stay legible against the roast ground — the same
+       unconditional pin .procurement-lab makes (no [data-theme] /
+       prefers-color-scheme gate while the theme toggle is deactivated). */
+    --crypto-positive: #8fb99b;
 
-.staking-connect .lede {
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* ── Main content ── */
-
-.profile-dash__main {
-    --dash-cream: #100D0B;
-    --dash-espresso: #F4EFE6;
-    --dash-sand: #100D0B;
-    --dash-sand-deep: #171310;
-    --dash-sand-hover: #2A211B;
-    --dash-card: #1F1915;
-    --dash-line: rgba(244, 239, 230, 0.1);
-    --dash-muted: rgba(244, 239, 230, 0.58);
-    --dash-header-offset: 4.75rem;
-    --dash-gutter: clamp(1.25rem, 2.6vw, 2.5rem);
-    display: grid;
-    gap: clamp(1.4rem, 2.8vw, 2.4rem);
-    min-width: 0;
-    padding: clamp(1.25rem, 2.6vw, 2.5rem) var(--dash-gutter) clamp(2rem, 4vw, 3rem);
-}
-
-.profile-dash__main [id] {
-    scroll-margin-top: calc(var(--dash-header-offset) + 1.25rem);
-}
-
-.profile-dash__hero {
-    border-bottom: 1px solid rgba(244, 239, 230, 0.14);
-    display: grid;
-    gap: 0.8rem;
-    padding-bottom: clamp(1.4rem, 3vw, 2.2rem);
-}
-
-.profile-dash__kicker {
-    color: var(--dash-muted);
+    /* Transparent ground: the shared GlobalScene background scenario supplies
+       the sky, and any opaque background here would cover it. */
+    color: var(--stake-ink);
     font-family: var(--font-sans);
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    margin: 0 0 0.5rem;
-    text-transform: uppercase;
+    min-height: calc(100dvh - 4.75rem);
+    padding: clamp(1.25rem, 2.6vw, 2rem) 0 clamp(3rem, 6vw, 5rem);
+    position: relative;
 }
 
-.profile-dash__section-kicker,
-.profile-dash__hero .profile-dash__kicker {
-    color: var(--dash-muted);
-    margin: 0;
+/* A wallet dashboard is a reading surface: addresses, hashes and figures were
+   sitting straight on drifting stars, planets and chain badges. While the
+   panel is mounted this fixed plate frosts the whole viewport behind it — the
+   scene survives as soft bokeh, the numbers stay legible.
+
+   No ancestor may take isolation/filter/opacity: any of those becomes the
+   backdrop root and the blur silently does nothing. z-index: -1 keeps the
+   plate under this page's own content while still painting over .gs-scene,
+   which sits outside <main>'s stacking context. */
+.profile-lab::before {
+    backdrop-filter: blur(22px) saturate(118%);
+    -webkit-backdrop-filter: blur(22px) saturate(118%);
+    background:
+        radial-gradient(ellipse 85% 60% at 50% 0%, rgba(16, 13, 11, 0.5), transparent 78%),
+        rgba(16, 13, 11, 0.62);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: fixed;
+    z-index: -1;
 }
 
-.profile-dash__title-row {
+/* Without the blur the scene stays sharp behind the panel, so the scrim has
+   to carry the legibility on its own. Same for anyone who asked for less
+   transparency. */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+    .profile-lab::before {
+        background: rgba(16, 13, 11, 0.93);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .profile-lab::before {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: var(--stake-bg-deep);
+    }
+}
+
+.profile-lab__inner {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 72rem;
+    padding: 0 clamp(1.25rem, 4vw, 3.5rem);
+    position: relative;
+    width: 100%;
+}
+
+/* ── Command bar ────────────────────────────────────────────────────────────
+   Replaces the sticky sidebar. That column existed to hold two anchors to
+   sections a scroll away and two buttons; the anchors are gone with it (the
+   page is short enough to see whole) and the buttons are here. */
+.pf-bar {
     align-items: center;
-    display: block;
+    border-bottom: 1px solid var(--stake-line);
+    column-gap: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+    min-height: 2.6rem;
+    padding-bottom: 0.75rem;
+    row-gap: 0.5rem;
 }
 
-.profile-dash__name-heading {
+.pf-bar__nav {
     align-items: center;
-    color: var(--dash-espresso);
-    display: inline-flex;
-    flex-wrap: nowrap;
-    font-family: var(--font-sidebar-display);
-    font-size: clamp(2.6rem, 5vw, 4.25rem);
-    font-weight: 400;
-    gap: 0.65rem;
-    letter-spacing: 0.01em;
-    line-height: 0.98;
-    margin: 0;
-    max-width: 100%;
-    width: auto;
+    display: flex;
+    gap: 1.2rem;
 }
 
-.profile-dash__name-text {
-    min-width: 0;
-}
-
-.profile-dash__name-edit {
+.pf-bar__nav a,
+.pf-bar__nav button,
+.pf-bar__logout button {
     align-items: center;
-    display: inline-flex;
-    flex-wrap: nowrap;
-    gap: 0.75rem;
-    margin: 0;
-    max-width: 100%;
-    width: auto;
-}
-
-.profile-dash__name-input {
     background: transparent;
     border: 0;
-    border-bottom: 1px solid rgba(244, 239, 230, 0.26);
-    color: var(--dash-espresso);
-    font-family: var(--font-sidebar-display);
-    font-size: clamp(2.6rem, 5vw, 4.25rem);
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    line-height: 0.98;
-    max-width: calc(100% - 6rem);
-    min-width: 8rem;
-    padding: 0.1rem 0 0.25rem;
-    width: auto;
-}
-
-.profile-dash__name-input:focus {
-    border-bottom-color: var(--dash-espresso);
-    outline: none;
-}
-
-.profile-dash__edit-btn,
-.profile-dash__save-icon-btn {
-    align-items: center;
-    background: transparent;
-    border: 1px solid rgba(244, 239, 230, 0.2);
-    border-radius: 999px;
-    color: var(--dash-muted);
+    color: var(--stake-muted);
     cursor: pointer;
-    display: inline-flex;
-    flex: 0 0 auto;
-    height: 2.35rem;
-    justify-content: center;
+    display: flex;
+    font: 700 0.62rem/1 var(--crypto-mono);
+    gap: 0.35rem;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 160ms ease;
+}
+
+.pf-bar__logout {
+    margin: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .pf-bar__nav a:hover,
+    .pf-bar__nav button:hover {
+        color: var(--stake-ink);
+    }
+
+    .pf-bar__logout button:hover {
+        color: var(--stake-clay);
+    }
+}
+
+/* ── Identity ───────────────────────────────────────────────────────────────
+   The buyer robot from the lab's cast stands in as the account's avatar: the
+   customer is exactly the role it plays over on /procurement-lab. */
+.pf-id {
+    align-items: center;
+    column-gap: clamp(0.9rem, 2vw, 1.4rem);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-bottom: clamp(1.1rem, 2.4vw, 1.6rem);
+}
+
+/* The avatar used to be a decorative sprite of the lab's buyer robot — the
+   same picture on every account. It is now the account's own robot and it is
+   editable, so it has to look pressable: a bare image with a click handler
+   reads as decoration and nobody finds it. The pencil badge is the whole
+   affordance, and it only leaves the corner on hover. */
+.pf-avatar {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    display: block;
+    flex: none;
+    line-height: 0;
     padding: 0;
+    position: relative;
+}
+
+.pf-avatar__pen {
+    align-items: center;
+    background: var(--stake-bg-deep);
+    border: 1px solid var(--stake-line-strong);
+    bottom: -2px;
+    color: var(--stake-muted);
+    display: flex;
+    height: 1.35rem;
+    justify-content: center;
+    position: absolute;
+    right: -2px;
     transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
-    vertical-align: middle;
-    width: 2.35rem;
+    width: 1.35rem;
 }
 
-.profile-dash__edit-btn:hover,
-.profile-dash__save-icon-btn:hover:not(:disabled) {
-    border-color: rgba(244, 239, 230, 0.4);
-    color: var(--dash-espresso);
-    transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+    .pf-avatar:hover .pf-avatar__pen {
+        border-color: var(--stake-copper);
+        color: var(--stake-ink);
+        transform: translate(1px, 1px);
+    }
 }
 
-.profile-dash__save-icon-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+.pf-avatar:focus-visible {
+    outline: 2px solid var(--stake-copper);
+    outline-offset: 3px;
 }
 
-.profile-dash__lede {
-    color: rgba(244, 239, 230, 0.72);
-    font-size: clamp(0.98rem, 1.5vw, 1.12rem);
-    line-height: 1.7;
-    margin: 0;
-    max-width: 46rem;
+.pf-avatar:focus-visible .pf-avatar__pen {
+    border-color: var(--stake-copper);
+    color: var(--stake-ink);
 }
 
-.profile-dash__section {
-    background: var(--dash-card);
-    border: 1px solid var(--dash-line);
-    border-radius: 12px;
-    display: grid;
-    gap: 0.55rem;
-    padding: clamp(1.4rem, 2.4vw, 2rem);
+@media (prefers-reduced-motion: reduce) {
+    .pf-avatar__pen {
+        transition: none;
+    }
+
+    .pf-avatar:hover .pf-avatar__pen {
+        transform: none;
+    }
 }
 
-.profile-dash__section-kicker {
-    color: var(--dash-muted);
-    font-family: var(--font-sans);
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    margin: 0;
-    text-transform: uppercase;
+.pf-id__body {
+    min-width: 0;
 }
 
-.profile-dash__section-title {
-    color: var(--dash-espresso);
-    font-family: var(--font-sidebar-display);
-    font-size: clamp(1.6rem, 2.6vw, 2.2rem);
-    font-weight: 400;
-    line-height: 1.05;
-    margin: 0 0 0.6rem;
-}
-
-/* ── Identity facts ── */
-
-.profile-dash__facts {
-    display: grid;
-    gap: 0.85rem;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    margin: 0;
-}
-
-.profile-dash__facts div {
-    background: var(--dash-cream);
-    border: 1px solid var(--dash-line);
-    border-radius: 8px;
-    padding: 0.85rem 0.95rem;
-}
-
-.profile-dash__facts dt {
-    color: var(--dash-muted);
-    font-family: var(--font-sans);
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    margin-bottom: 0.4rem;
-    text-transform: uppercase;
-}
-
-.profile-dash__facts dd {
-    color: var(--dash-espresso);
-    font-family: var(--font-sans);
-    font-size: 1rem;
-    font-weight: 600;
+/* No kicker above it. "Account overview" sat here restating the page you were
+   already on, in the same words as the sidebar heading two inches to the left. */
+.pf-id__name {
+    align-items: center;
+    color: #FFFDF9;
+    display: flex;
+    flex-wrap: wrap;
+    font: 400 clamp(0.92rem, 2.4vw, 1.5rem)/1.35 'Press Start 2P', var(--crypto-mono);
+    gap: 0.7rem;
+    letter-spacing: 0.04em;
     margin: 0;
     overflow-wrap: anywhere;
 }
 
-.profile-dash__faucet-link {
-    color: #C89B6A;
-    font-size: 0.86rem;
-    font-weight: 700;
+.pf-id__edit {
+    align-items: center;
+    display: flex;
+    gap: 0.7rem;
+}
+
+.pf-id__input {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line-strong);
+    border-radius: 0;
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+    max-width: 26rem;
+    min-width: 0;
+    padding: 0.6rem 0.7rem;
+    width: 100%;
+}
+
+.pf-id__input:focus {
+    border-color: var(--stake-copper);
+    outline: none;
+}
+
+.pf-icon-btn {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--stake-line-strong);
+    border-radius: 0;
+    color: var(--stake-muted);
+    cursor: pointer;
+    display: inline-flex;
+    flex: none;
+    height: 2.1rem;
+    justify-content: center;
+    padding: 0;
+    transition: border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+    width: 2.1rem;
+}
+
+.pf-icon-btn:hover:not(:disabled) {
+    border-color: var(--stake-copper);
+    box-shadow: 3px 3px 0 var(--stake-copper-dim);
+    color: var(--stake-ink);
+    transform: translate(-1px, -1px);
+}
+
+.pf-icon-btn:focus-visible {
+    outline: 2px dashed var(--stake-green);
+    outline-offset: 3px;
+}
+
+.pf-icon-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* One identity line: which chain, which address, which network, and where the
+   gas comes from. "Testnet gas" used to be a boxed fact card of its own, one
+   row below the wallet it funds. */
+.pf-idline {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.7rem;
+    margin-top: 0.85rem;
+}
+
+.pf-idline__chain {
+    display: block;
+    flex: none;
+    height: 1.15rem;
+    image-rendering: pixelated;
+    width: 1.15rem;
+}
+
+.pf-idline__unlinked {
+    color: var(--stake-faint);
+    font-family: var(--crypto-mono);
+    font-size: 0.78rem;
+}
+
+.pf-faucet-group {
+    align-items: center;
+    display: flex;
+    gap: 0.45rem;
+    white-space: nowrap;
+}
+
+.pf-idline__faucet {
+    color: var(--stake-copper);
+    font-family: var(--crypto-mono);
+    font-size: 0.74rem;
     letter-spacing: 0.04em;
-    text-decoration: none;
-}
-
-.profile-dash__faucet-link:hover {
-    text-decoration: underline;
-}
-
-.profile-dash__mono {
-    font-family: var(--crypto-mono);
-    font-size: 0.9em;
-}
-
-.profile-dash__tx-chip {
-    background: rgba(244, 239, 230, 0.05);
-    border: 1px solid rgba(244, 239, 230, 0.13);
-    border-radius: 999px;
-    color: #C89B6A;
-    display: inline-block;
-    font-family: var(--crypto-mono);
-    font-size: 0.72rem;
-    font-weight: 600;
-    margin-left: 0.35rem;
-    padding: 0.12rem 0.55rem;
     text-decoration: none;
     white-space: nowrap;
 }
 
-.profile-dash__tx-chip:hover {
-    border-color: rgba(200, 155, 106, 0.55);
-    color: #DDB483;
-}
-
-/* ── Display name inline edit ── */
-
-.profile-dash__errors {
-    color: #E59880;
-    font-size: 0.82rem;
-    margin: 0.25rem 0 0;
-    padding-left: 1.1rem;
-}
-
-.profile-dash__save-message {
-    color: #8FB99B;
-    font-size: 0.85rem;
-    margin: 0.25rem 0 0;
-}
-
-
-/* ── Orders ── */
-
-.profile-dash__empty {
-    background: var(--dash-cream);
-    border: 1px solid var(--dash-line);
-    border-radius: 8px;
-    color: rgba(244, 239, 230, 0.6);
-    font-size: 0.9rem;
-    margin: 0;
-    padding: 0.85rem 1rem;
-}
-
-.profile-dash__orders {
-    display: grid;
-}
-
-.profile-dash__order {
-    align-items: center;
-    border-bottom: 1px solid var(--dash-line);
-    display: grid;
-    gap: 0.5rem 1rem;
-    grid-template-columns: minmax(0, 1fr) max-content max-content;
-    padding: 1rem 0;
-}
-
-.profile-dash__order:first-child {
-    padding-top: 0.25rem;
-}
-
-.profile-dash__order:last-child {
-    border-bottom: 0;
-    padding-bottom: 0.25rem;
-}
-
-.profile-dash__order p {
-    color: var(--dash-muted);
-    font-size: 0.78rem;
-    line-height: 1.5;
-    margin: 0.2rem 0 0;
-}
-
-.profile-dash__order a {
-    color: #C89B6A;
-    text-decoration: none;
-}
-
-.profile-dash__order a:hover {
+.pf-idline__faucet:hover {
+    color: var(--stake-amber);
     text-decoration: underline;
 }
 
-.profile-dash__order-number {
-    color: var(--dash-espresso);
-    font-family: var(--font-sans);
-    font-size: 0.95rem;
-    font-weight: 700;
+/* --- ETH asset icon + hover selector --- */
+.pf-faucet-asset {
+    position: relative;
+    flex: none;
+    cursor: pointer;
 }
 
-.profile-dash__order strong {
-    color: var(--dash-espresso);
-    font-family: var(--font-sans);
-    font-weight: 700;
+.pf-faucet-asset__icon {
+    display: block;
+    width: 1.35rem;
+    height: 1.35rem;
+    object-fit: contain;
+    animation: asset-rainbow 4s linear infinite;
+    transition: transform 220ms cubic-bezier(.23,1,.32,1);
 }
 
-.profile-dash__status {
-    background: rgba(244, 239, 230, 0.05);
-    border: 1px solid rgba(244, 239, 230, 0.13);
-    border-radius: 4px;
-    color: rgba(244, 239, 230, 0.6);
-    font-family: var(--font-sans);
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    padding: 0.28rem 0.5rem;
+@keyframes asset-rainbow {
+    0%   { filter: sepia(1) saturate(4) hue-rotate(0deg); }
+    100% { filter: sepia(1) saturate(4) hue-rotate(360deg); }
+}
+
+.pf-faucet-asset:hover .pf-faucet-asset__icon {
+    transform: scale(1.18) translateY(-1px);
+}
+
+/* Selector dropdown beneath the asset icon */
+.pf-faucet-selector {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    display: flex;
+    flex-direction: column;
+    min-width: 7rem;
+    padding: 0.3rem 0;
+    background: var(--stake-surface-2, #1e1e1e);
+    border: 1px solid var(--stake-line-strong, #333);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease,
+                transform 180ms cubic-bezier(.23,1,.32,1);
+    z-index: 20;
+}
+
+.pf-faucet-asset:hover .pf-faucet-selector {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.pf-faucet-selector__item {
+    color: var(--stake-ink, #c8c0b4);
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    padding: 0.35rem 0.75rem;
+    text-decoration: none;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.pf-faucet-selector__item:hover {
+    background: rgba(151, 117, 250, .12);
+    color: #c4b5fd;
+}
+
+.pf-faucet-selector__item.is-active {
+    color: #9775fa;
+    font-weight: 600;
+}
+
+
+
+/* Both chips arrive from shared components as rounded pills on a light-ish
+   surface; on this board they are pixel furniture. Selectors carry
+   .profile-lab as well as the scoped class so they outrank the components'
+   own :root[data-theme="dark"] rules, which would otherwise win the tie on
+   source order (Components/Shared sorts after Components/Pages in the
+   scoped-CSS bundle). */
+.profile-lab .pf-idline ::deep .addr-chip {
+    background: var(--stake-surface-2);
+    border-color: var(--stake-line-strong);
+    border-radius: 0;
+    color: var(--stake-ink);
+}
+
+.profile-lab .pf-idline ::deep .addr-chip__value {
+    font-size: 0.82rem;
+}
+
+.profile-lab .pf-idline ::deep .chain-badge {
+    background: transparent;
+    border-color: var(--stake-line);
+    border-radius: 0;
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    padding: 0.32rem 0.6rem;
+}
+
+.pf-id__errors {
+    color: var(--stake-clay);
+    font-size: 0.8rem;
+    margin: 0.6rem 0 0;
+    padding-left: 1.1rem;
+}
+
+.pf-id__saved {
+    color: var(--stake-green);
+    font-family: var(--crypto-mono);
+    font-size: 0.76rem;
+    margin: 0.6rem 0 0;
+}
+
+/* ── Summary rail ───────────────────────────────────────────────────────────
+   Counts, not cards. This replaced five boxed dt/dd tiles whose uppercase
+   labels were taller than the values they introduced. */
+.pf-rail {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    list-style: none;
+    margin: 0 0 0.9rem;
+    padding: 0;
+}
+
+.pf-rail__cell {
+    align-items: center;
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.6rem;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+}
+
+.pf-rail__k {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.7rem;
+    min-width: 0;
+}
+
+.pf-rail__v {
+    color: var(--stake-ink);
+    font-family: var(--crypto-mono);
+    font-size: 0.76rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Only the count gets the pixel face — dates and role names are too wide in
+   it to survive a 12rem cell. */
+.pf-rail__v--num {
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+.pf-rail__cell.is-occupied {
+    border-color: rgba(229, 192, 120, 0.4);
+}
+
+.pf-rail__cell.is-occupied .pf-rail__v--num {
+    color: var(--stake-amber);
+}
+
+/* ── Panels ─────────────────────────────────────────────────────────────── */
+.pf-panel {
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+    margin-bottom: 0.9rem;
+    padding: 1rem 1.1rem 1.15rem;
+}
+
+.pf-panel__bar {
+    align-items: center;
+    border-bottom: 1px solid var(--stake-line);
+    display: flex;
+    gap: 0.9rem;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.7rem;
+}
+
+.pf-panel h2 {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
+    margin: 0;
+}
+
+.pf-panel__count {
+    color: var(--stake-green);
+    font: 400 0.72rem/1 'Press Start 2P', var(--crypto-mono);
+}
+
+/* Empty states offer the next move instead of reporting an absence. */
+.pf-panel__empty {
+    align-items: center;
+    color: var(--stake-muted);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0.35rem 0 0.2rem;
+}
+
+.pf-panel__empty a {
+    color: var(--stake-copper);
+    text-decoration: none;
+}
+
+.pf-panel__empty a:hover {
+    text-decoration: underline;
+}
+
+.pf-panel__empty-sprite {
+    animation: pf-sprite-frames 900ms steps(4, end) infinite;
+    background-image: url("images/pl-robot-scout.png");
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 400% 100%;
+    display: block;
+    flex: none;
+    height: 2rem;
+    image-rendering: pixelated;
+    width: 2rem;
+}
+
+/* The shared smart-account panel arrives as a 12px-radius light card that only
+   turns dark under a matching OS/theme setting. The roast wing is
+   unconditionally dark, so pin it here — and square it off to match the board. */
+.profile-lab .pf-smart ::deep .smart-account-panel {
+    background: var(--stake-surface);
+    border-color: var(--stake-line);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+    margin-bottom: 0.9rem;
+    padding: 1rem 1.1rem 1.15rem;
+}
+
+.profile-lab .pf-smart ::deep .smart-account-panel__kicker {
+    color: var(--stake-ink);
+    font: 400 0.66rem/1 'Press Start 2P', var(--crypto-mono);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.profile-lab .pf-smart ::deep .smart-account-panel__option,
+.profile-lab .pf-smart ::deep .smart-account-panel__permission {
+    background: var(--stake-surface-2);
+    border-color: var(--stake-line);
+    border-radius: 0;
+}
+
+.profile-lab .pf-smart ::deep .smart-account-panel__option--selected {
+    border-color: rgba(229, 192, 120, 0.45);
+    box-shadow: none;
+}
+
+/* The two account-type badges ship with light-theme ink (#4453a8 on a 12%
+   blue wash, #2f4534 on green) that all but disappears on the roast ground. */
+.profile-lab .pf-smart ::deep .smart-account-panel__type-badge {
+    border-radius: 0;
+    font-family: var(--crypto-mono);
+    font-weight: 500;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
-/* ── Responsive ── */
+.profile-lab .pf-smart ::deep .smart-account-panel__type-badge--legacy {
+    background: var(--stake-copper-dim);
+    color: var(--stake-copper);
+}
 
+.profile-lab .pf-smart ::deep .smart-account-panel__type-badge--modular {
+    background: var(--stake-green-dim);
+    color: var(--stake-green);
+}
+
+.profile-lab .pf-smart ::deep .smart-account-panel__permission {
+    border-style: dashed;
+    border-color: rgba(143, 185, 155, 0.4);
+}
+
+.profile-lab .pf-smart ::deep .smart-account-panel__permission-kicker {
+    color: var(--stake-green);
+    font-family: var(--crypto-mono);
+    letter-spacing: 0.08em;
+}
+
+.profile-lab .pf-smart ::deep .chain-selector__control {
+    border-radius: 0;
+}
+
+.profile-lab .pf-smart ::deep .chain-selector__dropdown {
+    border-radius: 0;
+}
+
+.profile-lab .pf-smart ::deep .smart-account-panel__status,
+.profile-lab .pf-smart ::deep .smart-account-panel__empty {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.72rem;
+}
+
+.profile-lab .pf-smart ::deep .addr-chip {
+    background: var(--stake-bg-deep);
+    border-color: var(--stake-line-strong);
+    border-radius: 0;
+    color: var(--stake-ink);
+}
+
+/* ── Orders ─────────────────────────────────────────────────────────────────
+   One order is one row: number, state, total on top; when it happened and what
+   paid for it underneath. Same shape as a mission row on the lab board. */
+.pf-orders {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.pf-order {
+    background: var(--stake-surface-2);
+    border: 1px solid var(--stake-line);
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.7rem 0.85rem;
+}
+
+.pf-order__top {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.pf-order__num {
+    color: var(--stake-ink);
+    font: 400 0.62rem/1.4 'Press Start 2P', var(--crypto-mono);
+    overflow-wrap: anywhere;
+}
+
+.pf-order__state {
+    background: var(--stake-copper-dim);
+    color: var(--stake-copper);
+    font-family: var(--crypto-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+    padding: 0.18rem 0.4rem;
+    text-transform: uppercase;
+}
+
+.pf-order__total {
+    color: var(--stake-amber);
+    font-family: var(--crypto-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: auto;
+}
+
+.pf-order__bottom {
+    align-items: center;
+    color: var(--stake-faint);
+    display: flex;
+    flex-wrap: wrap;
+    font-family: var(--crypto-mono);
+    font-size: 0.68rem;
+    gap: 0.4rem 0.7rem;
+}
+
+.pf-order__tx {
+    color: var(--stake-copper);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.pf-order__tx:hover {
+    text-decoration: underline;
+}
+
+/* ── Loading / error ── */
+.pf-state {
+    align-items: center;
+    background: var(--stake-surface);
+    border: 1px solid var(--stake-line);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: clamp(2rem, 8vw, 5rem);
+    padding: clamp(1.4rem, 3vw, 2rem);
+}
+
+.pf-state h2 {
+    color: var(--stake-ink);
+    font: 400 0.82rem/1.5 'Press Start 2P', var(--crypto-mono);
+    margin: 0;
+}
+
+.pf-state p {
+    color: var(--stake-muted);
+    font-family: var(--crypto-mono);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    margin: 0;
+    width: 100%;
+}
+
+.pf-state--error h2 {
+    color: var(--stake-clay);
+}
+
+.pf-state__pulse {
+    animation: pf-state-blink 1s steps(2, end) infinite;
+    background: var(--stake-amber);
+    display: block;
+    flex: none;
+    height: 0.55rem;
+    width: 0.55rem;
+}
+
+@keyframes pf-state-blink {
+    to { opacity: 0.15; }
+}
+
+/* ── Responsive ── */
 @media (max-width: 640px) {
-    .profile-dash__order {
-        grid-template-columns: 1fr auto;
+    .pf-id {
+        column-gap: 0.8rem;
     }
 
-    .profile-dash__order strong {
-        grid-column: 2;
+    .pf-order__total {
+        margin-left: 0;
+    }
+}
+
+/* RobotAvatar gates its own idle bob on prefers-reduced-motion, and it has to:
+   its animation lives in that component's scoped stylesheet, which this file
+   cannot reach. */
+@media (prefers-reduced-motion: reduce) {
+    .pf-panel__empty-sprite,
+    .pf-state__pulse {
+        animation: none;
     }
 }
