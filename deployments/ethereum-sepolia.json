@@ -28,7 +28,8 @@
     "verifyingPaymaster": "0x8fd124964ecd13f46b7ea15cfbdcb8ea808692b8",
     "erc8004Registry": "0x45d9e43a0ce744eaa29982a31a5b5ad48d1d6106",
     "erc7683Resolver": "0xb5bf1af688316d724f1fec07b6867c770cab82e6",
-    "erc8183Escrow": "0x44f97d09090e27962d2665f0b95a753273a89350"
+    "erc8183Escrow": "0x44f97d09090e27962d2665f0b95a753273a89350",
+    "legacyPool": "0x9d5305a9621aafb5b5f8ba7a9977e3d96ea7eceb"
   },
   "accountAbstraction": {
     "entryPointVersion": "0.7",

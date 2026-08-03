@@ -107,6 +107,7 @@ public static class BlockchainManifestLoader
                     Faucet = addresses.GetProperty("faucet").GetString() ?? string.Empty,
                     StCafe = addresses.GetProperty("liquidVault").GetString() ?? string.Empty,
                     AgenticEscrow = Optional(addresses, "erc8183Escrow") ?? string.Empty,
+                    LegacyPool = Optional(addresses, "legacyPool") ?? string.Empty,
                     PaymentToken = Optional(addresses, "paymentToken") ?? (addresses.TryGetProperty("cafe", out var cafeElement) ? cafeElement.GetString() : string.Empty) ?? string.Empty,
                     EntryPoint = Optional(addresses, "entryPoint") ?? string.Empty,
                     AccountFactory = Optional(addresses, "accountFactory") ?? string.Empty,

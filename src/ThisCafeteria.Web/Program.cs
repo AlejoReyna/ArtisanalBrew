@@ -124,6 +124,7 @@ builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
 builder.Services.AddScoped<EvmLiquidStakingGateway>();
 builder.Services.AddScoped<SolanaLiquidStakingGateway>();
 builder.Services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
+builder.Services.AddScoped<IMarketplacePaymentGateway, EvmMarketplacePaymentGateway>();
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
 builder.Services.AddScoped<ThisCafeteria.Web.Services.ProfileAvatarState>();
