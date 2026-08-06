@@ -11,9 +11,17 @@ import { z } from "zod";
 import {
   createAgenticPaymentHttpApp,
   createAgenticPaymentRedeemer,
+  type AgenticRedemptionRequest,
+  type AgenticRedemptionResult,
   type AgenticPaymentChain,
 } from "./agenticPaymentRedemption.js";
-import { IdempotencyStore, requestHash } from "./requestBinding.js";
+import { createRemoteSignerAccount } from "./remoteSigner.js";
+import {
+  IdempotencyStore,
+  PostgresIdempotencyStore,
+  requestHash,
+  type AtomicStore,
+} from "./requestBinding.js";
 
 const port = Number(process.env.PORT ?? 4022);
 const internalBaseUrl = process.env.ASPNET_INTERNAL_URL ?? "http://127.0.0.1:8080";
@@ -26,8 +34,20 @@ const sessionTtlMs = 15 * 60_000;
 const rateWindowMs = 60_000;
 const rateLimit = 60;
 const sessions = new Map<string, { transport: SSEServerTransport; expiresAt: number }>();
-const fulfilled = new IdempotencyStore<{ correlationId: string; result: unknown; settleResponse: unknown; replay?: boolean }>(15 * 60_000, 10_000);
 const requests = new Map<string, { count: number; resetAt: number }>();
+const isProduction = process.env.NODE_ENV === "production";
+const databaseUrl = process.env.AGENT_GATEWAY_DATABASE_URL;
+if (isProduction && !databaseUrl) {
+  throw new Error("FATAL: production mode requires AGENT_GATEWAY_DATABASE_URL for durable settlement and redemption records");
+}
+const fulfilled: AtomicStore<{
+  correlationId: string;
+  result: unknown;
+  settleResponse: unknown;
+  replay?: boolean;
+}> = databaseUrl
+  ? await PostgresIdempotencyStore.create(databaseUrl, 24 * 60 * 60_000, "x402-fulfillments")
+  : new IdempotencyStore(15 * 60_000, 10_000);
 
 /** Monotonic counter of facilitator /settle calls. Exported for test observability. */
 let settleCallCount = 0;
@@ -35,10 +55,6 @@ export { settleCallCount };
 
 if (!gatewaySecret || !payTo || !usdc) {
   throw new Error("AGENT_GATEWAY_SERVICE_SECRET, X402_PAY_TO, and X402_USDC_ADDRESS are required");
-}
-
-if (process.env.NODE_ENV === "production") {
-  throw new Error("FATAL: The current idempotency store is process-local. Running in production requires a durable store to prevent double-spending across restarts.");
 }
 
 const facilitator = new HTTPFacilitatorClient({ url: facilitatorUrl });
@@ -184,22 +200,68 @@ const agenticChainsJson = process.env.AGENTIC_PAYMENT_CHAINS_JSON;
 const agentPrivateKey = process.env.AGENT_SESSION_PRIVATE_KEY;
 const agentDeploySalt = process.env.AGENT_SMART_ACCOUNT_SALT;
 const agentRedemptionToken = process.env.AGENT_REDEMPTION_API_TOKEN;
-if (agenticChainsJson || agentPrivateKey || agentDeploySalt || agentRedemptionToken) {
-  if (!agenticChainsJson || !agentPrivateKey || !agentDeploySalt || !agentRedemptionToken) {
+const agentSignerUrl = process.env.AGENT_SIGNER_URL;
+const agentSignerAddress = process.env.AGENT_SIGNER_ADDRESS;
+const agentSignerToken = process.env.AGENT_SIGNER_TOKEN;
+if (isProduction && agentPrivateKey) {
+  throw new Error("FATAL: AGENT_SESSION_PRIVATE_KEY is forbidden in production; configure the remote KMS/HSM signer");
+}
+const agentConfigurationPresent = [
+  agenticChainsJson,
+  agentPrivateKey,
+  agentDeploySalt,
+  agentRedemptionToken,
+  agentSignerUrl,
+  agentSignerAddress,
+  agentSignerToken,
+].some(Boolean);
+if (agentConfigurationPresent) {
+  if (!agenticChainsJson || !agentDeploySalt || !agentRedemptionToken) {
     throw new Error(
-      "AGENTIC_PAYMENT_CHAINS_JSON, AGENT_SESSION_PRIVATE_KEY, AGENT_SMART_ACCOUNT_SALT, and AGENT_REDEMPTION_API_TOKEN must be configured together",
+      "AGENTIC_PAYMENT_CHAINS_JSON, AGENT_SMART_ACCOUNT_SALT, and AGENT_REDEMPTION_API_TOKEN must be configured together",
     );
   }
+  const remoteSignerConfigured = agentSignerUrl && agentSignerAddress && agentSignerToken;
+  if (!remoteSignerConfigured && !agentPrivateKey) {
+    throw new Error("Configure either the remote agent signer or a non-production AGENT_SESSION_PRIVATE_KEY");
+  }
+  if (isProduction && !remoteSignerConfigured) {
+    throw new Error("FATAL: production agent redemption requires AGENT_SIGNER_URL, AGENT_SIGNER_ADDRESS, and AGENT_SIGNER_TOKEN");
+  }
   const chains = JSON.parse(agenticChainsJson) as AgenticPaymentChain[];
+  const signer = remoteSignerConfigured
+    ? createRemoteSignerAccount({
+        address: agentSignerAddress,
+        signerUrl: agentSignerUrl,
+        bearerToken: agentSignerToken,
+      })
+    : privateKeyToAccount(agentPrivateKey as `0x${string}`);
   const redeemer = createAgenticPaymentRedeemer({
     chains,
-    signer: privateKeyToAccount(agentPrivateKey as `0x${string}`),
+    signer,
     deploySalt: agentDeploySalt as `0x${string}`,
   });
-  app.use(createAgenticPaymentHttpApp({ redeemer, apiToken: agentRedemptionToken }));
+  if (isProduction) await redeemer.preflight();
+  const receipts: AtomicStore<{
+    requestHash: string;
+    request: AgenticRedemptionRequest;
+    result: AgenticRedemptionResult;
+  }> = databaseUrl
+    ? await PostgresIdempotencyStore.create(databaseUrl, 30 * 24 * 60 * 60_000, "agentic-redemptions")
+    : new IdempotencyStore(24 * 60 * 60_000, 10_000);
+  app.use(createAgenticPaymentHttpApp({
+    redeemer,
+    apiToken: agentRedemptionToken,
+    receipts,
+  }));
 }
 
-app.get("/health/live", (_req, res) => res.json({ status: "ok" }));
+app.get("/health/live", (_req, res) => res.json({
+  status: "ok",
+  mode: isProduction ? "production" : "development",
+  persistence: databaseUrl ? "postgresql" : "memory",
+  keyCustody: agentSignerUrl ? "remote-signer" : agentPrivateKey ? "process-local-development-only" : "disabled",
+}));
 app.get("/health/ready", async (_req, res) => {
   try { await fetch(facilitatorUrl, { method: "HEAD", signal: AbortSignal.timeout(2_000) }); res.json({ status: "ready", network: "eip155:84532", facilitator: facilitatorUrl }); }
   catch { res.status(503).json({ status: "not_ready", facilitator: facilitatorUrl }); }

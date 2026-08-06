@@ -3,7 +3,7 @@ import test from "node:test";
 import type { Server } from "node:http";
 import { once } from "node:events";
 import { createDelegation, type DeleGatorEnvironment } from "@metamask/delegation-toolkit";
-import { toHex, type Address, type Hex } from "viem";
+import { keccak256, toHex, type Address, type Hex } from "viem";
 import {
   ENTRY_POINT_VERSION,
   FRAMEWORK_REVISION,
@@ -14,7 +14,10 @@ import {
 } from "../src/agenticPayments.js";
 import {
   createAgenticPaymentHttpApp,
+  createAgenticPaymentRedeemer,
   type AgenticRedemptionRequest,
+  type VerifiedContractName,
+  verifyRuntimeBytecode,
 } from "../src/agenticPaymentRedemption.js";
 
 const entryPoint = "0x0000000071727De22E5E9d8BAf0edAc6f37da032" as Address;
@@ -115,6 +118,69 @@ test("exact permission validator accepts only the signed one-shot caveat set", (
   );
 });
 
+test("runtime bytecode verification checks every trusted modular contract hash", async () => {
+  const runtimeCode = "0x60006000" as Hex;
+  const codeHash = keccak256(runtimeCode);
+  const contractNames: VerifiedContractName[] = [
+    "EntryPoint",
+    "SimpleFactory",
+    "HybridDeleGatorImpl",
+    "DelegationManager",
+    "AllowedTargetsEnforcer",
+    "AllowedMethodsEnforcer",
+    "ExactCalldataEnforcer",
+    "LimitedCallsEnforcer",
+    "NonceEnforcer",
+    "TimestampEnforcer",
+  ];
+  const expectedCodeHashes = Object.fromEntries(
+    contractNames.map((name) => [name, codeHash]),
+  );
+  const chain = {
+    chainKey: "ethereum-sepolia" as const,
+    chainId: 11_155_111,
+    displayName: "Sepolia",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrl: "https://rpc.invalid",
+    bundlerUrl: "https://bundler.invalid",
+    bundlerMode: "safe" as const,
+    environment,
+    expectedCodeHashes,
+  };
+  let reads = 0;
+  await verifyRuntimeBytecode(chain, async () => {
+    reads += 1;
+    return runtimeCode;
+  });
+  assert.equal(reads, contractNames.length);
+
+  await assert.rejects(
+    verifyRuntimeBytecode({
+      ...chain,
+      expectedCodeHashes: { ...expectedCodeHashes, NonceEnforcer: `0x${"00".repeat(32)}` },
+    }, async () => runtimeCode),
+    /NonceEnforcer runtime bytecode hash mismatch/,
+  );
+});
+
+test("public redemption preflight refuses an unsafe bundler before network use", async () => {
+  const redeemer = createAgenticPaymentRedeemer({
+    chains: [{
+      chainKey: "ethereum-sepolia",
+      chainId: 11_155_111,
+      displayName: "Sepolia",
+      nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+      rpcUrl: "http://127.0.0.1:1",
+      bundlerUrl: "http://127.0.0.1:1",
+      bundlerMode: "unsafe-local",
+      environment,
+    }],
+    signer: { address: agent, type: "json-rpc" },
+    deploySalt: toHex(1n),
+  });
+  await assert.rejects(redeemer.preflight(), /safe-mode bundler/);
+});
+
 test("agent redemption route authenticates and submits the exact granted permission", async () => {
   const expectedResult = {
     chainKey: "ethereum-sepolia",
@@ -124,10 +190,13 @@ test("agent redemption route authenticates and submits the exact granted permiss
     blockNumber: "123",
   };
   let received: AgenticRedemptionRequest | undefined;
+  let redemptionCalls = 0;
   const app = createAgenticPaymentHttpApp({
     apiToken: "route-test-token",
     redeemer: {
+      async preflight() {},
       async redeem(request) {
+        redemptionCalls += 1;
         received = request;
         return expectedResult;
       },
@@ -151,7 +220,10 @@ test("agent redemption route authenticates and submits the exact granted permiss
 
     const unauthorized = await fetch(`http://127.0.0.1:${address.port}/agentic-payments/redeem`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "idempotency-key": "agentic-route-test-0001",
+      },
       body: JSON.stringify(request),
     });
     assert.equal(unauthorized.status, 401);
@@ -161,13 +233,39 @@ test("agent redemption route authenticates and submits the exact granted permiss
       headers: {
         authorization: "Bearer route-test-token",
         "content-type": "application/json",
+        "idempotency-key": "agentic-route-test-0001",
       },
       body: JSON.stringify(request),
     });
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), expectedResult);
+    assert.deepEqual(await response.json(), { ...expectedResult, replay: false });
     assert.equal(received?.permissions[0]?.delegation.signature, signedDelegation.signature);
     assert.equal(received?.permissions[0]?.calldata, calldata);
+
+    const replay = await fetch(`http://127.0.0.1:${address.port}/agentic-payments/redeem`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer route-test-token",
+        "content-type": "application/json",
+        "idempotency-key": "agentic-route-test-0001",
+      },
+      body: JSON.stringify(request),
+    });
+    assert.equal(replay.status, 200);
+    assert.deepEqual(await replay.json(), { ...expectedResult, replay: true });
+    assert.equal(redemptionCalls, 1, "a replay must not submit another UserOperation");
+
+    const conflicting = await fetch(`http://127.0.0.1:${address.port}/agentic-payments/redeem`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer route-test-token",
+        "content-type": "application/json",
+        "idempotency-key": "agentic-route-test-0001",
+      },
+      body: JSON.stringify({ ...request, epoch: "8" }),
+    });
+    assert.equal(conflicting.status, 409);
+    assert.equal(redemptionCalls, 1);
   } finally {
     if (server.listening) {
       await new Promise<void>((resolve, reject) => {

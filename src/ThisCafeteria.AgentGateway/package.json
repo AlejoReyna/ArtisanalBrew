@@ -16,18 +16,28 @@
     "@metamask/delegation-core": "0.2.0",
     "@metamask/delegation-deployments": "0.12.0",
     "@metamask/delegation-toolkit": "0.13.0",
-    "@modelcontextprotocol/sdk": "1.9.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@x402/core": "2.19.0",
     "@x402/evm": "2.19.0",
     "@x402/mcp": "2.19.0",
     "express": "5.1.0",
+    "pg": "8.22.0",
     "viem": "2.55.5",
     "zod": "3.25.76"
   },
   "devDependencies": {
     "@types/express": "5.0.3",
     "@types/node": "22.15.21",
+    "@types/pg": "8.20.0",
     "tsx": "4.19.4",
     "typescript": "5.8.3"
+  },
+  "overrides": {
+    "@hono/node-server": "2.1.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "fast-uri": "4.1.2",
+    "hono": "4.13.0",
+    "ip-address": "10.4.0",
+    "uuid": "14.0.1"
   }
 }

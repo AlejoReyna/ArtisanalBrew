@@ -284,11 +284,14 @@ const redemptionApp = createAgenticPaymentHttpApp({
       nativeCurrency: { name: "Local Ether", symbol: "ETH", decimals: 18 },
       rpcUrl: RPC_URL,
       bundlerUrl: BUNDLER_URL,
+      bundlerMode: "unsafe-local",
       environment
     }],
     signer: agent.account as Account,
     deploySalt: toHex(2002n),
-    now: () => Number(block.timestamp)
+    now: () => Number(block.timestamp),
+    allowUnsafeBundlerForLocalE2e: true,
+    skipBytecodeVerificationForLocalE2e: true
   })
 });
 const redemptionServer = redemptionApp.listen(0, "127.0.0.1") as Server;
@@ -308,7 +311,8 @@ try {
       method: "POST",
       headers: {
         authorization: "Bearer local-e2e-redemption-token",
-        "content-type": "application/json"
+        "content-type": "application/json",
+        "idempotency-key": "local-session-payment-e2e-0001"
       },
       body: JSON.stringify({
         chainKey: "ethereum-sepolia",

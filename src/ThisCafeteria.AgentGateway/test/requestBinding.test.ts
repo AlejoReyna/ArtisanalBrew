@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { describe, it } from "node:test";
-import { IdempotencyStore, requestHash } from "../src/requestBinding.js";
+import { IdempotencyStore, PostgresIdempotencyStore, requestHash } from "../src/requestBinding.js";
 
 describe("gateway request binding", () => {
   it("hashes object key order canonically", () => {
@@ -76,5 +77,36 @@ describe("gateway request binding", () => {
     assert.notEqual(requestHash("POST", "/test", {}, { ...basePayment, amount: "11" }), baseHash);
     assert.notEqual(requestHash("POST", "/test", {}, { ...basePayment, recipient: "c" }), baseHash);
     assert.notEqual(requestHash("POST", "/test", {}, { ...basePayment, expiry: "200" }), baseHash);
+  });
+
+  it("persists completed results across PostgreSQL store instances", {
+    skip: !process.env.AGENT_GATEWAY_TEST_DATABASE_URL,
+  }, async () => {
+    const databaseUrl = process.env.AGENT_GATEWAY_TEST_DATABASE_URL!;
+    const namespace = `test-${randomUUID()}`;
+    const key = randomUUID();
+    const first = await PostgresIdempotencyStore.create<{ result: string }>(
+      databaseUrl,
+      60_000,
+      namespace,
+    );
+    await first.executeAtomic(key, async () => ({ result: "durable" }));
+    await first.close();
+
+    const restarted = await PostgresIdempotencyStore.create<{ result: string }>(
+      databaseUrl,
+      60_000,
+      namespace,
+    );
+    let executions = 0;
+    const replay = await restarted.executeAtomic(key, async () => {
+      executions += 1;
+      return { result: "duplicate" };
+    });
+    await restarted.close();
+
+    assert.equal(replay.result, "durable");
+    assert.equal(replay.replay, true);
+    assert.equal(executions, 0);
   });
 });

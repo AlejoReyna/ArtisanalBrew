@@ -12,6 +12,7 @@ import {
   defineChain,
   getAddress,
   http,
+  keccak256,
   type Account,
   type Address,
   type Hex,
@@ -25,8 +26,12 @@ import {
   assertExactOneShotPermission,
   encodeRedemption,
   requireCompatibleBundler,
-  type ModularAccountManifest,
 } from "./agenticPayments.js";
+import {
+  IdempotencyStore,
+  requestHash,
+  type AtomicStore,
+} from "./requestBinding.js";
 
 const addressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const hexSchema = z.string().regex(/^0x(?:[0-9a-fA-F]{2})*$/);
@@ -78,29 +83,119 @@ export type AgenticPaymentChain = {
   nativeCurrency: { name: string; symbol: string; decimals: number };
   rpcUrl: string;
   bundlerUrl: string;
+  bundlerMode: "safe" | "unsafe-local";
   environment: DeleGatorEnvironment;
+  expectedCodeHashes?: Partial<Record<VerifiedContractName, Hex>>;
 };
 
 export type AgenticPaymentRedeemer = {
+  preflight(): Promise<void>;
   redeem(request: AgenticRedemptionRequest): Promise<AgenticRedemptionResult>;
 };
 
+export type VerifiedContractName =
+  | "EntryPoint"
+  | "SimpleFactory"
+  | "HybridDeleGatorImpl"
+  | "DelegationManager"
+  | "AllowedTargetsEnforcer"
+  | "AllowedMethodsEnforcer"
+  | "ExactCalldataEnforcer"
+  | "LimitedCallsEnforcer"
+  | "NonceEnforcer"
+  | "TimestampEnforcer";
+
 const normalize = (value: string) => value.toLowerCase();
+
+const verifiedAddresses = (environment: DeleGatorEnvironment): Record<VerifiedContractName, Address> => ({
+  EntryPoint: environment.EntryPoint as Address,
+  SimpleFactory: environment.SimpleFactory as Address,
+  HybridDeleGatorImpl: environment.implementations.HybridDeleGatorImpl as Address,
+  DelegationManager: environment.DelegationManager as Address,
+  AllowedTargetsEnforcer: environment.caveatEnforcers.AllowedTargetsEnforcer as Address,
+  AllowedMethodsEnforcer: environment.caveatEnforcers.AllowedMethodsEnforcer as Address,
+  ExactCalldataEnforcer: environment.caveatEnforcers.ExactCalldataEnforcer as Address,
+  LimitedCallsEnforcer: environment.caveatEnforcers.LimitedCallsEnforcer as Address,
+  NonceEnforcer: environment.caveatEnforcers.NonceEnforcer as Address,
+  TimestampEnforcer: environment.caveatEnforcers.TimestampEnforcer as Address,
+});
+
+export async function verifyRuntimeBytecode(
+  chain: AgenticPaymentChain,
+  getCode: (address: Address) => Promise<Hex | undefined>,
+): Promise<void> {
+  const expected = chain.expectedCodeHashes;
+  if (!expected) throw new Error(`Trusted runtime bytecode hashes are missing for '${chain.chainKey}'`);
+  for (const [name, address] of Object.entries(verifiedAddresses(chain.environment)) as [VerifiedContractName, Address][]) {
+    const expectedHash = expected[name];
+    if (!expectedHash) throw new Error(`Trusted runtime bytecode hash '${name}' is missing for '${chain.chainKey}'`);
+    const code = await getCode(address);
+    if (!code || code === "0x") throw new Error(`${name} is not deployed at ${address} on '${chain.chainKey}'`);
+    const actualHash = keccak256(code);
+    if (normalize(actualHash) !== normalize(expectedHash)) {
+      throw new Error(`${name} runtime bytecode hash mismatch on '${chain.chainKey}'`);
+    }
+  }
+}
 
 export function createAgenticPaymentRedeemer(options: {
   chains: readonly AgenticPaymentChain[];
   signer: Account;
   deploySalt: Hex;
   now?: () => number;
+  allowUnsafeBundlerForLocalE2e?: boolean;
+  skipBytecodeVerificationForLocalE2e?: boolean;
 }): AgenticPaymentRedeemer {
   const chains = new Map(options.chains.map((chain) => [chain.chainKey, chain]));
   const now = options.now ?? (() => Math.floor(Date.now() / 1_000));
+  const preflightChecks = new Map<string, Promise<void>>();
+
+  const preflightChain = (chainConfig: AgenticPaymentChain) => {
+    let check = preflightChecks.get(chainConfig.chainKey);
+    if (check) return check;
+    check = (async () => {
+      const expectedChainId = chainConfig.chainKey === "ethereum-sepolia" ? 11_155_111 : 97;
+      if (chainConfig.chainId !== expectedChainId && !options.allowUnsafeBundlerForLocalE2e) {
+        throw new Error(`Configured chain ID does not match '${chainConfig.chainKey}'`);
+      }
+      if (chainConfig.bundlerMode !== "safe" && !options.allowUnsafeBundlerForLocalE2e) {
+        throw new Error("Agentic redemption requires a safe-mode bundler");
+      }
+      const chain = defineChain({
+        id: chainConfig.chainId,
+        name: chainConfig.displayName,
+        nativeCurrency: chainConfig.nativeCurrency,
+        rpcUrls: { default: { http: [chainConfig.rpcUrl] } },
+      });
+      const publicClient = createPublicClient({ chain, transport: http(chainConfig.rpcUrl) });
+      if (!options.skipBytecodeVerificationForLocalE2e) {
+        await verifyRuntimeBytecode(
+          chainConfig,
+          (address) => publicClient.getCode({ address }),
+        );
+      }
+      await requireCompatibleBundler({
+        accountType: MODULAR_ACCOUNT_TYPE,
+        frameworkRevision: FRAMEWORK_REVISION,
+        entryPointVersion: ENTRY_POINT_VERSION,
+        entryPoint: chainConfig.environment.EntryPoint as Address,
+        bundlerUrl: chainConfig.bundlerUrl,
+        environment: chainConfig.environment,
+      });
+    })();
+    preflightChecks.set(chainConfig.chainKey, check);
+    return check;
+  };
 
   return {
+    async preflight() {
+      await Promise.all(options.chains.map(preflightChain));
+    },
     async redeem(rawRequest) {
       const request = redemptionRequestSchema.parse(rawRequest);
       const chainConfig = chains.get(request.chainKey);
       if (!chainConfig) throw new Error(`Agentic redemption is not configured for '${request.chainKey}'`);
+      await preflightChain(chainConfig);
       if (request.validAfterUnix >= request.validBeforeUnix) throw new Error("Permission validity window is invalid");
 
       const currentTime = now();
@@ -115,15 +210,6 @@ export function createAgenticPaymentRedeemer(options: {
         rpcUrls: { default: { http: [chainConfig.rpcUrl] } },
       });
       const publicClient = createPublicClient({ chain, transport: http(chainConfig.rpcUrl) });
-      const manifest: ModularAccountManifest = {
-        accountType: MODULAR_ACCOUNT_TYPE,
-        frameworkRevision: FRAMEWORK_REVISION,
-        entryPointVersion: ENTRY_POINT_VERSION,
-        entryPoint: chainConfig.environment.EntryPoint as Address,
-        bundlerUrl: chainConfig.bundlerUrl,
-        environment: chainConfig.environment,
-      };
-      await requireCompatibleBundler(manifest);
 
       const agentAccount = await toMetaMaskSmartAccount({
         client: publicClient,
@@ -218,14 +304,26 @@ function tokenMatches(provided: string | undefined, expected: string): boolean {
 export function createAgenticPaymentHttpApp(options: {
   redeemer: AgenticPaymentRedeemer;
   apiToken: string;
+  receipts?: AtomicStore<{
+    requestHash: string;
+    request: AgenticRedemptionRequest;
+    result: AgenticRedemptionResult;
+  }>;
 }): Express {
   if (!options.apiToken) throw new Error("Agentic redemption API token is required");
+  const receipts = options.receipts ?? new IdempotencyStore(24 * 60 * 60_000, 10_000);
   const app = express();
   app.post("/agentic-payments/redeem", express.json({ limit: "128kb" }), async (request, response) => {
     const authorization = request.header("authorization");
     const bearer = authorization?.startsWith("Bearer ") ? authorization.slice(7) : undefined;
     if (!tokenMatches(bearer, options.apiToken)) {
       response.status(401).json({ error: "unauthorized" });
+      return;
+    }
+
+    const idempotencyKey = request.header("idempotency-key");
+    if (!idempotencyKey || !/^[A-Za-z0-9._:-]{16,128}$/.test(idempotencyKey)) {
+      response.status(400).json({ error: "invalid_idempotency_key" });
       return;
     }
 
@@ -236,7 +334,22 @@ export function createAgenticPaymentHttpApp(options: {
     }
 
     try {
-      response.status(200).json(await options.redeemer.redeem(parsed.data));
+      const fingerprint = requestHash(
+        "POST",
+        "/agentic-payments/redeem",
+        parsed.data,
+        { authority: "signed-delegation" },
+      );
+      const stored = await receipts.executeAtomic(`redemption:${idempotencyKey}`, async () => ({
+        requestHash: fingerprint,
+        request: parsed.data,
+        result: await options.redeemer.redeem(parsed.data),
+      }));
+      if (stored.requestHash !== fingerprint) {
+        response.status(409).json({ error: "idempotency_key_reused" });
+        return;
+      }
+      response.status(200).json({ ...stored.result, replay: stored.replay === true });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Agentic redemption failed";
       response.status(422).json({ error: "redemption_rejected", message });
@@ -244,4 +357,3 @@ export function createAgenticPaymentHttpApp(options: {
   });
   return app;
 }
-
