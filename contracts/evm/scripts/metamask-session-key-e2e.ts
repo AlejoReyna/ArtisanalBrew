@@ -8,6 +8,8 @@
  * modules and asserts their on-chain results.
  */
 import assert from "node:assert/strict";
+import { once } from "node:events";
+import type { Server } from "node:http";
 import { network } from "hardhat";
 import {
   createPublicClient,
@@ -16,6 +18,7 @@ import {
   parseEther,
   toHex,
   zeroAddress,
+  type Account,
   type Address,
   type Hex
 } from "viem";
@@ -31,6 +34,10 @@ import {
   type Delegation
 } from "@metamask/delegation-toolkit";
 import { deployDeleGatorEnvironment } from "@metamask/delegation-toolkit/utils";
+import {
+  createAgenticPaymentHttpApp,
+  createAgenticPaymentRedeemer
+} from "../../../src/ThisCafeteria.AgentGateway/src/agenticPaymentRedemption.ts";
 import manifest from "../deployments/evm-local.json" with { type: "json" };
 
 const BUNDLER_URL = process.env.BUNDLER_URL ?? "http://127.0.0.1:4338";
@@ -263,17 +270,81 @@ const delegateCallModeData = delegationContracts.DelegationManager.encode.redeem
 });
 await expectBundlerRejection("delegatecall-execution-mode", [{ to: environment.DelegationManager as Address, data: delegateCallModeData }]);
 
-// The agent submits the allowed payment through the real bundler. This is the
-// first agent-account UserOperation, so factory/factoryData deploys it.
-const settled = await sendUserOperation(agentAccount as typeof ownerAccount, [allowedRedemption]);
+// The agent submits the allowed payment through the live AgentGateway HTTP
+// route. The route reconstructs and checks every one-shot caveat, confirms the
+// active epoch, signs the agent account's UserOperation and sends it to the
+// real bundler. There is no owner/human signing step in this path.
+const redemptionApp = createAgenticPaymentHttpApp({
+  apiToken: "local-e2e-redemption-token",
+  redeemer: createAgenticPaymentRedeemer({
+    chains: [{
+      chainKey: "ethereum-sepolia",
+      chainId: EXPECTED_CHAIN_ID,
+      displayName: "Local Agentic E2E",
+      nativeCurrency: { name: "Local Ether", symbol: "ETH", decimals: 18 },
+      rpcUrl: RPC_URL,
+      bundlerUrl: BUNDLER_URL,
+      environment
+    }],
+    signer: agent.account as Account,
+    deploySalt: toHex(2002n),
+    now: () => Number(block.timestamp)
+  })
+});
+const redemptionServer = redemptionApp.listen(0, "127.0.0.1") as Server;
+await once(redemptionServer, "listening");
+const redemptionAddress = redemptionServer.address();
+assert.ok(redemptionAddress && typeof redemptionAddress === "object");
+let routeResult: {
+  userOperationHash: Hex;
+  transactionHash: Hex;
+  agentAddress: Address;
+  blockNumber: string;
+} | undefined;
+try {
+  const response = await fetch(
+    `http://127.0.0.1:${redemptionAddress.port}/agentic-payments/redeem`,
+    {
+      method: "POST",
+      headers: {
+        authorization: "Bearer local-e2e-redemption-token",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        chainKey: "ethereum-sepolia",
+        delegatorAddress: ownerAddress,
+        agentAddress,
+        epoch: permissionEpoch.toString(),
+        validAfterUnix: Number(block.timestamp - 1n),
+        validBeforeUnix: Number(expiry),
+        permissions: [
+          { delegation: approvePermission, targetAddress: token.address, calldata: approveData },
+          { delegation: fundPermission, targetAddress: escrow.address, calldata: fundData }
+        ]
+      })
+    }
+  );
+  const body = await response.json() as typeof routeResult & { error?: string; message?: string };
+  assert.equal(response.status, 200, `gateway redemption failed: ${JSON.stringify(body)}`);
+  routeResult = body;
+} finally {
+  await new Promise<void>((resolve, reject) => {
+    redemptionServer.close((error) => error ? reject(error) : resolve());
+  });
+}
+assert.ok(routeResult, "gateway route must return a redemption receipt");
+assert.equal(routeResult.agentAddress.toLowerCase(), agentAddress.toLowerCase());
+const settledTransaction = await publicClient.getTransactionReceipt({ hash: routeResult.transactionHash });
+console.log(`AGENT_GATEWAY_USER_OPERATION_HASH=${routeResult.userOperationHash}`);
+console.log(`AGENT_GATEWAY_TRANSACTION_HASH=${routeResult.transactionHash}`);
 const agentCode = await publicClient.getCode({ address: agentAddress });
 assert.ok(agentCode && agentCode !== "0x", "agent modular account must deploy through factoryData");
 const fundedLogs = await publicClient.getContractEvents({
   address: escrow.address,
   abi: escrowAbi,
   eventName: "JobFunded",
-  fromBlock: settled.transaction.blockNumber,
-  toBlock: settled.transaction.blockNumber
+  fromBlock: settledTransaction.blockNumber,
+  toBlock: settledTransaction.blockNumber
 }) as any[];
 assert.equal(fundedLogs.length, 1, "receipt reconciliation must find exactly one JobFunded event");
 assert.equal(fundedLogs[0].args.jobId, jobId);

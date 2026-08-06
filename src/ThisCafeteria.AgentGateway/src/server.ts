@@ -6,7 +6,13 @@ import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { createPaymentWrapper, x402ResourceServer } from "@x402/mcp";
+import { privateKeyToAccount } from "viem/accounts";
 import { z } from "zod";
+import {
+  createAgenticPaymentHttpApp,
+  createAgenticPaymentRedeemer,
+  type AgenticPaymentChain,
+} from "./agenticPaymentRedemption.js";
 import { IdempotencyStore, requestHash } from "./requestBinding.js";
 
 const port = Number(process.env.PORT ?? 4022);
@@ -173,6 +179,26 @@ return mcpServer;
 };
 
 const app = express();
+
+const agenticChainsJson = process.env.AGENTIC_PAYMENT_CHAINS_JSON;
+const agentPrivateKey = process.env.AGENT_SESSION_PRIVATE_KEY;
+const agentDeploySalt = process.env.AGENT_SMART_ACCOUNT_SALT;
+const agentRedemptionToken = process.env.AGENT_REDEMPTION_API_TOKEN;
+if (agenticChainsJson || agentPrivateKey || agentDeploySalt || agentRedemptionToken) {
+  if (!agenticChainsJson || !agentPrivateKey || !agentDeploySalt || !agentRedemptionToken) {
+    throw new Error(
+      "AGENTIC_PAYMENT_CHAINS_JSON, AGENT_SESSION_PRIVATE_KEY, AGENT_SMART_ACCOUNT_SALT, and AGENT_REDEMPTION_API_TOKEN must be configured together",
+    );
+  }
+  const chains = JSON.parse(agenticChainsJson) as AgenticPaymentChain[];
+  const redeemer = createAgenticPaymentRedeemer({
+    chains,
+    signer: privateKeyToAccount(agentPrivateKey as `0x${string}`),
+    deploySalt: agentDeploySalt as `0x${string}`,
+  });
+  app.use(createAgenticPaymentHttpApp({ redeemer, apiToken: agentRedemptionToken }));
+}
+
 app.get("/health/live", (_req, res) => res.json({ status: "ok" }));
 app.get("/health/ready", async (_req, res) => {
   try { await fetch(facilitatorUrl, { method: "HEAD", signal: AbortSignal.timeout(2_000) }); res.json({ status: "ready", network: "eip155:84532", facilitator: facilitatorUrl }); }
