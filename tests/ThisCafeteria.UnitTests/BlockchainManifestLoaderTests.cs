@@ -123,6 +123,21 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
+    public void CommittedBscManifestKeepsMarketplacePaymentOffUntilNativePricingIsImplemented()
+    {
+        var options = BlockchainManifestLoader.LoadDeploymentManifests(
+            BlockchainOptions.CreateDefaults(),
+            "deployments/bsc-testnet.json",
+            null);
+        var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+        deployed.Enabled.Should().BeTrue();
+        deployed.NativeCurrencySymbol.Should().Be("tBNB");
+        deployed.Capabilities.MarketplacePayment.Should().BeFalse(
+            "checkout still derives its native amount from an ETH/USD constant and persists it as PaymentEthAmount");
+    }
+
+    [Fact]
     public void ReadsMarketplacePaymentFromTheManifestInsteadOfHardcodingIt()
     {
         // Manifest is the single source of truth: with the flag off (the WriteEvmManifest default)

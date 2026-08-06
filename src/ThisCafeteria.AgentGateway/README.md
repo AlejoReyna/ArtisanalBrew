@@ -1,8 +1,9 @@
 # ArtisanalBrew Agent Gateway
 
-This service is the TypeScript boundary for x402 v2 and MCP. It does not access
-PostgreSQL, hold blockchain keys, or accept trusted infrastructure addresses
-from callers. It calls ASP.NET only through the authenticated internal routes.
+This service is the TypeScript boundary for x402 v2, MCP, and agent-side
+delegation redemption. It calls ASP.NET only through authenticated internal
+routes and never accepts trusted RPC, bundler, contract, facilitator, or signer
+addresses from callers.
 
 The initial implementation pins the official x402 v2 package family at 2.19.0
 and uses Base Sepolia (`eip155:84532`) with a configured test-USDC address.
@@ -31,8 +32,31 @@ used for each action. Payment authority is issued by
 `signExactOneShotPermission`, and the agent submits the result returned by
 `encodeRedemption` through a v0.7 bundler.
 
-This package still deliberately refuses production mode because its existing
-gateway idempotency store is process-local. Production also requires a
-safe-mode bundler, durable account/permission/receipt persistence, key custody,
-chain bytecode verification, and remediation or explicit acceptance of all
-`npm audit` findings.
+`POST /agentic-payments/redeem` is the authenticated agent route. It requires an
+idempotency key, reconstructs and compares every signed delegation field against
+the exact target/selector/calldata/epoch/time/call-limit policy, confirms the
+epoch live through `NonceEnforcer.currentNonce`, and only then sends the agent's
+UserOperation. PostgreSQL stores the signed permission request and resulting
+UserOperation/transaction receipt atomically for replay across replicas and
+restarts.
+
+## Production mode
+
+The gateway can run with `NODE_ENV=production`, but it fails startup unless the
+spend-critical controls are present:
+
+- `AGENT_GATEWAY_DATABASE_URL` provides PostgreSQL-backed atomic x402
+  fulfillments and agent permission/receipt records.
+- Agent redemption uses `AGENT_SIGNER_URL`, `AGENT_SIGNER_ADDRESS`, and
+  `AGENT_SIGNER_TOKEN`; `AGENT_SESSION_PRIVATE_KEY` is rejected in production.
+- Every configured chain must declare `bundlerMode: "safe"` and the bundler
+  must advertise the canonical v0.7 EntryPoint during startup preflight.
+- Every configured modular contract must have a trusted expected runtime
+  bytecode hash; startup preflight reads and compares each deployed contract.
+- The pinned dependency tree currently passes `npm audit` with zero findings.
+
+The currently deployed public Rundler still does not advertise the canonical
+modular EntryPoint, so public `agenticSessionPayments` capability flags remain
+off. Production x402/MCP can run with agent redemption unconfigured; enabling
+public session payments additionally requires the live bundler/testnet gate.
+See [`docs/agent-gateway-production-runbook.md`](../../docs/agent-gateway-production-runbook.md).

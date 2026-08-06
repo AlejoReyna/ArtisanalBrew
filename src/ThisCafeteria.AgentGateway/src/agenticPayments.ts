@@ -1,5 +1,6 @@
 import {
   ExecutionMode,
+  ROOT_AUTHORITY,
   contracts,
   createDelegation,
   createExecution,
@@ -59,17 +60,11 @@ export type ExactPermission = {
   salt: Hex;
 };
 
-/**
- * Compose only published Delegation Framework scopes/caveats. Exact calldata
- * binds target, selector, token/recipient arguments and amount; one permitted
- * call makes that amount the delegation's cumulative quota.
- */
-export async function signExactOneShotPermission(
-  ownerAccount: MetaMaskSmartAccount,
+function buildExactOneShotPermission(
   environment: DeleGatorEnvironment,
   permission: ExactPermission,
-): Promise<Delegation> {
-  const unsigned = createDelegation({
+): Delegation {
+  return createDelegation({
     environment,
     to: permission.agent,
     from: permission.delegator,
@@ -86,8 +81,62 @@ export async function signExactOneShotPermission(
       { type: "limitedCalls", limit: 1 },
     ],
   });
+}
+
+/**
+ * Compose only published Delegation Framework scopes/caveats. Exact calldata
+ * binds target, selector, token/recipient arguments and amount; one permitted
+ * call makes that amount the delegation's cumulative quota.
+ */
+export async function signExactOneShotPermission(
+  ownerAccount: MetaMaskSmartAccount,
+  environment: DeleGatorEnvironment,
+  permission: ExactPermission,
+): Promise<Delegation> {
+  const unsigned = buildExactOneShotPermission(environment, permission);
   const { signature: _signature, ...signable } = unsigned;
   return { ...unsigned, signature: await ownerAccount.signDelegation({ delegation: signable }) };
+}
+
+const normalizeDelegation = (delegation: Delegation): Delegation => ({
+  ...delegation,
+  delegate: delegation.delegate.toLowerCase() as Hex,
+  delegator: delegation.delegator.toLowerCase() as Hex,
+  authority: delegation.authority.toLowerCase() as Hex,
+  caveats: delegation.caveats.map((caveat) => ({
+    enforcer: caveat.enforcer.toLowerCase() as Hex,
+    terms: caveat.terms.toLowerCase() as Hex,
+    args: caveat.args.toLowerCase() as Hex,
+  })),
+  salt: delegation.salt.toLowerCase() as Hex,
+  signature: delegation.signature.toLowerCase() as Hex,
+});
+
+/**
+ * Rebuild the only delegation shape this gateway is willing to redeem and
+ * compare every signed field. The on-chain DelegationManager remains the
+ * signature/caveat authority; this is an additional fail-closed gateway gate.
+ */
+export function assertExactOneShotPermission(
+  environment: DeleGatorEnvironment,
+  permission: ExactPermission,
+  signedDelegation: Delegation,
+): void {
+  if (!signedDelegation.signature || signedDelegation.signature === "0x") {
+    throw new Error("Permission delegation is not signed");
+  }
+
+  const expected = normalizeDelegation(buildExactOneShotPermission(environment, permission));
+  const received = normalizeDelegation(signedDelegation);
+  const expectedUnsigned = { ...expected, signature: "0x" as Hex };
+  const receivedUnsigned = { ...received, signature: "0x" as Hex };
+
+  if (received.authority !== ROOT_AUTHORITY.toLowerCase()) {
+    throw new Error("Permission must use the root delegation authority");
+  }
+  if (JSON.stringify(receivedUnsigned) !== JSON.stringify(expectedUnsigned)) {
+    throw new Error("Signed delegation does not match the exact one-shot permission");
+  }
 }
 
 export function encodePermissionEpochChange(environment: DeleGatorEnvironment): { to: Address; data: Hex } {
