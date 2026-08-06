@@ -19,13 +19,13 @@ public sealed class OrderService(
         var coupon = await ResolveCouponAsync(request, cancellationToken);
         var pricing = pricingService.Calculate(request.Items, coupon);
         var items = request.Items.Select(item => new OrderItem
-            {
-                ProductId = item.ProductId,
-                ProductName = item.ProductName,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                Total = item.UnitPrice * item.Quantity
-            }).ToList();
+        {
+            ProductId = item.ProductId,
+            ProductName = item.ProductName,
+            Quantity = item.Quantity,
+            UnitPrice = item.UnitPrice,
+            Total = item.UnitPrice * item.Quantity
+        }).ToList();
         var order = Order.Place(
             request.UserProfileId,
             $"TC-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}",
