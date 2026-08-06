@@ -66,5 +66,9 @@ public sealed record CrossChainSolverOptions
             string.Equals(p.SourceToken, sourceToken, StringComparison.OrdinalIgnoreCase)
             && string.Equals(p.DestinationToken, destinationToken, StringComparison.OrdinalIgnoreCase));
 
-    public sealed record TokenPair(string SourceToken, string DestinationToken);
+    public sealed record TokenPair
+    {
+        public string SourceToken { get; init; } = string.Empty;
+        public string DestinationToken { get; init; } = string.Empty;
+    }
 }

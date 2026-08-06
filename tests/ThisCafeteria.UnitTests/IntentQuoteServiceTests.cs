@@ -31,7 +31,7 @@ public class IntentQuoteServiceTests
         DestinationChainKey = "baseLocal",
         DestinationResolverAddress = "0x2222222222222222222222222222222222222222",
         SolverPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        AllowedTokenPairs = [new CrossChainSolverOptions.TokenPair(SourceToken, DestToken)],
+        AllowedTokenPairs = [new CrossChainSolverOptions.TokenPair { SourceToken = SourceToken, DestinationToken = DestToken }],
         MaxAmountIn = 100m,
         MaxOutputBps = 9_500
     };
