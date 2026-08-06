@@ -43,11 +43,7 @@ public static class DependencyInjection
         services.AddScoped<AppDbContext>(serviceProvider =>
             serviceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
-        // Depends on IRewardClaimRepository, so it is gated on the database like the repositories.
-        services.AddScoped<IRewardClaimService, RewardClaimService>();
-
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IIdentityAccountService, IdentityAccountService>();
         services.AddScoped<IAgenticCommerceProjectionBatch, AgenticCommerceProjectionBatch>();
         services.AddScoped<IWalletAuthChallengeRepository, WalletAuthChallengeRepository>();
         services.AddScoped<IWalletIdentityRepository, WalletIdentityRepository>();
@@ -94,6 +90,23 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(5);
         });
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers services that need both a database (<see cref="IRewardClaimRepository"/>,
+    /// ASP.NET Core Identity's <c>UserManager</c>) and, for reward claiming, the blockchain
+    /// gateway from <see cref="AddBlockchainInfrastructure"/>. These are presentation-triggered
+    /// (a user claiming rewards or managing their account) and unused by the standing background
+    /// workers, so they live outside <see cref="AddInfrastructure"/> - the Worker host calls that
+    /// method but never <see cref="AddBlockchainInfrastructure"/> or ASP.NET Identity's
+    /// <c>AddIdentity</c>, and registering these unconditionally there left the Worker's service
+    /// provider unable to validate at startup.
+    /// </summary>
+    public static IServiceCollection AddIdentityAndRewardServices(this IServiceCollection services)
+    {
+        services.AddScoped<IIdentityAccountService, IdentityAccountService>();
+        services.AddScoped<IRewardClaimService, RewardClaimService>();
         return services;
     }
 
