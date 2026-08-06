@@ -1,39 +1,21 @@
+using ThisCafeteria.Application.Services.Blockchain;
+
 namespace ThisCafeteria.Application.Configuration;
 
+/// <summary>
+/// Solana program constants, plus the address predicates that read naturally at call sites.
+///
+/// The base58 algorithm itself lives in <see cref="SolanaBase58"/> and is delegated to here.
+/// These two files each carried their own byte-identical copy of it until they were consolidated;
+/// the decoding logic now exists exactly once in the solution.
+/// </summary>
 public static class SolanaAddressRules
 {
     public const string TokenProgram = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
     public const string Token2022Program = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
-    private const string Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-    public static bool IsPublicKey(string value) => TryDecode(value, out var bytes) && bytes.Length == 32;
+    public static bool IsPublicKey(string value) => SolanaBase58.IsPublicKey(value);
 
-    public static bool TryDecode(string value, out byte[] bytes)
-    {
-        bytes = Array.Empty<byte>();
-        if (string.IsNullOrWhiteSpace(value)) return false;
-        var digits = new byte[(value.Length * 733 / 1000) + 1];
-        var length = 1;
-        foreach (var character in value)
-        {
-            var carry = Alphabet.IndexOf(character);
-            if (carry < 0) return false;
-            for (var index = 0; index < length; index++)
-            {
-                carry += 58 * digits[index];
-                digits[index] = (byte)(carry % 256);
-                carry /= 256;
-            }
-            while (carry > 0)
-            {
-                digits[length++] = (byte)(carry % 256);
-                carry /= 256;
-            }
-        }
-        while (length > 0 && digits[length - 1] == 0) length--;
-        var leadingZeroes = value.TakeWhile(character => character == '1').Count();
-        bytes = new byte[leadingZeroes + length];
-        for (var index = 0; index < length; index++) bytes[bytes.Length - 1 - index] = digits[index];
-        return true;
-    }
+    public static bool TryDecode(string value, out byte[] bytes) =>
+        SolanaBase58.TryDecode(value, out bytes);
 }

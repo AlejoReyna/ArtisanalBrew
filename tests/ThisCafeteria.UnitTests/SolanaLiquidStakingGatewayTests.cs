@@ -10,6 +10,7 @@ using Moq;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Web.Services.Blockchain;
+using ThisCafeteria.Infrastructure.Services.Blockchain;
 
 namespace ThisCafeteria.UnitTests;
 

@@ -51,8 +51,7 @@ public sealed class CouponRepository(AppDbContext dbContext) : ICouponRepository
             .AnyAsync(redemption => redemption.CouponId == coupon.Id, cancellationToken);
         if (hasRedemptions)
         {
-            coupon.IsActive = false;
-            coupon.UpdatedAt = DateTime.UtcNow;
+            coupon.Deactivate();
         }
         else
         {

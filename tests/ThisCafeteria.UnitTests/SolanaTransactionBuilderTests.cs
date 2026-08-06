@@ -3,6 +3,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using System.Security.Cryptography;
 using ThisCafeteria.Web.Services.Blockchain;
+using ThisCafeteria.Infrastructure.Services.Blockchain;
 
 namespace ThisCafeteria.UnitTests;
 

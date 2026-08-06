@@ -1,5 +1,3 @@
-extern alias worker;
-
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -11,7 +9,7 @@ using Moq;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Infrastructure.Persistence;
-using SolanaReconciliationSupervisor = worker::ThisCafeteria.Worker.SolanaReconciliationSupervisor;
+using ThisCafeteria.Infrastructure.Services.Reconciliation;
 
 namespace ThisCafeteria.IntegrationTests;
 

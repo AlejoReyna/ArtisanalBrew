@@ -3,12 +3,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using QuestPDF.Infrastructure;
+using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Repositories;
 using ThisCafeteria.Application.Services;
+using ThisCafeteria.Application.Services.Blockchain;
+using ThisCafeteria.Application.Services.Rewards;
+using ThisCafeteria.Application.Services.Wallet;
 using ThisCafeteria.Infrastructure.Configuration;
+using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Persistence;
 using ThisCafeteria.Infrastructure.Persistence.Repositories;
 using ThisCafeteria.Infrastructure.Services;
+using ThisCafeteria.Infrastructure.Services.Blockchain;
+using ThisCafeteria.Infrastructure.Services.Rewards;
+using ThisCafeteria.Infrastructure.Services.Wallet;
 
 namespace ThisCafeteria.Infrastructure;
 
@@ -35,6 +43,18 @@ public static class DependencyInjection
         services.AddScoped<AppDbContext>(serviceProvider =>
             serviceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
+        // Depends on IRewardClaimRepository, so it is gated on the database like the repositories.
+        services.AddScoped<IRewardClaimService, RewardClaimService>();
+
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IIdentityAccountService, IdentityAccountService>();
+        services.AddScoped<IAgenticCommerceProjectionBatch, AgenticCommerceProjectionBatch>();
+        services.AddScoped<IWalletAuthChallengeRepository, WalletAuthChallengeRepository>();
+        services.AddScoped<IWalletIdentityRepository, WalletIdentityRepository>();
+        services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
+        services.AddScoped<ISolanaFaucetClaimRepository, SolanaFaucetClaimRepository>();
+        services.AddScoped<ISolanaFaucetService, SolanaFaucetService>();
+        services.AddScoped<IStakingLedgerRepository, StakingLedgerRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICouponRepository, CouponRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
@@ -47,6 +67,32 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddScoped<IDatabaseSchemaService, DatabaseSchemaService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the chain gateways. These have no database dependency - they talk to RPC
+    /// endpoints - so they register unconditionally, unlike the repository-backed services above.
+    /// </summary>
+    public static IServiceCollection AddBlockchainInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<CoffeeCoinOwnerOptions>(
+            configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
+
+        services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
+        services.AddScoped<EvmLiquidStakingGateway>();
+        services.AddScoped<SolanaLiquidStakingGateway>();
+        services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
+        services.AddScoped<IMarketplacePaymentGateway, EvmMarketplacePaymentGateway>();
+
+        services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.coingecko.com/api/v3/");
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
 
         return services;
     }

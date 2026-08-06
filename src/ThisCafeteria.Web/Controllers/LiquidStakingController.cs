@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Nethereum.Util;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Infrastructure.Persistence;
 using ThisCafeteria.Web.Services.Blockchain;
 
 namespace ThisCafeteria.Web.Controllers;
@@ -13,9 +11,9 @@ namespace ThisCafeteria.Web.Controllers;
 [Route("staking/api/liquid")]
 public sealed class LiquidStakingController(
     ILiquidStakingGateway gateway,
+    ILiquidStakingLedgerService ledgerService,
     IChainRegistry registry,
-    ISelectedChainAccessor selectedChain,
-    AppDbContext dbContext) : ControllerBase
+    ISelectedChainAccessor selectedChain) : ControllerBase
 {
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard([FromQuery] string chainKey, [FromQuery] string walletIdentifier, CancellationToken cancellationToken)
@@ -46,62 +44,32 @@ public sealed class LiquidStakingController(
         if (!TryGetChain(request.ChainKey, out var chain) || !TryNormalizeWallet(chain, request.WalletIdentifier, out var wallet)) return BadRequest("A valid enabled chain and wallet are required.");
         if (!string.Equals(selectedChain.SelectedChainKey, chain.Key, StringComparison.Ordinal)) return BadRequest("The transaction chain does not match the selected chain.");
         if (!WalletMatchesSession(chain, wallet)) return Unauthorized("The authenticated wallet does not match this transaction.");
-        var transactionId = request.TransactionId.Trim();
-        if ((chain.Family == ChainFamily.Evm && !WalletAddressRules.TryNormalizeTransactionHash(transactionId, out transactionId)) ||
-            (chain.Family == ChainFamily.Solana && (!SolanaBase58.TryDecode(transactionId, out var signatureBytes) || signatureBytes.Length != 64))) return BadRequest("A valid transaction identifier is required.");
-        var verification = await gateway.VerifyAsync(chain.Key, wallet, transactionId, operation, request.ExpectedAmount, cancellationToken);
-        if (verification.Status == TransactionVerificationStatus.PendingConfirmations) return StatusCode(StatusCodes.Status202Accepted, new { status = "pending_confirmations", confirmations = 0, requiredConfirmations = chain.MinimumConfirmations });
-        if (!verification.Verified) return BadRequest(verification.Error ?? "Liquid-staking transaction could not be verified.");
+        if (!TryNormalizeTransactionId(chain, request.TransactionId, out var transactionId)) return BadRequest("A valid transaction identifier is required.");
 
-        var existing = await dbContext.StakingLedgerEntries.AsNoTracking().SingleOrDefaultAsync(item =>
-            item.ChainKey == chain.Key && item.TransactionHash == transactionId && item.OperationIndex == verification.OperationIndex, cancellationToken);
-        if (existing is not null) return Ok(ToResult(existing));
+        var result = await ledgerService.RecordAsync(chain, wallet, transactionId, operation, request.ExpectedAmount, cancellationToken);
 
-        var entry = new StakingLedgerEntry
+        return result.Status switch
         {
-            WalletAddress = wallet,
-            ChainKey = chain.Key,
-            Family = chain.FamilyName,
-            ActionType = operation switch { LiquidStakingOperation.Deposit => "deposit", LiquidStakingOperation.Redeem => "redeem", LiquidStakingOperation.Claim => "claim", _ => "reward_funding" },
-            Amount = verification.AssetAmount != 0m ? verification.AssetAmount : verification.RewardAmount,
-            AssetAmount = verification.AssetAmount,
-            ShareAmount = verification.ShareAmount,
-            RewardAmount = verification.RewardAmount,
-            RawAssetAmount = ToRaw(verification.AssetAmount, chain.Deployment.CafeDecimals),
-            RawShareAmount = ToRaw(verification.ShareAmount, chain.Deployment.StCafeDecimals),
-            RawRewardAmount = ToRaw(verification.RewardAmount, chain.Deployment.CoffeeDecimals),
-            TransactionHash = transactionId,
-            OperationIndex = verification.OperationIndex,
-            ChainId = chain.EvmChainId ?? 0,
-            NetworkName = chain.DisplayName,
-            PaymentTokenContract = chain.Deployment.Cafe,
-            StakingPoolContract = chain.Family == ChainFamily.Solana ? chain.Deployment.Program : chain.Deployment.LiquidVault,
-            AssetIdentifier = chain.Deployment.Cafe,
-            ReceiptIdentifier = chain.Deployment.StCafe,
-            RewardIdentifier = chain.Deployment.Coffee,
-            VaultOrProgramIdentifier = chain.Family == ChainFamily.Solana ? chain.Deployment.Program : chain.Deployment.LiquidVault,
-            BlockOrSlot = verification.BlockNumber,
-            Verified = true,
-            VerificationState = "verified",
-            ExplorerUrl = string.Format(chain.ExplorerTransactionTemplate, transactionId),
-            RecordedAtUtc = DateTime.UtcNow,
-            OccurredAtUtc = DateTime.UtcNow
+            LiquidStakingRecordStatus.Recorded or LiquidStakingRecordStatus.AlreadyRecorded => Ok(ToResult(result.Entry!)),
+            LiquidStakingRecordStatus.PendingConfirmations => StatusCode(StatusCodes.Status202Accepted, new { status = "pending_confirmations", confirmations = 0, requiredConfirmations = chain.MinimumConfirmations }),
+            LiquidStakingRecordStatus.VerificationFailed => BadRequest(result.Error ?? "Liquid-staking transaction could not be verified."),
+            _ => Conflict("The verified operation could not be recorded safely.")
         };
-        dbContext.StakingLedgerEntries.Add(entry);
-        try { await dbContext.SaveChangesAsync(cancellationToken); }
-        catch (DbUpdateException)
+    }
+
+    private static bool TryNormalizeTransactionId(ChainDefinition chain, string value, out string transactionId)
+    {
+        transactionId = value.Trim();
+
+        if (chain.Family == ChainFamily.Evm)
         {
-            var concurrent = await dbContext.StakingLedgerEntries.AsNoTracking().SingleOrDefaultAsync(item =>
-                item.ChainKey == chain.Key && item.TransactionHash == transactionId && item.OperationIndex == verification.OperationIndex, cancellationToken);
-            if (concurrent is not null) return Ok(ToResult(concurrent));
-            return Conflict("The verified operation could not be recorded safely.");
+            return WalletAddressRules.TryNormalizeTransactionHash(transactionId, out transactionId);
         }
-        return Ok(ToResult(entry));
+
+        return SolanaBase58.TryDecode(transactionId, out var signatureBytes) && signatureBytes.Length == 64;
     }
 
     private static object ToResult(StakingLedgerEntry entry) => new { success = true, entry.ChainKey, entry.TransactionHash, entry.OperationIndex, entry.ActionType, entry.ExplorerUrl };
-    internal static string ToRaw(decimal value, int decimals) =>
-        decimal.Truncate(value * (decimal)System.Numerics.BigInteger.Pow(10, decimals)).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
 
     private bool TryGetChain(string chainKey, out ChainDefinition chain) => registry.TryGet(chainKey, out chain!) && chain.Enabled;
     private static bool TryNormalizeWallet(ChainDefinition chain, string value, out string wallet)

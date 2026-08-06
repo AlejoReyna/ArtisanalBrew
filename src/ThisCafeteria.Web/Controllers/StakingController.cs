@@ -1,22 +1,20 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Nethereum.Util;
-using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Infrastructure.Persistence;
 using ThisCafeteria.Web.Services.Wallet;
+using System.Security.Claims;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("staking")]
 public sealed class StakingController(
     ICoffeeWeb3Service web3Service,
+    IStakingLedgerService ledgerService,
     BlockchainNetworkOptions chain,
-    AppDbContext dbContext,
-    UserManager<ApplicationUser> userManager,
+    IIdentityAccountService identityAccounts,
     IWalletChallengeService challengeService) : Controller
 {
     private const string WalletSessionKey = "WalletAddress";
@@ -119,70 +117,15 @@ public sealed class StakingController(
             return BadRequest("A valid staking transaction hash is required.");
         }
 
-        if (await StakingTransactionExistsAsync(transactionHash, cancellationToken))
-        {
-            return Conflict("This staking transaction has already been recorded.");
-        }
-
-        var verification = await web3Service.VerifyStakingTransactionAsync(
-            transactionHash,
+        var result = await ledgerService.RecordAsync(
+            chain,
             wallet,
-            expectedAmount: null,
+            transactionHash,
             StakingTransactionType.Claim,
+            expectedAmount: null,
             cancellationToken);
 
-        if (verification.Status == TransactionVerificationStatus.PendingConfirmations)
-        {
-            return PendingConfirmationsResult(verification);
-        }
-
-        if (!verification.Verified)
-        {
-            return BadRequest("Claim transaction could not be verified on-chain.");
-        }
-
-        var entry = new StakingLedgerEntry
-        {
-            WalletAddress = wallet,
-            ChainKey = "ethereum-sepolia",
-            Family = "Evm",
-            ActionType = "claim",
-            Amount = verification.Amount,
-            RewardAmount = verification.Amount,
-            RawRewardAmount = ToRaw(verification.Amount),
-            TransactionHash = transactionHash,
-            OperationIndex = 0,
-            ChainId = chain.ChainId,
-            NetworkName = chain.NetworkName,
-            PaymentTokenContract = chain.CoffeeCoinContract,
-            StakingPoolContract = chain.StakingPoolContract,
-            RewardIdentifier = chain.CoffeeCoinContract,
-            VaultOrProgramIdentifier = chain.StakingPoolContract,
-            Verified = true,
-            VerificationState = "verified",
-            ExplorerUrl = BuildExplorerTransactionUrl(transactionHash),
-            RecordedAtUtc = DateTime.UtcNow
-        };
-
-        dbContext.StakingLedgerEntries.Add(entry);
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            return Conflict("This staking transaction has already been recorded.");
-        }
-
-        return Ok(new
-        {
-            success = true,
-            entry.TransactionHash,
-            entry.ActionType,
-            entry.Amount,
-            entry.ExplorerUrl
-        });
+        return ToActionResult(result, "Claim transaction could not be verified on-chain.");
     }
 
     [HttpPost("save-wallet-session")]
@@ -277,73 +220,33 @@ public sealed class StakingController(
             return BadRequest("A valid staking transaction hash is required.");
         }
 
-        if (await StakingTransactionExistsAsync(transactionHash, cancellationToken))
-        {
-            return Conflict("This staking transaction has already been recorded.");
-        }
-
-        var verification = await web3Service.VerifyStakingTransactionAsync(
-            transactionHash,
+        var result = await ledgerService.RecordAsync(
+            chain,
             wallet,
-            request.Amount,
+            transactionHash,
             transactionType,
+            request.Amount,
             cancellationToken);
 
-        if (verification.Status == TransactionVerificationStatus.PendingConfirmations)
-        {
-            return PendingConfirmationsResult(verification);
-        }
-
-        if (!verification.Verified)
-        {
-            return BadRequest("Staking transaction could not be verified on-chain.");
-        }
-
-        var entry = new StakingLedgerEntry
-        {
-            WalletAddress = wallet,
-            ChainKey = "ethereum-sepolia",
-            Family = "Evm",
-            ActionType = transactionType == StakingTransactionType.Stake ? "stake" : "unstake",
-            Amount = verification.Amount,
-            AssetAmount = verification.Amount,
-            ShareAmount = verification.Amount,
-            RawAssetAmount = ToRaw(verification.Amount),
-            RawShareAmount = ToRaw(verification.Amount),
-            TransactionHash = transactionHash,
-            OperationIndex = 0,
-            ChainId = chain.ChainId,
-            NetworkName = chain.NetworkName,
-            PaymentTokenContract = chain.EffectivePaymentTokenContract,
-            StakingPoolContract = chain.StakingPoolContract,
-            AssetIdentifier = chain.EffectivePaymentTokenContract,
-            VaultOrProgramIdentifier = chain.StakingPoolContract,
-            Verified = true,
-            VerificationState = "verified",
-            ExplorerUrl = BuildExplorerTransactionUrl(transactionHash),
-            RecordedAtUtc = DateTime.UtcNow
-        };
-
-        dbContext.StakingLedgerEntries.Add(entry);
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            return Conflict("This staking transaction has already been recorded.");
-        }
-
-        return Ok(new
-        {
-            success = true,
-            entry.TransactionHash,
-            entry.ActionType,
-            entry.Amount,
-            entry.ExplorerUrl
-        });
+        return ToActionResult(result, "Staking transaction could not be verified on-chain.");
     }
+
+    /// <summary>Maps a record outcome onto the response shape these endpoints have always returned.</summary>
+    private IActionResult ToActionResult(StakingRecordResult result, string verificationFailureMessage) =>
+        result.Status switch
+        {
+            StakingRecordStatus.Recorded => Ok(new
+            {
+                success = true,
+                result.Entry!.TransactionHash,
+                result.Entry.ActionType,
+                result.Entry.Amount,
+                result.Entry.ExplorerUrl
+            }),
+            StakingRecordStatus.AlreadyRecorded => Conflict("This staking transaction has already been recorded."),
+            StakingRecordStatus.PendingConfirmations => PendingConfirmationsResult(result.Verification!),
+            _ => BadRequest(verificationFailureMessage)
+        };
 
     private IActionResult PendingConfirmationsResult(StakingVerificationResult verification) =>
         StatusCode(StatusCodes.Status202Accepted, new
@@ -387,7 +290,7 @@ public sealed class StakingController(
             return true;
         }
 
-        var user = await userManager.GetUserAsync(User);
+        var user = await FindCurrentAccountAsync();
         return WalletAddressRules.TryNormalizeWallet(user?.WalletAddress, out var normalizedUserWallet) &&
             AddressUtil.Current.AreAddressesTheSame(normalizedUserWallet, wallet);
     }
@@ -403,7 +306,7 @@ public sealed class StakingController(
 
         if (User.Identity?.IsAuthenticated == true)
         {
-            var user = await userManager.GetUserAsync(User);
+            var user = await FindCurrentAccountAsync();
             if (!string.IsNullOrWhiteSpace(user?.WalletAddress))
             {
                 candidates.Insert(0, user.WalletAddress);
@@ -421,22 +324,13 @@ public sealed class StakingController(
         return (false, string.Empty);
     }
 
-    private Task<bool> StakingTransactionExistsAsync(
-        string transactionHash,
-        CancellationToken cancellationToken) =>
-        dbContext.StakingLedgerEntries.AnyAsync(
-            entry => entry.TransactionHash == transactionHash,
-            cancellationToken);
-
-    private string BuildExplorerTransactionUrl(string transactionHash)
+    private Task<IdentityAccount?> FindCurrentAccountAsync()
     {
-        var explorer = chain.ExplorerUrl?.Trim();
-        return string.IsNullOrWhiteSpace(explorer)
-            ? string.Empty
-            : $"{explorer.TrimEnd('/')}/tx/{transactionHash}";
+        var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return string.IsNullOrWhiteSpace(accountId)
+            ? Task.FromResult<IdentityAccount?>(null)
+            : identityAccounts.FindByIdAsync(accountId, HttpContext.RequestAborted);
     }
-
-    private static string ToRaw(decimal amount) => decimal.Truncate(amount * 1_000_000_000_000_000_000m).ToString("0", System.Globalization.CultureInfo.InvariantCulture);
 
     public sealed record SaveWalletSessionRequest(
         string WalletAddress,

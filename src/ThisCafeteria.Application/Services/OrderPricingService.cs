@@ -12,22 +12,20 @@ public sealed class OrderPricingService : IOrderPricingService
 
     public OrderPricingDto Calculate(IReadOnlyCollection<CartItemDto> items, Coupon? coupon = null)
     {
-        var subtotal = items.Sum(item => item.UnitPrice * item.Quantity);
-        var tax = decimal.Round(subtotal * TaxRate, 2, MidpointRounding.AwayFromZero);
-        var totalBeforeDiscount = subtotal + ShippingAmount + tax;
-        var discountAmount = coupon is null
-            ? 0m
-            : decimal.Round(totalBeforeDiscount * coupon.DiscountPercent / 100m, 2, MidpointRounding.AwayFromZero);
-        var total = Math.Max(0m, totalBeforeDiscount - discountAmount);
+        var pricing = OrderPricing.Calculate(
+            items.Select(item => new OrderItem { Quantity = item.Quantity, UnitPrice = item.UnitPrice }),
+            ShippingAmount,
+            TaxRate,
+            coupon?.DiscountPercent);
 
         return new OrderPricingDto(
-            subtotal,
-            ShippingAmount,
-            tax,
-            totalBeforeDiscount,
+            pricing.Subtotal,
+            pricing.Shipping,
+            pricing.Tax,
+            pricing.TotalBeforeDiscount,
             coupon?.Code,
             coupon?.DiscountPercent,
-            discountAmount,
-            total);
+            pricing.DiscountAmount,
+            pricing.Total);
     }
 }

@@ -2,7 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
-using ThisCafeteria.Worker;
+using ThisCafeteria.Infrastructure.Services.Reconciliation;
 
 namespace ThisCafeteria.UnitTests;
 

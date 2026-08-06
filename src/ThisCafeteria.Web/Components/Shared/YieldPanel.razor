@@ -1,26 +1,23 @@
 @implements IAsyncDisposable
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.DependencyInjection
 @using Microsoft.Extensions.Options
 @using ThisCafeteria.Application.Configuration
+@using ThisCafeteria.Application.Services
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Domain.Entities
-@using ThisCafeteria.Infrastructure.Identity
-@using ThisCafeteria.Infrastructure.Persistence
 @using System.Security.Claims
 @using Nethereum.Util
 @using ThisCafeteria.Web.Services.Blockchain
 @inject ICoffeeWeb3Service Web3Service
 @inject ILiquidStakingGateway LiquidGateway
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
+@inject IIdentityAccountService IdentityAccounts
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
 @inject IChainRegistry ChainRegistry
 @inject ISelectedChainAccessor SelectedChainAccessor
-@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStakingLedgerService StakingLedger
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 @inject IEthUsdPriceService EthUsdPriceService
@@ -904,8 +901,11 @@ else
                 return claimWallet;
             }
 
-            var user = await UserManager.GetUserAsync(principal);
-            if (TryNormalizeSelectedWallet(user?.WalletAddress, out var userWallet))
+            var accountId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var account = string.IsNullOrWhiteSpace(accountId)
+                ? null
+                : await IdentityAccounts.FindByIdAsync(accountId);
+            if (TryNormalizeSelectedWallet(account?.WalletAddress, out var userWallet))
             {
                 SyncWalletSession(userWallet);
                 return userWallet;
@@ -943,8 +943,11 @@ else
             return true;
         }
 
-        var user = await UserManager.GetUserAsync(principal);
-        return TryNormalizeSelectedWallet(user?.WalletAddress, out _);
+        var accountId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var account = string.IsNullOrWhiteSpace(accountId)
+            ? null
+            : await IdentityAccounts.FindByIdAsync(accountId);
+        return TryNormalizeSelectedWallet(account?.WalletAddress, out _);
     }
 
     private void SyncWalletSession(string wallet)
@@ -1042,18 +1045,18 @@ else
             return;
         }
 
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync(cancellationToken);
-        _stakingLedger = await dbContext.StakingLedgerEntries
-            .AsNoTracking()
-            .Where(entry => entry.WalletAddress == _dashboard.WalletAddress)
-            .OrderByDescending(entry => entry.RecordedAtUtc)
-            .Take(8)
+        var entries = await StakingLedger.GetRecentActivityAsync(
+            _dashboard.WalletAddress,
+            take: 8,
+            cancellationToken);
+
+        _stakingLedger = entries
             .Select(entry => new StakingLedgerItem(
                 entry.RecordedAtUtc,
                 entry.ActionType,
                 entry.Amount,
                 entry.ExplorerUrl))
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 
     private static string ShortAddress(string address) =>

@@ -1,10 +1,11 @@
 using Serilog;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services;
+using ThisCafeteria.Application.Services.AgenticCommerce;
 using ThisCafeteria.Infrastructure;
 using ThisCafeteria.Infrastructure.Configuration;
 using ThisCafeteria.Infrastructure.Services;
-using ThisCafeteria.Worker;
+using ThisCafeteria.Infrastructure.Services.Reconciliation;
 using System.Text.Json;
 
 Log.Logger = new LoggerConfiguration()
@@ -38,7 +39,7 @@ try
     }
 
     builder.Services.Configure<BlockchainNetworkOptions>(blockchainNetworkSection);
-    builder.Services.AddHostedService<OrderProcessingWorker>();
+    builder.Services.AddHostedService<ThisCafeteria.Infrastructure.Services.OrderProcessingWorker>();
     builder.Services.AddHostedService<StakingLedgerReconciliationWorker>();
     builder.Services.AddSingleton<IAgenticCommerceReconciliationApplicator, AgenticCommerceReconciliationApplicator>();
     builder.Services.AddSingleton<IEscrowEventProvider, EvmEscrowEventProvider>();

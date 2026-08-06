@@ -2,15 +2,15 @@ using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Infrastructure.Identity;
 using ThisCafeteria.Infrastructure.Persistence;
+using ThisCafeteria.Infrastructure.Persistence.Repositories;
 using ThisCafeteria.Web.Controllers;
 using ThisCafeteria.Web.Services.Wallet;
 
@@ -23,15 +23,25 @@ public sealed class StakingControllerTests : IDisposable
     private const string TxHash = "0xabcdef0123456789abcdef0123456789abcdef0123456789abcdef012345678a";
 
     private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly Mock<ICoffeeWeb3Service> _web3Service = new();
     private readonly Mock<IWalletChallengeService> _challengeService = new();
 
     public StakingControllerTests()
     {
+        // One in-memory database name shared by the assertion context and the factory the
+        // repository uses, so writes made through the repository are visible to _dbContext.
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         _dbContext = new AppDbContext(options);
+        _contextFactory = new SingleOptionsContextFactory(options);
+    }
+
+    private sealed class SingleOptionsContextFactory(DbContextOptions<AppDbContext> options)
+        : IDbContextFactory<AppDbContext>
+    {
+        public AppDbContext CreateDbContext() => new(options);
     }
 
     public void Dispose() => _dbContext.Dispose();
@@ -43,25 +53,25 @@ public sealed class StakingControllerTests : IDisposable
         CoffeeCoinContract = "0x3333333333333333333333333333333333333333"
     };
 
-    private static UserManager<ApplicationUser> CreateUserManagerMock()
-    {
-        var store = new Mock<IUserStore<ApplicationUser>>();
-        var mock = new Mock<UserManager<ApplicationUser>>(
-            store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
-        mock.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync((ApplicationUser?)null);
-        return mock.Object;
-    }
+    private static IIdentityAccountService CreateIdentityAccountsMock() =>
+        Mock.Of<IIdentityAccountService>();
 
     private StakingController CreateController(
         BlockchainNetworkOptions? chain = null,
         string? sessionWallet = null,
         bool authenticated = false)
     {
+        // The ledger service and repository are real, running against the in-memory context, so
+        // these tests still exercise the whole record path rather than a mock of the new seam.
+        var ledgerService = new StakingLedgerService(
+            _web3Service.Object,
+            new StakingLedgerRepository(_contextFactory));
+
         var controller = new StakingController(
             _web3Service.Object,
+            ledgerService,
             chain ?? ConfiguredChain(),
-            _dbContext,
-            CreateUserManagerMock(),
+            CreateIdentityAccountsMock(),
             _challengeService.Object);
 
         var httpContext = new DefaultHttpContext();
@@ -108,16 +118,15 @@ public sealed class StakingControllerTests : IDisposable
     [Fact]
     public async Task RecordStakeAsync_ShouldReturnConflict_WhenTransactionHashAlreadyRecorded()
     {
-        _dbContext.StakingLedgerEntries.Add(new StakingLedgerEntry
+        _dbContext.StakingLedgerEntries.Add(StakingLedgerEntry.Create("ethereum-sepolia", TxHash, 0, entry =>
         {
-            WalletAddress = WalletA,
-            ActionType = "stake",
-            Amount = 10m,
-            TransactionHash = TxHash,
-            NetworkName = "Ethereum Sepolia",
-            PaymentTokenContract = "0x2222222222222222222222222222222222222222",
-            StakingPoolContract = "0x1111111111111111111111111111111111111111"
-        });
+            entry.WalletAddress = WalletA;
+            entry.ActionType = "stake";
+            entry.Amount = 10m;
+            entry.NetworkName = "Ethereum Sepolia";
+            entry.PaymentTokenContract = "0x2222222222222222222222222222222222222222";
+            entry.StakingPoolContract = "0x1111111111111111111111111111111111111111";
+        }));
         await _dbContext.SaveChangesAsync();
 
         var controller = CreateController(sessionWallet: WalletA);

@@ -3,6 +3,7 @@ using Azure.Core;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Infrastructure.Configuration;
 
 namespace ThisCafeteria.Infrastructure.Services;

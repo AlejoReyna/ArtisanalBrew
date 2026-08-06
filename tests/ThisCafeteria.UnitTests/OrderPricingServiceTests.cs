@@ -15,12 +15,7 @@ public sealed class OrderPricingServiceTests
         {
             new CartItemDto(Guid.NewGuid(), "Coffee", 2, 10m)
         };
-        var coupon = new Coupon
-        {
-            Code = "WELCOME10",
-            DiscountPercent = 10m,
-            MinimumOrderTotal = 0m
-        };
+        var coupon = Coupon.Create("WELCOME10", 10m, 0m);
 
         var pricing = service.Calculate(items, coupon);
 

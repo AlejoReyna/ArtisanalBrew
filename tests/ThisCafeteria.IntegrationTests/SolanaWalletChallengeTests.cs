@@ -1,3 +1,4 @@
+using ThisCafeteria.Application.Services.Wallet;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;

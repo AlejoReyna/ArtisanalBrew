@@ -1,14 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- SignInManager is part of the ASP.NET shared framework; it stays in Infrastructure with
+         the Identity adapter rather than leaking into a delivery host. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Azure.Identity" Version="1.*" />
+    <!-- Ed25519 signing for the Solana transaction builder and faucet mint authority. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.*" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.*" />
     <PackageReference Include="Azure.Communication.Email" Version="1.*" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.*" />
+    <!-- IHttpClientFactory, used by the Solana RPC gateway. -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
     <PackageReference Include="Nethereum.Web3" Version="5.*" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
@@ -18,6 +26,11 @@
   <ItemGroup>
     <ProjectReference Include="..\ThisCafeteria.Application\ThisCafeteria.Application.csproj" />
     <ProjectReference Include="..\ThisCafeteria.Domain\ThisCafeteria.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThisCafeteria.UnitTests" />
+    <InternalsVisibleTo Include="ThisCafeteria.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>

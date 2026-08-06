@@ -2,7 +2,6 @@ using FluentValidation;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Repositories;
 using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Domain.Enums;
 
 namespace ThisCafeteria.Application.Services;
 
@@ -19,36 +18,34 @@ public sealed class OrderService(
 
         var coupon = await ResolveCouponAsync(request, cancellationToken);
         var pricing = pricingService.Calculate(request.Items, coupon);
-        var order = new Order
-        {
-            UserProfileId = request.UserProfileId,
-            OrderNumber = $"TC-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}",
-            Status = OrderStatus.Processing,
-            Subtotal = pricing.Subtotal,
-            Shipping = pricing.Shipping,
-            Tax = pricing.Tax,
-            CouponId = coupon?.Id,
-            CouponCode = coupon?.Code,
-            CouponDiscountPercent = coupon?.DiscountPercent,
-            DiscountAmount = pricing.DiscountAmount,
-            Total = pricing.Total,
-            WalletAddress = request.WalletAddress,
-            PaymentTransactionHash = request.PaymentTransactionHash,
-            PaymentChainId = request.PaymentChainId,
-            PaymentNetworkName = request.PaymentNetworkName,
-            PaymentEthAmount = request.PaymentEthAmount,
-            PaymentExplorerUrl = request.PaymentExplorerUrl,
-            PaidAtUtc = request.PaidAtUtc,
-            CreatedAt = DateTime.UtcNow,
-            Items = request.Items.Select(item => new OrderItem
+        var items = request.Items.Select(item => new OrderItem
             {
                 ProductId = item.ProductId,
                 ProductName = item.ProductName,
                 Quantity = item.Quantity,
                 UnitPrice = item.UnitPrice,
                 Total = item.UnitPrice * item.Quantity
-            }).ToList()
-        };
+            }).ToList();
+        var order = Order.Place(
+            request.UserProfileId,
+            $"TC-{DateTime.UtcNow:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}",
+            request.WalletAddress,
+            items,
+            new OrderPricing(
+                pricing.Subtotal,
+                pricing.Shipping,
+                pricing.Tax,
+                pricing.TotalBeforeDiscount,
+                pricing.DiscountAmount,
+                pricing.Total),
+            coupon);
+        order.RecordPayment(
+            request.PaymentTransactionHash,
+            request.PaymentChainId,
+            request.PaymentNetworkName,
+            request.PaymentEthAmount,
+            request.PaymentExplorerUrl,
+            request.PaidAtUtc);
 
         if (coupon is not null)
         {
@@ -164,7 +161,7 @@ public sealed class OrderService(
         }
 
         var pricing = pricingService.Calculate(request.Items);
-        if (pricing.TotalBeforeDiscount < coupon.MinimumOrderTotal)
+        if (!coupon.CanBeRedeemedFor(pricing.TotalBeforeDiscount))
         {
             throw new InvalidOperationException(
                 $"Coupon requires a minimum order total of {coupon.MinimumOrderTotal:C}.");

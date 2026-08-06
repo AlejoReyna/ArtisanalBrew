@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using ThisCafeteria.Infrastructure.Identity;
+using ThisCafeteria.Application.Services;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("admin")]
 public sealed class AdminAuthController(
-    SignInManager<ApplicationUser> signInManager) : Controller
+    IIdentityAccountService identityAccounts) : Controller
 {
     [HttpPost("login-action")]
     [IgnoreAntiforgeryToken]
@@ -19,13 +18,12 @@ public sealed class AdminAuthController(
             return LocalRedirect("/admin/login?error=missing");
         }
 
-        var result = await signInManager.PasswordSignInAsync(
+        var succeeded = await identityAccounts.PasswordSignInAsync(
             form.Email.Trim(),
             form.Password,
-            form.RememberMe,
-            lockoutOnFailure: false);
+            form.RememberMe);
 
-        return result.Succeeded
+        return succeeded
             ? LocalRedirect("/admin")
             : LocalRedirect("/admin/login?error=invalid");
     }
@@ -35,7 +33,7 @@ public sealed class AdminAuthController(
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await signInManager.SignOutAsync();
+        await identityAccounts.SignOutAsync();
         await HttpContext.SignOutAsync();
         return LocalRedirect("/");
     }

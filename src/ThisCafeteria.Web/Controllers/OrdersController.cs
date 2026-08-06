@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Services;
-using ThisCafeteria.Infrastructure.Identity;
 
 namespace ThisCafeteria.Web.Controllers;
 
@@ -11,8 +10,7 @@ namespace ThisCafeteria.Web.Controllers;
 [Route("api/orders")]
 public sealed class OrdersController(
     IOrderService orderService,
-    IProfileService profileService,
-    UserManager<ApplicationUser> userManager) : ControllerBase
+    IProfileService profileService) : ControllerBase
 {
     [Authorize]
     [HttpPost]
@@ -26,7 +24,7 @@ public sealed class OrdersController(
     [HttpGet("me")]
     public async Task<ActionResult<IReadOnlyCollection<OrderDto>>> GetMyOrders(CancellationToken cancellationToken)
     {
-        var applicationUserId = userManager.GetUserId(User);
+        var applicationUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(applicationUserId))
         {
             return Unauthorized();

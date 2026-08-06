@@ -5,9 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Repositories;
+using ThisCafeteria.Application.Services.AgenticCommerce;
 using ThisCafeteria.Domain.Entities;
 using ThisCafeteria.Infrastructure.Persistence;
-using ThisCafeteria.Worker;
+using ThisCafeteria.Infrastructure.Services.Reconciliation;
 using Xunit;
 
 namespace ThisCafeteria.UnitTests;
@@ -37,6 +39,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
 
         var services = new ServiceCollection();
         services.AddScoped(_ => new AppDbContext(options));
+        services.AddScoped<IAgenticCommerceProjectionBatch, AgenticCommerceProjectionBatch>();
         _scopeFactory = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
 
         _chain = new ChainDefinition
@@ -185,7 +188,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
             .ReturnsAsync(new List<EscrowEvent> { evt });
 
         var failingApplicator = new Mock<IAgenticCommerceReconciliationApplicator>();
-        failingApplicator.Setup(a => a.ApplyEventAsync(It.IsAny<AppDbContext>(), _chain, "0xEscrow", evt, It.IsAny<CancellationToken>()))
+        failingApplicator.Setup(a => a.ApplyEventAsync(It.IsAny<IAgenticCommerceProjectionBatch>(), _chain, "0xEscrow", evt, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateException("Database error"));
 
         var workerWithFailingApplicator = new AgenticCommerceReconciliationWorker(
@@ -241,7 +244,7 @@ public class AgenticCommerceReconciliationWorkerTests : IDisposable
         var failApplicator = new Mock<IAgenticCommerceReconciliationApplicator>();
         failApplicator
             .Setup(a => a.ApplyEventAsync(
-                It.IsAny<AppDbContext>(), _chain, "0xEscrow", evt, It.IsAny<CancellationToken>()))
+                It.IsAny<IAgenticCommerceProjectionBatch>(), _chain, "0xEscrow", evt, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateException("Persistence failure"));
 
         var workerFail = new AgenticCommerceReconciliationWorker(
