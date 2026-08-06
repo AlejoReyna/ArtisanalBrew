@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Util;
 using ThisCafeteria.Application.Repositories;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Web.Models;
 
 namespace ThisCafeteria.Web.Controllers;

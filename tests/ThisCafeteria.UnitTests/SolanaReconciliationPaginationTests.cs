@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using ThisCafeteria.Application.Configuration;
-using ThisCafeteria.Worker;
+using ThisCafeteria.Infrastructure.Services.Reconciliation;
 
 namespace ThisCafeteria.UnitTests;
 

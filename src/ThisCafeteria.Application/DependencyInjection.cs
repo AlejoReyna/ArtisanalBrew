@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using ThisCafeteria.Application.Services;
+using ThisCafeteria.Application.Services.Blockchain;
+using ThisCafeteria.Application.Services.Rewards;
 
 namespace ThisCafeteria.Application;
 
@@ -20,6 +22,9 @@ public static class DependencyInjection
             services.AddScoped<ICouponService, CouponService>();
             services.AddScoped<ITransparencyService, TransparencyService>();
             services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<ILiquidStakingLedgerService, LiquidStakingLedgerService>();
+            services.AddScoped<IStakingLedgerService, StakingLedgerService>();
+            services.AddScoped<ILoyaltyMintService, LoyaltyMintService>();
         }
 
         return services;

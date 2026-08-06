@@ -10,7 +10,9 @@ using System.Text.Json;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Domain.Entities;
 using ThisCafeteria.Infrastructure.Persistence;
+using ThisCafeteria.Infrastructure.Persistence.Repositories;
 using ThisCafeteria.Web.Services.Blockchain;
+using ThisCafeteria.Infrastructure.Services.Blockchain;
 
 namespace ThisCafeteria.UnitTests;
 
@@ -120,7 +122,8 @@ public sealed class SolanaFaucetServiceTests : IDisposable
         var service = new SolanaFaucetService(
             registry.Object,
             Mock.Of<IHttpClientFactory>(),
-            _context,
+            // Real repository over the in-memory context, so the cooldown query is still exercised.
+            new SolanaFaucetClaimRepository(_context),
             Options.Create(_options),
             _time,
             Mock.Of<Microsoft.Extensions.Logging.ILogger<SolanaFaucetService>>());

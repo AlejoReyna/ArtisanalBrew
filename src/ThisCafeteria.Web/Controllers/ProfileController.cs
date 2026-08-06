@@ -1,10 +1,9 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Services;
-using ThisCafeteria.Infrastructure.Identity;
 
 namespace ThisCafeteria.Web.Controllers;
 
@@ -13,8 +12,7 @@ namespace ThisCafeteria.Web.Controllers;
 [Route("api/profile")]
 public sealed class ProfileController(
     IProfileService profileService,
-    IOrderService orderService,
-    UserManager<ApplicationUser> userManager) : ControllerBase
+    IOrderService orderService) : ControllerBase
 {
     [HttpGet("me")]
     public async Task<ActionResult<ProfileDashboardDto>> GetMe(CancellationToken cancellationToken)
@@ -106,7 +104,7 @@ public sealed class ProfileController(
 
     private async Task<Guid?> ResolveUserProfileIdAsync(CancellationToken cancellationToken)
     {
-        var applicationUserId = userManager.GetUserId(User);
+        var applicationUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(applicationUserId))
         {
             return null;

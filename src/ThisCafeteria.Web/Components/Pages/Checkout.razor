@@ -4,7 +4,7 @@
 @inject IShoppingCartService CartService
 @inject ICartMutationClient CartMutationClient
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
+@inject IIdentityAccountService IdentityAccounts
 @inject IChainRegistry ChainRegistry
 @inject ISelectedChainAccessor SelectedChainAccessor
 @inject IProfileService ProfileService
@@ -17,13 +17,12 @@
 @inject ILogger<Checkout> Logger
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
-@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @using Microsoft.Extensions.Options
 @using ThisCafeteria.Application.DTOs
 @using ThisCafeteria.Application.Services
 @using ThisCafeteria.Application.Services.Blockchain
 @using ThisCafeteria.Application.Configuration
-@using ThisCafeteria.Infrastructure.Identity
 @using ThisCafeteria.Web.Services.Blockchain
 @using ThisCafeteria.Web.Services.Cart
 @implements IAsyncDisposable
@@ -577,15 +576,18 @@
         _isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
         if (_isAuthenticated)
         {
-            var user = await UserManager.GetUserAsync(authState.User);
-            _walletAddress = user?.WalletAddress;
+            var accountId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var account = string.IsNullOrWhiteSpace(accountId)
+                ? null
+                : await IdentityAccounts.FindByIdAsync(accountId);
+            _walletAddress = account?.WalletAddress;
             if (!string.IsNullOrWhiteSpace(_walletAddress))
             {
                 _isWalletReady = true;
                 _step = CheckoutStep.Payment;
                 try
                 {
-                    var profileId = await ProfileService.EnsureProfileLinkedAsync(user!.Id);
+                    var profileId = await ProfileService.EnsureProfileLinkedAsync(account!.Id);
                     _profile = await ProfileService.GetProfileDashboardAsync(profileId);
                 }
                 catch { /* ignore profile load errors */ }
@@ -717,7 +719,7 @@
     private async Task<Guid> GetCurrentUserProfileIdAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var applicationUserId = UserManager.GetUserId(authState.User);
+        var applicationUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(applicationUserId))
         {
             throw new InvalidOperationException("Sign in with your wallet before applying a coupon.");
@@ -767,21 +769,24 @@
             }
 
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = await UserManager.GetUserAsync(authState.User);
-            if (string.IsNullOrWhiteSpace(user?.WalletAddress))
+            var accountId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var account = string.IsNullOrWhiteSpace(accountId)
+                ? null
+                : await IdentityAccounts.FindByIdAsync(accountId);
+            if (string.IsNullOrWhiteSpace(account?.WalletAddress))
             {
                 _walletConnectError = "Your account is not linked to a wallet.";
                 return;
             }
 
-            _walletAddress = user.WalletAddress;
+            _walletAddress = account.WalletAddress;
             _checkoutModule ??= await JsRuntime.InvokeAsync<IJSObjectReference>(
                 "import",
                 "/js/checkoutEth.js");
 
             var connectedAddress = await _checkoutModule.InvokeAsync<string>(
                 "connectWalletForCheckout",
-                BuildCheckoutChainConfig(user.WalletAddress));
+                BuildCheckoutChainConfig(account.WalletAddress));
 
             _walletAddress = connectedAddress;
             _isWalletReady = true;
@@ -825,14 +830,14 @@
         try
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var applicationUserId = UserManager.GetUserId(authState.User);
+            var applicationUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(applicationUserId))
             {
                 throw new InvalidOperationException("Sign in with your wallet before paying.");
             }
 
-            var user = await UserManager.GetUserAsync(authState.User);
-            if (string.IsNullOrWhiteSpace(user?.WalletAddress))
+            var account = await IdentityAccounts.FindByIdAsync(applicationUserId);
+            if (string.IsNullOrWhiteSpace(account?.WalletAddress))
             {
                 throw new InvalidOperationException("Your account is not linked to a wallet.");
             }
@@ -868,7 +873,7 @@
                 {
                     amountEth = _ethAmount.ToString("0.##################", CultureInfo.InvariantCulture),
                     marketplaceWallet = SelectedChain.Deployment.LegacyPool,
-                    expectedWalletAddress = user.WalletAddress,
+                    expectedWalletAddress = account.WalletAddress,
                     chainIdHex = SelectedChain.EvmChainIdHex,
                     networkName = SelectedChain.DisplayName,
                     rpcUrl = SelectedChain.PublicRpcUrl,

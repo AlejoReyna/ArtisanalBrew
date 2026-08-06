@@ -26,7 +26,6 @@
     <ProjectReference Include="..\..\src\ThisCafeteria.Web\ThisCafeteria.Web.csproj" />
     <ProjectReference Include="..\..\src\ThisCafeteria.Infrastructure\ThisCafeteria.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ThisCafeteria.Application\ThisCafeteria.Application.csproj" />
-    <ProjectReference Include="..\..\src\ThisCafeteria.Worker\ThisCafeteria.Worker.csproj" Aliases="worker" />
   </ItemGroup>
 
 </Project>

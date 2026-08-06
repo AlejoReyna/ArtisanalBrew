@@ -16,11 +16,8 @@ using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Application.Services;
 using ThisCafeteria.Web.Components;
-using ThisCafeteria.Web.Configuration;
 using ThisCafeteria.Web.Catalog;
-using ThisCafeteria.Application.Services.Rewards;
 using ThisCafeteria.Web.Services.Blockchain;
-using ThisCafeteria.Web.Services.Rewards;
 using ThisCafeteria.Web.Services.Cart;
 using ThisCafeteria.Web.Services.Wallet;
 using ThisCafeteria.Web.HealthChecks;
@@ -118,21 +115,12 @@ if (!blockchainNetworkSection.Exists())
 builder.Services.Configure<BlockchainNetworkOptions>(blockchainNetworkSection);
 builder.Services.AddSingleton(serviceProvider =>
     serviceProvider.GetRequiredService<IOptions<BlockchainNetworkOptions>>().Value);
-builder.Services.Configure<CoffeeCoinOwnerOptions>(
-    builder.Configuration.GetSection(CoffeeCoinOwnerOptions.SectionName));
-builder.Services.AddSingleton<ICoffeeWeb3Service, CoffeeWeb3Service>();
-builder.Services.AddScoped<EvmLiquidStakingGateway>();
-builder.Services.AddScoped<SolanaLiquidStakingGateway>();
-builder.Services.AddScoped<ILiquidStakingGateway, MultichainLiquidStakingGateway>();
-builder.Services.AddScoped<IMarketplacePaymentGateway, EvmMarketplacePaymentGateway>();
+// The chain gateways themselves are registered by AddBlockchainInfrastructure below, next to the
+// implementations. What stays here is the presentation-bound state: circuit-scoped view models and
+// the cookie-backed accessors, which depend on HttpContext and so cannot leave the host.
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
 builder.Services.AddScoped<ThisCafeteria.Web.Services.ProfileAvatarState>();
-builder.Services.AddHttpClient<IEthUsdPriceService, CoinGeckoEthUsdPriceService>(client =>
-{
-    client.BaseAddress = new Uri("https://api.coingecko.com/api/v3/");
-    client.Timeout = TimeSpan.FromSeconds(5);
-});
 builder.Services.AddScoped<ISelectedSmartAccountAccessor, SelectedSmartAccountAccessor>();
 // Sponsorship policy. Absent configuration yields a disabled (fail-closed) policy.
 builder.Services.AddSingleton(TimeProvider.System);
@@ -155,6 +143,7 @@ builder.Services.Configure<SolanaFaucetOptions>(builder.Configuration.GetSection
 
 builder.Services.AddApplication(hasDatabase);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddBlockchainInfrastructure(builder.Configuration);
 
 // The services below all depend on AppDbContext (directly or transitively) - AddInfrastructure
 // only registers AppDbContext itself when hasDatabase, so registering these unconditionally would
@@ -162,9 +151,6 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // (and that would otherwise only surface, confusingly, the first time something tried to use it).
 if (hasDatabase)
 {
-    builder.Services.AddScoped<ISolanaWalletChallengeService, SolanaWalletChallengeService>();
-    builder.Services.AddScoped<IRewardClaimService, RewardClaimService>();
-    builder.Services.AddScoped<ISolanaFaucetService, SolanaFaucetService>();
     builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
     builder.Services.AddScoped<ICartMutationClient, CartMutationClient>();
     builder.Services.AddScoped<IAgenticJobService, AgenticJobService>();

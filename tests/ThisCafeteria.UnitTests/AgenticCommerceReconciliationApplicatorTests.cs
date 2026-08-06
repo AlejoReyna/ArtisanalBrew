@@ -3,9 +3,11 @@ using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using ThisCafeteria.Application.Configuration;
+using ThisCafeteria.Application.Repositories;
+using ThisCafeteria.Application.Services.AgenticCommerce;
 using ThisCafeteria.Domain.Entities;
 using ThisCafeteria.Infrastructure.Persistence;
-using ThisCafeteria.Worker;
+using ThisCafeteria.Infrastructure.Services.Reconciliation;
 using Xunit;
 
 namespace ThisCafeteria.UnitTests;
@@ -14,6 +16,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly AppDbContext _context;
+    private readonly IAgenticCommerceProjectionBatch _batch;
     private readonly AgenticCommerceReconciliationApplicator _applicator;
     private readonly ChainDefinition _chain;
     private const string Escrow = "0xEscrow";
@@ -29,6 +32,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
 
         _context = new AppDbContext(options);
         _context.Database.EnsureCreated();
+        _batch = new AgenticCommerceProjectionBatch(_context);
 
         _applicator = new AgenticCommerceReconciliationApplicator();
         _chain = new ChainDefinition { Key = "ethereum-sepolia", EvmChainId = 11155111 };
@@ -54,7 +58,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
             BlockNumber = 100
         };
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var job = await _context.AgenticJobs.SingleAsync();
@@ -76,11 +80,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
             LogIndex = 1
         };
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Apply again
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var count = await _context.AgenticJobs.CountAsync();
@@ -91,11 +95,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     public async Task ApplyEvent_FullLifecycle_TransitionsCorrectly()
     {
         // 1. Create
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 2, TransactionHash = "0xTxCreate", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 2, TransactionHash = "0xTxCreate", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // 2. Fund
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 2, Amount = BigInteger.Parse("5000000000000000000"), TransactionHash = "0xTxFund", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 2, Amount = BigInteger.Parse("5000000000000000000"), TransactionHash = "0xTxFund", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var jobAfterFund = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 2);
@@ -104,7 +108,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
         jobAfterFund.ConcurrencyToken.Should().Be(1);
 
         // 3. Submit
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobSubmitted, OnChainJobId = 2, Deliverable = "ipfs://test", TransactionHash = "0xTxSubmit", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobSubmitted, OnChainJobId = 2, Deliverable = "ipfs://test", TransactionHash = "0xTxSubmit", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var jobAfterSubmit = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 2);
@@ -113,7 +117,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
         jobAfterSubmit.ConcurrencyToken.Should().Be(2);
 
         // 4. Complete
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 2, Reason = "Looks good", TransactionHash = "0xTxComplete", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 2, Reason = "Looks good", TransactionHash = "0xTxComplete", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var jobAfterComplete = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 2);
@@ -126,11 +130,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     public async Task ApplyEvent_InvalidOrder_IsIdempotent()
     {
         // Create
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 3, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 3, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Try Complete (Invalid transition from Open -> Complete)
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 3, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 3, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 3);
@@ -140,12 +144,12 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     [Fact]
     public async Task ApplyEvent_JobRejected_TransitionsCorrectly()
     {
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 4, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 4, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobSubmitted, OnChainJobId = 4, TransactionHash = "0x3", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 4, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 4, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobSubmitted, OnChainJobId = 4, TransactionHash = "0x3", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobRejected, OnChainJobId = 4, Reason = "Poor quality", TransactionHash = "0x4", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobRejected, OnChainJobId = 4, Reason = "Poor quality", TransactionHash = "0x4", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 4);
@@ -157,11 +161,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     [Fact]
     public async Task ApplyEvent_JobExpired_TransitionsCorrectly()
     {
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 5, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 5, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 5, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 5, TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobExpired, OnChainJobId = 5, TransactionHash = "0x3", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobExpired, OnChainJobId = 5, TransactionHash = "0x3", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 5);
@@ -172,11 +176,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     [Fact]
     public async Task ApplyEvent_WrongEscrowAddress_IsIdempotent()
     {
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 6, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 6, TransactionHash = "0x1", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Apply fund with wrong escrow address
-        await _applicator.ApplyEventAsync(_context, _chain, "0xWrongEscrow", new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 6, Amount = BigInteger.Parse("5000000000000000000"), TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, "0xWrongEscrow", new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 6, Amount = BigInteger.Parse("5000000000000000000"), TransactionHash = "0x2", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var job = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 6);
@@ -186,7 +190,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     [Fact]
     public async Task ApplyEvent_OptimisticConcurrencyConflict_ThrowsDbUpdateConcurrencyException()
     {
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 7 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 7 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var staleJob = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 7);
@@ -218,7 +222,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
             BlockNumber = 50
         };
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // No job should be projected.
@@ -251,7 +255,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
             BlockNumber = 40
         };
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var jobCount = await _context.AgenticJobs.CountAsync();
@@ -266,7 +270,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     [Fact]
     public async Task ApplyEvent_JobSubmitted_BeforeFunding_RecordsDeferredEventAndLeavesStatusOpen()
     {
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent
         {
             Type = EscrowEventType.JobCreated,
             OnChainJobId = 107,
@@ -277,7 +281,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Submission arrives while the job is still Open (never funded).
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent
         {
             Type = EscrowEventType.JobSubmitted,
             OnChainJobId = 107,
@@ -310,10 +314,10 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
         var first = new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 103, Client = "0xClient", TransactionHash = "0xTxA", LogIndex = 0, BlockNumber = 10 };
         var second = new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 103, Client = "0xOtherClient", TransactionHash = "0xTxB", LogIndex = 0, BlockNumber = 11 };
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, first, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, first, CancellationToken.None);
         await _context.SaveChangesAsync();
 
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, second, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, second, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Only one job projection.
@@ -339,7 +343,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     {
         // First: Completed (before job exists)
         var complete = new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 104, Reason = "ok", TransactionHash = "0xComp", LogIndex = 0, BlockNumber = 80 };
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, complete, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, complete, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var deferredBefore = await _context.AgenticJobDeferredEvents.CountAsync();
@@ -347,7 +351,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
 
         // Then: JobCreated arrives (the prerequisite)
         var create = new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 104, Client = "0xClient", TransactionHash = "0xCreate", LogIndex = 0, BlockNumber = 70 };
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, create, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, create, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // The job now exists.
@@ -365,11 +369,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     public async Task ApplyEvent_WrongEscrowAddress_IsIgnoredSafely()
     {
         // Create job on correct escrow.
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 105, TransactionHash = "0xCreate", LogIndex = 0 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 105, TransactionHash = "0xCreate", LogIndex = 0 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Apply a JobFunded from a wrong escrow address.
-        await _applicator.ApplyEventAsync(_context, _chain, "0xWrongEscrow",
+        await _applicator.ApplyEventAsync(_batch, _chain, "0xWrongEscrow",
             new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 105, Amount = BigInteger.Parse("1000000000000000000"), TransactionHash = "0xFund", LogIndex = 0 },
             CancellationToken.None);
         await _context.SaveChangesAsync();
@@ -389,10 +393,10 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     public async Task ApplyEvent_DuplicateTerminalEvent_IsIdempotent()
     {
         // Full lifecycle to Completed.
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 106, TransactionHash = "0x1", LogIndex = 0 }, CancellationToken.None);
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 106, TransactionHash = "0x2", LogIndex = 0 }, CancellationToken.None);
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobSubmitted, OnChainJobId = 106, TransactionHash = "0x3", LogIndex = 0 }, CancellationToken.None);
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 106, Reason = "ok", TransactionHash = "0x4", LogIndex = 0 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCreated, OnChainJobId = 106, TransactionHash = "0x1", LogIndex = 0 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobFunded, OnChainJobId = 106, TransactionHash = "0x2", LogIndex = 0 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobSubmitted, OnChainJobId = 106, TransactionHash = "0x3", LogIndex = 0 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 106, Reason = "ok", TransactionHash = "0x4", LogIndex = 0 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var jobAfterFirst = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 106);
@@ -400,7 +404,7 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
         var tokenAfterFirst = jobAfterFirst.ConcurrencyToken;
 
         // Apply a second JobCompleted with a DIFFERENT log identity (e.g. re-org rescan).
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 106, Reason = "duplicate", TransactionHash = "0x4b", LogIndex = 1 }, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 106, Reason = "duplicate", TransactionHash = "0x4b", LogIndex = 1 }, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var jobAfterDupe = await _context.AgenticJobs.SingleAsync(j => j.OnChainJobId == 106);
@@ -421,11 +425,11 @@ public class AgenticCommerceReconciliationApplicatorTests : IDisposable
     {
         // Apply the same out-of-order event twice (simulates retry after transient failure).
         var evt = new EscrowEvent { Type = EscrowEventType.JobCompleted, OnChainJobId = 107, TransactionHash = "0xDup", LogIndex = 0, BlockNumber = 10 };
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         // Second application of the same event: the `alreadyDeferred` guard must prevent a duplicate insert.
-        await _applicator.ApplyEventAsync(_context, _chain, Escrow, evt, CancellationToken.None);
+        await _applicator.ApplyEventAsync(_batch, _chain, Escrow, evt, CancellationToken.None);
         await _context.SaveChangesAsync();
 
         var count = await _context.AgenticJobDeferredEvents.CountAsync();

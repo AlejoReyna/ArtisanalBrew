@@ -3,12 +3,10 @@
 @rendermode InteractiveServer
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @using FluentValidation
-@using Microsoft.AspNetCore.Identity
 @using ThisCafeteria.Application.Configuration
-@using ThisCafeteria.Infrastructure.Identity
+@using System.Security.Claims
 @inject BlockchainNetworkOptions Chain
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
 @inject IProfileService ProfileService
 @inject IOrderService OrderService
 @inject NavigationManager Navigation
@@ -288,7 +286,7 @@ else if (_dashboard is not null)
             return;
         }
 
-        var applicationUserId = UserManager.GetUserId(user);
+        var applicationUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(applicationUserId))
         {
             _loadError = "Your authenticated session does not contain a user id.";

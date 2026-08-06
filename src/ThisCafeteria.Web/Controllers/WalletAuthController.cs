@@ -1,25 +1,21 @@
+using ThisCafeteria.Application.Services.Wallet;
 using System.Globalization;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ThisCafeteria.Application.Configuration;
 using Nethereum.Util;
 using ThisCafeteria.Application.Repositories;
+using ThisCafeteria.Application.Services;
 using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Infrastructure.Identity;
-using ThisCafeteria.Infrastructure.Services;
 using ThisCafeteria.Web.Models;
 using ThisCafeteria.Web.Services.Wallet;
 using ThisCafeteria.Web.Services.Blockchain;
-using ThisCafeteria.Infrastructure.Persistence;
 
 namespace ThisCafeteria.Web.Controllers;
 
@@ -32,7 +28,7 @@ public sealed class WalletAuthController(
     ISelectedChainAccessor selectedChainAccessor,
     IOptions<BlockchainNetworkOptions> chainOptions,
     IServiceProvider serviceProvider,
-    AppDbContext dbContext,
+    IUnitOfWork unitOfWork,
     ISqsMessagePublisher statusPublisher,
     ILogger<WalletAuthController> logger) : ControllerBase
 {
@@ -60,31 +56,27 @@ public sealed class WalletAuthController(
         if (!TryGetSolanaChain(request.ChainKey, out var chain) || !chain.Capabilities.WalletLogin)
             return StatusCode(StatusCodes.Status409Conflict, "Solana wallet login is not enabled for this chain.");
         var origin = $"{Request.Scheme}://{Request.Host}";
-        await using var authenticationTransaction = await dbContext.Database.BeginTransactionAsync(HttpContext.RequestAborted);
+        await using var authenticationTransaction = await unitOfWork.BeginTransactionAsync(HttpContext.RequestAborted);
         var error = await solanaChallengeService.VerifyAsync(request.Address, request.Message, request.Nonce, chain.Key, origin, request.Signature, HttpContext.RequestAborted);
         if (error != SolanaChallengeVerificationError.None)
             return error == SolanaChallengeVerificationError.InvalidSignature ? Unauthorized("The Solana signature is invalid.") : BadRequest("The Solana login challenge is expired or does not match.");
 
-        var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
-        var signInManager = serviceProvider.GetService<SignInManager<ApplicationUser>>();
-        ApplicationUser? authenticatedUser = null;
-        if (userManager is not null && signInManager is not null)
+        var identityAccounts = serviceProvider.GetService<IIdentityAccountService>();
+        IdentityAccount? authenticatedAccount = null;
+        if (identityAccounts is not null)
         {
-            var dbContext = serviceProvider.GetService<AppDbContext>();
-            var normalizedAddress = request.Address;
-            var existingIdentity = dbContext is null ? null : await dbContext.WalletIdentities.AsNoTracking().SingleOrDefaultAsync(item => item.Family == chain.FamilyName && item.NormalizedAddress == normalizedAddress, HttpContext.RequestAborted);
-            var user = existingIdentity is null
-                ? await FindOrCreateSolanaUserAsync(userManager, request.Address)
-                : await userManager.FindByIdAsync(existingIdentity.UserId) ?? throw new InvalidOperationException("The Solana wallet identity points to a missing user.");
-            authenticatedUser = user;
-            user.WalletAddress = request.Address;
-            user.WalletVerifiedAt = DateTimeOffset.UtcNow;
-            var update = await userManager.UpdateAsync(user);
-            if (!update.Succeeded) return Problem("Could not update the Solana wallet identity.");
-            if (!await PersistWalletIdentityAsync(user.Id, request.Address, request.WalletName, chain.FamilyName)) return Conflict("This Solana wallet identity is already verified for another user.");
+            var result = await identityAccounts.FindOrCreateAndLinkWalletAsync(
+                request.Address, null, request.WalletName, chain.FamilyName, HttpContext.RequestAborted);
+            if (!result.Succeeded)
+            {
+                return result.WalletAlreadyLinkedToAnotherAccount
+                    ? Conflict("This Solana wallet identity is already verified for another user.")
+                    : Problem(result.Error ?? "Could not update the Solana wallet identity.");
+            }
+            authenticatedAccount = result.Account;
         }
         await authenticationTransaction.CommitAsync(HttpContext.RequestAborted);
-        if (authenticatedUser is not null && signInManager is not null) await signInManager.SignInAsync(authenticatedUser, isPersistent: true);
+        if (authenticatedAccount is not null && identityAccounts is not null) await identityAccounts.SignInAsync(authenticatedAccount.Id, isPersistent: true);
         else await SignInWalletSessionAsync(request.Address, chain);
         return Ok(new WalletVerifyResponse(true, request.Address, "/", false, false, null));
     }
@@ -215,33 +207,30 @@ public sealed class WalletAuthController(
         }
 
         var checksumAddress = AddressUtil.Current.ConvertToChecksumAddress(address);
-        var userManager = serviceProvider.GetService<UserManager<ApplicationUser>>();
-        var signInManager = serviceProvider.GetService<SignInManager<ApplicationUser>>();
+        var identityAccounts = serviceProvider.GetService<IIdentityAccountService>();
 
-        if (userManager is not null && signInManager is not null)
+        if (identityAccounts is not null)
         {
-            var user = await FindOrCreateWalletUserAsync(userManager, checksumAddress, selectedChain.EvmChainId!.Value);
-            user.WalletAddress = checksumAddress;
-            user.WalletChainId = selectedChain.EvmChainId.Value;
-            user.WalletVerifiedAt = DateTimeOffset.UtcNow;
-
-            var updateResult = await userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
+            var result = await identityAccounts.FindOrCreateAndLinkWalletAsync(
+                checksumAddress,
+                selectedChain.EvmChainId!.Value,
+                request.WalletName,
+                selectedChain.FamilyName,
+                HttpContext.RequestAborted);
+            if (!result.Succeeded)
             {
                 await TryPublishStatusAsync(
                     "wallet-login.failed",
                     "Failed",
                     checksumAddress,
                     request.WalletName,
-                    "Could not update the wallet user.");
-                return Problem("Could not update the wallet user.");
+                    result.Error ?? "Could not update the wallet user.");
+                return result.WalletAlreadyLinkedToAnotherAccount
+                    ? Conflict("This wallet identity is already verified for another user.")
+                    : Problem(result.Error ?? "Could not update the wallet user.");
             }
 
-            await signInManager.SignInAsync(user, isPersistent: true);
-            if (!await PersistWalletIdentityAsync(user.Id, checksumAddress, request.WalletName, selectedChain.FamilyName))
-            {
-                return Conflict("This wallet identity is already verified for another user.");
-            }
+            await identityAccounts.SignInAsync(result.Account!.Id, isPersistent: true);
         }
         else
         {
@@ -270,10 +259,10 @@ public sealed class WalletAuthController(
             HttpContext.Session.GetString("WalletAddress") ??
             string.Empty;
 
-        var signInManager = serviceProvider.GetService<SignInManager<ApplicationUser>>();
-        if (signInManager is not null)
+        var identityAccounts = serviceProvider.GetService<IIdentityAccountService>();
+        if (identityAccounts is not null)
         {
-            await signInManager.SignOutAsync();
+            await identityAccounts.SignOutAsync();
         }
         else
         {
@@ -291,51 +280,6 @@ public sealed class WalletAuthController(
         }
 
         return LocalRedirect("/");
-    }
-
-    private async Task<ApplicationUser> FindOrCreateWalletUserAsync(
-        UserManager<ApplicationUser> userManager,
-        string address,
-        int chainId)
-    {
-        var checksumAddress = AddressUtil.Current.ConvertToChecksumAddress(address);
-        var normalizedAddress = checksumAddress.ToLowerInvariant();
-        var user = userManager.Users.FirstOrDefault(user => user.WalletAddress != null && user.WalletAddress.ToLower() == normalizedAddress);
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = await userManager.FindByNameAsync(checksumAddress);
-        if (user is not null)
-        {
-            return user;
-        }
-
-        var syntheticEmail = CreateSyntheticWalletEmail(checksumAddress);
-        user = await userManager.FindByEmailAsync(syntheticEmail);
-        if (user is not null)
-        {
-            return user;
-        }
-
-        user = new ApplicationUser
-        {
-            UserName = checksumAddress,
-            Email = syntheticEmail,
-            EmailConfirmed = true,
-            WalletAddress = checksumAddress,
-            WalletChainId = chainId,
-            WalletVerifiedAt = DateTimeOffset.UtcNow
-        };
-
-        var createResult = await userManager.CreateAsync(user);
-        if (!createResult.Succeeded)
-        {
-            throw new InvalidOperationException(string.Join("; ", createResult.Errors.Select(error => error.Description)));
-        }
-
-        return user;
     }
 
     private async Task SignInWalletSessionAsync(string address, ChainDefinition chain)
@@ -379,51 +323,6 @@ public sealed class WalletAuthController(
     private bool TryGetSolanaChain(string chainKey, out ChainDefinition chain) =>
         _chainRegistry.TryGet(chainKey, out chain!) && chain.Enabled && chain.Family == ChainFamily.Solana;
 
-    private static async Task<ApplicationUser> FindOrCreateSolanaUserAsync(UserManager<ApplicationUser> userManager, string address)
-    {
-        var user = await userManager.Users.SingleOrDefaultAsync(item => item.WalletAddress == address);
-        if (user is not null) return user;
-        // ASP.NET Identity's configured username alphabet contains letters and
-        // digits only; Solana base58 addresses already satisfy that policy.
-        var username = $"solana{address}";
-        user = await userManager.FindByNameAsync(username);
-        if (user is not null) return user;
-        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(address))).ToLowerInvariant();
-        user = new ApplicationUser { UserName = username, Email = $"solana-{digest}@wallet.invalid", EmailConfirmed = true, WalletAddress = address, WalletVerifiedAt = DateTimeOffset.UtcNow };
-        var result = await userManager.CreateAsync(user);
-        if (!result.Succeeded) throw new InvalidOperationException(string.Join("; ", result.Errors.Select(error => error.Description)));
-        return user;
-    }
-
-    private async Task<bool> PersistWalletIdentityAsync(string userId, string address, string? provider, string family)
-    {
-        var dbContext = serviceProvider.GetService<AppDbContext>();
-        if (dbContext is null) return true;
-        var normalized = string.Equals(family, "Evm", StringComparison.OrdinalIgnoreCase) ? address.ToLowerInvariant() : address;
-        var identity = await dbContext.WalletIdentities.FirstOrDefaultAsync(item => item.Family == family && item.NormalizedAddress == normalized, HttpContext.RequestAborted);
-        if (identity is null)
-        {
-            dbContext.WalletIdentities.Add(new WalletIdentity
-            {
-                UserId = userId,
-                Family = family,
-                NormalizedAddress = normalized,
-                DisplayAddress = address,
-                WalletProvider = string.IsNullOrWhiteSpace(provider) ? "unknown" : provider,
-                VerifiedAtUtc = DateTimeOffset.UtcNow
-            });
-        }
-        else
-        {
-            if (!string.Equals(identity.UserId, userId, StringComparison.Ordinal)) return false;
-            identity.UserId = userId;
-            identity.DisplayAddress = address;
-            identity.WalletProvider = string.IsNullOrWhiteSpace(provider) ? identity.WalletProvider : provider;
-            identity.VerifiedAtUtc = DateTimeOffset.UtcNow;
-        }
-        await dbContext.SaveChangesAsync(HttpContext.RequestAborted);
-        return true;
-    }
 
     private static string ExplorerBaseUrl(ChainDefinition chain)
     {
@@ -544,9 +443,6 @@ public sealed class WalletAuthController(
         using var document = JsonDocument.Parse(payloadJson);
         return document.RootElement.Clone();
     }
-
-    private static string CreateSyntheticWalletEmail(string address) =>
-        $"{address.ToLowerInvariant()}@wallet.thiscafeteria.local";
 
     private static bool TryNormalizeAddress(string? address, out string normalizedAddress)
     {

@@ -23,6 +23,32 @@ public sealed class RewardClaimRepository(AppDbContext dbContext) : IRewardClaim
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public Task<bool> ExistsByPaymentHashAsync(
+        string paymentTransactionHash,
+        CancellationToken cancellationToken = default) =>
+        dbContext.RewardClaims.AnyAsync(
+            claim => claim.PaymentTransactionHash == paymentTransactionHash,
+            cancellationToken);
+
+    public async Task<bool> TryAddAsync(RewardClaim claim, CancellationToken cancellationToken = default)
+    {
+        dbContext.RewardClaims.Add(claim);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            dbContext.Entry(claim).State = EntityState.Detached;
+            return false;
+        }
+    }
+
+    public Task UpdateAsync(RewardClaim claim, CancellationToken cancellationToken = default) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+
     public async Task<IReadOnlyList<RewardClaim>> ListByWalletAsync(
         string walletAddress,
         int take = 20,

@@ -21,21 +21,13 @@ public sealed class CouponService(
     {
         await createValidator.ValidateAndThrowAsync(request, cancellationToken);
 
-        var normalizedCode = NormalizeCode(request.Code);
+        var normalizedCode = Coupon.NormalizeCode(request.Code);
         if (await couponRepository.GetByNormalizedCodeAsync(normalizedCode, cancellationToken) is not null)
         {
             throw new InvalidOperationException($"Coupon '{request.Code.Trim()}' already exists.");
         }
 
-        var coupon = new Coupon
-        {
-            Code = request.Code.Trim(),
-            NormalizedCode = normalizedCode,
-            DiscountPercent = request.DiscountPercent,
-            MinimumOrderTotal = request.MinimumOrderTotal,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var coupon = Coupon.Create(request.Code, request.DiscountPercent, request.MinimumOrderTotal);
 
         await couponRepository.AddAsync(coupon, cancellationToken);
         return Map(coupon);
@@ -51,19 +43,19 @@ public sealed class CouponService(
             return null;
         }
 
-        var normalizedCode = NormalizeCode(request.Code);
+        var normalizedCode = Coupon.NormalizeCode(request.Code);
         var existing = await couponRepository.GetByNormalizedCodeAsync(normalizedCode, cancellationToken);
         if (existing is not null && existing.Id != id)
         {
             throw new InvalidOperationException($"Coupon '{request.Code.Trim()}' already exists.");
         }
 
-        coupon.Code = request.Code.Trim();
-        coupon.NormalizedCode = normalizedCode;
-        coupon.DiscountPercent = request.DiscountPercent;
-        coupon.MinimumOrderTotal = request.MinimumOrderTotal;
-        coupon.IsActive = request.IsActive;
-        coupon.UpdatedAt = DateTime.UtcNow;
+        coupon.Update(
+            request.Code,
+            request.DiscountPercent,
+            request.MinimumOrderTotal,
+            request.IsActive,
+            DateTime.UtcNow);
 
         await couponRepository.UpdateAsync(coupon, cancellationToken);
         return Map(coupon);
@@ -107,14 +99,14 @@ public sealed class CouponService(
             throw new InvalidOperationException("Add items before applying a coupon.");
         }
 
-        var coupon = await couponRepository.GetByNormalizedCodeAsync(NormalizeCode(code), cancellationToken);
+        var coupon = await couponRepository.GetByNormalizedCodeAsync(Coupon.NormalizeCode(code), cancellationToken);
         if (coupon is null || !coupon.IsActive)
         {
             throw new InvalidOperationException("Coupon code is invalid or inactive.");
         }
 
         var pricing = pricingService.Calculate(items);
-        if (pricing.TotalBeforeDiscount < coupon.MinimumOrderTotal)
+        if (!coupon.CanBeRedeemedFor(pricing.TotalBeforeDiscount))
         {
             throw new InvalidOperationException(
                 $"Coupon requires a minimum order total of {coupon.MinimumOrderTotal:C}.");
@@ -128,7 +120,7 @@ public sealed class CouponService(
         return coupon;
     }
 
-    public static string NormalizeCode(string code) => code.Trim().ToUpperInvariant();
+    public static string NormalizeCode(string code) => Coupon.NormalizeCode(code);
 
     private static CouponDto Map(Coupon coupon) => new(
         coupon.Id,

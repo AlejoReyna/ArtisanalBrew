@@ -1,21 +1,16 @@
-using System.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Util;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
 using ThisCafeteria.Application.Services.Rewards;
-using ThisCafeteria.Domain.Entities;
-using ThisCafeteria.Infrastructure.Persistence;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("rewards")]
 public sealed class RewardsController(
     IRewardClaimService rewardClaimService,
-    ICoffeeWeb3Service web3Service,
-    BlockchainNetworkOptions chain,
-    AppDbContext dbContext) : Controller
+    ILoyaltyMintService loyaltyMintService,
+    BlockchainNetworkOptions chain) : Controller
 {
     [HttpGet("api/claimable")]
     public async Task<IActionResult> GetClaimableAsync(
@@ -81,99 +76,36 @@ public sealed class RewardsController(
             return BadRequest("A valid payment token transaction hash is required.");
         }
 
-        if (await PaymentHashExistsAsync(paymentTransactionHash, cancellationToken))
-        {
-            return Conflict("Esta transacción ya ha sido reclamada.");
-        }
-
-        var verificationStatus = await web3Service.VerifyPaymentTransactionAsync(
-            paymentTransactionHash,
-            wallet,
-            request.PaymentAmount,
+        var result = await loyaltyMintService.MintAsync(
+            chain,
+            new LoyaltyMintCommand(
+                wallet,
+                request.Amount,
+                request.PaymentAmount,
+                paymentTransactionHash,
+                request.AllocationName),
             cancellationToken);
 
-        if (verificationStatus == TransactionVerificationStatus.PendingConfirmations)
+        return result.Status switch
         {
-            return StatusCode(StatusCodes.Status202Accepted, new
+            LoyaltyMintStatus.Minted => Ok(new RewardClaimResultModel
+            {
+                Success = true,
+                TransactionHash = result.MintTransactionHash,
+                PaymentTransactionHash = paymentTransactionHash,
+                MintedAmount = request.Amount
+            }),
+            LoyaltyMintStatus.AlreadyClaimed => Conflict("Esta transacci\u00f3n ya ha sido reclamada."),
+            LoyaltyMintStatus.PendingConfirmations => StatusCode(StatusCodes.Status202Accepted, new
             {
                 success = false,
                 status = "pending_confirmations"
-            });
-        }
-
-        if (verificationStatus != TransactionVerificationStatus.Verified)
-        {
-            return BadRequest(
-                "Payment transaction could not be verified on-chain. It must be a successful configured ERC-20 payment token transfer from your wallet to the configured marketplace wallet for the exact coffee price.");
-        }
-
-        if (!web3Service.IsMintingConfigured)
-        {
-            return BadRequest("Minting is not configured on the server.");
-        }
-
-        await using var transaction = await dbContext.Database
-            .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-
-        if (await PaymentHashExistsAsync(paymentTransactionHash, cancellationToken))
-        {
-            return Conflict("Esta transacción ya ha sido reclamada.");
-        }
-
-        var claim = new RewardClaim
-        {
-            WalletAddress = wallet,
-            Amount = request.Amount,
-            ClaimType = "allocation",
-            PaymentTransactionHash = paymentTransactionHash,
-            PaymentAmount = request.PaymentAmount,
-            PaymentChainId = chain.ChainId,
-            PaymentNetworkName = chain.NetworkName,
-            PaymentTokenContract = chain.EffectivePaymentTokenContract,
-            MarketplaceWallet = chain.MarketplaceWallet,
-            AllocationName = NormalizeAllocationName(request.AllocationName),
-            PaymentExplorerUrl = BuildExplorerTransactionUrl(paymentTransactionHash),
-            ClaimedAtUtc = DateTime.UtcNow
+            }),
+            LoyaltyMintStatus.MintingNotConfigured => BadRequest("Minting is not configured on the server."),
+            LoyaltyMintStatus.MintFailed => BadRequest(result.Error),
+            _ => BadRequest(
+                "Payment transaction could not be verified on-chain. It must be a successful configured ERC-20 payment token transfer from your wallet to the configured marketplace wallet for the exact coffee price.")
         };
-
-        dbContext.RewardClaims.Add(claim);
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            return Conflict("Esta transacción ya ha sido reclamada.");
-        }
-
-        string mintTransactionHash;
-        try
-        {
-            mintTransactionHash = await web3Service.MintCoffeeCoinAsync(
-                wallet,
-                request.Amount,
-                cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            return BadRequest(exception.Message);
-        }
-
-        claim.TransactionHash = mintTransactionHash;
-        claim.MintExplorerUrl = BuildExplorerTransactionUrl(mintTransactionHash);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        var result = new RewardClaimResultModel
-        {
-            Success = true,
-            TransactionHash = mintTransactionHash,
-            PaymentTransactionHash = paymentTransactionHash,
-            MintedAmount = request.Amount
-        };
-
-        return Ok(result);
     }
 
     private bool TryResolveCurrentWallet(out string wallet)
@@ -196,32 +128,6 @@ public sealed class RewardsController(
         }
 
         return false;
-    }
-
-    private Task<bool> PaymentHashExistsAsync(
-        string paymentTransactionHash,
-        CancellationToken cancellationToken) =>
-        dbContext.RewardClaims.AnyAsync(
-            claim => claim.PaymentTransactionHash == paymentTransactionHash,
-            cancellationToken);
-
-    private string BuildExplorerTransactionUrl(string transactionHash)
-    {
-        var explorer = chain.ExplorerUrl?.Trim();
-        if (string.IsNullOrWhiteSpace(explorer))
-        {
-            return string.Empty;
-        }
-
-        return $"{explorer.TrimEnd('/')}/tx/{transactionHash}";
-    }
-
-    private static string? NormalizeAllocationName(string? value)
-    {
-        var normalized = value?.Trim();
-        return string.IsNullOrWhiteSpace(normalized)
-            ? null
-            : normalized[..Math.Min(normalized.Length, 120)];
     }
 
     public sealed record WalletRequest(string WalletAddress);
