@@ -192,6 +192,11 @@ if (hasDatabase)
         options.LoginPath = "/";
         options.AccessDeniedPath = "/access-denied";
     });
+
+    // Needs both AddIdentity's UserManager<ApplicationUser> (just above) and
+    // AddBlockchainInfrastructure's ICoffeeWeb3Service (registered earlier) - see
+    // AddIdentityAndRewardServices for why this isn't in the shared AddInfrastructure.
+    builder.Services.AddIdentityAndRewardServices();
 }
 else
 {
