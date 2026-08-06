@@ -52,9 +52,10 @@ may use the agent account's prefund. Neither path grants asset-payment rights.
 ## Live acceptance evidence
 
 `scripts/metamask-session-key-e2e.ts` deploys the real v1.3.0 environment and
-submits operations through pinned Rundler v0.11.0. It proves deterministic owner
-and agent deployment, on-chain activation/revocation, escrow settlement and
-`JobFunded` reconciliation, root-owner continuity, and live rejection of:
+is now wired to submit the delegated payment through the authenticated gateway
+redemption route and pinned Rundler v0.11.0. The earlier local acceptance proved
+deterministic owner and agent deployment, on-chain activation/revocation, escrow
+settlement and `JobFunded` reconciliation, root-owner continuity, and live rejection of:
 uninstalled permission, wrong target, wrong token, wrong selector, wrong amount,
 non-default mode, batch mode, delegatecall mode, exhausted quota, expiry, and
 revocation. `scripts/rundler-e2e-check.ts` separately
@@ -106,12 +107,12 @@ job-creation flow — the owner must already know a job ID with a budget set on-
 creation/selection UI was out of this task's stated scope (delegation signing/activation/
 revocation UI only).
 
-**Not done, explicitly out of scope for this task:** delivering the signed delegations to
-the agent for redemption (wiring `agenticPayments.ts` into `server.ts`). The panel surfaces
-the signed delegation JSON for the owner to inspect and copy out manually; nothing
-persists or transmits the raw delegation bytes server-side (only `DelegationHash` +
-metadata are recorded, matching the existing `AgentPermissionGrant` schema, which this
-task did not change).
+The long-running gateway boundary that was previously missing is now implemented as
+authenticated `POST /agentic-payments/redeem`. It reconstructs and compares the exact
+one-shot scope, reads the live nonce, submits the UserOperation, waits for the receipt,
+and durably stores the signed request and complete result under an idempotency key.
+The panel still does not transmit the raw delegation automatically; the caller must
+deliver the signed delegation to the authenticated gateway.
 
 **Verification status — say this plainly:** all new C# is unit-tested (47 assertions in
 `RundlerBundlerClientTests`/`SmartAccountServiceTests`/`UserOperationSubmitterTests`), the
@@ -146,6 +147,7 @@ Rundler with the canonical EntryPoint added to its supported set (touches the ru
 bundler's own config and its signer secret context), out of scope for this build task.
 Until that's done, `agenticSessionPayments` must remain `false` on `ethereum-sepolia`/
 `bsc-testnet`; no capability flag flips to `true` without a working, verified live flow
-behind it, per this project's own rule. The application code built this session is ready
-to exercise the moment Rundler supports the canonical EntryPoint — no further app changes
-are expected to be needed for that alone.
+behind it, per this project's own rule. A production release also requires PostgreSQL,
+the HTTPS external signer, trusted runtime bytecode hashes, a funded account, and a real
+gateway-to-reconciliation acceptance run. Record the public UserOperation and transaction
+hashes before enabling the capability.

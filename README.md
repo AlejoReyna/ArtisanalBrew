@@ -63,9 +63,11 @@ One capability nuance is deliberate today: for EVM chains the manifest loader gr
 
 The full orchestration design is documented in [`docs/multichain-liquid-staking-plan.md`](docs/multichain-liquid-staking-plan.md). Operational commands and release controls live in [`docs/multichain-liquid-staking-operations.md`](docs/multichain-liquid-staking-operations.md) and [`docs/solana-local-manifest.md`](docs/solana-local-manifest.md).
 
-### Deployed contracts — Ethereum Sepolia (chain id 11155111)
+### Ethereum Sepolia deployment records (chain id 11155111)
 
-The server resolves these addresses from [`contracts/evm/deployments/ethereum-sepolia.json`](contracts/evm/deployments/ethereum-sepolia.json); the browser never chooses them. Compiled with solc `0.8.24` (optimizer runs 200, viaIR).
+Web and Worker load [`deployments/ethereum-sepolia.json`](deployments/ethereum-sepolia.json); that root manifest is the runtime source of truth and includes the modular-account stack. The separate [`contracts/evm/deployments/ethereum-sepolia.json`](contracts/evm/deployments/ethereum-sepolia.json) records a later public proof deployment used by the contract scripts. The two files currently contain different addresses and must not be treated as interchangeable. The browser never chooses addresses from either record.
+
+The following table is the separate contract-script proof deployment, compiled with solc `0.8.24` (optimizer runs 200, viaIR), not the manifest Web/Worker currently load.
 
 Liquid staking and tokens:
 
@@ -101,8 +103,9 @@ A sponsored ERC-4337 UserOperation has been mined successfully through this Entr
 - Real Solana RPC dashboard reads for CAFE, stCAFE, COFFEE, custody, share supply, exchange rate, and pending rewards using raw integer arithmetic.
 - Independent EVM and Solana reconciliation supervisors with persistent cursors, restart/replay idempotency, bounded pagination, and a Solana repair/backfill command.
 - Deterministic local EVM and Solana contract workspaces, ABI/IDL output, deployment manifests, and automated tests.
-- A local-first ERC-8183 escrow and pinned x402 gateway slice. ERC-4337, ERC-8004, and ERC-7683 remain future agent-commerce work and are not presented as complete.
-- Agentic-commerce scaffolding for the audited first three phases: local escrow and protocol fixtures, an integrated x402/MCP gateway, projection storage, and an initial Procurement Lab state view. The phase gates remain open (Phases 3–5) until the indexer, job lifecycle, ERC-4337, and ERC-7683 smoke tests are completely implemented.
+- ERC-8004 identity/reputation and ERC-8183 escrow event reconciliation into durable projections used by the Robots directory and Procurement Lab, plus a two-node ERC-7683-compatible standing solver with durable checkpoints/fills.
+- ERC-4337 v0.7 SimpleAccount/paymaster proofs and MetaMask HybridDeleGator owner activation/revocation. The gateway now has an authenticated agent-side redemption route that revalidates the exact target/selector/calldata/epoch/time/one-call delegation before submitting a UserOperation.
+- A production-capable x402/MCP gateway mode with PostgreSQL atomic replay storage, external KMS/HSM signer integration, safe-bundler configuration gates, modular-stack bytecode checks, and a zero-finding npm audit. Public session payments remain disabled until the live modular EntryPoint/bundler flow passes on each testnet.
 
 ### Security and enablement model
 
@@ -118,8 +121,9 @@ A sponsored ERC-4337 UserOperation has been mined successfully through this Entr
 - Fund the authorized Solana Testnet deployer, deploy the program and token fixtures, execute the public deposit → fund → transfer → claim → redeem smoke scenario, and generate the verified Testnet manifest.
 - Deploy and verify a new EVM liquid vault per selected EVM testnet; do not reuse or upgrade the unverified legacy Sepolia pool.
 - Add public-RPC health/observability and rollback evidence before enabling each network.
-- Complete the agent-commerce stack described in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md): ERC-4337, ERC-8004, and ERC-7683 are still outstanding.
-- The audited phase status and remaining gates are tracked in [`docs/agentic-commerce-stack-plan.md`](docs/agentic-commerce-stack-plan.md); the current Procurement Lab is a projection viewer, not a completed procurement workflow.
+- Reconfigure a safe-mode public bundler to advertise the canonical modular v0.7 EntryPoint, provision the external agent signer and PostgreSQL store, then run the gateway redemption → `JobFunded` → reconciliation → Procurement Lab public-testnet acceptance before enabling `agenticSessionPayments`.
+- Generalize native-asset pricing and receipt persistence, then run the tracked BSC Testnet checkout acceptance before enabling `marketplacePayment`; see [`docs/bsc-testnet-marketplace-follow-up.md`](docs/bsc-testnet-marketplace-follow-up.md).
+- Reconcile the root runtime EVM manifests with the separate `contracts/evm/deployments` proof artifacts so operators have one explicitly promoted deployment record per chain.
 
 ## Homepage: a crew that learned its job
 
@@ -258,16 +262,13 @@ Admin user seeding reads:
 dotnet restore
 dotnet build ThisCafeteria.sln --configuration Release --no-restore
 dotnet test tests/ThisCafeteria.UnitTests --configuration Release --no-build
-# Expected: 154 passing
 
 TEST_POSTGRES_CONNECTION='Host=127.0.0.1;Port=55432;Database=thiscafeteria_test;Username=test_only;Password=test_only_password' \
   dotnet test tests/ThisCafeteria.IntegrationTests --configuration Release --no-build
 
 npm --prefix contracts/evm test
-# Expected: 24 passing
 
 npm --prefix src/ThisCafeteria.AgentGateway test
-# Expected: 11 passing
 
 npm --prefix src/ThisCafeteria.AgentGateway run build
 cargo test --manifest-path contracts/solana/Cargo.toml --locked

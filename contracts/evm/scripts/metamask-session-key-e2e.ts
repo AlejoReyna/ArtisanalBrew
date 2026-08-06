@@ -37,7 +37,7 @@ import { deployDeleGatorEnvironment } from "@metamask/delegation-toolkit/utils";
 import {
   createAgenticPaymentHttpApp,
   createAgenticPaymentRedeemer
-} from "../../../src/ThisCafeteria.AgentGateway/src/agenticPaymentRedemption.ts";
+} from "../../../src/ThisCafeteria.AgentGateway/src/agenticPaymentRedemption.js";
 import manifest from "../deployments/evm-local.json" with { type: "json" };
 
 const BUNDLER_URL = process.env.BUNDLER_URL ?? "http://127.0.0.1:4338";
