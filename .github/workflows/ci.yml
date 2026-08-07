@@ -366,17 +366,42 @@ jobs:
         id: previous
         shell: bash
         run: |
-          set -euo pipefail
-          WEB_IMAGE=$(az containerapp show \
-            --name "$WEB_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query "properties.template.containers[0].image" -o tsv)
-          WORKER_IMAGE=$(az containerapp show \
-            --name "$WORKER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query "properties.template.containers[0].image" -o tsv)
-          test -n "$WEB_IMAGE"
-          test -n "$WORKER_IMAGE"
+          set -uo pipefail
+          # az containerapp show has been observed to fail silently (no stdout, no
+          # stderr, just a bare non-zero exit ~3-4s in) against this subscription -
+          # consistent with a transient ARM control-plane blip rather than a real
+          # auth/not-found error, which always prints text. Retry with backoff and
+          # capture --debug output on failure so a *persistent* failure (bad
+          # credentials, renamed/deleted app) is actually diagnosable from the log
+          # instead of showing up as a bare "exit code 1".
+          fetch_image() {
+            local app_name="$1" attempt image debug_log
+            for attempt in 1 2 3 4 5; do
+              debug_log=$(mktemp)
+              if image=$(az containerapp show \
+                --name "$app_name" \
+                --resource-group "$RESOURCE_GROUP" \
+                --query "properties.template.containers[0].image" -o tsv \
+                2>"$debug_log"); then
+                if [[ -n "$image" ]]; then
+                  rm -f "$debug_log"
+                  echo "$image"
+                  return 0
+                fi
+                echo "::warning::az containerapp show '$app_name' returned an empty image (attempt $attempt/5)" >&2
+              else
+                echo "::warning::az containerapp show '$app_name' failed (attempt $attempt/5), exit $?:" >&2
+                cat "$debug_log" >&2
+              fi
+              rm -f "$debug_log"
+              sleep $((attempt * 5))
+            done
+            echo "::error::az containerapp show '$app_name' failed after 5 attempts" >&2
+            return 1
+          }
+
+          WEB_IMAGE=$(fetch_image "$WEB_APP_NAME") || exit 1
+          WORKER_IMAGE=$(fetch_image "$WORKER_APP_NAME") || exit 1
           echo "web_image=$WEB_IMAGE" >> "$GITHUB_OUTPUT"
           echo "worker_image=$WORKER_IMAGE" >> "$GITHUB_OUTPUT"
           echo "Rollback images captured."
