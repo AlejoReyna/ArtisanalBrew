@@ -1,0 +1,11 @@
+[Unit]
+Description=Check ArtisanalBrew every five minutes
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=5m
+Persistent=true
+Unit=artisanalbrew-healthcheck.service
+
+[Install]
+WantedBy=timers.target

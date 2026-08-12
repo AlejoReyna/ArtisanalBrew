@@ -5,7 +5,7 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createPaymentWrapper, x402ResourceServer } from "@x402/mcp";
+import { x402ResourceServer } from "@x402/mcp";
 import { privateKeyToAccount } from "viem/accounts";
 import { z } from "zod";
 import {
@@ -61,10 +61,6 @@ const facilitator = new HTTPFacilitatorClient({ url: facilitatorUrl });
 const resourceServer = new x402ResourceServer(facilitator);
 resourceServer.register("eip155:84532", new ExactEvmScheme());
 await resourceServer.initialize();
-
-const paymentRequirements = await resourceServer.buildPaymentRequirements({
-  scheme: "exact", network: "eip155:84532", payTo, price: { asset: usdc, amount: "0" },
-});
 
 const allowRequest = (key: string) => {
   const now = Date.now();
@@ -129,15 +125,35 @@ const paidTool = async (name: string, description: string, price: string, route:
     scheme: "exact", network: "eip155:84532", payTo, price: { asset: usdc, amount: price },
   });
 
+  const createPaymentChallenge = async (args: unknown, extra: any, error: string) => {
+    const paymentRequired = await resourceServer.createPaymentRequiredResponse(
+      accepts,
+      {
+        url: `mcp://tool/${name}`,
+        description,
+        mimeType: "application/json",
+      },
+      error,
+      undefined,
+      { toolName: name, arguments: args, meta: extra?._meta },
+    );
+
+    // The MCP SDK converts thrown tool errors to plain text and drops error.data.
+    // Returning PaymentRequired as structured content preserves the x402 challenge
+    // so an x402-aware client can construct and retry with a payment automatically.
+    return {
+      structuredContent: paymentRequired,
+      content: [{ type: "text" as const, text: JSON.stringify(paymentRequired) }],
+      isError: true,
+    };
+  };
+
   mcpServer.tool(name, description, schema, async (args: any, extra: any) => {
     const paymentMeta = extractPayment(extra);
 
     // No payment attached — return 402 challenge
     if (!paymentMeta) {
-      const error = new Error("402 Payment Required") as any;
-      error.code = -32002;
-      error.data = { accepts };
-      throw error;
+      return createPaymentChallenge(args, extra, "Payment required to access this tool");
     }
 
     // Idempotency check BEFORE settlement — prevents double-charge

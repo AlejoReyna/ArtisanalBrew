@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -78,6 +79,15 @@ builder.Services.AddResponseCompression(options =>
     options.MimeTypes = new[] { "application/json", "text/html" };
 });
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // The Web container is exposed only on Docker's private network and receives traffic
+    // from Caddy. Clear the default restrictions so the proxy's forwarded scheme is
+    // honored across the container boundary.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 var azureOptions = builder.Configuration.GetSection(AzureOptions.SectionName).Get<AzureOptions>() ?? new AzureOptions();
 if (!string.IsNullOrWhiteSpace(azureOptions.Storage.BlobEndpoint))
@@ -229,6 +239,7 @@ else
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseResponseCompression();
 

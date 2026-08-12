@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+umask 077
+
+backup_dir=/opt/artisanalbrew/backups/postgres
+receipt_backup_dir=/opt/artisanalbrew/backups/receipts
+receipt_dir=/opt/artisanalbrew/data/receipts
+compose_file=/opt/artisanalbrew/compose.yml
+timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+temporary_backup="$backup_dir/.this_cafeteria-$timestamp.dump.tmp"
+final_backup="$backup_dir/this_cafeteria-$timestamp.dump"
+temporary_receipts="$receipt_backup_dir/.receipts-$timestamp.tar.gz.tmp"
+final_receipts="$receipt_backup_dir/receipts-$timestamp.tar.gz"
+
+mkdir -p "$backup_dir" "$receipt_backup_dir" "$receipt_dir"
+
+docker compose -f "$compose_file" exec -T postgres \
+    pg_dump --format=custom --compress=6 --no-owner --no-acl \
+    --username=thiscafeteria --dbname=this_cafeteria > "$temporary_backup"
+
+mv "$temporary_backup" "$final_backup"
+tar -czf "$temporary_receipts" -C "$receipt_dir" .
+mv "$temporary_receipts" "$final_receipts"
+find "$backup_dir" -type f -name 'this_cafeteria-*.dump' -mtime +7 -delete
+find "$receipt_backup_dir" -type f -name 'receipts-*.tar.gz' -mtime +7 -delete
