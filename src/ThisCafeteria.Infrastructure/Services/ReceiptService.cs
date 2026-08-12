@@ -1,18 +1,15 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Services;
-using ThisCafeteria.Infrastructure.Configuration;
 
 namespace ThisCafeteria.Infrastructure.Services;
 
 public sealed class ReceiptService(
     IS3StorageService blobStorage,
     IEmailSender emailSender,
-    IOptions<AzureOptions> options,
     ILogger<ReceiptService> logger) : IReceiptService
 {
     public async Task SendReceiptAsync(OrderDetails order, CancellationToken cancellationToken = default)
@@ -27,17 +24,6 @@ public sealed class ReceiptService(
         if (string.IsNullOrWhiteSpace(order.CustomerEmail))
         {
             throw new ArgumentException("CustomerEmail is required.", nameof(order));
-        }
-
-        var azureOptions = options.Value;
-        if (string.IsNullOrWhiteSpace(azureOptions.Storage.BlobEndpoint))
-        {
-            throw new InvalidOperationException("Azure:Storage:BlobEndpoint is not configured.");
-        }
-
-        if (string.IsNullOrWhiteSpace(azureOptions.Communication.SenderAddress))
-        {
-            throw new InvalidOperationException("Azure:Communication:SenderAddress is not configured.");
         }
 
         var pdfBytes = GenerateReceiptPdf(order);
@@ -214,7 +200,8 @@ public sealed class ReceiptService(
             Regards,
             This Cafeteria
             """,
-            [new EmailAttachmentData(fileName, "application/pdf", pdfBytes)]);
+            [new EmailAttachmentData(fileName, "application/pdf", pdfBytes)],
+            $"receipt/{order.OrderId}");
 
         return emailSender.SendAsync(email, cancellationToken);
     }

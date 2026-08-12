@@ -122,8 +122,15 @@ public static class DependencyInjection
             return AzureClientFactory.CreateCredential(azureOptions.ManagedIdentity);
         });
 
-        services.AddScoped<IS3StorageService, S3StorageService>();
-        services.AddScoped<IEmailSender, SesEmailSender>();
+        services.Configure<ReceiptStorageOptions>(configuration.GetSection(ReceiptStorageOptions.SectionName));
+        services.Configure<ResendOptions>(configuration.GetSection(ResendOptions.SectionName));
+
+        services.AddScoped<IS3StorageService, LocalReceiptStorageService>();
+        services.AddHttpClient<IEmailSender, ResendEmailSender>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.resend.com/");
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
         services.AddScoped<ISqsMessagePublisher, SqsMessagePublisher>();
         services.AddScoped<IReceiptService, ReceiptService>();
 

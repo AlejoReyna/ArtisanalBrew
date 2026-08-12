@@ -6,7 +6,8 @@ public sealed record OutboundEmail(
     string To,
     string Subject,
     string PlainTextBody,
-    IReadOnlyList<EmailAttachmentData>? Attachments = null);
+    IReadOnlyList<EmailAttachmentData>? Attachments = null,
+    string? IdempotencyKey = null);
 
 public interface IEmailSender
 {

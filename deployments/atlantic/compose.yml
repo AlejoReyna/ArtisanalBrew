@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - /opt/artisanalbrew/postgres.env
+    volumes:
+      - /opt/artisanalbrew/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thiscafeteria -d this_cafeteria"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    mem_limit: 768m
+    cpus: 0.50
+
+  web:
+    build:
+      context: /opt/artisanalbrew/repo
+      dockerfile: src/ThisCafeteria.Web/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - /opt/artisanalbrew/web.env
+      - /opt/artisanalbrew/resend.env
+    environment:
+      Receipts__StoragePath: /data/receipts
+    volumes:
+      - /opt/artisanalbrew/data/receipts:/data/receipts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8080"
+    mem_limit: 1024m
+    cpus: 0.75
+
+  worker:
+    build:
+      context: /opt/artisanalbrew/repo
+      dockerfile: src/ThisCafeteria.Worker/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - /opt/artisanalbrew/worker.env
+    environment:
+      # Only reconcile chains backed by a working production RPC. BSC and Solana
+      # remain available to the Web app but stay fail-closed in this worker until
+      # dedicated provider credentials are configured.
+      ARTISANALBREW_EVM_MANIFEST: deployments/ethereum-sepolia.json
+      ARTISANALBREW_SOLANA_MANIFEST: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 512m
+    cpus: 0.25
+
+  gateway:
+    build:
+      context: /opt/artisanalbrew/repo/src/ThisCafeteria.AgentGateway
+    restart: unless-stopped
+    env_file:
+      - /opt/artisanalbrew/gateway.env
+    environment:
+      ASPNET_INTERNAL_URL: http://web:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    expose:
+      - "4022"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4022/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    mem_limit: 384m
+    cpus: 0.25
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - /opt/artisanalbrew/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/artisanalbrew/caddy_data:/data
+      - /opt/artisanalbrew/caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    mem_limit: 128m
+    cpus: 0.10

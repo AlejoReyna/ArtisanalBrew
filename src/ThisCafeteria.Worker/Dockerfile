@@ -26,6 +26,13 @@ RUN dotnet publish src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# Npgsql's integrated-auth support loads GSSAPI at runtime even when PostgreSQL
+# uses password authentication. Keep the native dependency available so startup
+# and future database authentication paths do not fail with a missing library.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
 # The chain registry reads deployment manifests from ./deployments relative to

@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+compose_file=/opt/artisanalbrew/compose.yml
+
+docker compose -f "$compose_file" ps --status running --services | grep -qx postgres
+docker compose -f "$compose_file" ps --status running --services | grep -qx web
+docker compose -f "$compose_file" ps --status running --services | grep -qx worker
+docker compose -f "$compose_file" ps --status running --services | grep -qx gateway
+
+docker compose -f "$compose_file" exec -T web \
+    curl --fail --silent --show-error http://127.0.0.1:8080/health/ready >/dev/null
+docker compose -f "$compose_file" exec -T web \
+    curl --fail --silent --show-error http://gateway:4022/health/ready >/dev/null

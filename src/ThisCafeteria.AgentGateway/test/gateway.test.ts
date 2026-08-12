@@ -152,15 +152,18 @@ describe("Gateway Integration", () => {
   });
 
   it("should return a 402 challenge on unauthenticated paid requests", async () => {
-    try {
-      await mcpClient.callTool({ name: "create_brew_plan", arguments: { productId: "test", quantity: 1 } });
-      assert.fail("Should have thrown 402");
-    } catch (err: any) {
-      assert.ok(
-        err.message.includes("402") || err.message.includes("payment") || err.code === -32002,
-        `Expected 402-related error, got: ${err.message}`
-      );
-    }
+    const result = await mcpClient.callTool({
+      name: "create_brew_plan",
+      arguments: { productId: "test", quantity: 1 },
+    });
+    const paymentRequired = result.structuredContent ??
+      JSON.parse((result.content as any)[0].text as string);
+
+    assert.strictEqual(result.isError, true);
+    assert.strictEqual((paymentRequired as any).x402Version, 2);
+    assert.strictEqual((paymentRequired as any).accepts.length, 1);
+    assert.strictEqual((paymentRequired as any).accepts[0].amount, "10000");
+    assert.strictEqual((paymentRequired as any).accepts[0].network, "eip155:84532");
   });
 
   it("should settle exactly once and return cached result on replay (no double-charge)", async () => {
