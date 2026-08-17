@@ -989,13 +989,7 @@ else
                 var solanaModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "/js/solanaWalletAuth.js");
                 var login = await solanaModule.InvokeAsync<SolanaLoginResult>("loginWithWallet");
                 if (!login.Success) throw new InvalidOperationException(login.Error ?? "Solana wallet login failed.");
-                _isConnected = !string.IsNullOrWhiteSpace(login.Address);
-                if (_isConnected)
-                {
-                    _dashboard = new CoffeeDashboardModel { WalletAddress = login.Address! };
-                    _jsInitialized = false;
-                    await LoadDashboardAsync();
-                }
+                Navigation.NavigateTo(login.RedirectUrl ?? "/profile?tour=true", forceLoad: true);
                 return;
             }
 
@@ -1034,7 +1028,7 @@ else
         }
     }
 
-    private sealed record SolanaLoginResult(bool Success, string? Address, string? Error);
+    private sealed record SolanaLoginResult(bool Success, string? Address, string? Error, string? RedirectUrl);
 
     private async Task LoadStakingLedgerAsync(CancellationToken cancellationToken)
     {

@@ -13,6 +13,7 @@
         }
 
         <form method="post" action="/admin/login-action" class="admin-login__form">
+            <AntiforgeryToken />
             <label for="admin-email">Email</label>
             <input id="admin-email" name="Email" type="email" autocomplete="username" required />
 

@@ -1,9 +1,11 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -103,6 +105,21 @@ if (!string.IsNullOrWhiteSpace(azureOptions.Storage.BlobEndpoint))
         .SetApplicationName("ThisCafeteria")
         .PersistKeysToAzureBlobStorage(keysBlobUri, dataProtectionCredential);
 }
+else
+{
+    // Atlantic (and any single-host deploy) must persist the key ring outside the
+    // container. Recreating `web` otherwise invalidates session and antiforgery cookies.
+    var keysPath = builder.Configuration["DataProtection:KeysPath"];
+    if (string.IsNullOrWhiteSpace(keysPath))
+    {
+        keysPath = Path.Combine(builder.Environment.ContentRootPath, "dataprotection-keys");
+    }
+
+    Directory.CreateDirectory(keysPath);
+    builder.Services.AddDataProtection()
+        .SetApplicationName("ThisCafeteria")
+        .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
 
 builder.Services.AddMemoryCache();
 builder.Services.AddDistributedMemoryCache();
@@ -111,6 +128,21 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(8);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+});
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("sensitive", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(blockchainOptions);
@@ -191,6 +223,9 @@ if (hasDatabase)
             options.User.RequireUniqueEmail = true;
             options.Password.RequiredLength = 8;
             options.Password.RequireNonAlphanumeric = false;
+            options.Lockout.AllowedForNewUsers = true;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
         })
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
@@ -201,6 +236,11 @@ if (hasDatabase)
     {
         options.LoginPath = "/";
         options.AccessDeniedPath = "/access-denied";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromHours(12);
+        options.SlidingExpiration = true;
     });
 
     // Needs both AddIdentity's UserManager<ApplicationUser> (just above) and
@@ -217,6 +257,11 @@ else
             options.LoginPath = "/";
             options.AccessDeniedPath = "/access-denied";
             options.Cookie.Name = "ThisCafeteria.Wallet";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.ExpireTimeSpan = TimeSpan.FromHours(12);
+            options.SlidingExpiration = true;
         });
 }
 
@@ -242,6 +287,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseResponseCompression();
+app.UseRateLimiter();
 
 app.UseSession();
 app.UseAuthentication();

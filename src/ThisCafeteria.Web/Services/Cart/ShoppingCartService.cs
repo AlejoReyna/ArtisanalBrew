@@ -28,17 +28,17 @@ public sealed class ShoppingCartService(
     public event Action? Changed;
 
     public async Task<IReadOnlyList<MarketplaceCartLine>> GetLinesAsync(CancellationToken cancellationToken = default) =>
-        await LoadAsync(cancellationToken);
+        await RepriceFromCatalogAsync(await LoadAsync(cancellationToken), cancellationToken);
 
     public async Task<int> GetItemCountAsync(CancellationToken cancellationToken = default)
     {
-        var lines = await LoadAsync(cancellationToken);
+        var lines = await RepriceFromCatalogAsync(await LoadAsync(cancellationToken), cancellationToken);
         return lines.Sum(line => line.Quantity);
     }
 
     public async Task<decimal> GetSubtotalAsync(CancellationToken cancellationToken = default)
     {
-        var lines = await LoadAsync(cancellationToken);
+        var lines = await RepriceFromCatalogAsync(await LoadAsync(cancellationToken), cancellationToken);
         return lines.Sum(line => line.LineTotal);
     }
 
@@ -160,7 +160,7 @@ public sealed class ShoppingCartService(
 
     public async Task<IReadOnlyCollection<CartItemDto>> ToOrderItemsAsync(CancellationToken cancellationToken = default)
     {
-        var lines = await LoadAsync(cancellationToken);
+        var lines = await RepriceFromCatalogAsync(await LoadAsync(cancellationToken), cancellationToken);
         return lines.Select(line => new CartItemDto(
             line.ProductId == Guid.Empty ? ProductIdFromSlug(line.Slug) : line.ProductId,
             line.Name,
@@ -211,6 +211,52 @@ public sealed class ShoppingCartService(
         _circuitLines = lines.ToList();
         logger.LogInformation("Cart circuit snapshot applied. LineCount={LineCount}", _circuitLines.Count);
         Changed?.Invoke();
+    }
+
+    private async Task<List<MarketplaceCartLine>> RepriceFromCatalogAsync(
+        List<MarketplaceCartLine> lines,
+        CancellationToken cancellationToken)
+    {
+        var changed = false;
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var line = lines[index];
+            var product = !string.IsNullOrWhiteSpace(line.Slug)
+                ? await productService.GetProductBySlugAsync(line.Slug, cancellationToken)
+                : line.ProductId != Guid.Empty
+                    ? await productService.GetProductByIdAsync(line.ProductId, cancellationToken)
+                    : null;
+
+            if (product is null || !product.IsActive)
+            {
+                lines.RemoveAt(index);
+                index--;
+                changed = true;
+                continue;
+            }
+
+            if (line.UnitPrice != product.Price ||
+                line.Name != product.Name ||
+                line.ProductId != product.Id ||
+                line.ImageUrl != product.ImageUrl)
+            {
+                lines[index] = line with
+                {
+                    UnitPrice = product.Price,
+                    Name = product.Name,
+                    ProductId = product.Id,
+                    ImageUrl = product.ImageUrl
+                };
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            await SaveAsync(lines, cancellationToken);
+        }
+
+        return lines;
     }
 
     private async Task<List<MarketplaceCartLine>> LoadAsync(CancellationToken cancellationToken)

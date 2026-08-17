@@ -46,6 +46,12 @@ public sealed class LoyaltyMintService(
             return LoyaltyMintResult.MintingNotConfigured;
         }
 
+        var mintAmount = RewardCalculator.LoyaltyFromVerifiedPayment(command.PaymentAmount);
+        if (mintAmount <= 0m)
+        {
+            return LoyaltyMintResult.PaymentNotVerified;
+        }
+
         await using var transaction = await unitOfWork
             .BeginSerializableTransactionAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -56,7 +62,7 @@ public sealed class LoyaltyMintService(
             return LoyaltyMintResult.AlreadyClaimed;
         }
 
-        var claim = BuildClaim(chain, command);
+        var claim = BuildClaim(chain, command, mintAmount);
 
         if (!await claims.TryAddAsync(claim, cancellationToken).ConfigureAwait(false))
         {
@@ -68,7 +74,7 @@ public sealed class LoyaltyMintService(
         try
         {
             mintTransactionHash = await web3Service
-                .MintCoffeeCoinAsync(command.WalletAddress, command.Amount, cancellationToken)
+                .MintCoffeeCoinAsync(command.WalletAddress, mintAmount, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception exception)
@@ -87,10 +93,10 @@ public sealed class LoyaltyMintService(
         return LoyaltyMintResult.Minted(mintTransactionHash);
     }
 
-    private static RewardClaim BuildClaim(BlockchainNetworkOptions chain, LoyaltyMintCommand command) => new()
+    private static RewardClaim BuildClaim(BlockchainNetworkOptions chain, LoyaltyMintCommand command, decimal mintAmount) => new()
     {
         WalletAddress = command.WalletAddress,
-        Amount = command.Amount,
+        Amount = mintAmount,
         ClaimType = "allocation",
         PaymentTransactionHash = command.PaymentTransactionHash,
         PaymentAmount = command.PaymentAmount,

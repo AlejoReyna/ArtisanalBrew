@@ -18,6 +18,10 @@
         <p class="smart-account-panel__kicker">Smart Accounts</p>
         <ChainSelector Compact="true" OnChainChanged="HandleChainChangedAsync" />
     </div>
+    <p class="smart-account-panel__intro">
+        A programmable wallet controlled by your signed-in wallet. Use it to grant narrow,
+        temporary permissions without sharing full control.
+    </p>
 
     @if (!IsWalletUsable)
     {
@@ -225,13 +229,14 @@
         {
             <div class="smart-account-panel__register">
                 <p class="smart-account-panel__empty">
-                    No modular (session-key capable) account is registered yet on @SelectedChainAccessor.SelectedChain.ShortName.
+                    You do not have a session-key capable account on @SelectedChainAccessor.SelectedChain.ShortName yet.
+                    Generate one now; it will remain counterfactual until its first on-chain action.
                 </p>
                 <button type="button"
                         class="smart-account-panel__register-button"
                         disabled="@_isRegistering"
                         @onclick="RegisterModularAccountAsync">
-                    @(_isRegistering ? "Deriving address…" : "Register modular account")
+                    @(_isRegistering ? "Generating address…" : "Generate smart account")
                 </button>
                 @if (!string.IsNullOrWhiteSpace(_registerError))
                 {

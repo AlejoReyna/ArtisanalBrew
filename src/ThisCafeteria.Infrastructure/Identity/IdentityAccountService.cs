@@ -97,7 +97,7 @@ public sealed class IdentityAccountService(
     }
 
     public async Task<bool> PasswordSignInAsync(string email, string password, bool isPersistent) =>
-        (await signInManager.PasswordSignInAsync(email, password, isPersistent, lockoutOnFailure: false)).Succeeded;
+        (await signInManager.PasswordSignInAsync(email, password, isPersistent, lockoutOnFailure: true)).Succeeded;
 
     public async Task SignInAsync(string accountId, bool isPersistent)
     {

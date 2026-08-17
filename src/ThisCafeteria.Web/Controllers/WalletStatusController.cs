@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Nethereum.Util;
 using ThisCafeteria.Application.Repositories;
 using ThisCafeteria.Application.Services;
@@ -9,14 +10,15 @@ using ThisCafeteria.Web.Models;
 
 namespace ThisCafeteria.Web.Controllers;
 
-[AllowAnonymous]
 [ApiController]
 [Route("api/wallet-status")]
+[EnableRateLimiting("sensitive")]
 public sealed class WalletStatusController(
     IWalletStatusEventRepository repository,
     ISqsMessagePublisher publisher,
     ILogger<WalletStatusController> logger) : ControllerBase
 {
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateAsync(
         [FromBody] WalletStatusRequest request,
