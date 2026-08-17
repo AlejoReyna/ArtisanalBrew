@@ -59,7 +59,7 @@
                 <p class="eyebrow">Payment confirmed</p>
                 <h1 class="checkout-success__title">Thank you.</h1>
                 <p class="checkout-success__lede">
-                    Your @SelectedChain.DisplayName @SelectedChain.NativeCurrencySymbol payment was accepted. We are preparing your order for roast and dispatch.
+                    Your @SelectedChain.DisplayName testnet payment was accepted. This is a demonstration order — no coffee will be roasted or shipped.
                 </p>
 
                 <dl class="checkout-success__receipt">
@@ -279,7 +279,7 @@
                                         <span class="checkout-review-item__badge">Verified</span>
                                     </div>
                                     <div class="checkout-review-item__price-qty">
-                                        <p class="checkout-review-item__price">@FormatEth(line.LineTotal / EthUsdRate)</p>
+                                        <p class="checkout-review-item__price">@FormatUsd(line.LineTotal)</p>
                                         <p class="checkout-review-item__qty">Qty: @line.Quantity</p>
                                     </div>
                                 </li>
@@ -295,11 +295,10 @@
                                     <h2 class="checkout-review__section-title">Shipping</h2>
                                 </div>
                                 <div class="checkout-review__box-body">
-                                    <p class="checkout-review__box-name">@(_profile?.DisplayName ?? "Guest")</p>
-                                    <p class="checkout-review__box-address">123 Roast Street, Coffee District, CA 90210</p>
+                                    <p class="checkout-review__box-name">Digital demonstration</p>
+                                    <p class="checkout-review__box-address">No physical shipment. Testnet payment only.</p>
                                 </div>
                             </div>
-                            <button type="button" class="checkout-review__box-action">Edit</button>
                         </div>
                     </section>
 
@@ -318,27 +317,27 @@
                         <dl class="checkout-review__summary">
                             <div class="checkout-review__summary-row">
                                 <dt>Subtotal</dt>
-                                <dd>@FormatEth(_subtotalUsd / EthUsdRate)</dd>
+                                <dd>@FormatUsd(_subtotalUsd)</dd>
                             </div>
                             <div class="checkout-review__summary-row">
-                                <dt>Network Gas Fee</dt>
-                                <dd>@FormatEth(0.0005m)</dd>
+                                <dt>Shipping (demo)</dt>
+                                <dd>@FormatUsd(_shippingUsd)</dd>
                             </div>
                             <div class="checkout-review__summary-row">
-                                <dt>Shipping</dt>
-                                <dd class="checkout-review__summary-free">FREE</dd>
+                                <dt>Tax (demo)</dt>
+                                <dd>@FormatUsd(_taxUsd)</dd>
                             </div>
                         </dl>
                     </section>
 
                     <section class="checkout-review__section checkout-review__section--total">
                         <p class="checkout-review__total-label">Total</p>
-                        <p class="checkout-review__total">@FormatEth(_ethAmount)</p>
+                        <p class="checkout-review__total">@FormatUsd(_orderTotalUsd)</p>
                     </section>
 
                     <p class="checkout-review__disclaimer">
-                        This transaction is verified by smart contract on @SelectedChain.DisplayName.<br />
-                        By completing this purchase, you agree to our <a href="/terms">Terms of Service</a>.
+                        Testnet only. You are paying @SelectedChain.DisplayName @SelectedChain.NativeCurrencySymbol at a fixed demo rate, not a live market price.<br />
+                        No coffee is roasted or shipped. By continuing you agree to the <a href="/terms">Terms</a>.
                     </p>
 
                     <div class="checkout-review__sticky-cta">
@@ -455,7 +454,7 @@
                             </div>
                             <div class="checkout-breakdown__row checkout-breakdown__row--rate">
                                 <dt>Current Rate</dt>
-                                <dd><em>1 ETH = @FormatUsd(EthUsdRate) USD</em></dd>
+                                <dd><em>1 ETH = @FormatUsd(PricingService.EthUsdRate) USD (demo rate)</em></dd>
                             </div>
                             <div class="checkout-breakdown__row checkout-breakdown__row--amount">
                                 <dt>Amount to Pay</dt>
@@ -520,7 +519,6 @@
 </section>
 
 @code {
-    private const decimal EthUsdRate = 3750.00m;
     private const int MaxConfirmationAttempts = 10;
     private const int ConfirmationPollDelayMs = 3000;
 
@@ -638,7 +636,14 @@
         _taxUsd = pricing.Tax;
         _discountUsd = pricing.DiscountAmount;
         _orderTotalUsd = pricing.Total;
-        _ethAmount = _orderTotalUsd / EthUsdRate;
+        try
+        {
+            _ethAmount = PricingService.ToNativePaymentAmount(pricing.Total, SelectedChain.NativeCurrencySymbol);
+        }
+        catch (InvalidOperationException)
+        {
+            _ethAmount = 0m;
+        }
         _appliedCoupon = coupon;
     }
 
@@ -764,7 +769,7 @@
                     return;
                 }
 
-                Navigation.NavigateTo("/checkout", forceLoad: true);
+                Navigation.NavigateTo(loginResult.RedirectUrl ?? "/profile?tour=true", forceLoad: true);
                 return;
             }
 
@@ -903,7 +908,8 @@
                     _ethAmount,
                     BuildExplorerTransactionUrl(payment.TransactionHash),
                     DateTime.UtcNow,
-                    _appliedCoupon?.Code));
+                    _appliedCoupon?.Code),
+                userProfileId);
 
             _txFlow.Apply("record", "confirmed", null, null);
             _txFlow.Completed = true;
@@ -1095,6 +1101,7 @@
         public bool Success { get; set; }
         public string? Error { get; set; }
         public string? Address { get; set; }
+        public string? RedirectUrl { get; set; }
     }
 
     private sealed class CheckoutEthPaymentResult

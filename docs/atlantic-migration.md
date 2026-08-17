@@ -228,7 +228,10 @@ Pendiente antes de considerar la plataforma completamente operativa:
   restauración.
 - Habilitar snapshots periódicos del servidor en Atlantic.Net.
 - Persistir las llaves de ASP.NET Data Protection fuera del contenedor para no
-  invalidar cookies tras recrearlo.
+  invalidar cookies tras recrearlo. Compose ya monta
+  `/opt/artisanalbrew/data/dataprotection` en `DataProtection__KeysPath`. Crear
+  el directorio en el host y darle escritura al UID de la imagen ASP.NET
+  (`1654`) antes del próximo recreate de `web`.
 - Rotar la contraseña inicial de `root` si aún no se hizo. Aunque el login por
   contraseña está deshabilitado, toda credencial de bootstrap debe tratarse
   como temporal.

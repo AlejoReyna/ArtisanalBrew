@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ThisCafeteria.Application.Configuration;
@@ -21,6 +22,7 @@ namespace ThisCafeteria.Web.Controllers;
 
 [ApiController]
 [Route("api/wallet-auth")]
+[EnableRateLimiting("sensitive")]
 public sealed class WalletAuthController(
     IWalletChallengeService challengeService,
     ISolanaWalletChallengeService solanaChallengeService,
@@ -78,7 +80,7 @@ public sealed class WalletAuthController(
         await authenticationTransaction.CommitAsync(HttpContext.RequestAborted);
         if (authenticatedAccount is not null && identityAccounts is not null) await identityAccounts.SignInAsync(authenticatedAccount.Id, isPersistent: true);
         else await SignInWalletSessionAsync(request.Address, chain);
-        return Ok(new WalletVerifyResponse(true, request.Address, "/", false, false, null));
+        return Ok(new WalletVerifyResponse(true, request.Address, "/profile?tour=true", false, false, null));
     }
 
     [HttpGet("status")]
@@ -246,7 +248,7 @@ public sealed class WalletAuthController(
         return Ok(new WalletVerifyResponse(
             true,
             checksumAddress,
-            "/",
+            "/profile?tour=true",
             statusResult.Stored,
             statusResult.Published,
             statusResult.AwsMessageId));
@@ -315,7 +317,10 @@ public sealed class WalletAuthController(
         var key = string.IsNullOrWhiteSpace(requestedChainKey)
             ? _selectedChainAccessor.SelectedChainKey
             : requestedChainKey.Trim();
-        return _chainRegistry.TryGet(key, out var chain) && chain.Enabled && chain.Family == ChainFamily.Evm
+        return _chainRegistry.TryGet(key, out var chain)
+            && chain.Enabled
+            && chain.Family == ChainFamily.Evm
+            && chain.Capabilities.WalletLogin
             ? chain
             : null;
     }

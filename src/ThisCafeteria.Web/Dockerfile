@@ -40,7 +40,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_HTTP_PORTS=8080
+ENV DataProtection__KeysPath=/data/dataprotection
 EXPOSE 8080
+
+RUN mkdir -p /data/dataprotection /data/receipts \
+    && chown -R $APP_UID:$APP_UID /data
 
 COPY --from=build /app/publish .
 

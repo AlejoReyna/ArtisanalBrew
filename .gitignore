@@ -11,6 +11,7 @@ publish-ec2/
 *.nupkg
 appsettings.Local.json
 .env
+src/ThisCafeteria.Web/dataprotection-keys/
 
 # Local acceptance harness state and generated evidence
 /acceptance-evidence-*.log

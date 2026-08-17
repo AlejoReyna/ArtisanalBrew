@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
+using FluentValidation;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Services;
 
@@ -8,6 +10,7 @@ namespace ThisCafeteria.Web.Controllers;
 
 [ApiController]
 [Route("api/orders")]
+[EnableRateLimiting("sensitive")]
 public sealed class OrdersController(
     IOrderService orderService,
     IProfileService profileService) : ControllerBase
@@ -16,8 +19,27 @@ public sealed class OrdersController(
     [HttpPost]
     public async Task<ActionResult<OrderDto>> CreateOrder(CreateOrderRequest request, CancellationToken cancellationToken)
     {
-        var order = await orderService.CreateOrderAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetMyOrders), new { }, order);
+        var applicationUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(applicationUserId))
+        {
+            return Unauthorized();
+        }
+
+        var userProfileId = await profileService.EnsureProfileLinkedAsync(applicationUserId, cancellationToken);
+
+        try
+        {
+            var order = await orderService.CreateOrderAsync(request, userProfileId, cancellationToken);
+            return CreatedAtAction(nameof(GetMyOrders), new { }, order);
+        }
+        catch (ValidationException exception)
+        {
+            return BadRequest(exception.Message);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(exception.Message);
+        }
     }
 
     [Authorize]

@@ -24,8 +24,10 @@ services:
       - /opt/artisanalbrew/resend.env
     environment:
       Receipts__StoragePath: /data/receipts
+      DataProtection__KeysPath: /data/dataprotection
     volumes:
       - /opt/artisanalbrew/data/receipts:/data/receipts
+      - /opt/artisanalbrew/data/dataprotection:/data/dataprotection
     depends_on:
       postgres:
         condition: service_healthy

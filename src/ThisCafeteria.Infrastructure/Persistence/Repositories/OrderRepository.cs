@@ -22,6 +22,13 @@ public sealed class OrderRepository(AppDbContext dbContext) : IOrderRepository
         }
     }
 
+    public Task<bool> ExistsByPaymentHashAsync(string paymentTransactionHash, CancellationToken cancellationToken = default)
+    {
+        return dbContext.Orders.AnyAsync(
+            order => order.PaymentTransactionHash == paymentTransactionHash,
+            cancellationToken);
+    }
+
     public async Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await dbContext.Orders

@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Nethereum.Util;
 using ThisCafeteria.Application.Configuration;
 using ThisCafeteria.Application.Services.Blockchain;
@@ -7,6 +9,7 @@ using ThisCafeteria.Application.Services.Rewards;
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("rewards")]
+[EnableRateLimiting("sensitive")]
 public sealed class RewardsController(
     IRewardClaimService rewardClaimService,
     ILoyaltyMintService loyaltyMintService,
@@ -26,7 +29,9 @@ public sealed class RewardsController(
         return Ok(status);
     }
 
+    [Authorize]
     [HttpPost("api/claim")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ClaimDailyAsync(
         [FromBody] WalletRequest request,
         CancellationToken cancellationToken)
@@ -34,6 +39,16 @@ public sealed class RewardsController(
         if (!WalletAddressRules.TryNormalizeWallet(request.WalletAddress, out var wallet))
         {
             return BadRequest("A valid wallet address is required.");
+        }
+
+        if (!TryResolveCurrentWallet(out var sessionWallet))
+        {
+            return Unauthorized("Connect or sign in with your wallet before claiming rewards.");
+        }
+
+        if (!AddressUtil.Current.AreAddressesTheSame(wallet, sessionWallet))
+        {
+            return BadRequest("The connected wallet does not match this claim.");
         }
 
         var result = await rewardClaimService.ClaimDailyRewardAsync(wallet, cancellationToken);

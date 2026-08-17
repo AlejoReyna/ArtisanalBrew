@@ -1,16 +1,18 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ThisCafeteria.Application.Services;
 
 namespace ThisCafeteria.Web.Controllers;
 
 [Route("admin")]
+[EnableRateLimiting("sensitive")]
 public sealed class AdminAuthController(
     IIdentityAccountService identityAccounts) : Controller
 {
     [HttpPost("login-action")]
-    [IgnoreAntiforgeryToken]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login([FromForm] AdminLoginForm form)
     {
         if (string.IsNullOrWhiteSpace(form.Email) || string.IsNullOrWhiteSpace(form.Password))

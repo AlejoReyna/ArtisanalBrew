@@ -78,6 +78,29 @@ public sealed class BlockchainManifestLoaderTests
     }
 
     [Fact]
+    public void HonorsEvmFaucetAndRewardMintingFlagsInsteadOfHardcodingThemOn()
+    {
+        var offPath = Path.Combine(Path.GetTempPath(), $"artisanalbrew-evm-manifest-{Guid.NewGuid():N}.json");
+        File.WriteAllText(offPath, EvmManifestJson("bsc-testnet", 97, "https://97.rpc.thirdweb.com").Replace(
+            "\"faucet\": true, \"rewardMinting\": true",
+            "\"faucet\": false, \"rewardMinting\": false"));
+        try
+        {
+            var options = BlockchainManifestLoader.LoadDeploymentManifests(BlockchainOptions.CreateDefaults(), offPath, null);
+            var deployed = new ChainRegistry(options).GetRequired("bsc-testnet");
+
+            deployed.Capabilities.Faucet.Should().BeFalse();
+            deployed.Capabilities.RewardMinting.Should().BeFalse();
+            deployed.Capabilities.WalletLogin.Should().BeTrue();
+            deployed.Capabilities.LiquidStaking.Should().BeTrue();
+        }
+        finally
+        {
+            File.Delete(offPath);
+        }
+    }
+
+    [Fact]
     public void EnablesBscTestnetFromAValidatedEvmManifest()
     {
         var defaults = new ChainRegistry(BlockchainOptions.CreateDefaults());

@@ -17,7 +17,7 @@
 @inject WalletDashboardState DashboardState
 @inject ThisCafeteria.Web.Services.ProfileAvatarState AvatarState
 @inject IEthUsdPriceService EthUsdPriceService
-@implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>My Profile | Artisanal Brew</PageTitle>
 
@@ -74,12 +74,15 @@ else if (_dashboard is not null)
                     <button type="button" @onclick="ShowYieldView">Yield <span aria-hidden="true">↗</span></button>
                     <a href="procurement-lab">Lab <span aria-hidden="true">↗</span></a>
                 </nav>
-                <form method="post" action="/api/wallet-auth/logout" class="pf-bar__logout">
-                    <button type="submit">Log out</button>
-                </form>
+                <div class="pf-bar__actions">
+                    <button type="button" class="pf-bar__tour" @onclick="StartProfileTour">Profile tour</button>
+                    <form method="post" action="/api/wallet-auth/logout" class="pf-bar__logout">
+                        <button type="submit">Log out</button>
+                    </form>
+                </div>
             </header>
 
-            <section class="pf-id" aria-labelledby="pf-id-title">
+            <section class="pf-id @TourTargetClass(0)" aria-labelledby="pf-id-title">
                 @* The avatar is the one thing on this page you can change that
                    isn't text, so it gets a real affordance: a pixel-ringed
                    button, not a decorative sprite. *@
@@ -87,7 +90,7 @@ else if (_dashboard is not null)
                         class="pf-avatar"
                         @onclick="OpenAvatarEditor"
                         aria-label="Change your robot">
-                    <RobotAvatarView Avatar="_dashboard.Avatar" Size="clamp(3.25rem, 7vw, 4.5rem)" />
+                    <RobotAvatarView Avatar="_dashboard.Avatar" Size="clamp(9.75rem, 21vw, 13.5rem)" />
                     <span class="pf-avatar__pen" aria-hidden="true">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -116,7 +119,9 @@ else if (_dashboard is not null)
                     else
                     {
                         <h1 id="pf-id-title" class="pf-id__name">
-                            <span>@_dashboard.DisplayName</span>
+                            <span class="@(IsWalletDerivedDisplayName ? "pf-id__name-placeholder" : null)">
+                                @(IsWalletDerivedDisplayName ? "Name your profile" : _dashboard.DisplayName)
+                            </span>
                             <button type="button"
                                     class="pf-icon-btn"
                                     aria-label="Edit display name"
@@ -192,12 +197,12 @@ else if (_dashboard is not null)
 
             @if (!string.IsNullOrWhiteSpace(_dashboard.WalletAddress))
             {
-                <div class="pf-smart">
+                <div class="pf-smart @TourTargetClass(1, 2)">
                     <SmartAccountPanel WalletAddress="@_dashboard.WalletAddress" />
                 </div>
             }
 
-            <section class="pf-panel" aria-labelledby="pf-orders-title">
+            <section class="pf-panel @TourTargetClass(3)" aria-labelledby="pf-orders-title">
                 <div class="pf-panel__bar">
                     <h2 id="pf-orders-title">Orders</h2>
                     <span class="pf-panel__count">@_orders.Count</span>
@@ -243,6 +248,51 @@ else if (_dashboard is not null)
                 }
             </section>
 
+            @if (_isTourOpen)
+            {
+                <aside class="pf-tour" role="dialog" aria-modal="false" aria-labelledby="pf-tour-title" aria-describedby="pf-tour-copy" aria-live="polite">
+                    <header class="pf-tour__head">
+                        <span class="pf-tour__bot" aria-hidden="true"></span>
+                        <div>
+                            <span class="pf-tour__eyebrow">Brewbot · Profile guide</span>
+                            <strong id="pf-tour-title">@TourTitle</strong>
+                        </div>
+                        <button type="button" class="pf-tour__close" aria-label="Close profile tour" @onclick="CloseProfileTour">×</button>
+                    </header>
+
+                    <div class="pf-tour__body">
+                        <span class="pf-tour__step">Step @(_tourStep + 1) of @TourStepCount</span>
+                        <p id="pf-tour-copy">@TourCopy</p>
+
+                        @if (_tourStep == 0)
+                        {
+                            <button type="button" class="pf-tour__try" @onclick="OpenAvatarEditor">
+                                Open robot workshop <span aria-hidden="true">↗</span>
+                            </button>
+                        }
+                        else if (_tourStep == 2)
+                        {
+                            <p class="pf-tour__note">
+                                Already see a modular account in the list? You are set — select it to make it active.
+                            </p>
+                        }
+                    </div>
+
+                    <footer class="pf-tour__footer">
+                        <button type="button" class="pf-tour__back" disabled="@(_tourStep == 0)" @onclick="PreviousTourStep">Back</button>
+                        <div class="pf-tour__progress" aria-label="Tour progress">
+                            @for (var index = 0; index < TourStepCount; index++)
+                            {
+                                <span class="@(index == _tourStep ? "is-current" : null)" aria-hidden="true"></span>
+                            }
+                        </div>
+                        <button type="button" class="pf-tour__next" @onclick="NextTourStep">
+                            @(_tourStep == TourStepCount - 1 ? "Finish" : "Next")
+                        </button>
+                    </footer>
+                </aside>
+            }
+
             @if (_isEditingAvatar)
             {
                 <RobotAvatarEditor Avatar="_dashboard.Avatar"
@@ -258,6 +308,10 @@ else if (_dashboard is not null)
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "tour")]
+    public bool StartTour { get; set; }
+
+    private const int TourStepCount = 4;
     private readonly ProfileEditModel _editModel = new();
     private ProfileDashboardDto? _dashboard;
     private IReadOnlyCollection<OrderDto> _orders = [];
@@ -273,6 +327,10 @@ else if (_dashboard is not null)
     private List<string> _validationErrors = [];
     private CoffeeDashboardModel? _stakingDashboard;
     private decimal? _ethUsdPrice;
+    private bool _isTourOpen;
+    private int _tourStep;
+    private int _lastScrolledTourStep = -1;
+    private IJSObjectReference? _tourModule;
 
     private PersistingComponentStateSubscription _subscription;
 
@@ -329,6 +387,20 @@ else if (_dashboard is not null)
             _stakingDashboard = await DashboardState.GetOrRefreshAsync(_dashboard.WalletAddress, TimeSpan.FromMinutes(1));
             _ethUsdPrice = await EthUsdPriceService.GetEthUsdPriceAsync();
         }
+
+        _isTourOpen = StartTour && _dashboard is not null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_isTourOpen || _lastScrolledTourStep == _tourStep)
+        {
+            return;
+        }
+
+        _tourModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/profileTour.js");
+        await _tourModule.InvokeVoidAsync("showStep", TourTargetSelector, _tourStep == 0);
+        _lastScrolledTourStep = _tourStep;
     }
 
     private Task PersistProfile()
@@ -339,9 +411,20 @@ else if (_dashboard is not null)
         return Task.CompletedTask;
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _subscription.Dispose();
+
+        if (_tourModule is not null)
+        {
+            try
+            {
+                await _tourModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
     }
 
     private void ShowYieldView() => _showYield = true;
@@ -355,7 +438,7 @@ else if (_dashboard is not null)
             return;
         }
 
-        _editModel.DisplayName = _dashboard.DisplayName;
+        _editModel.DisplayName = IsWalletDerivedDisplayName ? string.Empty : _dashboard.DisplayName;
         _validationErrors = [];
         _saveMessage = null;
         _isEditingName = true;
@@ -404,6 +487,65 @@ else if (_dashboard is not null)
     }
 
     private void CloseAvatarEditor() => _isEditingAvatar = false;
+
+    private bool IsWalletDerivedDisplayName =>
+        _dashboard is not null &&
+        !string.IsNullOrWhiteSpace(_dashboard.WalletAddress) &&
+        string.Equals(_dashboard.DisplayName, ShortAddress(_dashboard.WalletAddress), StringComparison.OrdinalIgnoreCase);
+
+    private string TourTitle => _tourStep switch
+    {
+        0 => "Make this profile yours",
+        1 => "Meet your smart account",
+        2 => "Generate one when you are ready",
+        _ => "Your command center is ready"
+    };
+
+    private string TourCopy => _tourStep switch
+    {
+        0 => "Use the pencil beside your name, then select the large robot to change its parts, colors, and gear. Your wallet address stays below as account metadata instead of becoming your identity.",
+        1 => "A smart account is a programmable wallet controlled by your signed-in wallet. It can give an agent a narrow, temporary permission without exposing your wallet or handing over full control.",
+        2 => "Choose an EVM network, then select Generate smart account. The address is prepared first; it is deployed on-chain only when it needs to perform its first transaction.",
+        _ => "This page is now home base for your identity, smart-account permissions, balance, and order history. You can replay this tour any time from the top bar."
+    };
+
+    private string TourTargetSelector => _tourStep switch
+    {
+        0 => ".pf-id",
+        1 or 2 => ".pf-smart",
+        _ => ".pf-panel"
+    };
+
+    private string? TourTargetClass(params int[] steps) =>
+        _isTourOpen && steps.Contains(_tourStep) ? "pf-tour-target" : null;
+
+    private void StartProfileTour()
+    {
+        _tourStep = 0;
+        _lastScrolledTourStep = -1;
+        _isTourOpen = true;
+    }
+
+    private void CloseProfileTour() => _isTourOpen = false;
+
+    private void PreviousTourStep()
+    {
+        if (_tourStep > 0)
+        {
+            _tourStep--;
+        }
+    }
+
+    private void NextTourStep()
+    {
+        if (_tourStep >= TourStepCount - 1)
+        {
+            CloseProfileTour();
+            return;
+        }
+
+        _tourStep++;
+    }
 
     private Task SaveAvatarAsync(UpdateAvatarRequest request) =>
         ApplyAvatarAsync(profileId => ProfileService.UpdateAvatarAsync(profileId, request));

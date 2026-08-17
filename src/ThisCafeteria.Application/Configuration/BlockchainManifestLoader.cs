@@ -140,10 +140,10 @@ public static class BlockchainManifestLoader
                 },
                 Capabilities = new ChainCapabilities
                 {
-                    WalletLogin = true,
-                    LiquidStaking = true,
-                    Faucet = true,
-                    RewardMinting = true,
+                    WalletLogin = ReadCapabilityFlag(root, "walletLogin"),
+                    LiquidStaking = ReadCapabilityFlag(root, "liquidStaking"),
+                    Faucet = ReadCapabilityFlag(root, "faucet"),
+                    RewardMinting = ReadCapabilityFlag(root, "rewardMinting"),
                     AgenticCommerce = ReadCapabilityFlag(root, "agenticCommerce"),
                     AgenticSessionPayments = ReadCapabilityFlag(root, "agenticSessionPayments"),
                     // Read from the manifest instead of hardcoding: the manifest is the single source of

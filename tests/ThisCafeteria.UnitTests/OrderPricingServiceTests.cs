@@ -26,4 +26,15 @@ public sealed class OrderPricingServiceTests
         pricing.DiscountAmount.Should().Be(2.72m);
         pricing.Total.Should().Be(24.48m);
     }
+
+    [Fact]
+    public void ToNativePaymentAmount_ConvertsUsdWithTheDemoEthRate()
+    {
+        var service = new OrderPricingService();
+
+        service.ToNativePaymentAmount(3750m, "ETH").Should().Be(1m);
+        FluentActions.Invoking(() => service.ToNativePaymentAmount(10m, "BNB"))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("*native currency*");
+    }
 }

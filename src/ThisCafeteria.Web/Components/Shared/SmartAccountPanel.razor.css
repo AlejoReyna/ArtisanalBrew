@@ -25,6 +25,14 @@
     text-transform: uppercase;
 }
 
+.smart-account-panel__intro {
+    color: #777064;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    margin: -0.15rem 0 1rem;
+    max-width: 48rem;
+}
+
 .smart-account-panel__empty {
     color: #5d534d;
     font-size: 0.85rem;
@@ -301,6 +309,7 @@
     }
 
     :root:not([data-theme]) .smart-account-panel__kicker,
+    :root:not([data-theme]) .smart-account-panel__intro,
     :root:not([data-theme]) .smart-account-panel__empty,
     :root:not([data-theme]) .smart-account-panel__status,
     :root:not([data-theme]) .smart-account-panel__field span,
@@ -343,6 +352,7 @@
 }
 
 :root[data-theme="dark"] .smart-account-panel__kicker,
+:root[data-theme="dark"] .smart-account-panel__intro,
 :root[data-theme="dark"] .smart-account-panel__empty,
 :root[data-theme="dark"] .smart-account-panel__status,
 :root[data-theme="dark"] .smart-account-panel__field span,
