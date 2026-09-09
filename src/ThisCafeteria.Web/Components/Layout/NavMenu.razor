@@ -636,13 +636,20 @@
     protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("NavMenu OnInitializedAsync START");
-        CartService.Changed += OnCartChanged;
         DashboardState.Changed += OnWalletDashboardChanged;
         AvatarState.Changed += OnAvatarChanged;
         Navigation.LocationChanged += OnLocationChanged;
         _walletSnapshot = DashboardState.Snapshot;
+
+        // RefreshFromStorageAsync raises Changed after hydrating the cart. Subscribing
+        // before that call starts a second GetItemCountAsync while the first is still
+        // repricing its lines. Both calls reach the circuit-scoped DbContext and EF
+        // rejects the concurrent query, which made an authenticated visit return 500.
+        // Subscribe only after the initial count has been loaded; later cart changes
+        // still update the header normally.
         await CartService.RefreshFromStorageAsync();
         await RefreshCartCountAsync();
+        CartService.Changed += OnCartChanged;
         await LoadAvatarAsync();
         Logger.LogInformation("NavMenu OnInitializedAsync END. CartItemCount={Count}", _cartItemCount);
     }
