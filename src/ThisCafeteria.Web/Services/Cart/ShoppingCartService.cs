@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using ThisCafeteria.Application.DTOs;
 using ThisCafeteria.Application.Services;
 
@@ -9,7 +10,7 @@ namespace ThisCafeteria.Web.Services.Cart;
 
 public sealed class ShoppingCartService(
     IHttpContextAccessor httpContextAccessor,
-    IProductService productService,
+    IServiceScopeFactory scopeFactory,
     ILogger<ShoppingCartService> logger) : IShoppingCartService
 {
     private const string SessionKey = "MarketplaceCart";
@@ -56,7 +57,9 @@ public sealed class ShoppingCartService(
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be at least 1.");
         }
 
-        var product = await productService.GetProductBySlugAsync(slug, cancellationToken);
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var product = await scope.ServiceProvider.GetRequiredService<IProductService>()
+            .GetProductBySlugAsync(slug, cancellationToken);
 
         if (product is null)
         {
@@ -217,6 +220,12 @@ public sealed class ShoppingCartService(
         List<MarketplaceCartLine> lines,
         CancellationToken cancellationToken)
     {
+        // The layout initialises alongside the routed page in a Blazor Server
+        // circuit. Resolve the catalog service in a dedicated scope so repricing a
+        // persisted cart cannot run EF work concurrently with that page's services
+        // against the circuit-scoped AppDbContext.
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
         var changed = false;
         for (var index = 0; index < lines.Count; index++)
         {
