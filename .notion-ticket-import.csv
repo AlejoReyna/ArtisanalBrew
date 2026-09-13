@@ -1,0 +1,18 @@
+Name,Week,Priority,Status,Owner,Size,Target
+AB-101 Correct production DNS and validate TLS end to end,Week 1,P0,Not started,Platform,S,2026-09-04
+AB-102 Eliminate cart-triggered DbContext concurrency failures,Week 1,P0,Not started,Backend,M,2026-09-04
+AB-103 Add a public synthetic checkout-smoke journey,Week 1,P0,Not started,Platform + QA,S,2026-09-04
+AB-104 Remove Procurement Lab source leak,Week 1,P1,Not started,Frontend,S,2026-09-04
+AB-105 Resolve dependency security and compatibility warnings,Week 1,P1,Not started,Backend,S,2026-09-04
+AB-201 Durable x402 settlement and fulfillment state machine,Week 2,P0,Not started,Agent Gateway + Backend,L,2026-09-11
+AB-202 Replace paid-resource stubs with authoritative services,Week 2,P1,Not started,Backend + Product,L,2026-09-11
+AB-203 Complete PostgreSQL replay and crash-recovery coverage,Week 2,P1,Not started,Agent Gateway,M,2026-09-11
+AB-204 RPC failover and reconciliation freshness SLOs,Week 2,P1,Not started,Blockchain + Platform,M,2026-09-11
+AB-301 Repair tablet and mobile layout regressions,Week 3,P1,Not started,Frontend,M,2026-09-18
+AB-302 Make public content match production reality,Week 3,P1,Not started,Product + Frontend + Platform,M,2026-09-18
+AB-303 Make wallet selection accessible and safer to understand,Week 3,P1,Not started,Frontend + Product,S,2026-09-18
+AB-304 Add motion fallbacks and reduce time-to-message,Week 3,P2,Not started,Frontend,M,2026-09-18
+AB-401 Chain-aware native asset quotes and receipt provenance,Week 4,P1,Not started,Backend + Blockchain,L,2026-09-25
+AB-402 Prove and conditionally enable BSC marketplace checkout,Week 4,P1,Not started,Blockchain + QA,L,2026-09-25
+AB-403 Establish release SLOs and operator dashboard,Week 4,P1,Not started,Platform,M,2026-09-25
+AB-404 Release-candidate burn-in and audit closeout,Week 4,P1,Not started,QA + Product + Engineering,M,2026-09-25

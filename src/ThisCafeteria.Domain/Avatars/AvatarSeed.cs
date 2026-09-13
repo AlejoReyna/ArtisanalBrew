@@ -41,7 +41,17 @@ public static class AvatarSeed
             // hash and slicing bits out of it — keeps the slots independent,
             // so adding a seventh slot later does not reshuffle the six that
             // wallets are already showing.
-            var index = (int)(Hash($"{normalized}:{slot.Key}") % (ulong)slot.Items.Count);
+            // Keep the original starter pool fixed when the wardrobe grows.
+            // New accessories are available in the editor and Surprise me,
+            // without changing the identity of existing unedited profiles.
+            var starterCount = slot.Key switch
+            {
+                AvatarCatalog.VisorSlot => 6,
+                AvatarCatalog.HatSlot => 8,
+                AvatarCatalog.WearSlot or AvatarCatalog.HoldSlot => 7,
+                _ => slot.Items.Count
+            };
+            var index = (int)(Hash($"{normalized}:{slot.Key}") % (ulong)starterCount);
             avatar[slot.Key] = slot.Items[index].Id;
         }
 

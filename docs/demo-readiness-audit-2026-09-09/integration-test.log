@@ -1,0 +1,5 @@
+Test run for /workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+Results File: /workspace/ArtisanalBrew/docs/demo-readiness-audit-2026-09-09/test-results/integration.trx
+
+Passed!  - Failed:     0, Passed:    17, Skipped:     0, Total:    17, Duration: 9 s - ThisCafeteria.IntegrationTests.dll (net10.0)

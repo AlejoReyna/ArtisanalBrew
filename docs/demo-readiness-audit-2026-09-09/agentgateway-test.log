@@ -1,0 +1,133 @@
+
+> test
+> tsc -p tsconfig.test.json && node --import tsx --test test/*.test.ts
+
+TAP version 13
+# Subtest: modular client rejects an account bound to a different EntryPoint before network use
+ok 1 - modular client rejects an account bound to a different EntryPoint before network use
+  ---
+  duration_ms: 1.238381
+  ...
+# Subtest: modular client fails closed for an unknown account type
+ok 2 - modular client fails closed for an unknown account type
+  ---
+  duration_ms: 0.20917
+  ...
+# Subtest: redemption builder rejects an empty permission set
+ok 3 - redemption builder rejects an empty permission set
+  ---
+  duration_ms: 0.283899
+  ...
+# Subtest: exact permission validator accepts only the signed one-shot caveat set
+ok 4 - exact permission validator accepts only the signed one-shot caveat set
+  ---
+  duration_ms: 0.839274
+  ...
+# Subtest: runtime bytecode verification checks every trusted modular contract hash
+ok 5 - runtime bytecode verification checks every trusted modular contract hash
+  ---
+  duration_ms: 5.892113
+  ...
+# Subtest: public redemption preflight refuses an unsafe bundler before network use
+ok 6 - public redemption preflight refuses an unsafe bundler before network use
+  ---
+  duration_ms: 0.547514
+  ...
+# Subtest: agent redemption route authenticates and submits the exact granted permission
+ok 7 - agent redemption route authenticates and submits the exact granted permission
+  ---
+  duration_ms: 63.197511
+  ...
+# Subtest: Gateway Integration
+    # Subtest: should return a 402 challenge on unauthenticated paid requests
+    ok 1 - should return a 402 challenge on unauthenticated paid requests
+      ---
+      duration_ms: 7.185753
+      ...
+    # Subtest: should settle exactly once and return cached result on replay (no double-charge)
+    ok 2 - should settle exactly once and return cached result on replay (no double-charge)
+      ---
+      duration_ms: 23.38783
+      ...
+    # Subtest: should process concurrent identical requests atomically (exactly one settlement)
+    ok 3 - should process concurrent identical requests atomically (exactly one settlement)
+      ---
+      duration_ms: 12.927999
+      ...
+    # Subtest: should reject requests with bad signatures
+    ok 4 - should reject requests with bad signatures
+      ---
+      duration_ms: 7.644116
+      ...
+    # Subtest: should reject requests where verification returns isValid: false
+    ok 5 - should reject requests where verification returns isValid: false
+      ---
+      duration_ms: 5.509082
+      ...
+    # Subtest: should return different results for different arguments (not cached across requests)
+    ok 6 - should return different results for different arguments (not cached across requests)
+      ---
+      duration_ms: 13.519646
+      ...
+    1..6
+ok 8 - Gateway Integration
+  ---
+  duration_ms: 730.635807
+  type: 'suite'
+  ...
+# Subtest: remote signer delegates typed-data signing without exposing key material
+ok 9 - remote signer delegates typed-data signing without exposing key material
+  ---
+  duration_ms: 44.704995
+  ...
+# Subtest: remote signer rejects malformed signatures and raw transaction signing
+ok 10 - remote signer rejects malformed signatures and raw transaction signing
+  ---
+  duration_ms: 1.454905
+  ...
+# Subtest: gateway request binding
+    # Subtest: hashes object key order canonically
+    ok 1 - hashes object key order canonically
+      ---
+      duration_ms: 8.049454
+      ...
+    # Subtest: returns the original result and bounds retained entries
+    ok 2 - returns the original result and bounds retained entries
+      ---
+      duration_ms: 0.364745
+      ...
+    # Subtest: releasing key on failed request
+    ok 3 - releasing key on failed request
+      ---
+      duration_ms: 0.29055
+      ...
+    # Subtest: concurrent callers share one promise
+    ok 4 - concurrent callers share one promise
+      ---
+      duration_ms: 11.82109
+      ...
+    # Subtest: produces different hashes when payment metadata changes
+    ok 5 - produces different hashes when payment metadata changes
+      ---
+      duration_ms: 0.936534
+      ...
+    # Subtest: persists completed results across PostgreSQL store instances
+    ok 6 - persists completed results across PostgreSQL store instances # SKIP
+      ---
+      duration_ms: 0.101467
+      ...
+    1..6
+ok 11 - gateway request binding
+  ---
+  duration_ms: 22.707414
+  type: 'suite'
+  ...
+1..11
+# tests 21
+# suites 2
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1279.789995

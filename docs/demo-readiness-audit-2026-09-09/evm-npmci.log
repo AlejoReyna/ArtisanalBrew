@@ -1,0 +1,20 @@
+npm WARN deprecated uuid@9.0.1: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm WARN deprecated @metamask/delegation-toolkit@0.13.0: Renamed to @metamask/smart-accounts-kit
+
+added 223 packages, and audited 224 packages in 8s
+
+59 packages are looking for funding
+  run `npm fund` for details
+
+22 vulnerabilities (11 low, 7 moderate, 4 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.

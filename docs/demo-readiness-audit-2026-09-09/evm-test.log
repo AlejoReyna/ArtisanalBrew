@@ -1,0 +1,55 @@
+
+> test
+> hardhat test
+
+Downloading solc 0.8.24
+Downloading solc 0.8.24 (WASM build)
+
+Compiled 10 Solidity files with solc 0.8.24 (evm target: shanghai)
+
+Running Solidity tests
+
+
+Running node:test tests
+
+  AgenticCommerceEscrow
+    ✔ completes and pays the provider after evaluator submission
+    ✔ rejects funded work and refunds the client
+    ✔ expires and refunds without an evaluator call
+    ✔ reverts when unauthorized provider tries to submit
+    ✔ reverts when unauthorized evaluator tries to complete
+    ✔ reverts duplicate fund on already-funded job
+    ✔ reverts claim refund before expiry
+    ✔ reverts when non-client tries to fund
+    ✔ reverts submit on unfunded job
+    ✔ reverts complete on funded (not submitted) job
+    ✔ reverts operations on non-existent job
+
+  CafeLiquidStakingVault
+    ✔ deposits, transfers liquid shares, and keeps prior accrual with the sender
+    ✔ allows redemption while deposits are paused
+
+  ERC-4337 canonical stack (UserOperation execution)
+    ✔ deploys the account via initCode and executes the call (user-paid via deposit)
+    ✔ sponsors a UserOperation through the canonical VerifyingPaymaster
+    ✔ rejects a sponsored UserOperation whose paymaster signature is from the wrong signer
+    ✔ rejects a UserOperation signed by the wrong key
+    ✔ rejects a UserOperation with no prefund and no paymaster
+
+  ERC7683ResolverFixture
+    ✔ completes a successful full flow
+    ✔ reverts fill before submit
+    ✔ handles expiry refund correctly
+    ✔ reverts unauthorized solver
+    ✔ reverts duplicate submission
+    ✔ reverts fill after resolve (replay protection)
+    ✔ reverts fill with insufficient output amount
+    ✔ reverts when non-user tries to submit
+    ✔ reverts refund of already resolved intent
+    ✔ reverts with zero amount
+    ✔ reverts with zero address inputs
+
+
+29 passing (29 nodejs)
+
+WARNING: hre.network.connect() is deprecated and will be removed in a future version. Use hre.network.create() or hre.network.getOrCreate() instead.

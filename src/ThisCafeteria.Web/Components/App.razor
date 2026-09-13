@@ -55,6 +55,7 @@
     <script src="@Assets["js/storyDataPath.js"]" defer></script>
     <script src="@Assets["js/storyGuessType.js"]" defer></script>
     <script src="@Assets["js/journalProgress.js"]" defer></script>
+    <script src="@Assets["js/heroScroll.js"]" defer></script>
     <script src="@Assets["js/heroWebGL.js"]" defer></script>
     <script src="@Assets["js/chainSelector.js"]" defer></script>
     <script>
@@ -271,6 +272,13 @@
         // Wrapped, not passed by reference: the handler would otherwise receive the
         // Event as `instant` and skip the intended entrance fade on a cold load.
         document.addEventListener('DOMContentLoaded', () => window.queueAnimations(false));
+        // Guarded: heroScroll.js is defer-loaded and may not have evaluated yet
+        // if this ever runs early; init() itself is re-entrant across navigations.
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.queueHeroScroll === 'function') {
+                window.queueHeroScroll();
+            }
+        });
         document.addEventListener('DOMContentLoaded', window.queuePublicHeader);
         document.addEventListener('DOMContentLoaded', window.queueRecruiterMotion);
         document.addEventListener('DOMContentLoaded', window.queueStoryTechShowcase);
@@ -296,6 +304,9 @@
             window.queueHeroWebGL();
             window.queueHeroVideo();
             window.queueHeroType();
+            if (typeof window.queueHeroScroll === 'function') {
+                window.queueHeroScroll();
+            }
         };
 
         if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {

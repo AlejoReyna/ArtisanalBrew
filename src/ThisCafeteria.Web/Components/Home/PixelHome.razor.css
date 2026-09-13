@@ -367,15 +367,19 @@
     75%, 100% { background-position: 100% 0;    transform: translate3d(1px, -1px, 0); }
 }
 
-/* ── Feature panels ── */
+/* ── Feature panels: docked as the composite's second row ──
+   Same 64rem measure and side padding as .pd-section above, no top gap, so the
+   Market Scout shell and these two panels read as one nested square: full-width
+   block on top, two joined blocks below, the panels' top border drawing the
+   row divider against the shell's open bottom edge. */
 .ph-panels {
     display: grid;
     gap: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 0 auto;
     max-width: 64rem;
-    margin-top: clamp(-6rem, -8vh, -3rem);
-    padding: clamp(1rem, 2vh, 1.5rem) clamp(1.25rem, 4vw, 3.5rem) 3.5rem;
+    margin-top: 0;
+    padding: 0 clamp(1.25rem, 4vw, 3.5rem) 3.5rem;
     position: relative;
     z-index: 1;
 }
@@ -552,18 +556,87 @@
     }
 }
 
+/* Matches .pd-section's ≤620px gutter so the composite's outer edges stay
+   flush on narrow screens. */
+@media (max-width: 620px) {
+    .ph-panels {
+        padding-inline: 1rem;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .ph-panel__coin,
     .ph-panel__robot,
     .ph-title3d__letter {
         animation: none;
     }
-
     .ph-hero--intro-pending .ph-title3d__line,
     .ph-hero--intro-pending .ph-lede,
     .ph-hero--intro-pending .ph-cta-row {
         animation: none;
         opacity: 1;
         transform: none;
+    }
+}
+
+/* ── Scroll-driven hero exit (see wwwroot/js/heroScroll.js) ────────────────
+   The module writes --hero-scroll (0 at the top → 1 one viewport down) onto
+   .ph-page and opts in with .has-hero-scroll. Without JS — or under
+   prefers-reduced-motion — the class is never added and the hero keeps its
+   plain document scroll: nothing is hidden by default.
+
+   Targets are chosen around the intro choreography: .ph-title3d__line,
+   .ph-lede and .ph-cta-row carry fill-mode entrance animations that override
+   stylesheet opacity/transform after they land, so the scroll exit drives
+   .ph-hero__copy (which has no entrance animation) plus per-letter opacity on
+   .ph-title3d__letter (the bob keyframes own transform only, leaving opacity
+   free). Values update per scroll frame, so no transitions here — a transition
+   would smear a frame behind the scroll. */
+.ph-page.has-hero-scroll {
+    --hero-scroll: 0;
+}
+
+/* Pinned exit: the hero sticks to the viewport while the discovery chapter
+   slides up over it (.pd-section already paints above at z-index 2), so the
+   hero vanishes in place instead of scrolling away beneath the panel. The pin
+   releases when the extended hero's bottom edge arrives, and the feature
+   panels below scroll naturally afterwards. */
+.ph-page.has-hero-scroll .ph-hero {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.ph-page.has-hero-scroll .ph-hero__copy {
+    filter: blur(calc(var(--hero-scroll) * 6px));
+    opacity: max(0, calc(1 - var(--hero-scroll) * 1.35));
+    transform: translate3d(0, calc(var(--hero-scroll) * -12vh), 0);
+    will-change: opacity, transform, filter;
+}
+
+/* Letter-by-letter dissolve: each glyph lingers a beat longer than the last,
+   so the headline ripples out instead of blinking off. */
+.ph-page.has-hero-scroll .ph-title3d__letter {
+    opacity: max(0, calc(1 - var(--hero-scroll) * 2.1 + var(--i) * 0.028));
+}
+
+/* Fully gone: out of the tab order and the pointer path. The copy's own rate
+   reaches 0 around 0.74, so the swap at 0.85 is invisible. */
+.ph-page.has-hero-scroll.is-past-hero .ph-hero__copy {
+    pointer-events: none;
+    visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ph-page.has-hero-scroll .ph-hero__copy,
+    .ph-page.has-hero-scroll .ph-title3d__letter {
+        filter: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .ph-page.has-hero-scroll.is-past-hero .ph-hero__copy {
+        pointer-events: auto;
+        visibility: visible;
     }
 }

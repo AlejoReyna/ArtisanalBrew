@@ -117,7 +117,8 @@ public static class AvatarCatalog
             new("scarf", "Scarf", 2),
             new("bowtie", "Bow tie", 3),
             new("labcoat", "Lab coat", 4),
-            new("bandolier", "Bandolier", 5)
+            new("bandolier", "Bandolier", 5),
+            new("heart-sweater", "Heart sweater", 6)
         ]),
         new(VisorSlot, "Visor", AvatarSlotKind.Sprite, "dot",
         [
@@ -126,7 +127,8 @@ public static class AvatarCatalog
             new("sleepy", "Sleepy", 2),
             new("shades", "Shades", 3),
             new("scanline", "Scanline", 4),
-            new("glitch", "Glitch", 5)
+            new("glitch", "Glitch", 5),
+            new("hearts", "Heart eyes", 6)
         ]),
         new(HatSlot, "Headgear", AvatarSlotKind.Sprite, NoneItemId,
         [
@@ -137,7 +139,9 @@ public static class AvatarCatalog
             new("headphones", "Headphones", 3),
             new("crown", "Crown", 4),
             new("bulb", "Antenna bulb", 5),
-            new("toque", "Toque", 6)
+            new("toque", "Toque", 6),
+            new("sprout", "Little sprout", 7),
+            new("ribbon", "Ribbon", 8)
         ]),
         new(HoldSlot, "Holding", AvatarSlotKind.Sprite, NoneItemId,
         [
@@ -147,7 +151,9 @@ public static class AvatarCatalog
             new("key", "Key", 2),
             new("wrench", "Wrench", 3),
             new("terminal", "Terminal", 4),
-            new("coin", "CAFE coin", 5)
+            new("coin", "CAFE coin", 5),
+            new("plant", "Potted pal", 6),
+            new("teddy", "Tiny teddy", 7)
         ])
     ];
 

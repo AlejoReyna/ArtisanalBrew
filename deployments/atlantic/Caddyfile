@@ -10,3 +10,17 @@ cafe.alexisreyna.dev {
     reverse_proxy @agent gateway:4022
     reverse_proxy web:8080
 }
+
+# Public URL for ArtisanalBrew.
+cafe.alexisrs.dev {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    @agent path /sse /messages /bazaar /.well-known/agent-card.json
+    reverse_proxy @agent gateway:4022
+    reverse_proxy web:8080
+}

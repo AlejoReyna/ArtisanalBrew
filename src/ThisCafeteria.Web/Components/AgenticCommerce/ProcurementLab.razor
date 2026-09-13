@@ -17,8 +17,6 @@
 @inject IOptions<BlockchainNetworkOptions> ChainOptions
 @inject NavigationManager Navigation
 @inject ILogger<ProcurementLab> Logger
-@implements IDisposable
-@inject ILogger<ProcurementLab> Logger
 
 @* Two states, not one. The lab used to render the full marketing hero —
    protocol list, 44rem headline, full-width robot station — above the console
@@ -59,50 +57,44 @@
         @* Hero: what this place does, in one sentence a first-time visitor can
            act on, then the four steps as an auto-rotating stepper, then the connect action. *@
         <section class="pl-hero" aria-labelledby="pl-hero-title">
-            <div class="pl-hero__grid">
-                <div class="pl-hero__col pl-hero__col--copy">
-                    <div class="pl-hero__copy">
-                        <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
-                            <span aria-hidden="true">
-                                @{ var protoIdx = 0; }
-                                @foreach (var word in ProtocolsText.Split(' '))
+            <div class="pl-hero__copy">
+                <p class="pl-hero__protocols" aria-label="Featuring ERC-4337, ERC-8004, ERC-7683, ERC-8183">
+                    <span aria-hidden="true">
+                        @{ var protoIdx = 0; }
+                        @foreach (var word in ProtocolsText.Split(' '))
+                        {
+                            <span class="pl-proto__word">
+                                @foreach (var ch in word)
                                 {
-                                    <span class="pl-proto__word">
-                                        @foreach (var ch in word)
-                                        {
-                                            <span class="pl-proto__char" style="--i: @protoIdx;">@ch</span>
-                                            protoIdx++;
-                                        }
-                                    </span>
+                                    <span class="pl-proto__char" style="--i: @protoIdx;">@ch</span>
+                                    protoIdx++;
                                 }
                             </span>
-                        </p>
-                        <h1 id="pl-hero-title">Let a robot do the buying.</h1>
-                        <p class="pl-hero__lede">
-                            You post a job, the payment waits in escrow, and it is released only once
-                            the delivery is signed off. Four steps, on @SelectedChainAccessor.SelectedChain.ShortName,
-                            with test funds.
-                        </p>
-                    </div>
-
-                    <div class="pl-hero__action">
-                        <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
-                            @(_isConnecting ? "Connecting…" : "Connect wallet to start")
-                        </button>
-                        <p class="pl-hero__action-note">
-                            Connecting only proves the address is yours. Nothing is signed, spent or
-                            approved until you press a button that says so.
-                        </p>
-                        @if (!string.IsNullOrWhiteSpace(_connectError))
-                        {
-                            <p class="pl-hero__connect-error" role="alert">@_connectError</p>
                         }
-                    </div>
-                </div>
+                    </span>
+                </p>
+                <h1 id="pl-hero-title">Let a robot do the buying.</h1>
+                <p class="pl-hero__lede">
+                    You post a job, the payment waits in escrow, and it is released only once
+                    the delivery is signed off. Four steps, on @SelectedChainAccessor.SelectedChain.ShortName,
+                    with test funds.
+                </p>
+            </div>
 
-                <div class="pl-hero__col pl-hero__col--stepper">
-                    @HeroStepper
-                </div>
+            @DuoScene
+
+            <div class="pl-hero__action">
+                <button type="button" class="pl-cta" disabled="@_isConnecting" @onclick="ConnectWalletAsync">
+                    @(_isConnecting ? "Connecting…" : "Connect wallet to start")
+                </button>
+                <p class="pl-hero__action-note">
+                    Connecting only proves the address is yours. Nothing is signed, spent or
+                    approved until you press a button that says so.
+                </p>
+                @if (!string.IsNullOrWhiteSpace(_connectError))
+                {
+                    <p class="pl-hero__connect-error" role="alert">@_connectError</p>
+                }
             </div>
 
             <div class="pl-hero__scene">
@@ -118,26 +110,12 @@
            carries the address — three restatements of context nobody asked for
            above the work itself. *@
         <header class="pl-commandbar">
+            <h1 id="pl-console-title" class="pl-commandbar__title">The Lab</h1>
             <nav class="pl-commandbar__nav" aria-label="Account">
                 <a href="staking">Yield</a>
                 <a href="profile">Profile <span aria-hidden="true">↗</span></a>
             </nav>
         </header>
-
-        <section class="pl-console" aria-labelledby="pl-console-title">
-            <div class="pl-console__copy">
-                <h1 id="pl-console-title">Procurement lab.</h1>
-                <p class="pl-console__lede">Escrowed missions on @SelectedChainAccessor.SelectedChain.ShortName. Test funds only.</p>
-            </div>
-
-            @* The station is not decoration here: the buyer reads the installed
-               permission, the inspector's controls light up when a job is
-               awaiting evaluation. Demoted to a strip beside the copy so it
-               stays a status readout rather than a billboard. *@
-            <div class="pl-console__station">
-                @StationScene
-            </div>
-        </section>
     }
 
     @if (IsConnected && _loading)
@@ -146,141 +124,57 @@
     }
     else if (IsConnected)
     {
-        @* The whole point of the redesign: exactly one recommended action,
-           named in plain words, with what it will do and what it will cost
-           spelled out before the wallet opens. Every branch below is one state
-           of the escrow lifecycle. *@
-        <section class="pl-next @(_isWorking ? "is-working" : null)" aria-labelledby="pl-next-title">
-            @{
-                var pending = NextActionableJob;
-                // The step you are ABOUT to take: one past where the mission currently sits.
-                // With no missions at all, that is step 1 — posting one. With missions that are
-                // all waiting on someone else, no step is yours, so the badge is dropped.
-                var step = pending is not null ? StageNumber(pending.Status) + 1
-                    : Jobs?.Any(job => !IsTerminal(job.Status)) == true ? 0
-                    : 1;
-            }
-            <div class="pl-next__actor">
-                <span class="pl-sprite @NextSpriteClass" aria-hidden="true"></span>
-                @if (step > 0)
-                {
-                    <span class="pl-next__step">Step @step of 4</span>
-                }
-            </div>
-
-            <div class="pl-next__copy">
-                @if (pending is null && Jobs is { Count: > 0 } && Jobs.All(job => IsTerminal(job.Status)))
-                {
-                    <h2 id="pl-next-title">All settled.</h2>
-                    <p class="pl-next__body">Nothing is waiting on you.</p>
-                    <div class="pl-next__actions">
-                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="CreateTestJob">
-                            @(_isWorking ? "Waiting for your wallet…" : "Create another mission")
-                        </button>
-                    </div>
-                }
-                else if (pending is null && Jobs is { Count: > 0 })
-                {
-                    var waiting = Jobs.First(job => !IsTerminal(job.Status));
-                    <h2 id="pl-next-title">Waiting on the @CounterpartyRole(waiting).</h2>
-                    <p class="pl-next__body">Mission @MissionLabel(waiting) comes back to you when they act.</p>
-                    <div class="pl-next__actions">
-                        <button type="button" class="pl-btn pl-btn--sm pl-btn--ghost" disabled="@_isWorking" @onclick="ReloadJobs">Refresh</button>
-                    </div>
-                }
-                else if (pending is null)
-                {
-                    <h2 id="pl-next-title">Create your first mission.</h2>
-                    <p class="pl-next__body">One signature posts the job. You play all three roles, so you can walk the four steps alone.</p>
-                    <div class="pl-next__actions">
-                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="CreateTestJob">
-                            @(_isWorking ? "Waiting for your wallet…" : "Create a test mission")
-                        </button>
-                    </div>
-                    <p class="pl-next__note">Test network — no real money.</p>
-                }
-                else if (pending.Status == "Open")
-                {
-                    <h2 id="pl-next-title">Fund mission @MissionLabel(pending).</h2>
-                    <p class="pl-next__body">10 test tokens go into escrow. Only the inspector's decision moves them out.</p>
-                    <div class="pl-next__actions">
-                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="() => FundJob(pending)">
-                            @(_isWorking ? "Waiting for your wallet…" : "Fund the escrow")
-                        </button>
-                    </div>
-                    <p class="pl-next__note">Two signatures.</p>
-                }
-                else if (pending.Status == "Funded")
-                {
-                    <h2 id="pl-next-title">Deliver mission @MissionLabel(pending).</h2>
-                    <p class="pl-next__body">You are the courier. Filing the proof hands the decision to the inspector.</p>
-                    <div class="pl-next__actions">
-                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="() => SubmitJob(pending)">
-                            @(_isWorking ? "Waiting for your wallet…" : "File the proof")
-                        </button>
-                    </div>
-                }
-                else
-                {
-                    <h2 id="pl-next-title">Review mission @MissionLabel(pending).</h2>
-                    <p class="pl-next__body">You are the inspector. Approve pays the courier; reject refunds the buyer.</p>
-                    <div class="pl-next__actions">
-                        <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="() => CompleteJob(pending)">
-                            @(_isWorking ? "Waiting for your wallet…" : "Approve & pay")
-                        </button>
-                        <button type="button" class="pl-btn pl-btn--sm pl-btn--reject" disabled="@_isWorking" @onclick="() => RejectJob(pending)">Reject</button>
-                    </div>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(_activityNote))
-                {
-                    <p class="pl-next__activity" role="status">@_activityNote</p>
-                }
-            </div>
-        </section>
-
-        @* ── Dashboard ──────────────────────────────────────────────────
-           A board, not a briefing. The rail counts what sits on each step,
-           the mission list is one row per mission with a pixel progress bar,
-           and everything that used to be prose — role addresses, hashes,
-           panel introductions — is either a glyph or folded into "details".
-           Nothing here is a paragraph you have to read to act. *@
-        <ol class="pl-rail" aria-label="Missions by step">
-            @foreach (var railStep in Lifecycle)
-            {
-                var here = Jobs?.Count(job => StageKey(job.Status) == railStep.Key) ?? 0;
-                <li class="pl-rail__step @(here > 0 ? "is-occupied" : null)">
-                    <span class="pl-sprite pl-sprite--@railStep.Sprite pl-sprite--sm" aria-hidden="true"></span>
-                    <span class="pl-rail__label">@railStep.Number. @railStep.Label</span>
-                    <span class="pl-rail__count">@here</span>
-                </li>
-            }
-        </ol>
+        <div class="pl-workspace-meta">
+            <span class="pl-mode"><span aria-hidden="true"></span>@SelectedChainAccessor.SelectedChain.ShortName · Test network</span>
+            <span>@(Navigation.Uri.Contains("preview=connected", StringComparison.Ordinal) ? "Preview · Sample data" : "Your wallet’s missions")</span>
+        </div>
+        <dl class="pl-metrics" aria-label="Mission overview">
+            <div><dt>Active missions</dt><dd>@(Jobs?.Count(job => !IsTerminal(job.Status)) ?? 0)</dd><span>In progress</span></div>
+            <div class="pl-metric--attention"><dt>Needs your action</dt><dd>@(Jobs?.Count(IsMyTurn) ?? 0)</dd><span>Ready for your move</span></div>
+            <div><dt>In escrow</dt><dd>@((Jobs?.Where(job => job.Status is "Funded" or "Submitted").Sum(job => job.Budget) ?? 0m).ToString("0.##")) <small>test tokens</small></dd><span>Awaiting settlement</span></div>
+            <div><dt>Settled missions</dt><dd>@(Jobs?.Count(job => IsTerminal(job.Status)) ?? 0)</dd><span>@(Jobs?.Count(job => job.Status == "Completed") ?? 0) paid · @(Jobs?.Count(job => job.Status is "Rejected" or "Expired") ?? 0) refunded / expired</span></div>
+        </dl>
 
         <section class="pl-panel pl-panel--board" aria-labelledby="pl-board-title">
             <div class="pl-panel__bar">
-                <h2 id="pl-board-title">Missions</h2>
+                <div class="pl-board-heading"><h2 id="pl-board-title">Missions <span>@(Jobs?.Count ?? 0)</span></h2><p>Post a job. Track delivery. Release payment.</p></div>
                 <div class="pl-panel__tools">
-                    <span class="pl-panel__count">@(Jobs?.Count ?? 0)</span>
                     <button type="button" class="pl-btn pl-btn--sm pl-btn--ghost" disabled="@_isWorking" @onclick="ReloadJobs">Refresh</button>
+                    <button type="button" class="pl-cta pl-cta--sm" disabled="@_isWorking" @onclick="CreateTestJob">@(_isWorking ? "Check your wallet…" : "+ Test mission")</button>
                 </div>
             </div>
 
+            <div class="pl-filters" aria-label="Filter missions">
+                <button type="button" class="@(_missionFilter == "All" ? "is-selected" : null)" aria-pressed="@(_missionFilter == "All")" @onclick='() => _missionFilter = "All"'>All <span>@(Jobs?.Count ?? 0)</span></button>
+                <button type="button" class="@(_missionFilter == "Mine" ? "is-selected" : null)" aria-pressed="@(_missionFilter == "Mine")" @onclick='() => _missionFilter = "Mine"'>Needs you <span>@(Jobs?.Count(IsMyTurn) ?? 0)</span></button>
+                @foreach (var stage in Lifecycle)
+                {
+                    <button type="button" class="@(_missionFilter == stage.Key ? "is-selected" : null)" aria-pressed="@(_missionFilter == stage.Key)" @onclick="() => _missionFilter = stage.Key">@stage.ShortLabel <span>@(Jobs?.Count(job => StageKey(job.Status) == stage.Key) ?? 0)</span></button>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_activityNote))
+            {
+                <p class="pl-next__activity" role="status">@_activityNote</p>
+            }
             @if (Jobs is null)
             {
                 <p class="pl-panel__empty">Loading…</p>
             }
             else if (!Jobs.Any())
             {
-                <p class="pl-panel__empty">
-                    <span class="pl-sprite pl-sprite--buyer pl-sprite--sm" aria-hidden="true"></span>
-                    None yet.
-                </p>
+                <div class="pl-board-empty">
+                    <span class="pl-sprite pl-sprite--buyer" aria-hidden="true"></span>
+                    <div><strong>No missions yet</strong><p>Start with a test mission. You play every role.</p><small>1 wallet signature · No payment yet</small></div>
+                </div>
+            }
+            else if (!FilteredJobs.Any())
+            {
+                <p class="pl-board-empty">No missions in this view.</p>
             }
             else
             {
                 <div class="mission-list">
-                    @foreach (var job in Jobs)
+                    @foreach (var job in FilteredJobs)
                     {
                         <article class="mission @(IsMyTurn(job) ? "mission--mine" : null)">
                             <span class="pl-sprite pl-sprite--@StageSprite(job.Status)" aria-hidden="true"></span>
@@ -288,7 +182,7 @@
                             <div class="mission__top">
                                 <span class="mission__num">#@job.JobId.ToString("D4")</span>
                                 <span class="mission__state @StatusClass(job.Status)">@ShortStatus(job.Status)</span>
-                                <span class="mission__amount" title="Held in escrow">
+                                <span class="mission__amount" title="Mission budget in test tokens">
                                     <img src="images/coffee-coin-pixel.png" alt="" width="16" height="16" />@(job.Budget > 0 ? job.Budget.ToString("0.##") : "—")
                                 </span>
                             </div>
@@ -301,6 +195,7 @@
                                     }
                                 </span>
                                 <span class="mission__turn @(IsMyTurn(job) ? "is-yours" : null)">@ShortWaiting(job)</span>
+                                <time class="mission__updated" datetime="@job.UpdatedAtUtc.ToString("O")">@job.UpdatedAtUtc.ToLocalTime().ToString("MMM d, HH:mm")</time>
                                 <details class="mission__more">
                                     <summary>details</summary>
                                     <dl class="mission__roles">
@@ -389,7 +284,7 @@
                 {
                     <p class="pl-panel__empty">
                         <span class="pl-sprite pl-sprite--scout pl-sprite--sm" aria-hidden="true"></span>
-                        None registered — you can play every role yourself.
+                        You’re the crew. No robot needed.
                     </p>
                 }
                 else
@@ -429,7 +324,7 @@
                 {
                     <p class="pl-panel__empty">
                         <span class="pl-sprite pl-sprite--key pl-sprite--sm" aria-hidden="true"></span>
-                        No smart account yet — <a href="profile">register one</a> to let a robot pay for you.
+                        <span>Let a robot pay for you. <a href="profile">Set up an account →</a></span>
                     </p>
                 }
                 else if (_activeEpoch is null)
@@ -486,6 +381,12 @@
             "The inspector approves and the escrow pays the courier — or rejects, and the buyer is refunded."),
     ];
 
+    private string _missionFilter = "All";
+    private IEnumerable<AgenticJobProjection> FilteredJobs =>
+        (Jobs ?? []).Where(job => _missionFilter == "All"
+            || (_missionFilter == "Mine" ? IsMyTurn(job) : StageKey(job.Status) == _missionFilter))
+        .OrderByDescending(IsMyTurn).ThenByDescending(job => job.UpdatedAtUtc);
+
     private List<AgentDirectoryEntry>? Agents;
     private List<AgenticJobProjection>? Jobs;
     private string? _walletAddress;
@@ -493,10 +394,6 @@
     private string? _copiedKey;
     private bool _isWorking;
     private string? _activityNote;
-
-    // Hero stepper state
-    private int _heroStepIndex;
-    private System.Timers.Timer? _heroStepTimer;
 
     private bool IsConnected => _walletAddress is not null;
 
@@ -570,49 +467,28 @@
     };
 
     /// <summary>
-    /// The teaching track for the signed-out hero: one step at a time in a
-    /// two-column layout, with pixel-arrow navigation and a 3-second auto-advance.
+    /// The hero's teaching moment: two robots acting out one escrow cycle
+    /// instead of a card explaining it behind dot pagination. The buyer posts
+    /// and funds, the courier arrives to confirm and carries the payment out
+    /// to deliver it, then returns for the next one — the whole lifecycle
+    /// read at a glance, on a loop, with nothing to click. Position and
+    /// timing live entirely in ProcurementLab.razor.css (.pl-duo*); this is
+    /// a fixed scene, not per-mission data, so it is markup only.
     /// </summary>
-    private RenderFragment HeroStepper => @<div class="pl-stepper" aria-label="How a mission works">
-        @{ var active = Lifecycle[_heroStepIndex]; }
-        <div class="pl-stepper__card" @key="active.Number">
-            <span class="pl-stepper__head">
-                <span class="pl-sprite pl-sprite--@active.Sprite" aria-hidden="true"></span>
-                <span class="pl-stepper__num" aria-hidden="true">@active.Number</span>
+    private RenderFragment DuoScene => @<div class="pl-duo">
+        <div class="pl-duo__stage" role="img" aria-label="A buyer robot posts a job and pays into escrow. A courier robot arrives, confirms it, carries the payment out to deliver it, then returns to wait for the next one.">
+            <span class="pl-sprite pl-sprite--vault pl-sprite--sm pl-duo__vault" aria-hidden="true">
+                <span class="pl-duo__vault-glow"></span>
             </span>
-            <h3 class="pl-stepper__title">@active.Label</h3>
-            <p class="pl-stepper__blurb">@active.Blurb</p>
+            <span class="pl-sprite pl-sprite--coin pl-sprite--xs pl-duo__coin" aria-hidden="true"></span>
+            <span class="pl-sprite pl-sprite--buyer pl-duo__actor pl-duo__actor--buyer" aria-hidden="true">
+                <span class="pl-duo__signal pl-duo__signal--buyer"></span>
+            </span>
+            <span class="pl-sprite pl-sprite--courier pl-duo__actor pl-duo__actor--courier" aria-hidden="true">
+                <span class="pl-duo__signal pl-duo__signal--courier"></span>
+            </span>
         </div>
-
-        <div class="pl-stepper__controls">
-            <button type="button"
-                    class="pl-stepper__arrow pl-stepper__arrow--left"
-                    aria-label="Previous step"
-                    @onclick="PrevHeroStep">
-                <span aria-hidden="true"></span>
-            </button>
-
-            <div class="pl-stepper__dots" role="tablist" aria-label="Steps">
-                @for (int i = 0; i < Lifecycle.Length; i++)
-                {
-                    var idx = i;
-                    <button type="button"
-                            class="pl-stepper__dot @(_heroStepIndex == idx ? "is-active" : null)"
-                            role="tab"
-                            aria-selected="@(_heroStepIndex == idx)"
-                            aria-label="Step @(idx + 1)"
-                            @onclick="() => GoToHeroStep(idx)">
-                    </button>
-                }
-            </div>
-
-            <button type="button"
-                    class="pl-stepper__arrow pl-stepper__arrow--right"
-                    aria-label="Next step"
-                    @onclick="NextHeroStep">
-                <span aria-hidden="true"></span>
-            </button>
-        </div>
+        <p class="pl-duo__caption">Buyer posts the job and funds escrow. Courier confirms, carries the payment out, and delivers it.</p>
     </div>;
 
     /// <summary>
@@ -929,49 +805,8 @@
     }
 
 
-    // ── Hero stepper ──
-    private void NextHeroStep()
-    {
-        _heroStepIndex = (_heroStepIndex + 1) % Lifecycle.Length;
-        ResetHeroTimer();
-        StateHasChanged();
-    }
-
-    private void PrevHeroStep()
-    {
-        _heroStepIndex = (_heroStepIndex - 1 + Lifecycle.Length) % Lifecycle.Length;
-        ResetHeroTimer();
-        StateHasChanged();
-    }
-
-    private void GoToHeroStep(int idx)
-    {
-        _heroStepIndex = idx;
-        ResetHeroTimer();
-        StateHasChanged();
-    }
-
-    private void ResetHeroTimer()
-    {
-        if (_heroStepTimer is not null)
-        {
-            _heroStepTimer.Stop();
-            _heroStepTimer.Start();
-        }
-    }
-
     protected override async Task OnInitializedAsync()
     {
-        // Start the hero stepper auto-advance timer
-        _heroStepTimer = new System.Timers.Timer(3000);
-        _heroStepTimer.Elapsed += (_, _) =>
-        {
-            _heroStepIndex = (_heroStepIndex + 1) % Lifecycle.Length;
-            InvokeAsync(StateHasChanged);
-        };
-        _heroStepTimer.AutoReset = true;
-        _heroStepTimer.Start();
-
         // ?preview=connected renders the console state with fixture data and no
         // wallet — the only way to see and verify it without MetaMask. Same flag
         // and same contract as YieldPanel's: read-only, display state only, no
@@ -1032,11 +867,4 @@
     }
     private static string ShortAddress(string? address) => string.IsNullOrWhiteSpace(address) ? "Not assigned" : address.Length >= 12 ? $"{address[..6]}…{address[^4..]}" : address;
     private static string ShortCommitment(string? value) => string.IsNullOrWhiteSpace(value) ? "not recorded" : value.Length > 24 ? $"{value[..12]}…{value[^8..]}" : value;
-
-    public void Dispose()
-    {
-        _heroStepTimer?.Stop();
-        _heroStepTimer?.Dispose();
-    }
-}"not recorded" : value.Length > 24 ? $"{value[..12]}…{value[^8..]}" : value;
 }

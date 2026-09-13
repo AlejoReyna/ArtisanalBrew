@@ -198,6 +198,17 @@
     {
         if (firstRender)
         {
+            // Re-arm the scroll-driven hero exit after the prerender →
+            // interactive handoff replaces these nodes (no enhancedload fires).
+            // Guarded so a failed module load can never take crew init with it.
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("queueHeroScroll");
+            }
+            catch (JSException)
+            {
+            }
+
             _crew = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/pixelCrewRuntime.js");
             _simRunning = await _crew.InvokeAsync<bool>("init", "ph-scene-root", _checkpoint);
             if (_simRunning)

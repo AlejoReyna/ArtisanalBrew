@@ -1,11 +1,11 @@
 .pd-section {
-    align-items: center;
+    align-items: end;
     box-sizing: border-box;
     display: grid;
     margin: 0 auto;
     max-width: 64rem;
     min-height: 100dvh;
-    padding: clamp(1.5rem, 5vh, 4rem) clamp(1.25rem, 4vw, 3.5rem) clamp(1.25rem, 2.5vh, 2rem);
+    padding: clamp(1.5rem, 5vh, 4rem) clamp(1.25rem, 4vw, 3.5rem) 0;
     position: relative;
     z-index: 2;
 }
@@ -13,6 +13,9 @@
 .pd-shell {
     background-color: var(--stake-surface);
     border: 2px solid var(--stake-line-strong);
+    /* Nested composite: the bottom edge stays open so the feature panels
+       below dock flush and their top border draws the row divider. */
+    border-bottom-width: 0;
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     overflow: hidden;
@@ -35,9 +38,8 @@
 }
 
 .pd-shell::after {
-    bottom: 8px;
-    box-shadow: -4px 0 0 var(--stake-line-strong), 0 -4px 0 var(--stake-line-strong);
-    right: 8px;
+    /* Hidden: the joint edge has no bottom border left to detail. */
+    display: none;
 }
 
 .pd-kicker {
@@ -461,5 +463,29 @@
         opacity: 1;
         transform: none;
         visibility: visible;
+    }
+}
+
+/* ── Scroll-driven entrance (see wwwroot/js/heroScroll.js) ─────────────────
+   --hero-scroll is written on the ancestor .ph-page (0 at the top → 1 one
+   viewport down) and inherited here; .has-hero-scroll gates it so the panel
+   is fully, statically visible without JS. As the hero copy dissolves, the
+   Market Scout shell rises and settles into place. Values update per scroll
+   frame, so no transitions — they would smear behind the scroll. */
+.has-hero-scroll .pd-shell {
+    opacity: calc(0.35 + var(--hero-scroll, 0) * 0.65);
+    transform: translate3d(0, calc((1 - var(--hero-scroll, 0)) * 7vh), 0) scale(calc(0.965 + var(--hero-scroll, 0) * 0.035));
+    will-change: opacity, transform;
+}
+
+.has-hero-scroll .pd-robot-column {
+    transform: translate3d(calc((1 - var(--hero-scroll, 0)) * -3vw), 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .has-hero-scroll .pd-shell,
+    .has-hero-scroll .pd-robot-column {
+        opacity: 1;
+        transform: none;
     }
 }

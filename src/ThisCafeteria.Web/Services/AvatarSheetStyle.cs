@@ -15,7 +15,8 @@ namespace ThisCafeteria.Web.Services;
 public static class AvatarSheetStyle
 {
     /// <summary>Where the slot's sheets live, relative to wwwroot.</summary>
-    public static string SheetUrl(AvatarSlot slot) => $"images/avatar/avatar-{slot.Key}.png";
+    // Bump when sheets change: cached sheets with old widths select partial frames.
+    public static string SheetUrl(AvatarSlot slot) => $"images/avatar/avatar-{slot.Key}.png?v=5";
 
     /// <summary>
     /// The inline style for one layer.

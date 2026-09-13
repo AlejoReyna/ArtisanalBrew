@@ -15,15 +15,16 @@ visor sheet paints the screen into it. That split is what lets any of the six
 expressions sit on any of the six colourways without 36 combined sprites.
 
 The item ids and their column order are dictated by
-`src/ThisCafeteria.Domain/Avatars/AvatarCatalog.cs`. They are restated here
-rather than parsed out of the C#, so a `RobotAvatarSheetTests` case asserts the
-sheet widths still match the catalog's frame counts. If that test fails,
-someone added an item without regenerating — run this script.
+`src/ThisCafeteria.Domain/Avatars/AvatarCatalog.cs`. The generator validates its
+item IDs and column order against the C# catalog before writing any files.
+`RobotAvatarSheetTests` also checks that the shipped widths match the catalog.
+Run this script whenever the artwork or catalog changes (Python 3.10+, Pillow).
 
 The palette is imported, not copied: these robots are the /procurement-lab crew
 wearing different plating, and a second colour table would drift.
 """
 
+import re
 import sys
 from pathlib import Path
 from typing import Callable, NamedTuple
@@ -227,7 +228,7 @@ def draw_visor(index: int) -> Image.Image:
         rect(draw, (EYE_RIGHT_X, EYE_TOP, EYE_RIGHT_X + 1, EYE_TOP + 4), FACE)
         blush(draw)
 
-    else:  # glitch — one displaced slice, eyes fringed red and cyan
+    elif index == 5:  # glitch — one displaced slice, eyes fringed red and cyan
         screen(draw)
         rect(draw, (SCREEN_BOX[0] + 4, EYE_TOP + 1, SCREEN_BOX[2] - 1, EYE_TOP + 3), TEAL_HI)
         rect(draw, (SCREEN_BOX[0] + 1, EYE_TOP + 1, SCREEN_BOX[0] + 3, EYE_TOP + 3), TEAL_DK)
@@ -237,7 +238,22 @@ def draw_visor(index: int) -> Image.Image:
         rect(draw, (EYE_RIGHT_X - 2, EYE_TOP + 1, EYE_RIGHT_X - 1, EYE_TOP + 5), SIGNAL)
         rect(draw, (EYE_RIGHT_X, EYE_TOP + 1, EYE_RIGHT_X + 1, EYE_TOP + 5), FACE)
 
+    elif index == 6:  # heart eyes, inset from the screen edge
+        screen(draw)
+        for ex in (EYE_LEFT_X - 1, EYE_RIGHT_X - 1):
+            heart(draw, ex, EYE_TOP, CLAY)
+        blush(draw)
+
     return image
+
+
+def heart(draw, x, y, fill):
+    """A five-pixel heart that stays legible at thumbnail scale."""
+    rect(draw, (x, y, x + 1, y + 1), fill)
+    rect(draw, (x + 3, y, x + 4, y + 1), fill)
+    rect(draw, (x, y + 2, x + 4, y + 2), fill)
+    rect(draw, (x + 1, y + 3, x + 3, y + 3), fill)
+    rect(draw, (x + 2, y + 4, x + 2, y + 4), fill)
 
 
 # ── Headgear ───────────────────────────────────────────────────────────────
@@ -267,8 +283,8 @@ def draw_hat(index: int) -> Image.Image:
         rect(draw, (x + 22, y - 3, x + 27, y), CREAM_HI)
 
     elif index == 1:  # barista cap — flat crown, short stiff brim, badge
-        rect(draw, (x + 7, y, x + 42, y + 7), BLACK)
-        rect(draw, (x + 8, y + 1, x + 41, y + 6), FACE)
+        rect(draw, (x + 7, y - 3, x + 42, y + 7), BLACK)
+        rect(draw, (x + 8, y - 2, x + 41, y + 6), FACE)
         rect(draw, (x + 10, y + 1, x + 30, y + 2), METAL_DK)
         rect(draw, (x + 3, y + 6, x + 46, y + 9), BLACK)
         rect(draw, (x + 4, y + 7, x + 45, y + 8), METAL_DK)
@@ -287,6 +303,10 @@ def draw_hat(index: int) -> Image.Image:
         rect(draw, (x + 9, y - 4, x + 40, y + 1), BLACK)
         rect(draw, (x + 10, y - 3, x + 39, y), METAL)
         rect(draw, (x + 12, y - 3, x + 30, y - 2), CREAM_HI)
+        # Stepped side rails connect the band to both earcups.
+        for left, right in ((x + 1, x + 10), (x + 39, x + 48)):
+            rect(draw, (left, y, right, y + 9), BLACK)
+            rect(draw, (left + 2, y + 2, right - 2, y + 8), METAL)
         # Cups straddle the head's outer edge (AVX+3 and AVX+46) rather than
         # hanging beside it. Narrower or darker than this and they read as two
         # stray pixels of outline instead of as headphones.
@@ -300,7 +320,7 @@ def draw_hat(index: int) -> Image.Image:
         rect(draw, (x + 8, y + 3, x + 41, y + 9), BLACK)
         rect(draw, (x + 9, y + 4, x + 40, y + 8), GOLD)
         rect(draw, (x + 9, y + 6, x + 40, y + 7), COPPER)
-        for peak in (x + 9, x + 21, x + 33):
+        for peak in (x + 7, x + 18, x + 29):
             rect(draw, (peak, y - 3, peak + 6, y + 5), BLACK)
             rect(draw, (peak + 1, y - 2, peak + 5, y + 4), GOLD)
             rect(draw, (peak + 2, y - 1, peak + 4, y + 1), SCORE)
@@ -315,7 +335,7 @@ def draw_hat(index: int) -> Image.Image:
         rect(draw, (x + 28, y, x + 31, y + 2), SCORE)
         rect(draw, (x + 28, y + 4, x + 33, y + 6), COPPER_DK)
 
-    else:  # toque — banded chef hat, puff stepped outward so it reads round
+    elif index == 6:  # toque — banded chef hat, puff stepped outward so it reads round
         rect(draw, (x + 7, y + 4, x + 42, y + 9), BLACK)
         rect(draw, (x + 8, y + 5, x + 41, y + 8), CREAM_SH)
         # Three stacked widths instead of three separate lobes: discrete lobes
@@ -327,6 +347,27 @@ def draw_hat(index: int) -> Image.Image:
         rect(draw, (x + 11, y - 4, x + 38, y), BLACK)
         rect(draw, (x + 12, y - 3, x + 37, y), CREAM_HI)
         rect(draw, (x + 15, y - 3, x + 26, y - 2), CREAM_SH)
+
+    elif index == 7:  # sprout mounted on the head shell
+        rect(draw, (x + 23, y, x + 25, y + 6), BLACK)
+        rect(draw, (x + 24, y + 1, x + 24, y + 5), GREEN)
+        draw.polygon([(x + 24, y + 2), (x + 15, y + 1), (x + 13, y - 3),
+                      (x + 20, y - 3), (x + 24, y)], fill=BLACK)
+        rect(draw, (x + 16, y - 2, x + 20, y), GREEN)
+        draw.polygon([(x + 24, y + 2), (x + 26, y - 3), (x + 34, y - 3),
+                      (x + 32, y + 1)], fill=BLACK)
+        rect(draw, (x + 27, y - 2, x + 31, y), GREEN)
+        rect(draw, (x + 21, y + 4, x + 28, y + 6), TEAL_DK)
+
+    elif index == 8:  # ribbon clipped to the upper-left casing
+        draw.polygon([(x + 5, y - 2), (x + 12, y), (x + 16, y - 2),
+                      (x + 24, y - 2), (x + 24, y + 6), (x + 16, y + 5),
+                      (x + 12, y + 5), (x + 5, y + 7)], fill=BLACK)
+        rect(draw, (x + 6, y - 1, x + 11, y + 5), CLAY)
+        rect(draw, (x + 17, y - 1, x + 23, y + 4), CLAY)
+        rect(draw, (x + 12, y + 1, x + 16, y + 4), SIGNAL)
+        rect(draw, (x + 7, y, x + 9, y + 1), CREAM_HI)
+        rect(draw, (x + 19, y, x + 21, y + 1), CREAM_HI)
 
     return image
 
@@ -340,13 +381,29 @@ def draw_wear(index: int) -> Image.Image:
     image, draw = new_frame()
     x, y = AVX, AVY
 
-    if index == 0:  # apron
-        rect(draw, (x + 22, y + 30, x + 24, y + 34), COPPER_DK)
-        rect(draw, (x + 26, y + 30, x + 28, y + 34), COPPER_DK)
-        rect(draw, (x + 17, y + 33, x + 33, y + 45), BLACK)
-        rect(draw, (x + 18, y + 34, x + 32, y + 44), COPPER)
-        rect(draw, (x + 18, y + 39, x + 32, y + 40), COPPER_DK)
-        rect(draw, (x + 21, y + 41, x + 26, y + 43), COPPER_DK)
+    if index == 0:  # cream café apron, hanging below the torso
+        # Short straps meet a raised bib directly below the head.
+        # The skirt still overlaps the hips so it reads as cloth.
+        for strap in (x + 20, x + 29):
+            rect(draw, (strap, y + 30, strap + 1, y + 33), CREAM_HI)
+        draw.polygon([(x + 19, y + 31), (x + 31, y + 31),
+                      (x + 31, y + 36), (x + 34, y + 39),
+                      (x + 34, y + 46), (x + 16, y + 46),
+                      (x + 16, y + 39), (x + 19, y + 36)], fill=BLACK)
+        draw.polygon([(x + 20, y + 32), (x + 30, y + 32),
+                      (x + 30, y + 37), (x + 33, y + 40),
+                      (x + 33, y + 45), (x + 17, y + 45),
+                      (x + 17, y + 40), (x + 20, y + 37)], fill=CREAM_HI)
+        # A shaded fold follows the fabric down one side, without a box border.
+        rect(draw, (x + 31, y + 40, x + 32, y + 45), CREAM_SH)
+        rect(draw, (x + 18, y + 45, x + 32, y + 45), CREAM_SH)
+        # Teal waist ties and patch pocket identify the café uniform.
+        rect(draw, (x + 14, y + 36, x + 19, y + 37), TEAL_DK)
+        rect(draw, (x + 31, y + 36, x + 36, y + 37), TEAL_DK)
+        rect(draw, (x + 35, y + 38, x + 36, y + 41), TEAL)
+        rect(draw, (x + 21, y + 39, x + 29, y + 42), TEAL)
+        rect(draw, (x + 21, y + 39, x + 29, y + 39), TEAL_DK)
+        rect(draw, (x + 22, y + 43, x + 28, y + 43), TEAL)
 
     elif index == 1:  # hi-vis vest
         rect(draw, (x + 13, y + 30, x + 20, y + 45), BLACK)
@@ -385,7 +442,7 @@ def draw_wear(index: int) -> Image.Image:
         rect(draw, (x + 30, y + 38, x + 34, y + 42), CREAM_SH)
         rect(draw, (x + 31, y + 39, x + 33, y + 40), TEAL_DK)
 
-    else:  # bandolier
+    elif index == 5:  # bandolier
         draw.line(((x + 15, y + 30), (x + 35, y + 44)), fill=BLACK, width=7)
         draw.line(((x + 15, y + 30), (x + 35, y + 44)), fill=COPPER_DK, width=4)
         for step in range(3):
@@ -393,6 +450,13 @@ def draw_wear(index: int) -> Image.Image:
             py = y + 32 + step * 4
             rect(draw, (px, py, px + 4, py + 4), BLACK)
             rect(draw, (px + 1, py + 1, px + 3, py + 3), GOLD)
+
+    elif index == 6:  # fitted knit sweater, clear of both hands
+        rect(draw, (x + 13, y + 31, x + 37, y + 44), BLACK)
+        rect(draw, (x + 14, y + 32, x + 36, y + 43), CLAY)
+        rect(draw, (x + 19, y + 31, x + 31, y + 33), SIGNAL)
+        rect(draw, (x + 15, y + 42, x + 35, y + 43), SIGNAL)
+        heart(draw, x + 23, y + 35, CREAM_HI)
 
     return image
 
@@ -451,7 +515,7 @@ def draw_hold(index: int) -> Image.Image:
         rect(draw, (hx + 1, hy, hx + 2, hy + 1), GOLD)
         rect(draw, (hx + 4, hy, hx + 5, hy + 1), CLAY)
 
-    else:  # CAFE coin
+    elif index == 5:  # CAFE coin
         rect(draw, (hx - 3, hy - 8, hx + 5, hy), BLACK)
         rect(draw, (hx - 4, hy - 7, hx + 6, hy - 1), BLACK)
         rect(draw, (hx - 2, hy - 7, hx + 4, hy - 1), GOLD)
@@ -459,17 +523,71 @@ def draw_hold(index: int) -> Image.Image:
         rect(draw, (hx - 2, hy - 6, hx + 1, hy - 5), SCORE)
         rect(draw, (hx, hy - 5, hx + 2, hy - 3), COPPER_DK)
 
+    elif index == 6:  # tiny terracotta pot with a leafy friend
+        rect(draw, (hx + 1, hy - 9, hx + 2, hy - 3), TEAL_DK)
+        rect(draw, (hx - 3, hy - 11, hx, hy - 8), BLACK)
+        rect(draw, (hx - 2, hy - 10, hx, hy - 9), GREEN)
+        rect(draw, (hx + 2, hy - 13, hx + 6, hy - 9), BLACK)
+        rect(draw, (hx + 3, hy - 12, hx + 5, hy - 10), GREEN)
+        rect(draw, (hx - 4, hy - 5, hx + 7, hy - 2), BLACK)
+        rect(draw, (hx - 3, hy - 4, hx + 6, hy - 3), CLAY)
+        rect(draw, (hx - 3, hy - 2, hx + 6, hy + 5), BLACK)
+        rect(draw, (hx - 2, hy - 2, hx + 5, hy + 4), COPPER)
+        rect(draw, (hx, hy, hx, hy), BLACK)
+        rect(draw, (hx + 3, hy, hx + 3, hy), BLACK)
+
+    elif index == 7:  # pocket-sized teddy with round stepped ears
+        for ex in (hx - 4, hx + 4):
+            rect(draw, (ex, hy - 12, ex + 4, hy - 8), BLACK)
+            rect(draw, (ex + 1, hy - 11, ex + 3, hy - 9), COPPER)
+        rect(draw, (hx - 3, hy - 10, hx + 7, hy - 3), BLACK)
+        rect(draw, (hx - 2, hy - 9, hx + 6, hy - 4), COPPER)
+        for ex in (hx, hx + 4):
+            rect(draw, (ex, hy - 7, ex, hy - 7), BLACK)
+        rect(draw, (hx + 1, hy - 5, hx + 3, hy - 4), CREAM_SH)
+        rect(draw, (hx - 3, hy - 3, hx + 7, hy + 5), BLACK)
+        rect(draw, (hx - 2, hy - 2, hx + 6, hy + 4), COPPER)
+        rect(draw, (hx, hy - 1, hx + 4, hy + 2), CREAM_SH)
+        for ex in (hx - 3, hx + 4):
+            rect(draw, (ex, hy + 3, ex + 3, hy + 5), COPPER_DK)
+
+    # A neutral metal finger in front of the prop makes the shared right
+    # mitten read as gripping it, rather than disappearing behind a sticker.
+    rect(draw, (hx - 3, hy - 1, hx, hy + 2), BLACK)
+    rect(draw, (hx - 2, hy, hx - 1, hy + 1), METAL)
     return image
 
 
 # ── Sheets ─────────────────────────────────────────────────────────────────
 
+# Stable IDs in drawing order. Validate IDs as well as widths: two swapped
+# frames have the same dimensions but would save the wrong accessory.
+ITEM_IDS = {
+    "chassis": tuple(way.id for way in COLOURWAYS),
+    "visor": ("dot", "happy", "sleepy", "shades", "scanline", "glitch", "hearts"),
+    "wear": ("apron", "hivis", "scarf", "bowtie", "labcoat", "bandolier", "heart-sweater"),
+    "hat": ("beanie", "barista", "hardhat", "headphones", "crown", "bulb", "toque", "sprout", "ribbon"),
+    "hold": ("mug", "beanbag", "key", "wrench", "terminal", "coin", "plant", "teddy"),
+}
+
+
+def validate_catalog():
+    catalog = (ROOT / "src/ThisCafeteria.Domain/Avatars/AvatarCatalog.cs").read_text()
+    for slot, ids in ITEM_IDS.items():
+        block = re.search(r"new\(" + slot.capitalize() + r"Slot,.*?\[(.*?)\]", catalog, re.S)
+        if block is None:
+            raise ValueError(f"Missing catalog slot: {slot}")
+        entries = re.findall(r'new\("([^"]+)",\s*"[^"]+",\s*(\d+)\)', block[1])
+        if entries != [(item, str(i)) for i, item in enumerate(ids)]:
+            raise ValueError(f"Catalog and sprite order differ for {slot}: {entries}")
+
+
 SHEETS: tuple[tuple[str, Callable[[int], Image.Image], int], ...] = (
     ("avatar-chassis.png", draw_chassis, len(COLOURWAYS)),
-    ("avatar-visor.png", draw_visor, 6),
-    ("avatar-wear.png", draw_wear, 6),
-    ("avatar-hat.png", draw_hat, 7),
-    ("avatar-hold.png", draw_hold, 6),
+    ("avatar-visor.png", draw_visor, len(ITEM_IDS["visor"])),
+    ("avatar-wear.png", draw_wear, len(ITEM_IDS["wear"])),
+    ("avatar-hat.png", draw_hat, len(ITEM_IDS["hat"])),
+    ("avatar-hold.png", draw_hold, len(ITEM_IDS["hold"])),
 )
 
 
@@ -482,6 +600,7 @@ def save_sheet(name: str, renderer: Callable[[int], Image.Image], frames: int) -
 
 
 def main() -> None:
+    validate_catalog()
     OUTPUT.mkdir(parents=True, exist_ok=True)
     for name, renderer, frames in SHEETS:
         save_sheet(name, renderer, frames)

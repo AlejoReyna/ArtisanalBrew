@@ -27,18 +27,17 @@ public sealed class AvatarSheetStyleTests
     [Fact]
     public void TheSheetIsStretchedToOneBoxPerFrame()
     {
-        // 7 hats over a 64px box means 700% wide, so exactly one frame shows.
-        AvatarSheetStyle.Layer(Hats, Hats.Items[1]).Should().Contain("background-size:700% 100%");
+        // Nine hats over a 64px box means 900% wide, so exactly one frame shows.
+        AvatarSheetStyle.Layer(Hats, Hats.Items[1]).Should().Contain("background-size:900% 100%");
     }
 
     [Fact]
     public void ColumnsAreSpacedOverFramesMinusOne()
     {
-        // The classic off-by-one: dividing by 7 instead of 6 puts column 3 at
-        // 42.857% instead of 50% — still valid CSS, still the wrong hat.
+        // Nine frames have eight intervals; column 3 must land at 37.5%.
         var third = Hats.Items.Single(item => item.SheetIndex == 3);
 
-        AvatarSheetStyle.Layer(Hats, third).Should().Contain("background-position:50% 0");
+        AvatarSheetStyle.Layer(Hats, third).Should().Contain("background-position:37.5% 0");
     }
 
     [Fact]
@@ -97,7 +96,7 @@ public sealed class AvatarSheetStyleTests
     {
         foreach (var slot in AvatarCatalog.Slots.Where(s => s.Kind == AvatarSlotKind.Sprite))
         {
-            AvatarSheetStyle.SheetUrl(slot).Should().Be($"images/avatar/avatar-{slot.Key}.png");
+            AvatarSheetStyle.SheetUrl(slot).Should().Be($"images/avatar/avatar-{slot.Key}.png?v=5");
         }
     }
 }

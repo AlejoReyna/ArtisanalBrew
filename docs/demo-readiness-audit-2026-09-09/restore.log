@@ -1,0 +1,46 @@
+
+Welcome to .NET 10.0!
+---------------------
+SDK Version: 10.0.401
+
+Telemetry
+---------
+The .NET tools collect usage data in order to help us improve your experience. It is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
+
+Read more about .NET CLI Tools telemetry: https://aka.ms/dotnet-cli-telemetry
+
+----------------
+Installed an ASP.NET Core HTTPS development certificate.
+To trust the certificate, run 'dotnet dev-certs https --trust'
+Learn about HTTPS: https://aka.ms/dotnet-https
+
+----------------
+Write your first app: https://aka.ms/dotnet-hello-world
+Find out what's new: https://aka.ms/dotnet-whats-new
+Explore documentation: https://aka.ms/dotnet-docs
+Report issues and find source on GitHub: https://github.com/dotnet/core
+Use 'dotnet --help' to see available commands or visit: https://aka.ms/dotnet-cli
+--------------------------------------------------------------------------------------
+  Determining projects to restore...
+/workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1510: PackageReference Microsoft.Extensions.Configuration.Abstractions will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1510: PackageReference Microsoft.Extensions.Http will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1510: PackageReference Microsoft.Extensions.DependencyInjection.Abstractions will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1510: PackageReference Microsoft.Extensions.Hosting.Abstractions will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1510: PackageReference Microsoft.Extensions.Logging.Abstractions will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+  Restored /workspace/ArtisanalBrew/src/ThisCafeteria.Domain/ThisCafeteria.Domain.csproj (in 151 ms).
+  Restored /workspace/ArtisanalBrew/src/ThisCafeteria.Application/ThisCafeteria.Application.csproj (in 3.3 sec).
+/workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.12 was resolved. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/tools/ThisCafeteria.CrossStackHarness/ThisCafeteria.CrossStackHarness.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.12 was resolved. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/tools/ThisCafeteria.CrossStackHarness/ThisCafeteria.CrossStackHarness.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.8 was resolved. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+  Restored /workspace/ArtisanalBrew/tools/ThisCafeteria.CrossStackHarness/ThisCafeteria.CrossStackHarness.csproj (in 5.63 sec).
+  Restored /workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/ThisCafeteria.Infrastructure.csproj (in 5.58 sec).
+  Restored /workspace/ArtisanalBrew/src/ThisCafeteria.Worker/ThisCafeteria.Worker.csproj (in 5.75 sec).
+/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.12 was resolved. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/ThisCafeteria.ArchitectureTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.12 was resolved. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1608: Detected package version outside of dependency constraint: Nethereum.JsonRpc.Client 5.8.0 requires Microsoft.Extensions.Logging.Abstractions (>= 6.0.0 && < 10.0.0) but version Microsoft.Extensions.Logging.Abstractions 10.0.12 was resolved. [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+/workspace/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [/workspace/ArtisanalBrew/ThisCafeteria.sln]
+  Restored /workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/ThisCafeteria.IntegrationTests.csproj (in 5.75 sec).
+  Restored /workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/ThisCafeteria.ArchitectureTests.csproj (in 5.92 sec).
+  Restored /workspace/ArtisanalBrew/tests/ThisCafeteria.UnitTests/ThisCafeteria.UnitTests.csproj (in 5.92 sec).
+  Restored /workspace/ArtisanalBrew/src/ThisCafeteria.Web/ThisCafeteria.Web.csproj (in 5.96 sec).

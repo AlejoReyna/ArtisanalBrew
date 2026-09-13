@@ -1,0 +1,1184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="6e1fc0a2-150f-4017-bc6f-13bcccb26cbe" name="@cursor 2026-09-09 19:40:43" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-09T19:40:43.7379267+00:00" queuing="2026-09-09T19:40:43.7379268+00:00" start="2026-09-09T19:40:39.0208566+00:00" finish="2026-09-09T19:40:49.2853556+00:00" />
+  <TestSettings name="default" id="6839ad0e-7847-452d-8beb-4b644ddc20e6">
+    <Deployment runDeploymentRoot="_cursor_2026-09-09_19_40_43" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="28957f76-cbd1-41de-9414-3a733651304a" testId="99062c8b-7509-0894-91eb-3a8fbd1bdee4" testName="ThisCafeteria.IntegrationTests.PixelHomeRenderTests.Homepage_RouteUsesPixelCrewReleaseContract" computerName="cursor" duration="00:00:00.0006549" startTime="2026-09-09T19:40:49.2141067+00:00" endTime="2026-09-09T19:40:49.2146466+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="28957f76-cbd1-41de-9414-3a733651304a" />
+    <UnitTestResult executionId="9a165051-daac-49bc-8e3a-39cb7bb88bfc" testId="fe64e84d-b645-88e6-ccc1-b7033e5bd7ff" testName="ThisCafeteria.IntegrationTests.HealthCheckTests.Liveness_ShouldReturnSuccess" computerName="cursor" duration="00:00:00.0174248" startTime="2026-09-09T19:40:47.1918819+00:00" endTime="2026-09-09T19:40:47.2093851+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9a165051-daac-49bc-8e3a-39cb7bb88bfc" />
+    <UnitTestResult executionId="818f502b-4266-4760-972d-4f9a53ea6573" testId="4d0ac7f9-6f28-1e59-ee02-6807a1a732e1" testName="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests.TheHeaderShowsTheSameRobotAsThePage" computerName="cursor" duration="00:00:01.6407176" startTime="2026-09-09T19:40:39.4858350+00:00" endTime="2026-09-09T19:40:43.7135947+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="818f502b-4266-4760-972d-4f9a53ea6573" />
+    <UnitTestResult executionId="1a4bf52c-bfff-4ae5-87ec-4de8fd641626" testId="061542e2-7fc5-8134-f70d-d0580a665f5c" testName="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests.ProfilePageRendersTheWalletSeededRobot" computerName="cursor" duration="00:00:01.1501992" startTime="2026-09-09T19:40:43.7279833+00:00" endTime="2026-09-09T19:40:45.0627507+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1a4bf52c-bfff-4ae5-87ec-4de8fd641626" />
+    <UnitTestResult executionId="69c84993-3917-44f3-8f4a-c48d77cfb53e" testId="17b97556-6cb7-2d84-bb16-a3ebddfcb47c" testName="ThisCafeteria.IntegrationTests.SmartAccountPanelRenderTests.ProfilePage_RendersSmartAccountPanel_WithoutServerError" computerName="cursor" duration="00:00:00.3885725" startTime="2026-09-09T19:40:47.2106238+00:00" endTime="2026-09-09T19:40:47.7218656+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="69c84993-3917-44f3-8f4a-c48d77cfb53e" />
+    <UnitTestResult executionId="ad3618f5-c74f-4867-a06d-9b07a58e19c9" testId="aed1f6f7-bd03-1f87-9a6a-c5e459c1c90f" testName="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.BrewPlan_InvalidQuantity_ReturnsBadRequest" computerName="cursor" duration="00:00:00.1772285" startTime="2026-09-09T19:40:49.0335271+00:00" endTime="2026-09-09T19:40:49.2110010+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ad3618f5-c74f-4867-a06d-9b07a58e19c9" />
+    <UnitTestResult executionId="8c1aa6b6-2fb3-4b4a-9caf-318e30daf1f4" testId="e429223c-9fa5-ec57-24fe-e9cbebae6802" testName="ThisCafeteria.IntegrationTests.SolanaWalletChallengeTests.CompletesTheApplicationWalletStandardChallengeAndLoginScenario" computerName="cursor" duration="00:00:00.4804413" startTime="2026-09-09T19:40:46.1779074+00:00" endTime="2026-09-09T19:40:46.6587714+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8c1aa6b6-2fb3-4b4a-9caf-318e30daf1f4" />
+    <UnitTestResult executionId="8abc3afa-5fb3-4df1-8ae3-8fa4c34b1916" testId="56fd9957-40dd-55ab-84d8-d6088ee18bc0" testName="ThisCafeteria.IntegrationTests.ChainVisibilityTests.PublicChainApiExposesOnlyWorkingConnections" computerName="cursor" duration="00:00:00.2003342" startTime="2026-09-09T19:40:46.6917919+00:00" endTime="2026-09-09T19:40:46.8926292+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8abc3afa-5fb3-4df1-8ae3-8fa4c34b1916" />
+    <UnitTestResult executionId="0d626438-deb1-4d07-bffd-a3b137f07ef4" testId="27c0aa2e-84d7-5d65-fc8d-d47e48c829ab" testName="ThisCafeteria.IntegrationTests.PixelHomeRenderTests.Homepage_TrainedRuntimeAssets_ArePresentAndNonEmpty" computerName="cursor" duration="00:00:00.0014464" startTime="2026-09-09T19:40:49.2122960+00:00" endTime="2026-09-09T19:40:49.2138988+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0d626438-deb1-4d07-bffd-a3b137f07ef4" />
+    <UnitTestResult executionId="03f652bb-0ca5-4fc9-ba4c-a5ee565fc207" testId="4e69ee0a-aef4-40da-6b56-db0b8c6eb550" testName="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.BrewPlan_MissingCorrelationId_ReturnsBadRequest" computerName="cursor" duration="00:00:00.1884579" startTime="2026-09-09T19:40:48.2943217+00:00" endTime="2026-09-09T19:40:48.4829015+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="03f652bb-0ca5-4fc9-ba4c-a5ee565fc207" />
+    <UnitTestResult executionId="c82feef9-f3cb-46f5-8e60-ede9696ca4a6" testId="54c9a50c-4b69-9bc1-8c12-9c3e9e8c9ce8" testName="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.SearchProducts_InvalidQuery_ReturnsBadRequest" computerName="cursor" duration="00:00:00.2122201" startTime="2026-09-09T19:40:48.0813405+00:00" endTime="2026-09-09T19:40:48.2940067+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c82feef9-f3cb-46f5-8e60-ede9696ca4a6" />
+    <UnitTestResult executionId="48141fd8-3216-482f-94b3-5657c84bce20" testId="3927776f-6636-0646-cf8f-c2966dfb2ab6" testName="ThisCafeteria.IntegrationTests.HealthCheckTests.Readiness_ShouldReturnSuccessAfterDatabaseInitialization" computerName="cursor" duration="00:00:00.2972793" startTime="2026-09-09T19:40:46.8936551+00:00" endTime="2026-09-09T19:40:47.1916076+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="48141fd8-3216-482f-94b3-5657c84bce20" />
+    <UnitTestResult executionId="b306f554-9219-4f1c-95f6-bc0735f66ba0" testId="63262ed8-6c04-6f51-1ffa-b38d3c2b42a1" testName="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.SearchProducts_ValidSecret_ReturnsOk" computerName="cursor" duration="00:00:00.1640743" startTime="2026-09-09T19:40:48.8691621+00:00" endTime="2026-09-09T19:40:49.0332558+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b306f554-9219-4f1c-95f6-bc0735f66ba0" />
+    <UnitTestResult executionId="f8a266bb-50ae-4fe5-aafa-defa9da18724" testId="66a91df4-4407-b63b-8dd0-cb88ac5f9212" testName="ThisCafeteria.IntegrationTests.SolanaReconciliationPersistenceTests.PersistsRestartSafeCursorAndDoesNotAdvanceItWhenTransactionLoadingFails" computerName="cursor" duration="00:00:00.3569297" startTime="2026-09-09T19:40:47.7228519+00:00" endTime="2026-09-09T19:40:48.0804349+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f8a266bb-50ae-4fe5-aafa-defa9da18724" />
+    <UnitTestResult executionId="35716345-598d-4014-ba36-70101a02fa30" testId="d2ee0c9c-af4a-6ed4-89c4-69bf77e7a7bd" testName="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests.AnUneditedProfileStillGetsARobot" computerName="cursor" duration="00:00:00.9148182" startTime="2026-09-09T19:40:45.0644540+00:00" endTime="2026-09-09T19:40:46.1697099+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="35716345-598d-4014-ba36-70101a02fa30" />
+    <UnitTestResult executionId="c9f1d9c9-aa77-4e85-b237-0fcbadddd894" testId="9214a43c-9f89-01fb-9c4d-695b9ea69807" testName="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.SearchProducts_MissingSecret_ReturnsUnauthorized" computerName="cursor" duration="00:00:00.3848863" startTime="2026-09-09T19:40:48.4832438+00:00" endTime="2026-09-09T19:40:48.8688823+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c9f1d9c9-aa77-4e85-b237-0fcbadddd894" />
+    <UnitTestResult executionId="7f068b46-03ed-4dd1-9c18-738ab3bf82b3" testId="73616fa0-d60f-52d9-7aa6-2d566c15845f" testName="ThisCafeteria.IntegrationTests.SolanaWalletChallengeTests.RejectsBindingMismatchAndAtomicallyAllowsOnlyOneConcurrentConsumption" computerName="cursor" duration="00:00:00.0311071" startTime="2026-09-09T19:40:46.6592499+00:00" endTime="2026-09-09T19:40:46.6906947+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7f068b46-03ed-4dd1-9c18-738ab3bf82b3" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ThisCafeteria.IntegrationTests.PixelHomeRenderTests.Homepage_TrainedRuntimeAssets_ArePresentAndNonEmpty" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="27c0aa2e-84d7-5d65-fc8d-d47e48c829ab">
+      <Execution id="0d626438-deb1-4d07-bffd-a3b137f07ef4" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.PixelHomeRenderTests" name="Homepage_TrainedRuntimeAssets_ArePresentAndNonEmpty" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.HealthCheckTests.Liveness_ShouldReturnSuccess" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="fe64e84d-b645-88e6-ccc1-b7033e5bd7ff">
+      <Execution id="9a165051-daac-49bc-8e3a-39cb7bb88bfc" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.HealthCheckTests" name="Liveness_ShouldReturnSuccess" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.SolanaWalletChallengeTests.RejectsBindingMismatchAndAtomicallyAllowsOnlyOneConcurrentConsumption" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="73616fa0-d60f-52d9-7aa6-2d566c15845f">
+      <Execution id="7f068b46-03ed-4dd1-9c18-738ab3bf82b3" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.SolanaWalletChallengeTests" name="RejectsBindingMismatchAndAtomicallyAllowsOnlyOneConcurrentConsumption" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.SearchProducts_ValidSecret_ReturnsOk" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="63262ed8-6c04-6f51-1ffa-b38d3c2b42a1">
+      <Execution id="b306f554-9219-4f1c-95f6-bc0735f66ba0" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.AgentResourceControllerTests" name="SearchProducts_ValidSecret_ReturnsOk" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.PixelHomeRenderTests.Homepage_RouteUsesPixelCrewReleaseContract" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="99062c8b-7509-0894-91eb-3a8fbd1bdee4">
+      <Execution id="28957f76-cbd1-41de-9414-3a733651304a" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.PixelHomeRenderTests" name="Homepage_RouteUsesPixelCrewReleaseContract" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.HealthCheckTests.Readiness_ShouldReturnSuccessAfterDatabaseInitialization" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="3927776f-6636-0646-cf8f-c2966dfb2ab6">
+      <Execution id="48141fd8-3216-482f-94b3-5657c84bce20" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.HealthCheckTests" name="Readiness_ShouldReturnSuccessAfterDatabaseInitialization" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.SolanaWalletChallengeTests.CompletesTheApplicationWalletStandardChallengeAndLoginScenario" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="e429223c-9fa5-ec57-24fe-e9cbebae6802">
+      <Execution id="8c1aa6b6-2fb3-4b4a-9caf-318e30daf1f4" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.SolanaWalletChallengeTests" name="CompletesTheApplicationWalletStandardChallengeAndLoginScenario" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.SearchProducts_MissingSecret_ReturnsUnauthorized" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="9214a43c-9f89-01fb-9c4d-695b9ea69807">
+      <Execution id="c9f1d9c9-aa77-4e85-b237-0fcbadddd894" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.AgentResourceControllerTests" name="SearchProducts_MissingSecret_ReturnsUnauthorized" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests.TheHeaderShowsTheSameRobotAsThePage" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="4d0ac7f9-6f28-1e59-ee02-6807a1a732e1">
+      <Execution id="818f502b-4266-4760-972d-4f9a53ea6573" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests" name="TheHeaderShowsTheSameRobotAsThePage" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests.AnUneditedProfileStillGetsARobot" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="d2ee0c9c-af4a-6ed4-89c4-69bf77e7a7bd">
+      <Execution id="35716345-598d-4014-ba36-70101a02fa30" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests" name="AnUneditedProfileStillGetsARobot" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.BrewPlan_InvalidQuantity_ReturnsBadRequest" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="aed1f6f7-bd03-1f87-9a6a-c5e459c1c90f">
+      <Execution id="ad3618f5-c74f-4867-a06d-9b07a58e19c9" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.AgentResourceControllerTests" name="BrewPlan_InvalidQuantity_ReturnsBadRequest" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests.ProfilePageRendersTheWalletSeededRobot" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="061542e2-7fc5-8134-f70d-d0580a665f5c">
+      <Execution id="1a4bf52c-bfff-4ae5-87ec-4de8fd641626" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.ProfileAvatarRenderTests" name="ProfilePageRendersTheWalletSeededRobot" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.BrewPlan_MissingCorrelationId_ReturnsBadRequest" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="4e69ee0a-aef4-40da-6b56-db0b8c6eb550">
+      <Execution id="03f652bb-0ca5-4fc9-ba4c-a5ee565fc207" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.AgentResourceControllerTests" name="BrewPlan_MissingCorrelationId_ReturnsBadRequest" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.SolanaReconciliationPersistenceTests.PersistsRestartSafeCursorAndDoesNotAdvanceItWhenTransactionLoadingFails" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="66a91df4-4407-b63b-8dd0-cb88ac5f9212">
+      <Execution id="f8a266bb-50ae-4fe5-aafa-defa9da18724" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.SolanaReconciliationPersistenceTests" name="PersistsRestartSafeCursorAndDoesNotAdvanceItWhenTransactionLoadingFails" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.AgentResourceControllerTests.SearchProducts_InvalidQuery_ReturnsBadRequest" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="54c9a50c-4b69-9bc1-8c12-9c3e9e8c9ce8">
+      <Execution id="c82feef9-f3cb-46f5-8e60-ede9696ca4a6" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.AgentResourceControllerTests" name="SearchProducts_InvalidQuery_ReturnsBadRequest" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.ChainVisibilityTests.PublicChainApiExposesOnlyWorkingConnections" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="56fd9957-40dd-55ab-84d8-d6088ee18bc0">
+      <Execution id="8abc3afa-5fb3-4df1-8ae3-8fa4c34b1916" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.ChainVisibilityTests" name="PublicChainApiExposesOnlyWorkingConnections" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.IntegrationTests.SmartAccountPanelRenderTests.ProfilePage_RendersSmartAccountPanel_WithoutServerError" storage="/workspace/artisanalbrew/tests/thiscafeteria.integrationtests/bin/release/net10.0/thiscafeteria.integrationtests.dll" id="17b97556-6cb7-2d84-bb16-a3ebddfcb47c">
+      <Execution id="69c84993-3917-44f3-8f4a-c48d77cfb53e" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.IntegrationTests/bin/Release/net10.0/ThisCafeteria.IntegrationTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.IntegrationTests.SmartAccountPanelRenderTests" name="ProfilePage_RendersSmartAccountPanel_WithoutServerError" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="99062c8b-7509-0894-91eb-3a8fbd1bdee4" executionId="28957f76-cbd1-41de-9414-3a733651304a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fe64e84d-b645-88e6-ccc1-b7033e5bd7ff" executionId="9a165051-daac-49bc-8e3a-39cb7bb88bfc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4d0ac7f9-6f28-1e59-ee02-6807a1a732e1" executionId="818f502b-4266-4760-972d-4f9a53ea6573" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="061542e2-7fc5-8134-f70d-d0580a665f5c" executionId="1a4bf52c-bfff-4ae5-87ec-4de8fd641626" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="17b97556-6cb7-2d84-bb16-a3ebddfcb47c" executionId="69c84993-3917-44f3-8f4a-c48d77cfb53e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="aed1f6f7-bd03-1f87-9a6a-c5e459c1c90f" executionId="ad3618f5-c74f-4867-a06d-9b07a58e19c9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e429223c-9fa5-ec57-24fe-e9cbebae6802" executionId="8c1aa6b6-2fb3-4b4a-9caf-318e30daf1f4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="56fd9957-40dd-55ab-84d8-d6088ee18bc0" executionId="8abc3afa-5fb3-4df1-8ae3-8fa4c34b1916" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="27c0aa2e-84d7-5d65-fc8d-d47e48c829ab" executionId="0d626438-deb1-4d07-bffd-a3b137f07ef4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4e69ee0a-aef4-40da-6b56-db0b8c6eb550" executionId="03f652bb-0ca5-4fc9-ba4c-a5ee565fc207" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="54c9a50c-4b69-9bc1-8c12-9c3e9e8c9ce8" executionId="c82feef9-f3cb-46f5-8e60-ede9696ca4a6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3927776f-6636-0646-cf8f-c2966dfb2ab6" executionId="48141fd8-3216-482f-94b3-5657c84bce20" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="63262ed8-6c04-6f51-1ffa-b38d3c2b42a1" executionId="b306f554-9219-4f1c-95f6-bc0735f66ba0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="66a91df4-4407-b63b-8dd0-cb88ac5f9212" executionId="f8a266bb-50ae-4fe5-aafa-defa9da18724" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d2ee0c9c-af4a-6ed4-89c4-69bf77e7a7bd" executionId="35716345-598d-4014-ba36-70101a02fa30" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9214a43c-9f89-01fb-9c4d-695b9ea69807" executionId="c9f1d9c9-aa77-4e85-b237-0fcbadddd894" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="73616fa0-d60f-52d9-7aa6-2d566c15845f" executionId="7f068b46-03ed-4dd1-9c18-738ab3bf82b3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="17" executed="17" passed="17" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.07]   Discovering: ThisCafeteria.IntegrationTests
+[xUnit.net 00:00:00.10]   Discovered:  ThisCafeteria.IntegrationTests
+[xUnit.net 00:00:00.12]   Starting:    ThisCafeteria.IntegrationTests
+[19:40:39 INF] Marketplace catalog validated 30 products
+[19:40:39 INF] Creating key {ef9ff24b-9d13-4f95-bcf2-87e60bd06c43} with creation date 2026-09-09 19:40:39Z, activation date 2026-09-09 19:40:39Z, and expiration date 2026-12-08 19:40:39Z.
+[19:40:39 WRN] No XML encryptor configured. Key {ef9ff24b-9d13-4f95-bcf2-87e60bd06c43} may be persisted to storage in unencrypted form.
+[19:40:39 INF] Writing data to file '/workspace/ArtisanalBrew/src/ThisCafeteria.Web/dataprotection-keys/key-ef9ff24b-9d13-4f95-bcf2-87e60bd06c43.xml'.
+[19:40:39 INF] Starting database migrations and seeding in the background
+[19:40:39 INF] Application started. Press Ctrl+C to shut down.
+[19:40:39 INF] Hosting environment: Testing
+[19:40:39 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:40 ERR] Failed executing DbCommand (16ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:40 INF] Applying migration '20260525154725_InitialCreate'.
+[19:40:41 INF] Applying migration '20260525175015_AddTransparencyRecords'.
+[19:40:41 INF] Applying migration '20260525180000_AddWalletLoginToUsers'.
+[19:40:41 INF] Applying migration '20260525195130_AddRewardClaims'.
+[19:40:41 INF] Applying migration '20260526000000_AddWalletStatusEvents'.
+[19:40:41 INF] Applying migration '20260526120000_AddOrderPaymentMetadata'.
+[19:40:41 INF] Applying migration '20260526174112_AddRewardClaimAllocationMetadata'.
+[19:40:41 INF] Applying migration '20260526190000_RepairRewardClaimPaymentTransactionHash'.
+[19:40:41 INF] Applying migration '20260526203000_RemoveOrderItemProductForeignKey'.
+[19:40:41 INF] Applying migration '20260526205000_SyncPendingModelChanges'.
+[19:40:41 INF] Applying migration '20260527132000_AddStakingLedgerEntries'.
+[19:40:41 INF] Applying migration '20260527205750_FixPendingModelChanges'.
+[19:40:41 INF] Applying migration '20260527214500_NormalizeLegacyProductCategories'.
+[19:40:41 INF] Applying migration '20260528154229_AddCoupons'.
+[19:40:41 INF] Applying migration '20260704000643_AddStakingReconciliationCheckpoints'.
+[19:40:41 INF] Applying migration '20260719000206_AddMultichainLiquidStakingPersistence'.
+[19:40:41 INF] Applying migration '20260719023143_AddRawStakingQuantities'.
+[19:40:41 INF] Applying migration '20260719030006_AddPersistentWalletAuthChallenges'.
+[19:40:41 INF] Applying migration '20260719104424_AgenticCommercePhase3'.
+[19:40:41 INF] Applying migration '20260719190709_AddAgenticJobs'.
+[19:40:41 INF] Applying migration '20260720065627_AgenticCommerceReconciliationPhase3'.
+[19:40:41 INF] Applying migration '20260720070806_UpdateAgenticJobProjectionIndex'.
+[19:40:41 INF] Applying migration '20260720092405_AgenticCommerceReconciliationPhase3Idempotency'.
+[19:40:41 INF] Applying migration '20260720200813_AddAgenticJobDeferredEvents'.
+[19:40:41 INF] Applying migration '20260721115003_AddSponsorshipGrantsAndUsages'.
+[19:40:41 INF] Applying migration '20260721172314_AddCrossChainSolverCheckpointsAndFills'.
+[19:40:41 INF] Applying migration '20260721212711_AddSmartAccountAndPermissionEpochPersistence'.
+[19:40:41 INF] Applying migration '20260725072157_AddSponsorshipRevertedOperationCount'.
+[19:40:41 INF] Applying migration '20260725073339_AddSolanaFaucetClaims'.
+[19:40:41 INF] Applying migration '20260730212528_AddProductOriginRoastProcess'.
+[19:40:41 INF] Applying migration '20260801201036_AddUserProfileAvatar'.
+[19:40:41 INF] Database migrations and seeding completed
+[19:40:41 INF] Executed DbCommand (22ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:41 INF] Executed DbCommand (1ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:42 INF] Executed DbCommand (5ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?', @p8='?', @p9='?', @p10='?', @p11='?' (DbType = Boolean), @p12='?', @p13='?' (DbType = Boolean), @p14='?', @p15='?' (DbType = Guid), @p16='?', @p17='?' (DbType = Int32), @p18='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserProfileId", "WalletAddress", "WalletChainId", "WalletVerifiedAt")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);
+     Warning:
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.
+     A paid commercial license supports the development and continued increasing support of
+     Fluent Assertions users under both commercial and community licenses. Help us
+     keep Fluent Assertions at the forefront of unit testing.
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/
+[19:40:42 INF] Request starting HTTP/1.1 GET http://localhost/profile - null null
+[19:40:42 WRN] Failed to determine the https port for redirect.
+[19:40:42 INF] Executing endpoint '/profile (/profile)'
+[19:40:42 INF] NavMenu OnInitializedAsync START
+[19:40:42 INF] Cart RefreshFromStorageAsync START. CircuitLinesCount=0
+[19:40:42 INF] Cart refreshed with empty storage (no existing circuit lines)
+[19:40:42 INF] Cart RefreshFromStorageAsync END. FinalCircuitLinesCount=0
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:42 INF] NavMenu OnInitializedAsync END. CartItemCount=0
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:42 INF] Executed DbCommand (3ms) [Parameters=[@p1='?', @p2='?', @p0='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?' (DbType = DateTime), @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+UPDATE "AspNetUsers" SET "UserProfileId" = @p0
+WHERE "Id" = @p1 AND "ConcurrencyStamp" = @p2;
+INSERT INTO "UserProfiles" ("Id", "CreatedAt", "DisplayName", "Email", "Role")
+VALUES (@p3, @p4, @p5, @p6, @p7);
+INSERT INTO "Carts" ("Id", "CreatedAt", "UpdatedAt", "UserProfileId")
+VALUES (@p8, @p9, @p10, @p11);
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT u."Id", u."CreatedAt", u."DisplayName", u."Email", u."Role", u."Avatar"
+FROM "UserProfiles" AS u
+WHERE u."Id" = @id
+LIMIT 1
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."UserProfileId" = @userProfileId
+LIMIT 1
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT count(*)::int
+FROM "Orders" AS o
+WHERE o."UserProfileId" = @userProfileId
+[19:40:42 WRN] Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w =&gt; w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.
+[19:40:42 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT o."Id", o."CouponCode", o."CouponDiscountPercent", o."CouponId", o."CreatedAt", o."DiscountAmount", o."OrderNumber", o."PaidAtUtc", o."PaymentChainId", o."PaymentEthAmount", o."PaymentExplorerUrl", o."PaymentNetworkName", o."PaymentTransactionHash", o."Shipping", o."Status", o."Subtotal", o."Tax", o."Total", o."UpdatedAt", o."UserProfileId", o."WalletAddress", o0."Id", o0."OrderId", o0."ProductId", o0."ProductName", o0."Quantity", o0."Total", o0."UnitPrice", t."Id", t."ChainId", t."ContractAddress", t."CreatedAt", t."ExplorerUrl", t."NetworkName", t."OrderHash", t."OrderId", t."OrderNumber", t."ProductName", t."Quantity", t."RecordedOnChainAt", t."Status", t."Total", t."TransactionHash"
+FROM "Orders" AS o
+LEFT JOIN "OrderItems" AS o0 ON o."Id" = o0."OrderId"
+LEFT JOIN "TransparencyRecords" AS t ON o."Id" = t."OrderId"
+WHERE o."UserProfileId" = @userProfileId
+ORDER BY o."CreatedAt" DESC, o."Id", o0."Id"
+[19:40:43 INF] Start processing HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:43 INF] Sending HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:43 INF] Received HTTP response headers after 59.9222ms - 200
+[19:40:43 INF] End processing HTTP request after 65.1101ms - 200
+[19:40:43 INF] Smart account for 0x20af50b085174543b9e6c831e24c2cb061ee84c2 on ethereum-sepolia is 0xd3B145F0Bde703585B9af7160a141E6a62723860 (deployed: False).
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @owner='?', @type='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = @type
+LIMIT 1
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Int32), @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Boolean), @p8='?' (DbType = Boolean), @p9='?', @p10='?', @p11='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "SmartAccountRecords" ("Id", "AccountAddress", "AccountType", "ChainKey", "DeployedAtUtc", "DiscoveredAtUtc", "FactoryAddress", "ImplementationVerified", "IsDeployed", "OwnerAddress", "Salt", "UpdatedAtUtc")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @owner='?', @type='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = @type
+LIMIT 1
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @owner='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = 1
+LIMIT 1
+[19:40:43 INF] Executed endpoint '/profile (/profile)'
+[19:40:43 INF] Request finished HTTP/1.1 GET http://localhost/profile - 200 null text/html; charset=utf-8 1614.5851ms
+[19:40:43 INF] Marketplace catalog validated 30 products
+[19:40:43 INF] Starting database migrations and seeding in the background
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:43 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:43 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:43 INF] No migrations were applied. The database is already up to date.
+[19:40:43 INF] Database migrations and seeding completed
+[19:40:43 INF] Application started. Press Ctrl+C to shut down.
+[19:40:43 INF] Hosting environment: Testing
+[19:40:43 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?', @p8='?', @p9='?', @p10='?', @p11='?' (DbType = Boolean), @p12='?', @p13='?' (DbType = Boolean), @p14='?', @p15='?' (DbType = Guid), @p16='?', @p17='?' (DbType = Int32), @p18='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserProfileId", "WalletAddress", "WalletChainId", "WalletVerifiedAt")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);
+[19:40:43 INF] Request starting HTTP/1.1 GET http://localhost/profile - null null
+[19:40:43 WRN] Failed to determine the https port for redirect.
+[19:40:43 INF] Executing endpoint '/profile (/profile)'
+[19:40:43 INF] NavMenu OnInitializedAsync START
+[19:40:43 INF] Cart RefreshFromStorageAsync START. CircuitLinesCount=0
+[19:40:43 INF] Cart refreshed with empty storage (no existing circuit lines)
+[19:40:43 INF] Cart RefreshFromStorageAsync END. FinalCircuitLinesCount=0
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:43 INF] NavMenu OnInitializedAsync END. CartItemCount=0
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:43 INF] Executed DbCommand (1ms) [Parameters=[@p1='?', @p2='?', @p0='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?' (DbType = DateTime), @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+UPDATE "AspNetUsers" SET "UserProfileId" = @p0
+WHERE "Id" = @p1 AND "ConcurrencyStamp" = @p2;
+INSERT INTO "UserProfiles" ("Id", "CreatedAt", "DisplayName", "Email", "Role")
+VALUES (@p3, @p4, @p5, @p6, @p7);
+INSERT INTO "Carts" ("Id", "CreatedAt", "UpdatedAt", "UserProfileId")
+VALUES (@p8, @p9, @p10, @p11);
+[19:40:44 INF] Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT u."Id", u."CreatedAt", u."DisplayName", u."Email", u."Role", u."Avatar"
+FROM "UserProfiles" AS u
+WHERE u."Id" = @id
+LIMIT 1
+[19:40:44 INF] Executed DbCommand (0ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."UserProfileId" = @userProfileId
+LIMIT 1
+[19:40:44 INF] Executed DbCommand (0ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT count(*)::int
+FROM "Orders" AS o
+WHERE o."UserProfileId" = @userProfileId
+[19:40:44 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT o."Id", o."CouponCode", o."CouponDiscountPercent", o."CouponId", o."CreatedAt", o."DiscountAmount", o."OrderNumber", o."PaidAtUtc", o."PaymentChainId", o."PaymentEthAmount", o."PaymentExplorerUrl", o."PaymentNetworkName", o."PaymentTransactionHash", o."Shipping", o."Status", o."Subtotal", o."Tax", o."Total", o."UpdatedAt", o."UserProfileId", o."WalletAddress", o0."Id", o0."OrderId", o0."ProductId", o0."ProductName", o0."Quantity", o0."Total", o0."UnitPrice", t."Id", t."ChainId", t."ContractAddress", t."CreatedAt", t."ExplorerUrl", t."NetworkName", t."OrderHash", t."OrderId", t."OrderNumber", t."ProductName", t."Quantity", t."RecordedOnChainAt", t."Status", t."Total", t."TransactionHash"
+FROM "Orders" AS o
+LEFT JOIN "OrderItems" AS o0 ON o."Id" = o0."OrderId"
+LEFT JOIN "TransparencyRecords" AS t ON o."Id" = t."OrderId"
+WHERE o."UserProfileId" = @userProfileId
+ORDER BY o."CreatedAt" DESC, o."Id", o0."Id"
+[19:40:44 INF] Start processing HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:44 INF] Sending HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:44 INF] Received HTTP response headers after 71.9197ms - 200
+[19:40:44 INF] End processing HTTP request after 72.3691ms - 200
+[19:40:45 INF] Smart account for 0x6e3767bfb0a4462b891b7428f8f4e0aafd9144ef on ethereum-sepolia is 0x9a872e429a5efcD5F179068739F147BEDDE5aBb6 (deployed: False).
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @owner='?', @type='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = @type
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Int32), @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Boolean), @p8='?' (DbType = Boolean), @p9='?', @p10='?', @p11='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "SmartAccountRecords" ("Id", "AccountAddress", "AccountType", "ChainKey", "DeployedAtUtc", "DiscoveredAtUtc", "FactoryAddress", "ImplementationVerified", "IsDeployed", "OwnerAddress", "Salt", "UpdatedAtUtc")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @owner='?', @type='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = @type
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[@chainKey='?', @owner='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = 1
+LIMIT 1
+[19:40:45 INF] Executed endpoint '/profile (/profile)'
+[19:40:45 INF] Request finished HTTP/1.1 GET http://localhost/profile - 200 null text/html; charset=utf-8 1145.4879ms
+[19:40:45 INF] Marketplace catalog validated 30 products
+[19:40:45 INF] Starting database migrations and seeding in the background
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:45 INF] Application started. Press Ctrl+C to shut down.
+[19:40:45 INF] Hosting environment: Testing
+[19:40:45 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:45 INF] No migrations were applied. The database is already up to date.
+[19:40:45 INF] Database migrations and seeding completed
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?', @p8='?', @p9='?', @p10='?', @p11='?' (DbType = Boolean), @p12='?', @p13='?' (DbType = Boolean), @p14='?', @p15='?' (DbType = Guid), @p16='?', @p17='?' (DbType = Int32), @p18='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserProfileId", "WalletAddress", "WalletChainId", "WalletVerifiedAt")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);
+[19:40:45 INF] Request starting HTTP/1.1 GET http://localhost/profile - null null
+[19:40:45 WRN] Failed to determine the https port for redirect.
+[19:40:45 INF] Executing endpoint '/profile (/profile)'
+[19:40:45 INF] NavMenu OnInitializedAsync START
+[19:40:45 INF] Cart RefreshFromStorageAsync START. CircuitLinesCount=0
+[19:40:45 INF] Cart refreshed with empty storage (no existing circuit lines)
+[19:40:45 INF] Cart RefreshFromStorageAsync END. FinalCircuitLinesCount=0
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:45 INF] NavMenu OnInitializedAsync END. CartItemCount=0
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@p1='?', @p2='?', @p0='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?' (DbType = DateTime), @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+UPDATE "AspNetUsers" SET "UserProfileId" = @p0
+WHERE "Id" = @p1 AND "ConcurrencyStamp" = @p2;
+INSERT INTO "UserProfiles" ("Id", "CreatedAt", "DisplayName", "Email", "Role")
+VALUES (@p3, @p4, @p5, @p6, @p7);
+INSERT INTO "Carts" ("Id", "CreatedAt", "UpdatedAt", "UserProfileId")
+VALUES (@p8, @p9, @p10, @p11);
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT u."Id", u."CreatedAt", u."DisplayName", u."Email", u."Role", u."Avatar"
+FROM "UserProfiles" AS u
+WHERE u."Id" = @id
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."UserProfileId" = @userProfileId
+LIMIT 1
+[19:40:45 INF] Executed DbCommand (0ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT count(*)::int
+FROM "Orders" AS o
+WHERE o."UserProfileId" = @userProfileId
+[19:40:45 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT o."Id", o."CouponCode", o."CouponDiscountPercent", o."CouponId", o."CreatedAt", o."DiscountAmount", o."OrderNumber", o."PaidAtUtc", o."PaymentChainId", o."PaymentEthAmount", o."PaymentExplorerUrl", o."PaymentNetworkName", o."PaymentTransactionHash", o."Shipping", o."Status", o."Subtotal", o."Tax", o."Total", o."UpdatedAt", o."UserProfileId", o."WalletAddress", o0."Id", o0."OrderId", o0."ProductId", o0."ProductName", o0."Quantity", o0."Total", o0."UnitPrice", t."Id", t."ChainId", t."ContractAddress", t."CreatedAt", t."ExplorerUrl", t."NetworkName", t."OrderHash", t."OrderId", t."OrderNumber", t."ProductName", t."Quantity", t."RecordedOnChainAt", t."Status", t."Total", t."TransactionHash"
+FROM "Orders" AS o
+LEFT JOIN "OrderItems" AS o0 ON o."Id" = o0."OrderId"
+LEFT JOIN "TransparencyRecords" AS t ON o."Id" = t."OrderId"
+WHERE o."UserProfileId" = @userProfileId
+ORDER BY o."CreatedAt" DESC, o."Id", o0."Id"
+[19:40:45 INF] Start processing HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:45 INF] Sending HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:45 INF] Received HTTP response headers after 60.1476ms - 429
+[19:40:45 INF] End processing HTTP request after 60.5166ms - 429
+[19:40:45 WRN] Could not fetch ETH/USD price from CoinGecko.
+System.Net.Http.HttpRequestException: Response status code does not indicate success: 429 (Too Many Requests).
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at ThisCafeteria.Infrastructure.Services.Blockchain.CoinGeckoEthUsdPriceService.GetEthUsdPriceAsync(CancellationToken cancellationToken) in /workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/Services/Blockchain/CoinGeckoEthUsdPriceService.cs:line 33
+[19:40:46 INF] Smart account for 0xeff575f6e52547ccadb363ab4706d42ada4b9321 on ethereum-sepolia is 0x7210258D2909E826b6F17f14CA8246aE62Ec97aa (deployed: False).
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@chainKey='?', @owner='?', @type='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = @type
+LIMIT 1
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Int32), @p3='?', @p4='?' (DbType = DateTime), @p5='?' (DbType = DateTime), @p6='?', @p7='?' (DbType = Boolean), @p8='?' (DbType = Boolean), @p9='?', @p10='?', @p11='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "SmartAccountRecords" ("Id", "AccountAddress", "AccountType", "ChainKey", "DeployedAtUtc", "DiscoveredAtUtc", "FactoryAddress", "ImplementationVerified", "IsDeployed", "OwnerAddress", "Salt", "UpdatedAtUtc")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@chainKey='?', @owner='?', @type='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = @type
+LIMIT 1
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@chainKey='?', @owner='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."AccountAddress", s."AccountType", s."ChainKey", s."DeployedAtUtc", s."DiscoveredAtUtc", s."FactoryAddress", s."ImplementationVerified", s."IsDeployed", s."OwnerAddress", s."Salt", s."UpdatedAtUtc"
+FROM "SmartAccountRecords" AS s
+WHERE s."ChainKey" = @chainKey AND s."OwnerAddress" = @owner AND s."AccountType" = 1
+LIMIT 1
+[19:40:46 INF] Executed endpoint '/profile (/profile)'
+[19:40:46 INF] Request finished HTTP/1.1 GET http://localhost/profile - 200 null text/html; charset=utf-8 911.6353ms
+[19:40:46 INF] Application is shutting down...
+[19:40:46 INF] Application is shutting down...
+[19:40:46 INF] Application is shutting down...
+[19:40:46 INF] Marketplace catalog validated 30 products
+[19:40:46 INF] Starting database migrations and seeding in the background
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:46 INF] No migrations were applied. The database is already up to date.
+[19:40:46 INF] Database migrations and seeding completed
+[19:40:46 INF] Application started. Press Ctrl+C to shut down.
+[19:40:46 INF] Hosting environment: Testing
+[19:40:46 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:46 INF] Request starting HTTP/1.1 POST http://localhost/api/wallet-auth/solana/challenge - application/json; charset=utf-8 121
+[19:40:46 WRN] Failed to determine the https port for redirect.
+[19:40:46 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.WalletAuthController.CreateSolanaChallenge (ThisCafeteria.Web)'
+[19:40:46 INF] Route matched with {action = "CreateSolanaChallenge", controller = "WalletAuth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] CreateSolanaChallenge(ThisCafeteria.Web.Models.SolanaWalletChallengeRequest, System.Threading.CancellationToken) on controller ThisCafeteria.Web.Controllers.WalletAuthController (ThisCafeteria.Web).
+[19:40:46 INF] Executed DbCommand (2ms) [Parameters=[@expiredBefore='?' (DbType = DateTime), @consumedBefore='?' (DbType = DateTime), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+DELETE FROM "WalletAuthChallenges" AS w
+WHERE w."Id" IN (
+    SELECT w0."Id"
+    FROM "WalletAuthChallenges" AS w0
+    WHERE w0."ExpiresAtUtc" &lt; @expiredBefore OR (w0."ConsumedAtUtc" IS NOT NULL AND w0."ConsumedAtUtc" &lt; @consumedBefore)
+    ORDER BY w0."ExpiresAtUtc"
+    LIMIT @p
+)
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "WalletAuthChallenges" ("Id", "ChainKey", "ConsumedAtUtc", "ExpiresAtUtc", "IssuedAtUtc", "MessageHash", "NonceHash", "Origin", "PublicKey", "VerificationAttempts")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+[19:40:46 INF] Executing OkObjectResult, writing value of type 'ThisCafeteria.Web.Models.SolanaWalletChallengeResponse'.
+[19:40:46 INF] Executed action ThisCafeteria.Web.Controllers.WalletAuthController.CreateSolanaChallenge (ThisCafeteria.Web) in 107.2125ms
+[19:40:46 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.WalletAuthController.CreateSolanaChallenge (ThisCafeteria.Web)'
+[19:40:46 INF] Request finished HTTP/1.1 POST http://localhost/api/wallet-auth/solana/challenge - 200 null application/json; charset=utf-8 161.9783ms
+[19:40:46 INF] Request starting HTTP/1.1 POST http://localhost/api/wallet-auth/solana/verify - application/json; charset=utf-8 732
+[19:40:46 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.WalletAuthController.VerifySolanaAsync (ThisCafeteria.Web)'
+[19:40:46 INF] Route matched with {action = "VerifySolana", controller = "WalletAuth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] VerifySolanaAsync(ThisCafeteria.Web.Models.SolanaWalletVerifyRequest) on controller ThisCafeteria.Web.Controllers.WalletAuthController (ThisCafeteria.Web).
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@nonceHash='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."ChainKey", w."ConsumedAtUtc", w."ExpiresAtUtc", w."IssuedAtUtc", w."MessageHash", w."NonceHash", w."Origin", w."PublicKey", w."VerificationAttempts"
+FROM "WalletAuthChallenges" AS w
+WHERE w."NonceHash" = @nonceHash
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = DateTime), @nonceHash='?', @now='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "WalletAuthChallenges" AS w
+SET "ConsumedAtUtc" = @p,
+    "VerificationAttempts" = w."VerificationAttempts" + 1
+WHERE w."NonceHash" = @nonceHash AND w."ConsumedAtUtc" IS NULL AND w."ExpiresAtUtc" &gt; @now
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@family='?', @normalizedAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."DisplayAddress", w."Family", w."NormalizedAddress", w."UserId", w."VerifiedAtUtc", w."WalletProvider"
+FROM "WalletIdentities" AS w
+WHERE w."Family" = @family AND w."NormalizedAddress" = @normalizedAddress
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@walletAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."WalletAddress" = @walletAddress
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?', @p8='?', @p9='?', @p10='?', @p11='?' (DbType = Boolean), @p12='?', @p13='?' (DbType = Boolean), @p14='?', @p15='?' (DbType = Guid), @p16='?', @p17='?' (DbType = Int32), @p18='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserProfileId", "WalletAddress", "WalletChainId", "WalletVerifiedAt")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@p18='?', @p0='?' (DbType = Int32), @p1='?', @p19='?', @p2='?', @p3='?' (DbType = Boolean), @p4='?' (DbType = Boolean), @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?', @p9='?', @p10='?' (DbType = Boolean), @p11='?', @p12='?' (DbType = Boolean), @p13='?', @p14='?' (DbType = Guid), @p15='?', @p16='?' (DbType = Int32), @p17='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "AspNetUsers" SET "AccessFailedCount" = @p0, "ConcurrencyStamp" = @p1, "Email" = @p2, "EmailConfirmed" = @p3, "LockoutEnabled" = @p4, "LockoutEnd" = @p5, "NormalizedEmail" = @p6, "NormalizedUserName" = @p7, "PasswordHash" = @p8, "PhoneNumber" = @p9, "PhoneNumberConfirmed" = @p10, "SecurityStamp" = @p11, "TwoFactorEnabled" = @p12, "UserName" = @p13, "UserProfileId" = @p14, "WalletAddress" = @p15, "WalletChainId" = @p16, "WalletVerifiedAt" = @p17
+WHERE "Id" = @p18 AND "ConcurrencyStamp" = @p19;
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@family='?', @normalizedAddress='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."DisplayAddress", w."Family", w."NormalizedAddress", w."UserId", w."VerifiedAtUtc", w."WalletProvider"
+FROM "WalletIdentities" AS w
+WHERE w."Family" = @family AND w."NormalizedAddress" = @normalizedAddress
+LIMIT 1
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?', @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?'], CommandType='Text', CommandTimeout='30']
+INSERT INTO "WalletIdentities" ("Id", "DisplayAddress", "Family", "NormalizedAddress", "UserId", "VerifiedAtUtc", "WalletProvider")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@user_Id='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."ClaimType", a."ClaimValue", a."UserId"
+FROM "AspNetUserClaims" AS a
+WHERE a."UserId" = @user_Id
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@userId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a0."Name"
+FROM "AspNetUserRoles" AS a
+INNER JOIN "AspNetRoles" AS a0 ON a."RoleId" = a0."Id"
+WHERE a."UserId" = @userId
+[19:40:46 INF] AuthenticationScheme: Identity.Application signed in.
+[19:40:46 INF] Executing OkObjectResult, writing value of type 'ThisCafeteria.Web.Models.WalletVerifyResponse'.
+[19:40:46 INF] Executed action ThisCafeteria.Web.Controllers.WalletAuthController.VerifySolanaAsync (ThisCafeteria.Web) in 134.1573ms
+[19:40:46 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.WalletAuthController.VerifySolanaAsync (ThisCafeteria.Web)'
+[19:40:46 INF] Request finished HTTP/1.1 POST http://localhost/api/wallet-auth/solana/verify - 200 null application/json; charset=utf-8 150.127ms
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@expiredBefore='?' (DbType = DateTime), @consumedBefore='?' (DbType = DateTime), @p='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+DELETE FROM "WalletAuthChallenges" AS w
+WHERE w."Id" IN (
+    SELECT w0."Id"
+    FROM "WalletAuthChallenges" AS w0
+    WHERE w0."ExpiresAtUtc" &lt; @expiredBefore OR (w0."ConsumedAtUtc" IS NOT NULL AND w0."ConsumedAtUtc" &lt; @consumedBefore)
+    ORDER BY w0."ExpiresAtUtc"
+    LIMIT @p
+)
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = DateTime), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?', @p9='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "WalletAuthChallenges" ("Id", "ChainKey", "ConsumedAtUtc", "ExpiresAtUtc", "IssuedAtUtc", "MessageHash", "NonceHash", "Origin", "PublicKey", "VerificationAttempts")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@nonceHash='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."ChainKey", w."ConsumedAtUtc", w."ExpiresAtUtc", w."IssuedAtUtc", w."MessageHash", w."NonceHash", w."Origin", w."PublicKey", w."VerificationAttempts"
+FROM "WalletAuthChallenges" AS w
+WHERE w."NonceHash" = @nonceHash
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@nonceHash='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."ChainKey", w."ConsumedAtUtc", w."ExpiresAtUtc", w."IssuedAtUtc", w."MessageHash", w."NonceHash", w."Origin", w."PublicKey", w."VerificationAttempts"
+FROM "WalletAuthChallenges" AS w
+WHERE w."NonceHash" = @nonceHash
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[@nonceHash='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."ChainKey", w."ConsumedAtUtc", w."ExpiresAtUtc", w."IssuedAtUtc", w."MessageHash", w."NonceHash", w."Origin", w."PublicKey", w."VerificationAttempts"
+FROM "WalletAuthChallenges" AS w
+WHERE w."NonceHash" = @nonceHash
+LIMIT 2
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@p='?' (DbType = DateTime), @nonceHash='?', @now='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+UPDATE "WalletAuthChallenges" AS w
+SET "ConsumedAtUtc" = @p,
+    "VerificationAttempts" = w."VerificationAttempts" + 1
+WHERE w."NonceHash" = @nonceHash AND w."ConsumedAtUtc" IS NULL AND w."ExpiresAtUtc" &gt; @now
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[@nonceHash='?'], CommandType='Text', CommandTimeout='30']
+SELECT w."Id", w."ChainKey", w."ConsumedAtUtc", w."ExpiresAtUtc", w."IssuedAtUtc", w."MessageHash", w."NonceHash", w."Origin", w."PublicKey", w."VerificationAttempts"
+FROM "WalletAuthChallenges" AS w
+WHERE w."NonceHash" = @nonceHash
+LIMIT 2
+[19:40:46 INF] Application is shutting down...
+[19:40:46 INF] Marketplace catalog validated 30 products
+[19:40:46 INF] Starting database migrations and seeding in the background
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:46 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:46 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:46 INF] No migrations were applied. The database is already up to date.
+[19:40:46 INF] Database migrations and seeding completed
+[19:40:46 INF] Application started. Press Ctrl+C to shut down.
+[19:40:46 INF] Hosting environment: Testing
+[19:40:46 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:46 INF] Request starting HTTP/1.1 GET http://localhost/api/chains - null null
+[19:40:46 WRN] Failed to determine the https port for redirect.
+[19:40:46 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.ChainsController.GetChains (ThisCafeteria.Web)'
+[19:40:46 INF] Route matched with {action = "GetChains", controller = "Chains"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult GetChains() on controller ThisCafeteria.Web.Controllers.ChainsController (ThisCafeteria.Web).
+[19:40:46 INF] Executing OkObjectResult, writing value of type '&lt;&gt;f__AnonymousType5`3[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Collections.Generic.IEnumerable`1[[&lt;&gt;f__AnonymousType6`16[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Nullable`1[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[&lt;&gt;f__AnonymousType7`3[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], ThisCafeteria.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[ThisCafeteria.Application.Configuration.ChainCapabilities, ThisCafeteria.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[&lt;&gt;f__AnonymousType8`18[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Int64, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], ThisCafeteria.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], ThisCafeteria.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[19:40:46 INF] Executed action ThisCafeteria.Web.Controllers.ChainsController.GetChains (ThisCafeteria.Web) in 7.6483ms
+[19:40:46 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.ChainsController.GetChains (ThisCafeteria.Web)'
+[19:40:46 INF] Request finished HTTP/1.1 GET http://localhost/api/chains - 200 null application/json; charset=utf-8 40.0985ms
+[19:40:46 INF] Application is shutting down...
+[19:40:47 INF] Marketplace catalog validated 30 products
+[19:40:47 INF] Starting database migrations and seeding in the background
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:47 INF] No migrations were applied. The database is already up to date.
+[19:40:47 INF] Database migrations and seeding completed
+[19:40:47 INF] Application started. Press Ctrl+C to shut down.
+[19:40:47 INF] Hosting environment: Testing
+[19:40:47 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:47 INF] Request starting HTTP/1.1 GET http://localhost/health/ready - null null
+[19:40:47 WRN] Failed to determine the https port for redirect.
+[19:40:47 INF] Executing endpoint 'Health checks'
+[19:40:47 INF] Executed endpoint 'Health checks'
+[19:40:47 INF] Request finished HTTP/1.1 GET http://localhost/health/ready - 200 null text/plain 32.2473ms
+[19:40:47 INF] Request starting HTTP/1.1 GET http://localhost/health/live - null null
+[19:40:47 INF] Executing endpoint 'Health checks'
+[19:40:47 INF] Executed endpoint 'Health checks'
+[19:40:47 INF] Request finished HTTP/1.1 GET http://localhost/health/live - 200 null text/plain 14.156ms
+[19:40:47 INF] Application is shutting down...
+[19:40:47 INF] Marketplace catalog validated 30 products
+[19:40:47 INF] Starting database migrations and seeding in the background
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:47 INF] No migrations were applied. The database is already up to date.
+[19:40:47 INF] Database migrations and seeding completed
+[19:40:47 INF] Application started. Press Ctrl+C to shut down.
+[19:40:47 INF] Hosting environment: Testing
+[19:40:47 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@normalizedUserName='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedUserName" = @normalizedUserName
+LIMIT 1
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[@normalizedEmail='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."NormalizedEmail" = @normalizedEmail
+LIMIT 2
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@p0='?', @p1='?' (DbType = Int32), @p2='?', @p3='?', @p4='?' (DbType = Boolean), @p5='?' (DbType = Boolean), @p6='?' (DbType = DateTime), @p7='?', @p8='?', @p9='?', @p10='?', @p11='?' (DbType = Boolean), @p12='?', @p13='?' (DbType = Boolean), @p14='?', @p15='?' (DbType = Guid), @p16='?', @p17='?' (DbType = Int32), @p18='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "AspNetUsers" ("Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName", "UserProfileId", "WalletAddress", "WalletChainId", "WalletVerifiedAt")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18);
+[19:40:47 INF] Request starting HTTP/1.1 GET http://localhost/profile - null null
+[19:40:47 WRN] Failed to determine the https port for redirect.
+[19:40:47 INF] Executing endpoint '/profile (/profile)'
+[19:40:47 INF] NavMenu OnInitializedAsync START
+[19:40:47 INF] Cart RefreshFromStorageAsync START. CircuitLinesCount=0
+[19:40:47 INF] Cart refreshed with empty storage (no existing circuit lines)
+[19:40:47 INF] Cart RefreshFromStorageAsync END. FinalCircuitLinesCount=0
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:47 INF] NavMenu OnInitializedAsync END. CartItemCount=0
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[@applicationUserId='?'], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."AccessFailedCount", a."ConcurrencyStamp", a."Email", a."EmailConfirmed", a."LockoutEnabled", a."LockoutEnd", a."NormalizedEmail", a."NormalizedUserName", a."PasswordHash", a."PhoneNumber", a."PhoneNumberConfirmed", a."SecurityStamp", a."TwoFactorEnabled", a."UserName", a."UserProfileId", a."WalletAddress", a."WalletChainId", a."WalletVerifiedAt"
+FROM "AspNetUsers" AS a
+WHERE a."Id" = @applicationUserId
+LIMIT 1
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@p1='?', @p2='?', @p0='?' (DbType = Guid), @p3='?' (DbType = Guid), @p4='?' (DbType = DateTime), @p5='?', @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?' (DbType = DateTime), @p10='?' (DbType = DateTime), @p11='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+UPDATE "AspNetUsers" SET "UserProfileId" = @p0
+WHERE "Id" = @p1 AND "ConcurrencyStamp" = @p2;
+INSERT INTO "UserProfiles" ("Id", "CreatedAt", "DisplayName", "Email", "Role")
+VALUES (@p3, @p4, @p5, @p6, @p7);
+INSERT INTO "Carts" ("Id", "CreatedAt", "UpdatedAt", "UserProfileId")
+VALUES (@p8, @p9, @p10, @p11);
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT u."Id", u."CreatedAt", u."DisplayName", u."Email", u."Role", u."Avatar"
+FROM "UserProfiles" AS u
+WHERE u."Id" = @id
+LIMIT 1
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT a."Id", a."UserProfileId", a."Email", a."UserName", a."WalletAddress", a."WalletChainId"
+FROM "AspNetUsers" AS a
+WHERE a."UserProfileId" = @userProfileId
+LIMIT 1
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT count(*)::int
+FROM "Orders" AS o
+WHERE o."UserProfileId" = @userProfileId
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@userProfileId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+SELECT o."Id", o."CouponCode", o."CouponDiscountPercent", o."CouponId", o."CreatedAt", o."DiscountAmount", o."OrderNumber", o."PaidAtUtc", o."PaymentChainId", o."PaymentEthAmount", o."PaymentExplorerUrl", o."PaymentNetworkName", o."PaymentTransactionHash", o."Shipping", o."Status", o."Subtotal", o."Tax", o."Total", o."UpdatedAt", o."UserProfileId", o."WalletAddress", o0."Id", o0."OrderId", o0."ProductId", o0."ProductName", o0."Quantity", o0."Total", o0."UnitPrice", t."Id", t."ChainId", t."ContractAddress", t."CreatedAt", t."ExplorerUrl", t."NetworkName", t."OrderHash", t."OrderId", t."OrderNumber", t."ProductName", t."Quantity", t."RecordedOnChainAt", t."Status", t."Total", t."TransactionHash"
+FROM "Orders" AS o
+LEFT JOIN "OrderItems" AS o0 ON o."Id" = o0."OrderId"
+LEFT JOIN "TransparencyRecords" AS t ON o."Id" = t."OrderId"
+WHERE o."UserProfileId" = @userProfileId
+ORDER BY o."CreatedAt" DESC, o."Id", o0."Id"
+[19:40:47 INF] Start processing HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:47 INF] Sending HTTP request GET https://api.coingecko.com/api/v3/simple/price?*
+[19:40:47 INF] Received HTTP response headers after 43.8519ms - 429
+[19:40:47 INF] End processing HTTP request after 44.1678ms - 429
+[19:40:47 WRN] Could not fetch ETH/USD price from CoinGecko.
+System.Net.Http.HttpRequestException: Response status code does not indicate success: 429 (Too Many Requests).
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at ThisCafeteria.Infrastructure.Services.Blockchain.CoinGeckoEthUsdPriceService.GetEthUsdPriceAsync(CancellationToken cancellationToken) in /workspace/ArtisanalBrew/src/ThisCafeteria.Infrastructure/Services/Blockchain/CoinGeckoEthUsdPriceService.cs:line 33
+[19:40:47 INF] Executed endpoint '/profile (/profile)'
+[19:40:47 INF] Request finished HTTP/1.1 GET http://localhost/profile - 200 null text/html; charset=utf-8 385.2598ms
+[19:40:47 INF] Application is shutting down...
+[19:40:47 INF] Marketplace catalog validated 30 products
+[19:40:47 INF] Starting database migrations and seeding in the background
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:47 INF] Application started. Press Ctrl+C to shut down.
+[19:40:47 INF] Hosting environment: Testing
+[19:40:47 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:47 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:47 INF] No migrations were applied. The database is already up to date.
+[19:40:47 INF] Database migrations and seeding completed
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+DELETE FROM "StakingLedgerEntries" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+DELETE FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @source='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."ChainKey", s."CursorType", s."Family", s."LastScannedBlock", s."LastScannedSignature", s."LastScannedSlot", s."SourceIdentifier", s."StakingPoolContract", s."UpdatedAtUtc"
+FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = @chain_Key AND s."SourceIdentifier" = @source
+LIMIT 2
+[19:40:47 INF] Executed DbCommand (1ms) [Parameters=[@entry_ChainKey='?', @entry_TransactionHash='?', @entry_OperationIndex='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT EXISTS (
+    SELECT 1
+    FROM "StakingLedgerEntries" AS s
+    WHERE s."ChainKey" = @entry_ChainKey AND s."TransactionHash" = @entry_TransactionHash AND s."OperationIndex" = @entry_OperationIndex)
+[19:40:48 INF] Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Decimal), @p3='?' (DbType = Decimal), @p4='?', @p5='?' (DbType = Int64), @p6='?' (DbType = Int32), @p7='?', @p8='?', @p9='?', @p10='?', @p11='?' (DbType = DateTime), @p12='?' (DbType = Int32), @p13='?', @p14='?', @p15='?', @p16='?', @p17='?', @p18='?' (DbType = DateTime), @p19='?' (DbType = Decimal), @p20='?', @p21='?' (DbType = Decimal), @p22='?', @p23='?', @p24='?', @p25='?', @p26='?' (DbType = Boolean), @p27='?', @p28='?' (DbType = Guid), @p29='?', @p30='?', @p31='?', @p32='?' (DbType = Int64), @p33='?', @p34='?' (DbType = Int64), @p35='?', @p36='?', @p37='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "StakingLedgerEntries" ("Id", "ActionType", "Amount", "AssetAmount", "AssetIdentifier", "BlockOrSlot", "ChainId", "ChainKey", "ExplorerUrl", "Family", "NetworkName", "OccurredAtUtc", "OperationIndex", "PaymentTokenContract", "RawAssetAmount", "RawRewardAmount", "RawShareAmount", "ReceiptIdentifier", "RecordedAtUtc", "RewardAmount", "RewardIdentifier", "ShareAmount", "StakingPoolContract", "TransactionHash", "VaultOrProgramIdentifier", "VerificationState", "Verified", "WalletAddress")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27);
+INSERT INTO "StakingReconciliationCheckpoints" ("Id", "ChainKey", "CursorType", "Family", "LastScannedBlock", "LastScannedSignature", "LastScannedSlot", "SourceIdentifier", "StakingPoolContract", "UpdatedAtUtc")
+VALUES (@p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37);
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT count(*)::int
+FROM "StakingLedgerEntries" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."ChainKey", s."CursorType", s."Family", s."LastScannedBlock", s."LastScannedSignature", s."LastScannedSlot", s."SourceIdentifier", s."StakingPoolContract", s."UpdatedAtUtc"
+FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+LIMIT 2
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[@chain_Key='?', @source='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."ChainKey", s."CursorType", s."Family", s."LastScannedBlock", s."LastScannedSignature", s."LastScannedSlot", s."SourceIdentifier", s."StakingPoolContract", s."UpdatedAtUtc"
+FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = @chain_Key AND s."SourceIdentifier" = @source
+LIMIT 2
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[@chain_Key='?', @source='?'], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."ChainKey", s."CursorType", s."Family", s."LastScannedBlock", s."LastScannedSignature", s."LastScannedSlot", s."SourceIdentifier", s."StakingPoolContract", s."UpdatedAtUtc"
+FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = @chain_Key AND s."SourceIdentifier" = @source
+LIMIT 2
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT count(*)::int
+FROM "StakingLedgerEntries" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT s."Id", s."ChainKey", s."CursorType", s."Family", s."LastScannedBlock", s."LastScannedSignature", s."LastScannedSlot", s."SourceIdentifier", s."StakingPoolContract", s."UpdatedAtUtc"
+FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+LIMIT 2
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+DELETE FROM "StakingLedgerEntries" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+DELETE FROM "StakingReconciliationCheckpoints" AS s
+WHERE s."ChainKey" = 'solana-reconciliation-test'
+[19:40:48 INF] Application is shutting down...
+[19:40:48 INF] Marketplace catalog validated 30 products
+[19:40:48 INF] Starting database migrations and seeding in the background
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] No migrations were applied. The database is already up to date.
+[19:40:48 INF] Application started. Press Ctrl+C to shut down.
+[19:40:48 INF] Hosting environment: Development
+[19:40:48 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:48 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - application/json; charset=utf-8 34
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT p."Slug"
+FROM "Products" AS p
+[19:40:48 WRN] Failed to determine the https port for redirect.
+[19:40:48 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:48 INF] Route matched with {action = "SearchProducts", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult SearchProducts(SearchProductsRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:48 INF] Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?', @p4='?', @p5='?' (DbType = Boolean), @p6='?', @p7='?', @p8='?' (DbType = Decimal), @p9='?', @p10='?', @p11='?', @p12='?' (DbType = Int32), @p13='?' (DbType = DateTime), @p14='?' (DbType = Guid), @p15='?', @p16='?' (DbType = DateTime), @p17='?', @p18='?', @p19='?' (DbType = Boolean), @p20='?', @p21='?', @p22='?' (DbType = Decimal), @p23='?', @p24='?', @p25='?', @p26='?' (DbType = Int32), @p27='?' (DbType = DateTime), @p28='?' (DbType = Guid), @p29='?', @p30='?' (DbType = DateTime), @p31='?', @p32='?', @p33='?' (DbType = Boolean), @p34='?', @p35='?', @p36='?' (DbType = Decimal), @p37='?', @p38='?', @p39='?', @p40='?' (DbType = Int32), @p41='?' (DbType = DateTime), @p42='?' (DbType = Guid), @p43='?', @p44='?' (DbType = DateTime), @p45='?', @p46='?', @p47='?' (DbType = Boolean), @p48='?', @p49='?', @p50='?' (DbType = Decimal), @p51='?', @p52='?', @p53='?', @p54='?' (DbType = Int32), @p55='?' (DbType = DateTime), @p56='?' (DbType = Guid), @p57='?', @p58='?' (DbType = DateTime), @p59='?', @p60='?', @p61='?' (DbType = Boolean), @p62='?', @p63='?', @p64='?' (DbType = Decimal), @p65='?', @p66='?', @p67='?', @p68='?' (DbType = Int32), @p69='?' (DbType = DateTime), @p70='?' (DbType = Guid), @p71='?', @p72='?' (DbType = DateTime), @p73='?', @p74='?', @p75='?' (DbType = Boolean), @p76='?', @p77='?', @p78='?' (DbType = Decimal), @p79='?', @p80='?', @p81='?', @p82='?' (DbType = Int32), @p83='?' (DbType = DateTime), @p84='?' (DbType = Guid), @p85='?', @p86='?' (DbType = DateTime), @p87='?', @p88='?', @p89='?' (DbType = Boolean), @p90='?', @p91='?', @p92='?' (DbType = Decimal), @p93='?', @p94='?', @p95='?', @p96='?' (DbType = Int32), @p97='?' (DbType = DateTime), @p98='?' (DbType = Guid), @p99='?', @p100='?' (DbType = DateTime), @p101='?', @p102='?', @p103='?' (DbType = Boolean), @p104='?', @p105='?', @p106='?' (DbType = Decimal), @p107='?', @p108='?', @p109='?', @p110='?' (DbType = Int32), @p111='?' (DbType = DateTime), @p112='?' (DbType = Guid), @p113='?', @p114='?' (DbType = DateTime), @p115='?', @p116='?', @p117='?' (DbType = Boolean), @p118='?', @p119='?', @p120='?' (DbType = Decimal), @p121='?', @p122='?', @p123='?', @p124='?' (DbType = Int32), @p125='?' (DbType = DateTime), @p126='?' (DbType = Guid), @p127='?', @p128='?' (DbType = DateTime), @p129='?', @p130='?', @p131='?' (DbType = Boolean), @p132='?', @p133='?', @p134='?' (DbType = Decimal), @p135='?', @p136='?', @p137='?', @p138='?' (DbType = Int32), @p139='?' (DbType = DateTime), @p140='?' (DbType = Guid), @p141='?', @p142='?' (DbType = DateTime), @p143='?', @p144='?', @p145='?' (DbType = Boolean), @p146='?', @p147='?', @p148='?' (DbType = Decimal), @p149='?', @p150='?', @p151='?', @p152='?' (DbType = Int32), @p153='?' (DbType = DateTime), @p154='?' (DbType = Guid), @p155='?', @p156='?' (DbType = DateTime), @p157='?', @p158='?', @p159='?' (DbType = Boolean), @p160='?', @p161='?', @p162='?' (DbType = Decimal), @p163='?', @p164='?', @p165='?', @p166='?' (DbType = Int32), @p167='?' (DbType = DateTime), @p168='?' (DbType = Guid), @p169='?', @p170='?' (DbType = DateTime), @p171='?', @p172='?', @p173='?' (DbType = Boolean), @p174='?', @p175='?', @p176='?' (DbType = Decimal), @p177='?', @p178='?', @p179='?', @p180='?' (DbType = Int32), @p181='?' (DbType = DateTime), @p182='?' (DbType = Guid), @p183='?', @p184='?' (DbType = DateTime), @p185='?', @p186='?', @p187='?' (DbType = Boolean), @p188='?', @p189='?', @p190='?' (DbType = Decimal), @p191='?', @p192='?', @p193='?', @p194='?' (DbType = Int32), @p195='?' (DbType = DateTime), @p196='?' (DbType = Guid), @p197='?', @p198='?' (DbType = DateTime), @p199='?', @p200='?', @p201='?' (DbType = Boolean), @p202='?', @p203='?', @p204='?' (DbType = Decimal), @p205='?', @p206='?', @p207='?', @p208='?' (DbType = Int32), @p209='?' (DbType = DateTime), @p210='?' (DbType = Guid), @p211='?', @p212='?' (DbType = DateTime), @p213='?', @p214='?', @p215='?' (DbType = Boolean), @p216='?', @p217='?', @p218='?' (DbType = Decimal), @p219='?', @p220='?', @p221='?', @p222='?' (DbType = Int32), @p223='?' (DbType = DateTime), @p224='?' (DbType = Guid), @p225='?', @p226='?' (DbType = DateTime), @p227='?', @p228='?', @p229='?' (DbType = Boolean), @p230='?', @p231='?', @p232='?' (DbType = Decimal), @p233='?', @p234='?', @p235='?', @p236='?' (DbType = Int32), @p237='?' (DbType = DateTime), @p238='?' (DbType = Guid), @p239='?', @p240='?' (DbType = DateTime), @p241='?', @p242='?', @p243='?' (DbType = Boolean), @p244='?', @p245='?', @p246='?' (DbType = Decimal), @p247='?', @p248='?', @p249='?', @p250='?' (DbType = Int32), @p251='?' (DbType = DateTime), @p252='?' (DbType = Guid), @p253='?', @p254='?' (DbType = DateTime), @p255='?', @p256='?', @p257='?' (DbType = Boolean), @p258='?', @p259='?', @p260='?' (DbType = Decimal), @p261='?', @p262='?', @p263='?', @p264='?' (DbType = Int32), @p265='?' (DbType = DateTime), @p266='?' (DbType = Guid), @p267='?', @p268='?' (DbType = DateTime), @p269='?', @p270='?', @p271='?' (DbType = Boolean), @p272='?', @p273='?', @p274='?' (DbType = Decimal), @p275='?', @p276='?', @p277='?', @p278='?' (DbType = Int32), @p279='?' (DbType = DateTime), @p280='?' (DbType = Guid), @p281='?', @p282='?' (DbType = DateTime), @p283='?', @p284='?', @p285='?' (DbType = Boolean), @p286='?', @p287='?', @p288='?' (DbType = Decimal), @p289='?', @p290='?', @p291='?', @p292='?' (DbType = Int32), @p293='?' (DbType = DateTime), @p294='?' (DbType = Guid), @p295='?', @p296='?' (DbType = DateTime), @p297='?', @p298='?', @p299='?' (DbType = Boolean), @p300='?', @p301='?', @p302='?' (DbType = Decimal), @p303='?', @p304='?', @p305='?', @p306='?' (DbType = Int32), @p307='?' (DbType = DateTime), @p308='?' (DbType = Guid), @p309='?', @p310='?' (DbType = DateTime), @p311='?', @p312='?', @p313='?' (DbType = Boolean), @p314='?', @p315='?', @p316='?' (DbType = Decimal), @p317='?', @p318='?', @p319='?', @p320='?' (DbType = Int32), @p321='?' (DbType = DateTime), @p322='?' (DbType = Guid), @p323='?', @p324='?' (DbType = DateTime), @p325='?', @p326='?', @p327='?' (DbType = Boolean), @p328='?', @p329='?', @p330='?' (DbType = Decimal), @p331='?', @p332='?', @p333='?', @p334='?' (DbType = Int32), @p335='?' (DbType = DateTime), @p336='?' (DbType = Guid), @p337='?', @p338='?' (DbType = DateTime), @p339='?', @p340='?', @p341='?' (DbType = Boolean), @p342='?', @p343='?', @p344='?' (DbType = Decimal), @p345='?', @p346='?', @p347='?', @p348='?' (DbType = Int32), @p349='?' (DbType = DateTime), @p350='?' (DbType = Guid), @p351='?', @p352='?' (DbType = DateTime), @p353='?', @p354='?', @p355='?' (DbType = Boolean), @p356='?', @p357='?', @p358='?' (DbType = Decimal), @p359='?', @p360='?', @p361='?', @p362='?' (DbType = Int32), @p363='?' (DbType = DateTime), @p364='?' (DbType = Guid), @p365='?', @p366='?' (DbType = DateTime), @p367='?', @p368='?', @p369='?' (DbType = Boolean), @p370='?', @p371='?', @p372='?' (DbType = Decimal), @p373='?', @p374='?', @p375='?', @p376='?' (DbType = Int32), @p377='?' (DbType = DateTime), @p378='?' (DbType = Guid), @p379='?', @p380='?' (DbType = DateTime), @p381='?', @p382='?', @p383='?' (DbType = Boolean), @p384='?', @p385='?', @p386='?' (DbType = Decimal), @p387='?', @p388='?', @p389='?', @p390='?' (DbType = Int32), @p391='?' (DbType = DateTime), @p392='?' (DbType = Guid), @p393='?', @p394='?' (DbType = DateTime), @p395='?', @p396='?', @p397='?' (DbType = Boolean), @p398='?', @p399='?', @p400='?' (DbType = Decimal), @p401='?', @p402='?', @p403='?', @p404='?' (DbType = Int32), @p405='?' (DbType = DateTime), @p406='?' (DbType = Guid), @p407='?', @p408='?' (DbType = DateTime), @p409='?', @p410='?', @p411='?' (DbType = Boolean), @p412='?', @p413='?', @p414='?' (DbType = Decimal), @p415='?', @p416='?', @p417='?', @p418='?' (DbType = Int32), @p419='?' (DbType = DateTime)], CommandType='Text', CommandTimeout='30']
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38, @p39, @p40, @p41);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p42, @p43, @p44, @p45, @p46, @p47, @p48, @p49, @p50, @p51, @p52, @p53, @p54, @p55);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p56, @p57, @p58, @p59, @p60, @p61, @p62, @p63, @p64, @p65, @p66, @p67, @p68, @p69);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p70, @p71, @p72, @p73, @p74, @p75, @p76, @p77, @p78, @p79, @p80, @p81, @p82, @p83);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p84, @p85, @p86, @p87, @p88, @p89, @p90, @p91, @p92, @p93, @p94, @p95, @p96, @p97);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p98, @p99, @p100, @p101, @p102, @p103, @p104, @p105, @p106, @p107, @p108, @p109, @p110, @p111);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p112, @p113, @p114, @p115, @p116, @p117, @p118, @p119, @p120, @p121, @p122, @p123, @p124, @p125);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p126, @p127, @p128, @p129, @p130, @p131, @p132, @p133, @p134, @p135, @p136, @p137, @p138, @p139);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p140, @p141, @p142, @p143, @p144, @p145, @p146, @p147, @p148, @p149, @p150, @p151, @p152, @p153);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p154, @p155, @p156, @p157, @p158, @p159, @p160, @p161, @p162, @p163, @p164, @p165, @p166, @p167);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p168, @p169, @p170, @p171, @p172, @p173, @p174, @p175, @p176, @p177, @p178, @p179, @p180, @p181);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p182, @p183, @p184, @p185, @p186, @p187, @p188, @p189, @p190, @p191, @p192, @p193, @p194, @p195);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p196, @p197, @p198, @p199, @p200, @p201, @p202, @p203, @p204, @p205, @p206, @p207, @p208, @p209);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p210, @p211, @p212, @p213, @p214, @p215, @p216, @p217, @p218, @p219, @p220, @p221, @p222, @p223);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p224, @p225, @p226, @p227, @p228, @p229, @p230, @p231, @p232, @p233, @p234, @p235, @p236, @p237);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p238, @p239, @p240, @p241, @p242, @p243, @p244, @p245, @p246, @p247, @p248, @p249, @p250, @p251);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p252, @p253, @p254, @p255, @p256, @p257, @p258, @p259, @p260, @p261, @p262, @p263, @p264, @p265);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p266, @p267, @p268, @p269, @p270, @p271, @p272, @p273, @p274, @p275, @p276, @p277, @p278, @p279);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p280, @p281, @p282, @p283, @p284, @p285, @p286, @p287, @p288, @p289, @p290, @p291, @p292, @p293);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p294, @p295, @p296, @p297, @p298, @p299, @p300, @p301, @p302, @p303, @p304, @p305, @p306, @p307);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p308, @p309, @p310, @p311, @p312, @p313, @p314, @p315, @p316, @p317, @p318, @p319, @p320, @p321);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p322, @p323, @p324, @p325, @p326, @p327, @p328, @p329, @p330, @p331, @p332, @p333, @p334, @p335);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p336, @p337, @p338, @p339, @p340, @p341, @p342, @p343, @p344, @p345, @p346, @p347, @p348, @p349);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p350, @p351, @p352, @p353, @p354, @p355, @p356, @p357, @p358, @p359, @p360, @p361, @p362, @p363);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p364, @p365, @p366, @p367, @p368, @p369, @p370, @p371, @p372, @p373, @p374, @p375, @p376, @p377);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p378, @p379, @p380, @p381, @p382, @p383, @p384, @p385, @p386, @p387, @p388, @p389, @p390, @p391);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p392, @p393, @p394, @p395, @p396, @p397, @p398, @p399, @p400, @p401, @p402, @p403, @p404, @p405);
+INSERT INTO "Products" ("Id", "Category", "CreatedAt", "Description", "ImageUrl", "IsActive", "Name", "Origin", "Price", "Process", "RoastLevel", "Slug", "StockQuantity", "UpdatedAt")
+VALUES (@p406, @p407, @p408, @p409, @p410, @p411, @p412, @p413, @p414, @p415, @p416, @p417, @p418, @p419);
+[19:40:48 INF] Database migrations and seeding completed
+[19:40:48 INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+[19:40:48 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web) in 11.5484ms
+[19:40:48 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:48 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - 400 null application/problem+json; charset=utf-8 54.248ms
+[19:40:48 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - application/json; charset=utf-8 235
+[19:40:48 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:48 INF] Route matched with {action = "SearchProducts", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult SearchProducts(SearchProductsRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:48 INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+[19:40:48 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web) in 0.5203ms
+[19:40:48 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:48 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - 400 null application/problem+json; charset=utf-8 7.5602ms
+[19:40:48 INF] Marketplace catalog validated 30 products
+[19:40:48 INF] Starting database migrations and seeding in the background
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] No migrations were applied. The database is already up to date.
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT p."Slug"
+FROM "Products" AS p
+[19:40:48 INF] Database migrations and seeding completed
+[19:40:48 INF] Application started. Press Ctrl+C to shut down.
+[19:40:48 INF] Hosting environment: Development
+[19:40:48 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:48 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/brew-plan - application/json; charset=utf-8 33
+[19:40:48 WRN] Failed to determine the https port for redirect.
+[19:40:48 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web)'
+[19:40:48 INF] Route matched with {action = "BrewPlan", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult BrewPlan(BrewPlanRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:48 INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+[19:40:48 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web) in 6.5716ms
+[19:40:48 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web)'
+[19:40:48 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/brew-plan - 400 null application/problem+json; charset=utf-8 43.1908ms
+[19:40:48 INF] Marketplace catalog validated 30 products
+[19:40:48 INF] Starting database migrations and seeding in the background
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] Application started. Press Ctrl+C to shut down.
+[19:40:48 INF] Hosting environment: Development
+[19:40:48 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:48 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - application/json; charset=utf-8 38
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] No migrations were applied. The database is already up to date.
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT p."Slug"
+FROM "Products" AS p
+[19:40:48 INF] Database migrations and seeding completed
+[19:40:48 WRN] Failed to determine the https port for redirect.
+[19:40:48 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:48 INF] Route matched with {action = "SearchProducts", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult SearchProducts(SearchProductsRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:48 WRN] Rejected agent gateway request for /internal/agent/resources/search-products
+[19:40:48 INF] Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
+[19:40:48 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web) in 4.4861ms
+[19:40:48 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:48 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - 401 null application/problem+json; charset=utf-8 42.6861ms
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.2","title":"Unauthorized","status":401,"traceId":"00-1687da040383d33f557462f31c3bc74d-e038648b2ce2ff12-00"}
+[19:40:48 INF] Marketplace catalog validated 30 products
+[19:40:48 INF] Starting database migrations and seeding in the background
+[19:40:48 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:48 INF] Application started. Press Ctrl+C to shut down.
+[19:40:48 INF] Hosting environment: Development
+[19:40:48 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:48 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - application/json; charset=utf-8 44
+[19:40:48 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:49 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:49 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:49 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:49 INF] No migrations were applied. The database is already up to date.
+[19:40:49 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT p."Slug"
+FROM "Products" AS p
+[19:40:49 INF] Database migrations and seeding completed
+[19:40:49 WRN] Failed to determine the https port for redirect.
+[19:40:49 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:49 INF] Route matched with {action = "SearchProducts", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult SearchProducts(SearchProductsRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:49 INF] Executing OkObjectResult, writing value of type '&lt;&gt;f__AnonymousType0`3[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Object[], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+[19:40:49 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web) in 3.1621ms
+[19:40:49 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.SearchProducts (ThisCafeteria.Web)'
+[19:40:49 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/search-products - 200 null application/json; charset=utf-8 32.0619ms
+[19:40:49 INF] Marketplace catalog validated 30 products
+[19:40:49 INF] Starting database migrations and seeding in the background
+[19:40:49 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:49 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT 1
+[19:40:49 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+    "MigrationId" character varying(150) NOT NULL,
+    "ProductVersion" character varying(32) NOT NULL,
+    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+);
+[19:40:49 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+LOCK TABLE "__EFMigrationsHistory" IN ACCESS EXCLUSIVE MODE
+[19:40:49 INF] Executed DbCommand (0ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT "MigrationId", "ProductVersion"
+FROM "__EFMigrationsHistory"
+ORDER BY "MigrationId";
+[19:40:49 INF] No migrations were applied. The database is already up to date.
+[19:40:49 INF] Application started. Press Ctrl+C to shut down.
+[19:40:49 INF] Hosting environment: Development
+[19:40:49 INF] Content root path: /workspace/ArtisanalBrew/src/ThisCafeteria.Web
+[19:40:49 INF] Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT p."Slug"
+FROM "Products" AS p
+[19:40:49 INF] Database migrations and seeding completed
+[19:40:49 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/brew-plan - application/json; charset=utf-8 55
+[19:40:49 WRN] Failed to determine the https port for redirect.
+[19:40:49 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web)'
+[19:40:49 INF] Route matched with {action = "BrewPlan", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult BrewPlan(BrewPlanRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:49 INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+[19:40:49 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web) in 4.2951ms
+[19:40:49 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web)'
+[19:40:49 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/brew-plan - 400 null application/problem+json; charset=utf-8 35.1647ms
+[19:40:49 INF] Request starting HTTP/1.1 POST http://localhost/internal/agent/resources/brew-plan - application/json; charset=utf-8 59
+[19:40:49 INF] Executing endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web)'
+[19:40:49 INF] Route matched with {action = "BrewPlan", controller = "AgentResource"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult BrewPlan(BrewPlanRequest) on controller ThisCafeteria.Web.Controllers.AgentResourceController (ThisCafeteria.Web).
+[19:40:49 INF] Executing BadRequestObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ValidationProblemDetails'.
+[19:40:49 INF] Executed action ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web) in 0.4001ms
+[19:40:49 INF] Executed endpoint 'ThisCafeteria.Web.Controllers.AgentResourceController.BrewPlan (ThisCafeteria.Web)'
+[19:40:49 INF] Request finished HTTP/1.1 POST http://localhost/internal/agent/resources/brew-plan - 400 null application/problem+json; charset=utf-8 6.7494ms
+[19:40:49 INF] Application is shutting down...
+[19:40:49 INF] Application is shutting down...
+[19:40:49 INF] Application is shutting down...
+[19:40:49 INF] Application is shutting down...
+[19:40:49 INF] Application is shutting down...
+[xUnit.net 00:00:09.87]   Finished:    ThisCafeteria.IntegrationTests
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

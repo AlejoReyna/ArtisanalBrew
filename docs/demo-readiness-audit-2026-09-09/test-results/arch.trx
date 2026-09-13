@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="f030d159-516f-4ffc-8a74-70fc9f817d66" name="@cursor 2026-09-09 19:40:38" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-09T19:40:38.3045147+00:00" queuing="2026-09-09T19:40:38.3045147+00:00" start="2026-09-09T19:40:37.6671922+00:00" finish="2026-09-09T19:40:38.3399848+00:00" />
+  <TestSettings name="default" id="7ef532cb-285d-4e1c-977e-4a5ecec4b644">
+    <Deployment runDeploymentRoot="_cursor_2026-09-09_19_40_38" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="26221ec4-01f8-46e4-b706-af793ad6042b" testId="93a015d4-d78f-4097-3e0a-a9c7a595a119" testName="ThisCafeteria.ArchitectureTests.InterfacePlacementTests.HostsDoNotDependOnInfrastructureOnlyAbstractions" computerName="cursor" duration="00:00:00.0256413" startTime="2026-09-09T19:40:38.1793878+00:00" endTime="2026-09-09T19:40:38.2113903+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="26221ec4-01f8-46e4-b706-af793ad6042b" />
+    <UnitTestResult executionId="f8a69766-2fea-4b6d-9056-d487d7979903" testId="0c3d07a3-7847-8cf9-c2a0-6da188a203a8" testName="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WebDoesNotReferenceInfrastructureServicesOutsideCompositionRoot" computerName="cursor" duration="00:00:00.0159667" startTime="2026-09-09T19:40:38.2437161+00:00" endTime="2026-09-09T19:40:38.2788706+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f8a69766-2fea-4b6d-9056-d487d7979903" />
+    <UnitTestResult executionId="a5ecbc8d-d6dd-4ac2-aaa4-5251a5bc5058" testId="d9bf26df-8c20-c6c9-2a45-2c6f0312a1a6" testName="ThisCafeteria.ArchitectureTests.LayerDependencyTests.OnlyInfrastructureTouchesEntityFramework" computerName="cursor" duration="00:00:00.0588442" startTime="2026-09-09T19:40:38.1792886+00:00" endTime="2026-09-09T19:40:38.2424640+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a5ecbc8d-d6dd-4ac2-aaa4-5251a5bc5058" />
+    <UnitTestResult executionId="4326eda5-0d9a-4b92-b49b-e7403c8b2b22" testId="401d0738-a083-9ef3-75a0-6e7647c5abf0" testName="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WorkerDoesNotOwnExternalServiceAdapters" computerName="cursor" duration="00:00:00.0588172" startTime="2026-09-09T19:40:38.1794098+00:00" endTime="2026-09-09T19:40:38.2432728+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4326eda5-0d9a-4b92-b49b-e7403c8b2b22" />
+    <UnitTestResult executionId="4bb3f259-60e2-498c-a2e3-826b847c41a1" testId="b7051f4a-57b9-0eef-272f-45b8273989c9" testName="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WebDoesNotReferenceInfrastructureIdentityTypes" computerName="cursor" duration="00:00:00.0092384" startTime="2026-09-09T19:40:38.2789687+00:00" endTime="2026-09-09T19:40:38.2790317+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4bb3f259-60e2-498c-a2e3-826b847c41a1" />
+    <UnitTestResult executionId="d016c8ef-4baa-4429-93e9-3e3eeab3514c" testId="75604190-f574-fa9d-c0ef-c66960a71767" testName="ThisCafeteria.ArchitectureTests.DependencyHygieneTests.ArchitecturalPackagesAreEitherUsedOrRemoved(packageId: &quot;MediatR&quot;, rootNamespace: &quot;MediatR&quot;)" computerName="cursor" duration="00:00:00.0645576" startTime="2026-09-09T19:40:38.1793565+00:00" endTime="2026-09-09T19:40:38.2483179+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d016c8ef-4baa-4429-93e9-3e3eeab3514c" />
+    <UnitTestResult executionId="183a20eb-0bbc-481e-a2b9-1a9742dae987" testId="2873e7de-a84b-121c-10ce-989fa6d531cf" testName="ThisCafeteria.ArchitectureTests.InterfacePlacementTests.ApplicationInterfacesAreImplementedInApplicationOrInfrastructure" computerName="cursor" duration="00:00:00.0309737" startTime="2026-09-09T19:40:38.2385183+00:00" endTime="2026-09-09T19:40:38.2425599+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="183a20eb-0bbc-481e-a2b9-1a9742dae987" />
+    <UnitTestResult executionId="ea8f89c2-bb37-42fa-9c80-62108e14d554" testId="39488834-92e8-ce6d-f8bc-ebc0b15e8aff" testName="ThisCafeteria.ArchitectureTests.DependencyHygieneTests.ArchitecturalPackagesAreEitherUsedOrRemoved(packageId: &quot;FluentValidation&quot;, rootNamespace: &quot;FluentValidation&quot;)" computerName="cursor" duration="00:00:00.0089990" startTime="2026-09-09T19:40:38.2785726+00:00" endTime="2026-09-09T19:40:38.2786287+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ea8f89c2-bb37-42fa-9c80-62108e14d554" />
+    <UnitTestResult executionId="729cfdca-a70a-491e-b9bc-6640ed64a234" testId="f7fbcf03-c2c6-0d0e-5e55-53d99a84117e" testName="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WorkerDoesNotOwnHostedServiceImplementations" computerName="cursor" duration="00:00:00.0011071" startTime="2026-09-09T19:40:38.2434337+00:00" endTime="2026-09-09T19:40:38.2436147+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="729cfdca-a70a-491e-b9bc-6640ed64a234" />
+    <UnitTestResult executionId="cb9a19fb-2b53-4a26-9da7-f6d77cddf6df" testId="c2676fa4-5252-ba92-0702-f3766794d3ed" testName="ThisCafeteria.ArchitectureTests.PresentationPurityTests.RazorComponentsDoNotPerformDataAccess" computerName="cursor" duration="00:00:00.0588679" startTime="2026-09-09T19:40:38.1780895+00:00" endTime="2026-09-09T19:40:38.2431477+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cb9a19fb-2b53-4a26-9da7-f6d77cddf6df" />
+    <UnitTestResult executionId="9766c111-6d4e-4356-b4bb-c7c9e2e7c2c2" testId="085e4f2c-41dc-4f0e-22e7-4aa291748c45" testName="ThisCafeteria.ArchitectureTests.LayerDependencyTests.DomainDependsOnNothingOutsideItself" computerName="cursor" duration="00:00:00.0026372" startTime="2026-09-09T19:40:38.2433983+00:00" endTime="2026-09-09T19:40:38.2451436+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9766c111-6d4e-4356-b4bb-c7c9e2e7c2c2" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.LayerDependencyTests.OnlyInfrastructureTouchesEntityFramework" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="d9bf26df-8c20-c6c9-2a45-2c6f0312a1a6">
+      <Execution id="a5ecbc8d-d6dd-4ac2-aaa4-5251a5bc5058" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.LayerDependencyTests" name="OnlyInfrastructureTouchesEntityFramework" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WorkerDoesNotOwnExternalServiceAdapters" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="401d0738-a083-9ef3-75a0-6e7647c5abf0">
+      <Execution id="4326eda5-0d9a-4b92-b49b-e7403c8b2b22" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.HostBoundaryTests" name="WorkerDoesNotOwnExternalServiceAdapters" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WebDoesNotReferenceInfrastructureIdentityTypes" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="b7051f4a-57b9-0eef-272f-45b8273989c9">
+      <Execution id="4bb3f259-60e2-498c-a2e3-826b847c41a1" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.HostBoundaryTests" name="WebDoesNotReferenceInfrastructureIdentityTypes" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.PresentationPurityTests.RazorComponentsDoNotPerformDataAccess" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="c2676fa4-5252-ba92-0702-f3766794d3ed">
+      <Execution id="cb9a19fb-2b53-4a26-9da7-f6d77cddf6df" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.PresentationPurityTests" name="RazorComponentsDoNotPerformDataAccess" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.InterfacePlacementTests.HostsDoNotDependOnInfrastructureOnlyAbstractions" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="93a015d4-d78f-4097-3e0a-a9c7a595a119">
+      <Execution id="26221ec4-01f8-46e4-b706-af793ad6042b" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.InterfacePlacementTests" name="HostsDoNotDependOnInfrastructureOnlyAbstractions" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.DependencyHygieneTests.ArchitecturalPackagesAreEitherUsedOrRemoved(packageId: &quot;FluentValidation&quot;, rootNamespace: &quot;FluentValidation&quot;)" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="39488834-92e8-ce6d-f8bc-ebc0b15e8aff">
+      <Execution id="ea8f89c2-bb37-42fa-9c80-62108e14d554" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.DependencyHygieneTests" name="ArchitecturalPackagesAreEitherUsedOrRemoved" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.LayerDependencyTests.DomainDependsOnNothingOutsideItself" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="085e4f2c-41dc-4f0e-22e7-4aa291748c45">
+      <Execution id="9766c111-6d4e-4356-b4bb-c7c9e2e7c2c2" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.LayerDependencyTests" name="DomainDependsOnNothingOutsideItself" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WorkerDoesNotOwnHostedServiceImplementations" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="f7fbcf03-c2c6-0d0e-5e55-53d99a84117e">
+      <Execution id="729cfdca-a70a-491e-b9bc-6640ed64a234" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.HostBoundaryTests" name="WorkerDoesNotOwnHostedServiceImplementations" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.HostBoundaryTests.WebDoesNotReferenceInfrastructureServicesOutsideCompositionRoot" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="0c3d07a3-7847-8cf9-c2a0-6da188a203a8">
+      <Execution id="f8a69766-2fea-4b6d-9056-d487d7979903" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.HostBoundaryTests" name="WebDoesNotReferenceInfrastructureServicesOutsideCompositionRoot" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.InterfacePlacementTests.ApplicationInterfacesAreImplementedInApplicationOrInfrastructure" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="2873e7de-a84b-121c-10ce-989fa6d531cf">
+      <Execution id="183a20eb-0bbc-481e-a2b9-1a9742dae987" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.InterfacePlacementTests" name="ApplicationInterfacesAreImplementedInApplicationOrInfrastructure" />
+    </UnitTest>
+    <UnitTest name="ThisCafeteria.ArchitectureTests.DependencyHygieneTests.ArchitecturalPackagesAreEitherUsedOrRemoved(packageId: &quot;MediatR&quot;, rootNamespace: &quot;MediatR&quot;)" storage="/workspace/artisanalbrew/tests/thiscafeteria.architecturetests/bin/release/net10.0/thiscafeteria.architecturetests.dll" id="75604190-f574-fa9d-c0ef-c66960a71767">
+      <Execution id="d016c8ef-4baa-4429-93e9-3e3eeab3514c" />
+      <TestMethod codeBase="/workspace/ArtisanalBrew/tests/ThisCafeteria.ArchitectureTests/bin/Release/net10.0/ThisCafeteria.ArchitectureTests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="ThisCafeteria.ArchitectureTests.DependencyHygieneTests" name="ArchitecturalPackagesAreEitherUsedOrRemoved" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="93a015d4-d78f-4097-3e0a-a9c7a595a119" executionId="26221ec4-01f8-46e4-b706-af793ad6042b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0c3d07a3-7847-8cf9-c2a0-6da188a203a8" executionId="f8a69766-2fea-4b6d-9056-d487d7979903" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d9bf26df-8c20-c6c9-2a45-2c6f0312a1a6" executionId="a5ecbc8d-d6dd-4ac2-aaa4-5251a5bc5058" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="401d0738-a083-9ef3-75a0-6e7647c5abf0" executionId="4326eda5-0d9a-4b92-b49b-e7403c8b2b22" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b7051f4a-57b9-0eef-272f-45b8273989c9" executionId="4bb3f259-60e2-498c-a2e3-826b847c41a1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="75604190-f574-fa9d-c0ef-c66960a71767" executionId="d016c8ef-4baa-4429-93e9-3e3eeab3514c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2873e7de-a84b-121c-10ce-989fa6d531cf" executionId="183a20eb-0bbc-481e-a2b9-1a9742dae987" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="39488834-92e8-ce6d-f8bc-ebc0b15e8aff" executionId="ea8f89c2-bb37-42fa-9c80-62108e14d554" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f7fbcf03-c2c6-0d0e-5e55-53d99a84117e" executionId="729cfdca-a70a-491e-b9bc-6640ed64a234" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c2676fa4-5252-ba92-0702-f3766794d3ed" executionId="cb9a19fb-2b53-4a26-9da7-f6d77cddf6df" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="085e4f2c-41dc-4f0e-22e7-4aa291748c45" executionId="9766c111-6d4e-4356-b4bb-c7c9e2e7c2c2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="11" executed="11" passed="11" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.4+50e68bbb8b (64-bit .NET 10.0.12)
+[xUnit.net 00:00:00.06]   Discovering: ThisCafeteria.ArchitectureTests
+[xUnit.net 00:00:00.11]   Discovered:  ThisCafeteria.ArchitectureTests
+[xUnit.net 00:00:00.14]   Starting:    ThisCafeteria.ArchitectureTests
+     Warning:
+     The component "Fluent Assertions" is governed by the rules defined in the Xceed License Agreement and
+     the Xceed Fluent Assertions Community License. You may use Fluent Assertions free of charge for
+     non-commercial use only. An active subscription is required to use Fluent Assertions for commercial use.
+     Please contact Xceed Sales mailto:sales@xceed.com to acquire a subscription at a very low cost.
+     A paid commercial license supports the development and continued increasing support of
+     Fluent Assertions users under both commercial and community licenses. Help us
+     keep Fluent Assertions at the forefront of unit testing.
+     For more information, visit https://xceed.com/products/unit-testing/fluent-assertions/
+[xUnit.net 00:00:00.26]   Finished:    ThisCafeteria.ArchitectureTests
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>
