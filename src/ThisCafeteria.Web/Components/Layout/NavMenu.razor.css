@@ -1336,13 +1336,20 @@
     color: var(--ink);
 }
 
-/* Desktop: the hamburger stays in the bar next to the wallet button, so the
-   drawer opens as a panel from the right instead of covering the page. */
+/* Desktop: the drawer opens as a panel from the right instead of covering the
+   page. Unlike mobile, the hamburger does not morph into a close button, so
+   the drawer and backdrop sit above the fixed header (z-index 1000) and the
+   drawer's own header row and close button stay visible. */
 @media (min-width: 761px) {
+    .nav-drawer-backdrop {
+        z-index: 1001;
+    }
+
     .nav-drawer {
         box-shadow: -24px 0 48px rgba(8, 7, 6, 0.18);
         left: auto;
         width: min(26rem, 100%);
+        z-index: 1002;
     }
 }
 
