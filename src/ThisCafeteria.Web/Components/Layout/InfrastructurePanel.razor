@@ -1,0 +1,271 @@
+@implements IDisposable
+@inject IInfrastructureSummaryService Summaries
+@inject ILogger<InfrastructurePanel> Logger
+@using ThisCafeteria.Web.Services.Monitoring
+
+@*
+    Right-hand "Infraestructura" panel. It lives inside NavMenu, which both layouts share, so
+    opening and closing it never navigates, reloads or re-creates the page below it: only the
+    <html> class (infraPanel.js) changes, and wwwroot/css/infra-panel.css reserves the space.
+    Data comes from IInfrastructureSummaryService (same process); the browser never talks to
+    Prometheus or Grafana and never sees their addresses.
+*@
+<aside id="infra-panel"
+       class="@PanelCssClass"
+       aria-labelledby="infra-panel-title"
+       inert="@(!Open)">
+    <header class="infra-panel__header">
+        <h2 id="infra-panel-title" class="infra-panel__title">Infraestructura y monitoreo</h2>
+        <button type="button"
+                class="infra-panel__close"
+                data-infra-close
+                aria-label="Cerrar panel de infraestructura"
+                @onclick="RequestClose">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+    </header>
+
+    <nav class="infra-panel__tabs" aria-label="Secciones de infraestructura">
+        <button type="button" class="infra-tab" aria-current="@AriaCurrent(Section.Infrastructure)" @onclick="() => Select(Section.Infrastructure)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5" /><rect x="3" y="14" width="18" height="6" rx="1.5" /><path d="M7 7h.01M7 17h.01" /></svg>
+            <span>Infraestructura</span>
+        </button>
+        <button type="button" class="infra-tab" aria-current="@AriaCurrent(Section.Prometheus)" @onclick="() => Select(Section.Prometheus)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3 4 4.5 4 8.2A4 4 0 0 1 12 15a4 4 0 0 1-4-3.8c0-1.4.6-2.4 1.5-3.4C10.4 6.8 11.7 5.6 12 3z" /><path d="M9 20h6M10 17.5h4" /></svg>
+            <span>Prometheus</span>
+        </button>
+        <button type="button" class="infra-tab" aria-current="@AriaCurrent(Section.Grafana)" @onclick="() => Select(Section.Grafana)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+            <span>Grafana</span>
+        </button>
+    </nav>
+
+    <div class="infra-panel__body" aria-live="polite">
+        @if (_summary is null)
+        {
+            <p class="infra-card infra-card--muted">@(_loading ? "Cargando…" : "Sin configurar")</p>
+        }
+        else if (_section == Section.Infrastructure)
+        {
+            var d = _summary.Deployment;
+            <section class="infra-card" aria-labelledby="infra-sec-infra">
+                <h3 id="infra-sec-infra" class="infra-card__title">Despliegue</h3>
+                <dl class="infra-facts">
+                    <div><dt>Proyecto</dt><dd>@d.Project</dd></div>
+                    <div><dt>Proveedor</dt><dd class="@MutedIf(d.Provider)">@(d.Provider ?? NotConfigured)</dd></div>
+                    <div><dt>Plataforma</dt><dd class="@MutedIf(d.Platform)">@(d.Platform ?? NotConfigured)</dd></div>
+                    <div><dt>Entorno</dt><dd class="@MutedIf(d.Environment)">@(d.Environment ?? NotConfigured)</dd></div>
+                    <div><dt>Release</dt><dd class="@MutedIf(d.Release) infra-facts__mono">@(d.Release ?? "No disponible")</dd></div>
+                </dl>
+            </section>
+            <section class="infra-card" aria-labelledby="infra-sec-components">
+                <h3 id="infra-sec-components" class="infra-card__title">Componentes principales</h3>
+                @if (d.Components.Count == 0)
+                {
+                    <p class="infra-muted">@NotConfigured</p>
+                }
+                else
+                {
+                    <ul class="infra-components">
+                        @foreach (var component in d.Components)
+                        {
+                            <li>@component</li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+        else if (_section == Section.Prometheus)
+        {
+            var p = _summary.Prometheus;
+            <section class="infra-card" aria-labelledby="infra-sec-prom">
+                <div class="infra-card__row">
+                    <h3 id="infra-sec-prom" class="infra-card__title">Métricas</h3>
+                    <span class="infra-badge infra-badge--@StateClass(p)">@StateLabel(p)</span>
+                </div>
+
+                @if (p.State == MonitoringState.NotConfigured)
+                {
+                    <p class="infra-muted">No hay una fuente de métricas configurada para este entorno.</p>
+                }
+                else if (p.State == MonitoringState.Offline)
+                {
+                    <p class="infra-muted">No se pudo contactar la fuente de métricas. El sitio sigue funcionando.</p>
+                }
+                else
+                {
+                    @if (p.State == MonitoringState.Stale)
+                    {
+                        <p class="infra-muted">Las lecturas no son recientes; no las tomes como estado actual.</p>
+                    }
+                    @if (p.Metrics.Count == 0)
+                    {
+                        <p class="infra-muted">Sin lecturas disponibles.</p>
+                    }
+                    else
+                    {
+                        <ul class="infra-metrics">
+                            @foreach (var metric in p.Metrics)
+                            {
+                                <li class="infra-metric">
+                                    <span class="infra-metric__label">@metric.Label</span>
+                                    <span class="infra-metric__value">@metric.Value</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+
+                <p class="infra-reading">
+                    Última lectura:
+                    @if (p.LastReading is { } at)
+                    {
+                        <time datetime="@at.UtcDateTime.ToString("O")">@at.UtcDateTime.ToString("HH:mm:ss") UTC</time>
+                    }
+                    else
+                    {
+                        <span>sin lecturas</span>
+                    }
+                </p>
+            </section>
+            <button type="button" class="infra-refresh" disabled="@_loading" @onclick="RefreshAsync">
+                @(_loading ? "Actualizando…" : "Actualizar lectura")
+            </button>
+        }
+        else
+        {
+            var g = _summary.Grafana;
+            <section class="infra-card" aria-labelledby="infra-sec-grafana">
+                <div class="infra-card__row">
+                    <h3 id="infra-sec-grafana" class="infra-card__title">Dashboard</h3>
+                    <span class="infra-badge infra-badge--@(g.Access == DashboardAccess.Link ? "ok" : g.Access == DashboardAccess.Private ? "private" : "off")">
+                        @(g.Access switch { DashboardAccess.Link => "Disponible", DashboardAccess.Private => "Acceso privado", _ => NotConfigured })
+                    </span>
+                </div>
+                @if (g.Access == DashboardAccess.Link && g.Url is not null)
+                {
+                    <a class="infra-link" href="@g.Url" target="_blank" rel="noopener noreferrer">
+                        Abrir en Grafana
+                        <span class="infra-visually-hidden">(se abre en una pestaña nueva)</span>
+                    </a>
+                }
+                else if (g.Access == DashboardAccess.Private)
+                {
+                    <p class="infra-muted">El dashboard solo es accesible mediante túnel o port-forward desde un equipo autorizado.</p>
+                }
+                else
+                {
+                    <p class="infra-muted">No hay un dashboard autorizado para este entorno.</p>
+                }
+            </section>
+        }
+    </div>
+</aside>
+
+@code {
+    private const string NotConfigured = "Sin configurar";
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(30);
+
+    private enum Section { Infrastructure, Prometheus, Grafana }
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Section _section = Section.Infrastructure;
+    private InfrastructureSummary? _summary;
+    private bool _loading;
+    private bool _wasOpen;
+    private Timer? _timer;
+    private CancellationTokenSource? _cancellation;
+
+    private string PanelCssClass => Open ? "infra-panel infra-panel--open" : "infra-panel";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Open && !_wasOpen && Summaries.Enabled)
+        {
+            _wasOpen = true;
+            _timer?.Dispose();
+            _timer = new Timer(_ => _ = InvokeAsync(() => LoadAsync(showSpinner: false)), null, RefreshInterval, RefreshInterval);
+            await LoadAsync(showSpinner: _summary is null);
+        }
+        else if (!Open && _wasOpen)
+        {
+            _wasOpen = false;
+            _timer?.Dispose();
+            _timer = null;
+        }
+    }
+
+    private async Task LoadAsync(bool showSpinner)
+    {
+        if (_loading || !Open || !Summaries.Enabled)
+        {
+            return;
+        }
+
+        _loading = showSpinner;
+        _cancellation ??= new CancellationTokenSource();
+        if (showSpinner)
+        {
+            StateHasChanged();
+        }
+
+        try
+        {
+            _summary = await Summaries.GetAsync(_cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            // The summary service already degrades to "Sin conexión"; anything else must not
+            // reach the page either.
+            Logger.LogWarning(exception, "The infrastructure panel could not read its summary.");
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private Task RefreshAsync() => LoadAsync(showSpinner: true);
+
+    private void Select(Section section) => _section = section;
+
+    private Task RequestClose() => OnClose.InvokeAsync();
+
+    private string? AriaCurrent(Section section) => _section == section ? "true" : null;
+
+    private static string MutedIf(string? value) => string.IsNullOrEmpty(value) ? "infra-muted" : "";
+
+    private static string StateLabel(PrometheusSummary p) =>
+        p.IsSample ? "Datos de ejemplo" : p.State switch
+        {
+            MonitoringState.Operational => "Operativo",
+            MonitoringState.Stale => "Datos desactualizados",
+            MonitoringState.Offline => "Sin conexión",
+            _ => NotConfigured
+        };
+
+    private static string StateClass(PrometheusSummary p) =>
+        p.IsSample ? "sample" : p.State switch
+        {
+            MonitoringState.Operational => "ok",
+            MonitoringState.Stale => "stale",
+            MonitoringState.Offline => "offline",
+            _ => "off"
+        };
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        _cancellation?.Cancel();
+        _cancellation?.Dispose();
+    }
+}

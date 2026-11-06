@@ -1,0 +1,445 @@
+/* Navbar "Infraestructura" panel (Components/Layout/InfrastructurePanel.razor).
+   Dark side panel in the spirit of MetaMask's: near-black ground, dark-grey cards, hairline
+   borders, light text, violet accent for the active section.
+
+   Two modes, split at 1024px:
+   - >= 1024px: the panel RESERVES space. The <html> element gets .infra-panel-open (infraPanel.js),
+     the document body gives up the panel's width on the right and the fixed header follows, so the
+     page is compressed to the left rather than covered.
+   - <  1024px: the panel is an overlay sheet with a visible close button that respects the
+     device safe areas; the page underneath is left exactly as it was.
+
+   Global (not scoped) because it has to address <html> and elements owned by other components. */
+
+:root {
+    --infra-panel-width: 23rem;
+    --infra-bg: #0b0b0d;
+    --infra-card: #151518;
+    --infra-card-raised: #1c1c21;
+    --infra-border: #2a2a31;
+    --infra-text: #ececf1;
+    --infra-muted: #9a9aa6;
+    --infra-accent: #8b5cf6;
+    --infra-accent-soft: rgba(139, 92, 246, 0.16);
+    --infra-ok: #4ade80;
+    --infra-warn: #fbbf24;
+    --infra-bad: #f87171;
+    --infra-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------- navbar button */
+
+.nav-infra {
+    -webkit-appearance: none;
+    appearance: none;
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--nav-line, rgba(251, 249, 244, 0.14));
+    border-radius: 999px;
+    color: var(--nav-fg, #fbf9f4);
+    cursor: pointer;
+    display: inline-flex;
+    flex: none;
+    height: 2.4rem;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+    width: 2.4rem;
+}
+
+.nav-infra:hover,
+.nav-infra[aria-expanded="true"] {
+    background: rgba(139, 92, 246, 0.18);
+    border-color: var(--infra-accent);
+    color: #fff;
+}
+
+.nav-infra:focus-visible {
+    outline: 2px solid var(--infra-accent);
+    outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+    /* NavMenu hides every utility except the hamburger below 760px; the infrastructure
+       button has to stay reachable on phones, so it opts back in. */
+    .site-nav .nav-utilities > .nav-infra {
+        display: inline-flex;
+    }
+
+    .site-nav .nav-utilities {
+        gap: 0.5rem;
+    }
+
+    /* The Lab's wordmark is wide: with the extra button the utilities can wrap to a second row.
+       Keep that row flush right, under the hamburger, instead of left-aligned. */
+    .public-header--lab .site-nav .nav-utilities {
+        margin-left: auto;
+    }
+}
+
+/* ---------------------------------------------------------------- the panel */
+
+.infra-panel {
+    background: var(--infra-bg);
+    border-left: 1px solid var(--infra-border);
+    bottom: 0;
+    box-sizing: border-box;
+    color: var(--infra-text);
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    overscroll-behavior: contain;
+    position: fixed;
+    right: 0;
+    top: 0;
+    transform: translateX(100%);
+    transition: transform 320ms var(--infra-ease), visibility 0s linear 320ms;
+    visibility: hidden;
+    width: var(--infra-panel-width);
+    z-index: 1100;
+}
+
+.infra-panel--open {
+    transform: translateX(0);
+    transition: transform 320ms var(--infra-ease), visibility 0s;
+    visibility: visible;
+}
+
+.infra-panel *,
+.infra-panel *::before,
+.infra-panel *::after {
+    box-sizing: border-box;
+}
+
+.infra-panel__header {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    padding: 1rem 1.1rem 0.75rem;
+}
+
+.infra-panel__title {
+    color: var(--infra-text);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    margin: 0;
+}
+
+.infra-panel__close {
+    align-items: center;
+    background: var(--infra-card);
+    border: 1px solid var(--infra-border);
+    border-radius: 999px;
+    color: var(--infra-text);
+    cursor: pointer;
+    display: inline-flex;
+    flex: none;
+    height: 2.25rem;
+    justify-content: center;
+    padding: 0;
+    width: 2.25rem;
+}
+
+.infra-panel__close:hover {
+    background: var(--infra-card-raised);
+}
+
+.infra-panel button:focus-visible,
+.infra-panel a:focus-visible {
+    outline: 2px solid var(--infra-accent);
+    outline-offset: 2px;
+}
+
+.infra-panel__tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.25rem 0.75rem 0.75rem;
+}
+
+.infra-tab {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.7rem;
+    color: var(--infra-muted);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-weight: 500;
+    gap: 0.7rem;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+    width: 100%;
+}
+
+.infra-tab:hover {
+    background: var(--infra-card);
+    color: var(--infra-text);
+}
+
+.infra-tab[aria-current="true"] {
+    background: var(--infra-accent-soft);
+    border-color: rgba(139, 92, 246, 0.45);
+    color: #fff;
+}
+
+.infra-tab[aria-current="true"] svg {
+    color: var(--infra-accent);
+}
+
+.infra-panel__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.25rem 0.75rem 1rem;
+}
+
+/* ---------------------------------------------------------------- cards */
+
+.infra-card {
+    background: var(--infra-card);
+    border: 1px solid var(--infra-border);
+    border-radius: 0.85rem;
+    margin: 0;
+    padding: 0.9rem 1rem;
+}
+
+.infra-card--muted {
+    color: var(--infra-muted);
+}
+
+.infra-card__row {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.infra-card__title {
+    color: var(--infra-muted);
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.6rem;
+    text-transform: uppercase;
+}
+
+.infra-card__row .infra-card__title {
+    margin: 0;
+}
+
+.infra-muted {
+    color: var(--infra-muted);
+    margin: 0;
+}
+
+.infra-facts {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+}
+
+.infra-facts > div {
+    align-items: baseline;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+}
+
+.infra-facts dt {
+    color: var(--infra-muted);
+}
+
+.infra-facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.infra-facts__mono {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 0.8rem;
+}
+
+.infra-components {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.infra-components li {
+    background: var(--infra-card-raised);
+    border: 1px solid var(--infra-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+}
+
+.infra-metrics {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.infra-metric {
+    background: var(--infra-card-raised);
+    border: 1px solid var(--infra-border);
+    border-radius: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0.7rem;
+}
+
+.infra-metric__label {
+    color: var(--infra-muted);
+    font-size: 0.75rem;
+}
+
+.infra-metric__value {
+    font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.infra-reading {
+    color: var(--infra-muted);
+    font-size: 0.78rem;
+    margin: 0.75rem 0 0;
+}
+
+.infra-badge {
+    border: 1px solid var(--infra-border);
+    border-radius: 999px;
+    color: var(--infra-muted);
+    flex: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    white-space: nowrap;
+}
+
+.infra-badge--ok { border-color: rgba(74, 222, 128, 0.4); color: var(--infra-ok); }
+.infra-badge--stale { border-color: rgba(251, 191, 36, 0.4); color: var(--infra-warn); }
+.infra-badge--offline { border-color: rgba(248, 113, 113, 0.4); color: var(--infra-bad); }
+.infra-badge--private,
+.infra-badge--sample { border-color: rgba(139, 92, 246, 0.5); color: #c4b5fd; }
+
+.infra-refresh,
+.infra-link {
+    align-items: center;
+    background: var(--infra-accent-soft);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    border-radius: 0.7rem;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 600;
+    justify-content: center;
+    padding: 0.55rem 0.9rem;
+    text-decoration: none;
+}
+
+.infra-refresh:hover,
+.infra-link:hover {
+    background: rgba(139, 92, 246, 0.28);
+}
+
+.infra-refresh:disabled {
+    cursor: progress;
+    opacity: 0.6;
+}
+
+.infra-visually-hidden {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+/* ---------------------------------------------------------------- desktop: reserve real space */
+
+@media (min-width: 1024px) {
+    /* The header is position:fixed with width:100%, which would slide under the panel. Pin it to
+       both edges instead so it can shrink; `html:root` outranks the component-scoped rule. */
+    html:root .public-header {
+        left: 0;
+        right: 0;
+        transition: right 320ms var(--infra-ease), background-color 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
+        width: auto;
+    }
+
+    html:root body {
+        transition: padding-right 320ms var(--infra-ease);
+    }
+
+    html.infra-panel-open:root .public-header {
+        right: var(--infra-panel-width);
+    }
+
+    html.infra-panel-open:root body {
+        /* The page's full-bleed bands use 100vw; clip what would spill under the panel. */
+        overflow-x: clip;
+        padding-right: var(--infra-panel-width);
+    }
+
+    /* Toasts sit at the viewport's right edge; keep them clear of the panel. */
+    html.infra-panel-open .cart-toast-host {
+        right: calc(var(--infra-panel-width) + 1rem);
+    }
+}
+
+/* ---------------------------------------------------------------- mobile / tablet: overlay sheet */
+
+@media (max-width: 1023.98px) {
+    .infra-panel {
+        border-left: 0;
+        max-width: 100%;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+        padding-top: env(safe-area-inset-top, 0px);
+        width: min(26rem, 100%);
+    }
+
+    html.infra-panel-open {
+        overflow: hidden;
+    }
+}
+
+@media (max-width: 480px) {
+    .infra-panel {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .infra-panel,
+    .infra-panel--open,
+    html:root .public-header,
+    html:root body {
+        transition: none !important;
+    }
+}

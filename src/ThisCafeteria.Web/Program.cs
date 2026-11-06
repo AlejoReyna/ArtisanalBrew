@@ -162,6 +162,29 @@ builder.Services.AddSingleton(serviceProvider =>
 // the cookie-backed accessors, which depend on HttpContext and so cannot leave the host.
 builder.Services.AddSingleton<IWalletChallengeService, WalletChallengeService>();
 builder.Services.AddScoped<WalletDashboardState>();
+
+// Navbar "Infraestructura" panel: deployment facts + aggregated Prometheus readings. The
+// monitoring address stays server-side; the browser only ever receives InfrastructureSummary.
+builder.Services.Configure<ThisCafeteria.Web.Services.Monitoring.InfrastructurePanelOptions>(
+    builder.Configuration.GetSection(ThisCafeteria.Web.Services.Monitoring.InfrastructurePanelOptions.SectionName));
+builder.Services.AddHttpClient<ThisCafeteria.Web.Services.Monitoring.IPrometheusQueryClient, ThisCafeteria.Web.Services.Monitoring.PrometheusQueryClient>((provider, client) =>
+{
+    var panel = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ThisCafeteria.Web.Services.Monitoring.InfrastructurePanelOptions>>().Value;
+    if (Uri.TryCreate(panel.Prometheus.BaseUrl?.Trim().TrimEnd('/') + "/", UriKind.Absolute, out var baseUri))
+    {
+        client.BaseAddress = baseUri;
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(panel.Prometheus.TimeoutSeconds, 1, 10));
+}).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    AllowAutoRedirect = false,
+    UseProxy = false,
+    ConnectTimeout = TimeSpan.FromSeconds(2),
+    // The summary service is a singleton, so rotate pooled connections to follow container re-creation.
+    PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+});
+builder.Services.AddSingleton<ThisCafeteria.Web.Services.Monitoring.IInfrastructureSummaryService, ThisCafeteria.Web.Services.Monitoring.InfrastructureSummaryService>();
 builder.Services.AddScoped<ThisCafeteria.Web.Services.ProfileAvatarState>();
 builder.Services.AddScoped<ISelectedSmartAccountAccessor, SelectedSmartAccountAccessor>();
 // Sponsorship policy. Absent configuration yields a disabled (fail-closed) policy.
