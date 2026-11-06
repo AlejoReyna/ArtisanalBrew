@@ -38,11 +38,12 @@ Una sola vez, en `/opt/artisanalbrew/web.env` (propiedad de `root`, 0600):
 
 ```
 InfrastructurePanel__Prometheus__BaseUrl=http://prometheus:9090
-InfrastructurePanel__Grafana__Private=true
+InfrastructurePanel__Grafana__Url=https://grafana.alexisrs.dev
 ```
 
-`Grafana__Private=true` mantiene Grafana como «Acceso privado» (sin enlace). Hoy Caddy también publica
-`grafana.alexisrs.dev`; no se enlaza desde el panel salvo decisión explícita (`Grafana__Url`).
+Grafana ya se publica por Caddy en `grafana.alexisrs.dev` (con login), y el panel enlaza esa dirección
+(pestaña Grafana → «Abrir en Grafana»). Si algún día solo hay túnel, usa `Grafana__Private=true`
+(«Acceso privado», sin enlace) y quita `Grafana__Url`.
 
 Comprobación de red antes de desplegar: `sudo docker network inspect monitoring_monitoring` debe listar
 `prometheus`; tras el despliegue, `web` debe resolver y alcanzar `prometheus:9090`:
