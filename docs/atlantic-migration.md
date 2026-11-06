@@ -121,10 +121,12 @@ Despliegue manual de una revisión aprobada:
 ```bash
 cd /opt/artisanalbrew/repo
 git pull --ff-only
+sudo docker network inspect monitoring_monitoring >/dev/null   # red del stack de monitoreo (panel Infraestructura)
 sudo install -m 0644 deployments/atlantic/compose.yml /opt/artisanalbrew/compose.yml
 sudo install -m 0644 deployments/atlantic/Caddyfile /opt/artisanalbrew/Caddyfile
 sudo docker compose -f /opt/artisanalbrew/compose.yml build
-sudo docker compose -f /opt/artisanalbrew/compose.yml up -d
+sudo ARTISANALBREW_RELEASE="$(git rev-parse --short=12 HEAD)" \
+  docker compose -f /opt/artisanalbrew/compose.yml up -d
 sudo docker compose -f /opt/artisanalbrew/compose.yml ps
 ```
 

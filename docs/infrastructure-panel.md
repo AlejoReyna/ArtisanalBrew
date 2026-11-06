@@ -17,7 +17,7 @@ ni nombres internos.
 | `Grafana__Url` | Dashboard autorizado (solo `https`, sin credenciales en la URL). |
 | `Grafana__Private` | `true` si solo hay túnel/port-forward → «Acceso privado», sin enlace. |
 | `SampleData` | Solo en `Development`: métricas de ejemplo marcadas «Datos de ejemplo». |
-| `Enabled` | `false` → el endpoint responde 404. |
+| `Enabled` | `false` → el endpoint responde 404, el botón de la navbar y el panel no se renderizan y el servicio no hace ninguna consulta a Prometheus. |
 
 Estados: **Sin configurar** (no hay fuente), **Sin conexión** (error/timeout), **Datos desactualizados**
 (muestra vieja o métrica ausente), **Operativo** (todas las métricas leídas y recientes).
@@ -25,10 +25,32 @@ Estados: **Sin configurar** (no hay fuente), **Sin conexión** (error/timeout), 
 ## VPS (Atlantic.Net)
 
 Consultas fijas (Node Exporter + cAdvisor): CPU `node_cpu_seconds_total`, memoria `node_memory_*`,
-contenedores `container_last_seen{name!=""}`. Requisito: el contenedor `web` debe alcanzar a
-Prometheus por una red interna de Docker (p. ej. unir `web` a la red del stack de monitoreo y usar
-`http://prometheus:9090`) **sin publicar puertos** en el host. El repo no contiene el stack de
-monitoreo del VPS; hay que verificar en el servidor el nombre del servicio, la red y los *jobs*.
+contenedores `container_last_seen{name!=""}`.
+
+El stack de monitoreo vive fuera de este repo, en `/opt/monitoring/compose.yml` (proyecto Compose
+`monitoring`): `prometheus` (jobs `prometheus`, `node`, `cadvisor`), `node-exporter`, `cadvisor` y
+`grafana`. Prometheus solo está en la red `monitoring` (nombre real `monitoring_monitoring`) y no
+publica puertos; Grafana está en `monitoring` y en `artisanalbrew_default` y escucha en
+`127.0.0.1:3000`. Por eso `deployments/atlantic/compose.yml` une `web` a `monitoring_monitoring`
+(red `external`) además de `default`, y la dirección interna es **`http://prometheus:9090`**.
+
+Una sola vez, en `/opt/artisanalbrew/web.env` (propiedad de `root`, 0600):
+
+```
+InfrastructurePanel__Prometheus__BaseUrl=http://prometheus:9090
+InfrastructurePanel__Grafana__Private=true
+```
+
+`Grafana__Private=true` mantiene Grafana como «Acceso privado» (sin enlace). Hoy Caddy también publica
+`grafana.alexisrs.dev`; no se enlaza desde el panel salvo decisión explícita (`Grafana__Url`).
+
+Comprobación de red antes de desplegar: `sudo docker network inspect monitoring_monitoring` debe listar
+`prometheus`; tras el despliegue, `web` debe resolver y alcanzar `prometheus:9090`:
+
+```bash
+sudo docker compose -f /opt/artisanalbrew/compose.yml exec -T web \
+  bash -c 'getent hosts prometheus && exec 3<>/dev/tcp/prometheus/9090 && echo ok'   # sin curl/wget en la imagen
+```
 
 ## AKS
 

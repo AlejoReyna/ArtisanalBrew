@@ -32,6 +32,12 @@ services:
       InfrastructurePanel__Provider: atlantic
       InfrastructurePanel__Environment: production
       InfrastructurePanel__Release: ${ARTISANALBREW_RELEASE:-}
+    # `default` keeps postgres/gateway/caddy reachable; `monitoring` is the monitoring stack's
+    # network (/opt/monitoring/compose.yml), joined only so the panel can query
+    # http://prometheus:9090. No port is published for it.
+    networks:
+      - default
+      - monitoring
     volumes:
       - /opt/artisanalbrew/data/receipts:/data/receipts
       - /opt/artisanalbrew/data/dataprotection:/data/dataprotection
@@ -104,3 +110,9 @@ services:
         condition: service_healthy
     mem_limit: 128m
     cpus: 0.10
+
+networks:
+  # Created by the monitoring stack (compose project "monitoring", network "monitoring").
+  monitoring:
+    external: true
+    name: monitoring_monitoring
