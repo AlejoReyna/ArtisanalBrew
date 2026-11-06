@@ -25,6 +25,13 @@ services:
     environment:
       Receipts__StoragePath: /data/receipts
       DataProtection__KeysPath: /data/dataprotection
+      # Navbar "Infraestructura" panel. Provider/environment identify this deployment; the release
+      # is whatever the deploy exported (ARTISANALBREW_RELEASE=$(git rev-parse --short=12 HEAD)).
+      # InfrastructurePanel__Prometheus__BaseUrl and InfrastructurePanel__Grafana__* belong in
+      # /opt/artisanalbrew/web.env (see docs/infrastructure-panel.md), never in this file.
+      InfrastructurePanel__Provider: atlantic
+      InfrastructurePanel__Environment: production
+      InfrastructurePanel__Release: ${ARTISANALBREW_RELEASE:-}
     volumes:
       - /opt/artisanalbrew/data/receipts:/data/receipts
       - /opt/artisanalbrew/data/dataprotection:/data/dataprotection
