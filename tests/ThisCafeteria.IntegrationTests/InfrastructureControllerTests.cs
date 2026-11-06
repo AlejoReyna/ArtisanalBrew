@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
+using ThisCafeteria.Application.Services;
+using ThisCafeteria.Web.Services.Cart;
 using ThisCafeteria.Web.Services.Monitoring;
 
 namespace ThisCafeteria.IntegrationTests;
@@ -17,7 +20,7 @@ public class InfrastructureControllerTests : IClassFixture<WebApplicationFactory
 
     public InfrastructureControllerTests(WebApplicationFactory<ThisCafeteria.Web.WebMarker> factory) => _factory = factory;
 
-    private HttpClient Client(bool metricsDown, string? provider = "atlantic", bool enabled = true) =>
+    private HttpClient Client(bool metricsDown, string? provider = "atlantic", bool enabled = true, StubPrometheus? stub = null) =>
         _factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
@@ -32,7 +35,18 @@ public class InfrastructureControllerTests : IClassFixture<WebApplicationFactory
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<IPrometheusQueryClient>();
-                services.AddSingleton<IPrometheusQueryClient>(new StubPrometheus(metricsDown));
+                services.AddSingleton<IPrometheusQueryClient>(stub ?? new StubPrometheus(metricsDown));
+
+                // The harness runs without a database, so the data-backed services the shared
+                // header (NavMenu) injects are replaced by empty ones: the page can render.
+                var cart = new Mock<IShoppingCartService>();
+                cart.Setup(c => c.GetItemCountAsync()).ReturnsAsync(0);
+                services.RemoveAll<IShoppingCartService>();
+                services.AddScoped(_ => cart.Object);
+                services.RemoveAll<IProfileService>();
+                services.AddScoped(_ => Mock.Of<IProfileService>());
+                services.RemoveAll<IIdentityAccountService>();
+                services.AddScoped(_ => Mock.Of<IIdentityAccountService>());
             });
         }).CreateClient();
 
@@ -68,9 +82,52 @@ public class InfrastructureControllerTests : IClassFixture<WebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    private sealed class StubPrometheus(bool down) : IPrometheusQueryClient
+    [Fact]
+    public async Task WhenDisabledThePageHasNoInfrastructureButtonOrPanelAndNothingQueriesPrometheus()
     {
-        public Task<double?> QueryScalarAsync(string expression, CancellationToken cancellationToken) =>
-            down ? throw new MonitoringUnavailableException("down") : Task.FromResult<double?>(expression.StartsWith("time()") ? 5 : 42);
+        var prometheus = new StubPrometheus(down: false);
+        var client = Client(metricsDown: false, enabled: false, stub: prometheus);
+
+        var response = await client.GetAsync("/");
+        var html = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        html.Should().Contain("Artisanal Brew", "the page itself keeps rendering");
+        html.Should().NotContain("infra-trigger").And.NotContain("id=\"infra-panel\"").And.NotContain("Infraestructura");
+        (await client.GetAsync("/api/infrastructure/summary")).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        prometheus.Calls.Should().Be(0, "a disabled panel must not start any Prometheus query");
+    }
+
+    [Fact]
+    public async Task WhenEnabledThePageHasTheInfrastructureButtonAndPanel()
+    {
+        var html = await (await Client(metricsDown: false).GetAsync("/")).Content.ReadAsStringAsync();
+
+        html.Should().Contain("id=\"infra-trigger\"").And.Contain("id=\"infra-panel\"");
+    }
+
+    [Fact]
+    public async Task ADeadMetricsSourceDoesNotStopThePageFromRendering()
+    {
+        var client = Client(metricsDown: true);
+
+        var home = await client.GetAsync("/");
+
+        home.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await home.Content.ReadAsStringAsync()).Should().Contain("id=\"infra-trigger\"");
+        (await client.GetAsync("/health/live")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    internal sealed class StubPrometheus(bool down) : IPrometheusQueryClient
+    {
+        private int _calls;
+
+        public int Calls => _calls;
+
+        public Task<double?> QueryScalarAsync(string expression, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _calls);
+            return down ? throw new MonitoringUnavailableException("down") : Task.FromResult<double?>(expression.StartsWith("time()") ? 5 : 42);
+        }
     }
 }

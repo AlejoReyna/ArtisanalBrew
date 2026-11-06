@@ -183,7 +183,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Open && !_wasOpen)
+        if (Open && !_wasOpen && Summaries.Enabled)
         {
             _wasOpen = true;
             _timer?.Dispose();
@@ -200,7 +200,7 @@
 
     private async Task LoadAsync(bool showSpinner)
     {
-        if (_loading || !Open)
+        if (_loading || !Open || !Summaries.Enabled)
         {
             return;
         }

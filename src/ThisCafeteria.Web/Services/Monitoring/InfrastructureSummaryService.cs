@@ -52,6 +52,13 @@ public sealed partial class InfrastructureSummaryService : IInfrastructureSummar
     public async Task<InfrastructureSummary> GetAsync(CancellationToken cancellationToken = default)
     {
         var options = _options.CurrentValue;
+        if (!options.Enabled)
+        {
+            // Switched off: no query leaves this process, whoever asks (the endpoint answers 404
+            // before getting here; the Blazor panel calls this service directly).
+            return InfrastructureSummary.Disabled;
+        }
+
         var now = _clock.GetUtcNow();
 
         if (_cached is { } fresh && now < _cachedUntil)

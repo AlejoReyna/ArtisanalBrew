@@ -52,4 +52,11 @@ public sealed record GrafanaSummary(DashboardAccess Access, string? Url);
 public sealed record InfrastructureSummary(
     DeploymentDetails Deployment,
     PrometheusSummary Prometheus,
-    GrafanaSummary Grafana);
+    GrafanaSummary Grafana)
+{
+    /// <summary>What a switched-off panel yields: no deployment facts, no source, no dashboard.</summary>
+    public static InfrastructureSummary Disabled { get; } = new(
+        new DeploymentDetails("ArtisanalBrew", null, null, null, [], null),
+        new PrometheusSummary(MonitoringState.NotConfigured, [], null, false),
+        new GrafanaSummary(DashboardAccess.NotConfigured, null));
+}

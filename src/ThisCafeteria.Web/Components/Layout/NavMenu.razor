@@ -3,6 +3,7 @@
 @inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 @inject IShoppingCartService CartService
+@inject ThisCafeteria.Web.Services.Monitoring.IInfrastructureSummaryService InfraSummary
 @inject ILogger<NavMenu> Logger
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject WalletDashboardState DashboardState
@@ -74,6 +75,8 @@
                 </span>
             </button>
         }
+        @if (InfraSummary.Enabled)
+        {
         <button id="infra-trigger"
                 class="nav-infra"
                 type="button"
@@ -84,6 +87,7 @@
                 @onclick="ToggleInfraAsync">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5" /><rect x="3" y="14" width="18" height="6" rx="1.5" /><path d="M7 7h.01M7 17h.01" /></svg>
         </button>
+        }
         <AuthorizeView>
             <Authorized>
                 <a href="cart" class="nav-cart" aria-label="@CartAriaLabel" @onclick="CloseNav">
@@ -241,7 +245,10 @@
     </footer>
 </aside>
 
-<InfrastructurePanel Open="_isInfraOpen" OnClose="CloseInfraAsync" />
+@if (InfraSummary.Enabled)
+{
+    <InfrastructurePanel Open="_isInfraOpen" OnClose="CloseInfraAsync" />
+}
 
 <AuthorizeView>
     <Authorized>
@@ -711,6 +718,11 @@
     // drawer, the account menu and the wallet modal, and each of those closes it in return.
     private async Task ToggleInfraAsync()
     {
+        if (!InfraSummary.Enabled)
+        {
+            return;
+        }
+
         if (_isInfraOpen)
         {
             await CloseInfraAsync();

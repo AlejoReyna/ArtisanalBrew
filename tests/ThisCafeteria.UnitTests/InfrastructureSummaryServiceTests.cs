@@ -139,6 +139,41 @@ public sealed class InfrastructureSummaryServiceTests
     }
 
     [Fact]
+    public async Task WhenDisabledNothingIsQueriedAndNothingIsShown()
+    {
+        var prometheus = new FakePrometheus();
+        var service = Service(Atlantic(enabled: false), prometheus);
+
+        var first = await service.GetAsync();
+        var second = await service.GetAsync();
+
+        service.Enabled.Should().BeFalse();
+        prometheus.Calls.Should().Be(0, "a disabled panel must not start any query");
+        first.Should().BeSameAs(second);
+        first.Prometheus.State.Should().Be(MonitoringState.NotConfigured);
+        first.Prometheus.Metrics.Should().BeEmpty();
+        first.Deployment.Provider.Should().BeNull("the deployment facts are not shown either");
+        first.Deployment.Release.Should().BeNull();
+        first.Grafana.Access.Should().Be(DashboardAccess.NotConfigured);
+    }
+
+    [Fact]
+    public async Task DisablingTheSwitchAfterAReadingStopsServingTheCachedSummary()
+    {
+        var options = Atlantic();
+        var prometheus = new FakePrometheus();
+        var service = Service(options, prometheus);
+        (await service.GetAsync()).Prometheus.State.Should().Be(MonitoringState.Operational);
+        var queries = prometheus.Calls;
+
+        options.Enabled = false;
+        var summary = await service.GetAsync();
+
+        summary.Prometheus.State.Should().Be(MonitoringState.NotConfigured);
+        prometheus.Calls.Should().Be(queries);
+    }
+
+    [Fact]
     public async Task TheSerializedSummaryNeverContainsMonitoringAddresses()
     {
         var options = Atlantic();
@@ -220,8 +255,9 @@ public sealed class InfrastructureSummaryServiceTests
 
     private static JsonElement Json(string text) => JsonDocument.Parse(text).RootElement.Clone();
 
-    private static InfrastructurePanelOptions Atlantic() => new()
+    private static InfrastructurePanelOptions Atlantic(bool enabled = true) => new()
     {
+        Enabled = enabled,
         Provider = "atlantic",
         Prometheus = { BaseUrl = InternalUrl }
     };
