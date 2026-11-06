@@ -5,6 +5,9 @@ Botón «Infraestructura» en la navbar → panel lateral oscuro. Datos del lado
 (`Cache-Control: no-store`). El navegador nunca recibe la URL de Prometheus/Grafana, credenciales
 ni nombres internos.
 
+Diagramas de toda la infraestructura (VPS, Prometheus/Grafana, demo AKS):
+[infraestructura-diagramas.md](infraestructura-diagramas.md).
+
 ## Configuración (`InfrastructurePanel__*`)
 
 | Variable | Significado |
