@@ -47,7 +47,7 @@ The workflow:
 
 ## Post-deploy browser acceptance
 
-Against `https://cafe.alexisreyna.dev/`, verify:
+Against `https://cafe.alexisrs.dev/`, verify:
 
 - The accessible heading is “Your next coffee, on-chain.”
 - `.ph-scene--sim` is added after the Blazor circuit connects.

@@ -13,7 +13,7 @@ pagos agénticos en un solo servidor administrable.
 Decisiones tomadas:
 
 - No conservar la infraestructura de Azure como entorno activo.
-- Mantener la URL pública `https://cafe.alexisreyna.dev`.
+- Mantener la URL pública `https://cafe.alexisrs.dev`.
 - Ejecutar PostgreSQL localmente, dentro de Docker y sin publicar su puerto.
 - Mantener el gateway MCP/x402 para pagos agénticos en Base Sepolia.
 - Guardar los recibos PDF en disco local y enviarlos mediante Resend.
@@ -30,7 +30,7 @@ Decisiones tomadas:
 | CPU y memoria | 2 vCPU, 4 GB RAM y 2 GB de swap |
 | Disco y transferencia | 80 GB SSD y 5 TB por periodo |
 | IPv4 | `209.23.11.117` |
-| Dominio | `cafe.alexisreyna.dev` |
+| Dominio | `cafe.alexisrs.dev` |
 | Entrada pública | Caddy en puertos 80 y 443 |
 | Administración | SSH por llave pública |
 
@@ -134,9 +134,9 @@ sudo docker compose -f /opt/artisanalbrew/compose.yml ps
 Validación pública mínima:
 
 ```bash
-curl --fail --show-error https://cafe.alexisreyna.dev/health/ready
-curl --fail --show-error https://cafe.alexisreyna.dev/.well-known/agent-card.json
-curl --fail --show-error https://cafe.alexisreyna.dev/bazaar
+curl --fail --show-error https://cafe.alexisrs.dev/health/ready
+curl --fail --show-error https://cafe.alexisrs.dev/.well-known/agent-card.json
+curl --fail --show-error https://cafe.alexisrs.dev/bazaar
 ```
 
 Ejecutar un respaldo manual y revisar los timers:
@@ -178,7 +178,7 @@ idempotencia por pedido. La configuración activa vive en
 
 Para activar el envío:
 
-1. Agregar y verificar `send.alexisreyna.dev` en Resend.
+1. Agregar y verificar `send.alexisrs.dev` en Resend.
 2. Publicar en DNS exactamente los registros SPF, DKIM y de verificación que
    entregue Resend.
 3. Crear una API key restringida al envío desde ese dominio.

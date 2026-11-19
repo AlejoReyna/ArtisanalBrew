@@ -1,4 +1,4 @@
-cafe.alexisreyna.dev {
+cafe.alexisrs.dev {
     encode zstd gzip
 
     header {

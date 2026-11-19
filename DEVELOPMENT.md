@@ -4,7 +4,7 @@
 
 ## Live Demo
 
-**[cafe.alexisreyna.dev](https://cafe.alexisreyna.dev)** — click through to see it running live on Azure Container Apps.
+**[cafe.alexisrs.dev](https://cafe.alexisrs.dev)** — click through to see it running live on Azure Container Apps.
 
 ## Tech Stack
 
@@ -336,7 +336,7 @@ Everything below is provisioned as Bicep IaC in `infra/` and deployed to Azure C
 
 ```mermaid
 flowchart TB
-    Users(["Users<br/>cafe.alexisreyna.dev"])
+    Users(["Users<br/>cafe.alexisrs.dev"])
     Sepolia(["Ethereum Sepolia<br/>MetaMask checkout — unchanged"])
 
     subgraph GH["GitHub"]
